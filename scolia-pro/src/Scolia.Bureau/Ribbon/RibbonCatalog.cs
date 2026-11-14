@@ -1,6 +1,7 @@
 using Material.Icons;
 using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.ViewModels;
+using Scolia.Domain.School;
 using static Material.Icons.MaterialIconKind;
 
 namespace Scolia.Bureau.Ribbon;
@@ -89,6 +90,13 @@ public static class RibbonCatalog
 
     public static List<RibbonTabVm> Build(ShellViewModel shell)
     {
+        // Le moteur de cours et de délibération ITM ne concerne que les ITM/IM ; les écoles et les
+        // universités ont leurs propres écrans de résultats, de délibération et de règlement.
+        var type = shell.Session?.InstitutionType;
+        var university = type == InstitutionProfiles.SuperieurLmd;
+        var school = InstitutionProfiles.UsesSchoolCycles(type);
+        var graded = school && type != InstitutionProfiles.Maternelle;
+        var itm = !school && !university;
         var tabs = new List<RibbonTabVm>
         {
             new("accueil", "Accueil",
@@ -126,18 +134,27 @@ public static class RibbonCatalog
             ]),
             new("scolarite", "Scolarité",
             [
-                Group("Cours",
+                itm ? Group("Cours",
                     Large(shell, "Cours et notes", BookOpenVariantOutline, "Cours, évaluations et saisie des notes.", () => shell.Open(() => new GradesPage(shell)), Purple, perm: Perm.AcademicsRead),
                     Large(shell, "Résultats", CertificateOutline, "Moyennes, rangs, décisions et bulletins PDF.", () => shell.Open(() => new ResultsPage(shell)), Purple, perm: Perm.AcademicsRead),
                     Small(shell, "Nouveau cours", FileDocumentPlusOutline, "Crée un cours dans la promotion choisie.", () => GradesPage.NewCourseAsync(shell), Neutral, perm: Perm.AcademicsWrite),
-                    Small(shell, "Nouvelle évaluation", ClipboardPlusOutline, "Crée une évaluation pour un cours.", () => GradesPage.NewAssessmentAsync(shell), Neutral, perm: Perm.AcademicsWrite)),
+                    Small(shell, "Nouvelle évaluation", ClipboardPlusOutline, "Crée une évaluation pour un cours.", () => GradesPage.NewAssessmentAsync(shell), Neutral, perm: Perm.AcademicsWrite))
+                : graded ? Group("Résultats",
+                    Large(shell, "Résultats et bulletins", CertificateOutline, "Points, totaux, pourcentages, place et bulletins officiels de la classe.", () => shell.Open(() => new EpstResultsPage(shell)), Purple, perm: Perm.AcademicsRead),
+                    Large(shell, "Délibération", Gavel, "Décisions de fin d'année, jury, repêchage et procès-verbal.", () => shell.Open(() => new EpstDeliberationPage(shell)), Red, perm: Perm.AcademicsRead),
+                    Small(shell, "Examens nationaux", ClipboardTextOutline, "Candidats à l'ENAFEP, à la fin du CTEB et à l'Examen d'État.", () => shell.Open(() => new NationalExamsPage(shell)), Neutral, perm: Perm.AcademicsRead))
+                : university ? Group("Résultats",
+                    Large(shell, "Notes des EC", PencilBoxMultipleOutline, "Saisie des notes de chaque élément constitutif, par session.", () => shell.Open(() => new LmdMarksPage(shell)), Purple, perm: Perm.AcademicsRead),
+                    Large(shell, "Délibération LMD", Gavel, "S1 partiel, première et deuxième session, relevés et procès-verbal.", () => shell.Open(() => new LmdResultsPage(shell)), Red, perm: Perm.AcademicsRead),
+                    Small(shell, "Dettes académiques", BookAlertOutline, "UE reportées et leur apurement.", () => shell.Open(() => new LmdDebtsPage(shell)), Neutral, perm: Perm.AcademicsRead))
+                : Group("Résultats"),
                 Group("Vie de classe",
                     Large(shell, "Présences", ClipboardCheckOutline, "Appel quotidien par promotion et taux d'assiduité.", () => shell.Open(() => new AttendancePage(shell)), Blue, perm: Perm.AcademicsRead),
                     Large(shell, "Discipline", AlertOctagonOutline, "Incidents, sanctions et suivi du comportement.", () => shell.Open(() => new DisciplinePage(shell)), Red, perm: Perm.AcademicsRead),
                     Small(shell, "Nouvel incident", AlertPlusOutline, "Signale un incident de discipline.", () => DisciplinePage.NewDecisionAsync(shell), Neutral, perm: Perm.AcademicsWrite))
             ]),
             // Gestion des délibérations : tout ce qui va avec, dans l'ordre du travail.
-            new("deliberation", "Délibérations",
+            itm ? new("deliberation", "Délibérations",
             [
                 Group("Enseignants et cours",
                     Large(shell, "Attribution des cours", AccountSchoolOutline, "Cours de chaque promotion (maxima, pondération, semestre) et leur enseignant.", () => shell.Open(() => new TeachingPage(shell)), Orange, perm: Perm.AcademicsRead),
@@ -150,6 +167,12 @@ public static class RibbonCatalog
                     Small(shell, "Suivi de l'encodage", ProgressClock, "Avancement par cours et par enseignant, feuilles remises et à relancer.", () => shell.Open(() => new EncodingProgressPage(shell)), Neutral, perm: Perm.AcademicsRead)),
                 Group("Jury",
                     Large(shell, "Délibération", Gavel, "Résultats par semestre et jury annuel, décisions motivées, clôture et procès-verbal.", () => shell.Open(() => new DeliberationPage(shell)), Red, perm: Perm.AcademicsRead)),
+            ])
+            : new("deliberation", "Délibérations",
+            [
+                Group("Préparation",
+                    Large(shell, "Règlement pédagogique", ScaleBalance, "Seuils, repêchage, compensation et dettes de l'année : à valider avant tout document officiel.", () => shell.Open(() => new RegulationPage(shell)), Orange, perm: Perm.AcademicsRead),
+                    Small(shell, "Comptes enseignants", AccountKeyOutline, "Crée l'enseignant, son identifiant et son code provisoire.", () => shell.Open(() => new TeacherAccountsPage(shell)), Neutral, perm: Perm.UsersManage)),
             ]),
             // Espace enseignant : son accueil et ses feuilles, rien d'autre.
             new("enseignant", "Mon espace",

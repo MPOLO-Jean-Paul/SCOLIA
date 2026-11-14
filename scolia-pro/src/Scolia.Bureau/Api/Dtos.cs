@@ -43,9 +43,17 @@ public sealed record LmdProgramItemDto(Guid Id, Guid PromotionId, Guid? Academic
     decimal Credits, decimal Coefficient, decimal Hours);
 
 public sealed record SchoolPeriodDto(Guid Id, string Code, string Name, string TermCode,
-    int Order, string Mode, DateOnly StartDate, DateOnly EndDate);
+    int Order, string Mode, DateOnly StartDate, DateOnly EndDate, bool IsExam = false)
+{
+    public string Kind => IsExam ? "Examen" : "Période de travail";
+}
 public sealed record AnnualSubjectDto(Guid Id, Guid PromotionId, string Code, string Name,
-    decimal Coefficient, decimal Hours, bool IsActive);
+    decimal Coefficient, decimal Hours, bool IsActive, decimal? PeriodMaxScore = null)
+{
+    public string MaxLabel => PeriodMaxScore is { } m
+        ? $"Maximum par période : {m.ToString("0.##", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))}"
+        : "Maximum par période à définir";
+}
 
 /// <summary>Configuration distincte de chaque cycle d'un complexe scolaire.</summary>
 public sealed record SchoolCycleConfigurationItemDto(Guid Id, string Kind, string Name,
@@ -115,7 +123,7 @@ public sealed record FeeCategoryDto(Guid Id, string Name, decimal Amount, DateOn
 public sealed record PromotionDto(
     Guid Id, Guid AcademicYearId, string Code, string Name, Guid? SectionId, string? SectionName, int Level, int? Capacity, bool IsActive,
     string? NextPromotionCode, decimal MonthlyFee, decimal AnnualTotal, int StudentCount, IReadOnlyList<FeeItemDto> Fees,
-    Guid? SchoolCycleId = null);
+    Guid? SchoolCycleId = null, Guid? AcademicUnitId = null);
 
 public sealed record DashboardDto(
     string AcademicYear, int ActiveStudents, int NewThisMonth, decimal CollectedTotal, decimal CollectedThisMonth, decimal CollectedToday,

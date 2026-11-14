@@ -23,6 +23,7 @@ public sealed class LmdPlanningPage : PageViewModel
         AddElement = new AsyncCommand(AddElementAsync);
         Action("Nouvelle structure", MaterialIconKind.SitemapOutline, AddStructureAsync, primary: true);
         Action("Calendrier S1/S2", MaterialIconKind.CalendarMonthOutline, ConfigureSemestersAsync);
+        Action("Frais par tranches", MaterialIconKind.CashMultiple, InstallmentsAsync);
         ActionRefresh();
     }
 
@@ -225,5 +226,44 @@ public sealed class LmdPlanningPage : PageViewModel
         form.Add("nom", "Intitulé EC", required: true);
         form.Add("heures", "Volume horaire", FieldKind.Amount, "30", required: true);
         if (await Shell.Ask(form)) await RefreshAsync();
+    }
+
+    /// <summary>Frais académiques de la promotion choisie, en tranches datées (monnaie de l'établissement).</summary>
+    private async Task InstallmentsAsync()
+    {
+        if (SelectedPromotion is null) { Shell.Notify("Sélectionnez d'abord une promotion."); return; }
+        var years = await Shell.Api.GetAsync<List<AcademicYearDto>>("api/etablissement/annees");
+        var year = years.FirstOrDefault(y => y.IsCurrent);
+        if (year is null) { Shell.Notify("Configurez d'abord l'année académique courante."); return; }
+        var promotions = await Shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions");
+        var promotion = promotions.First(p => p.Id.ToString() == SelectedPromotion.Value);
+        var existing = promotion.Fees.Where(f => f.Label.StartsWith("Frais académiques — ", StringComparison.Ordinal))
+            .OrderBy(f => f.DueDate).ToList();
+        var symbol = Shell.Session?.CurrencySymbol ?? "$";
+        var span = year.EndDate.DayNumber - year.StartDate.DayNumber;
+        var form = new FormViewModel($"Frais académiques — {promotion.Name}",
+            $"Montants en {symbol}. Laissez une tranche à zéro pour ne pas l'utiliser. Les encaissements déjà reçus restent protégés.",
+            async f =>
+            {
+                var tranches = Enumerable.Range(1, 4)
+                    .Select(i => (Amount: f.Amount($"montant{i}"), Due: f.Day($"echeance{i}")))
+                    .Where(t => t.Amount > 0)
+                    .Select(t => new { amount = t.Amount, dueDate = t.Due ?? year.EndDate })
+                    .ToArray();
+                if (tranches.Length == 0) { f.Find("montant1").Error = "Indiquez au moins une tranche."; return false; }
+                await Shell.Api.SendAsync(HttpMethod.Put,
+                    $"api/etablissement/lmd/promotions/{promotion.Id}/tranches", new { installments = tranches });
+                Shell.Notify($"Frais académiques enregistrés en {tranches.Length} tranche(s).");
+                return true;
+            });
+        for (var i = 1; i <= 4; i++)
+        {
+            var fee = existing.ElementAtOrDefault(i - 1);
+            form.AddHeader(i == 1 ? "1re tranche" : $"{i}e tranche");
+            form.Add($"montant{i}", $"Montant ({symbol})", FieldKind.Amount,
+                fee?.Amount.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? (i <= 3 ? null : "0"));
+            form.AddDay($"echeance{i}", "Échéance", fee?.DueDate ?? year.StartDate.AddDays(span * (i - 1) / 3 + 15));
+        }
+        await Shell.Ask(form);
     }
 }

@@ -57,6 +57,8 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
             Name = input.SchoolName.Trim(), ShortName = input.ShortName.Trim(), Motto = string.IsNullOrWhiteSpace(input.Motto) ? null : input.Motto.Trim(),
             City = input.City, Phone = IdentityRules.NormalizePhone(input.Phone), CurrencyCode = input.CurrencyCode.ToUpperInvariant(), CurrencySymbol = input.CurrencySymbol.Trim(),
             ReceiptFooter = "Conservez ce reçu. Son authenticité peut être vérifiée en scannant le code QR.",
+            // Le dollar se compte en cents ; le franc congolais reste en unités entières.
+            WholeAmountsOnly = !string.Equals(input.CurrencyCode, "USD", StringComparison.OrdinalIgnoreCase),
         };
         db.Schools.Add(school);
         if (input.LastOnTimeDay is < 1 or > 28)

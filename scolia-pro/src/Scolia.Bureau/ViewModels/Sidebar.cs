@@ -100,6 +100,11 @@ public static class Sidebar
         var cyclesAvailable = InstitutionProfiles.IsEnabled(type) &&
             type is InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire
                 or InstitutionProfiles.Secondaire or InstitutionProfiles.ComplexeScolaire;
+        var university = type == InstitutionProfiles.SuperieurLmd;
+        // Le moteur de cours, de cotes et de délibération ITM ne concerne que les ITM/IM.
+        var itm = !cyclesAvailable && !university;
+        // La maternelle seule n'a ni points, ni délibération, ni examen national.
+        var gradedSchool = cyclesAvailable && type != InstitutionProfiles.Maternelle;
 
         var groups = new[]
         {
@@ -136,8 +141,20 @@ public static class Sidebar
                 Item("Prises en charge", MaterialIconKind.HandHeart, "TonePink", Perm.PaymentsRead, typeof(SponsorshipsPage), () => new SponsorshipsPage(shell))),
             // Scolarité : la vie de classe (notes du cycle ordinaire, appel, discipline).
             Group("Scolarité",
-                Item("Cours et notes", MaterialIconKind.BookOpenVariant, "TonePurple", Perm.AcademicsRead, typeof(GradesPage), () => new GradesPage(shell)),
-                Item("Résultats", MaterialIconKind.Certificate, "ToneIndigo", Perm.AcademicsRead, typeof(ResultsPage), () => new ResultsPage(shell)),
+                itm ? Item("Cours et notes", MaterialIconKind.BookOpenVariant, "TonePurple", Perm.AcademicsRead, typeof(GradesPage), () => new GradesPage(shell)) : null,
+                itm ? Item("Résultats", MaterialIconKind.Certificate, "ToneIndigo", Perm.AcademicsRead, typeof(ResultsPage), () => new ResultsPage(shell)) : null,
+                gradedSchool ? Item("Résultats et bulletins", MaterialIconKind.Certificate, "ToneIndigo", Perm.AcademicsRead,
+                    typeof(EpstResultsPage), () => new EpstResultsPage(shell)) : null,
+                gradedSchool ? Item("Délibération de fin d'année", MaterialIconKind.Gavel, "ToneRed", Perm.AcademicsRead,
+                    typeof(EpstDeliberationPage), () => new EpstDeliberationPage(shell)) : null,
+                gradedSchool ? Item("Examens nationaux", MaterialIconKind.ClipboardTextOutline, "ToneOrange", Perm.AcademicsRead,
+                    typeof(NationalExamsPage), () => new NationalExamsPage(shell)) : null,
+                university ? Item("Notes des EC", MaterialIconKind.PencilBoxMultipleOutline, "TonePurple", Perm.AcademicsRead,
+                    typeof(LmdMarksPage), () => new LmdMarksPage(shell)) : null,
+                university ? Item("Délibération LMD", MaterialIconKind.Gavel, "ToneRed", Perm.AcademicsRead,
+                    typeof(LmdResultsPage), () => new LmdResultsPage(shell)) : null,
+                university ? Item("Dettes académiques", MaterialIconKind.BookAlertOutline, "ToneOrange", Perm.AcademicsRead,
+                    typeof(LmdDebtsPage), () => new LmdDebtsPage(shell)) : null,
                 Item("Présences", MaterialIconKind.ClipboardCheck, "ToneTeal", Perm.AcademicsRead, typeof(AttendancePage), () => new AttendancePage(shell)),
                 Item("Discipline", MaterialIconKind.AlertOctagon, "ToneRed", Perm.AcademicsRead, typeof(DisciplinePage), () => new DisciplinePage(shell))),
             // Les référentiels de cycles, matières et semestres relèvent de la pédagogie,
@@ -147,19 +164,22 @@ public static class Sidebar
                     typeof(SchoolCyclesPage), () => new SchoolCyclesPage(shell)) : null,
                 type == InstitutionProfiles.SuperieurLmd
                     ? Item("Organisation LMD", MaterialIconKind.BookEducationOutline, "ToneTeal", Perm.SettingsWrite,
-                        typeof(LmdPlanningPage), () => new LmdPlanningPage(shell)) : null),
+                        typeof(LmdPlanningPage), () => new LmdPlanningPage(shell)) : null,
+                !itm ? Item("Règlement pédagogique", MaterialIconKind.ScaleBalance, "ToneIndigo", Perm.AcademicsRead,
+                    typeof(RegulationPage), () => new RegulationPage(shell)) : null),
             // Gestion des délibérations (fusion d'ITMCD), dans l'ordre du travail :
             // 1. les enseignants, leurs comptes et l'attribution des cours ;
             Group("Enseignants et cours",
-                Item("Attribution des cours", MaterialIconKind.AccountSchool, "ToneOrange", Perm.AcademicsRead, typeof(TeachingPage), () => new TeachingPage(shell)),
+                !itm ? null : Item("Attribution des cours", MaterialIconKind.AccountSchool, "ToneOrange", Perm.AcademicsRead, typeof(TeachingPage), () => new TeachingPage(shell)),
                 Item("Comptes enseignants", MaterialIconKind.AccountKey, "ToneBlue", Perm.UsersManage, typeof(TeacherAccountsPage), () => new TeacherAccountsPage(shell))),
             // 2. la préparation (paramètres, codes anonymes), l'encodage et son suivi, puis le jury.
-            Group("Délibération",
+            itm ? Group("Délibération",
                 Item("Paramètres de délibération", MaterialIconKind.Tune, "ToneOrange", Perm.DeliberationManage, typeof(DeliberationSettingsPage), () => new DeliberationSettingsPage(shell)),
                 Item("Codes anonymes", MaterialIconKind.Incognito, "ToneIndigo", Perm.DeliberationManage, typeof(AnonymousCodesPage), () => new AnonymousCodesPage(shell)),
                 Item("Encodage des cotes", MaterialIconKind.Pen, "TonePurple", Perm.AcademicsRead, typeof(MarksPage), () => new MarksPage(shell)),
                 Item("Suivi de l'encodage", MaterialIconKind.ProgressClock, "ToneTeal", Perm.AcademicsRead, typeof(EncodingProgressPage), () => new EncodingProgressPage(shell)),
-                Item("Délibération", MaterialIconKind.Gavel, "ToneRed", Perm.AcademicsRead, typeof(DeliberationPage), () => new DeliberationPage(shell))),
+                Item("Délibération", MaterialIconKind.Gavel, "ToneRed", Perm.AcademicsRead, typeof(DeliberationPage), () => new DeliberationPage(shell)))
+                : Group("Délibération"),
             // Personnel : les membres de l'établissement, leur paie et leur pointage.
             Group("Personnel",
                 Item("Personnel et paie", MaterialIconKind.Briefcase, "ToneOrange", Perm.StaffManage, typeof(StaffPage), () => new StaffPage(shell)),

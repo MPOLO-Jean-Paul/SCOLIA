@@ -188,7 +188,11 @@ public sealed class SetupViewModel : Observable
         new("SuperieurLmd", "Université / institut supérieur LMD"),
     ];
     private ChoiceItem institutionType = null!;
-    public ChoiceItem InstitutionType { get => institutionType; set => Set(ref institutionType, value); }
+    public ChoiceItem InstitutionType
+    {
+        get => institutionType;
+        set { if (Set(ref institutionType, value)) Raise(nameof(CurrencyLine)); }
+    }
 
     public IReadOnlyList<ChoiceItem> GovernanceTypes { get; } =
     [
@@ -317,7 +321,8 @@ public sealed class SetupViewModel : Observable
         Raise(nameof(MonthRangeSummary));
     }
 
-    public string CurrencyLine => "Monnaie : franc congolais (FC)";
+    public string CurrencyLine => InstitutionType?.Value == InstitutionProfiles.SuperieurLmd
+        ? "Monnaie : dollar américain (USD)" : "Monnaie : franc congolais (FC)";
     public bool LoadDemo { get; set; }
 
     // ---- Étape 2 : comptes ----
@@ -533,8 +538,9 @@ public sealed class SetupViewModel : Observable
             motto = Motto.Trim() is { Length: > 0 } motto ? motto : null,
             city = City.Trim() is { Length: > 0 } city ? city : null,
             phone = Phone.Trim() is { Length: > 0 } phone ? phone : null,
-            currencyCode = "CDF",
-            currencySymbol = "FC",
+            // Les universités facturent leurs frais académiques en dollars américains.
+            currencyCode = InstitutionType.Value == InstitutionProfiles.SuperieurLmd ? "USD" : "CDF",
+            currencySymbol = InstitutionType.Value == InstitutionProfiles.SuperieurLmd ? "$" : "FC",
             yearLabel = $"{match.Groups[1].Value}-{match.Groups[2].Value}",
             startMonth = int.Parse(StartMonth.Value, System.Globalization.CultureInfo.InvariantCulture),
             endMonth = int.Parse(EndMonth.Value, System.Globalization.CultureInfo.InvariantCulture),

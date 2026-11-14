@@ -1,0 +1,29 @@
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.LmdDebtsView">
+  <Grid RowDefinitions="Auto,*">
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Dto.Matricule}" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn Header="Étudiant" Binding="{Binding Dto.FullName}" Width="2*" MinWidth="220" />
+        <DataGridTextColumn Header="Année" Binding="{Binding Dto.OriginYear}" Width="Auto" MinWidth="100" />
+        <DataGridTextColumn Header="UE" Binding="{Binding Dto.UeCode}" Width="Auto" MinWidth="90" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Intitulé" Binding="{Binding Dto.UeName}" Width="2*" MinWidth="220" />
+        <DataGridTextColumn Header="Crédits" Binding="{Binding Dto.Credits}" Width="Auto" MinWidth="80" />
+        <DataGridTemplateColumn Header="État" Width="Auto" MinWidth="200">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="1" Icon="BookAlertOutline" Title="Aucune dette académique" Hint="Les dettes apparaissent pour les étudiants admis avec dettes." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

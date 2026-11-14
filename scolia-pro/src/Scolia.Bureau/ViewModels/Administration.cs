@@ -1186,6 +1186,13 @@ public sealed class SettingsPage : PageViewModel
         }
         var cycleChoices = activeCycles.Select(c =>
             new ChoiceItem(c.Id.ToString(), c.Name)).ToList();
+        // Université : chaque promotion appartient à une filière, un parcours ou une spécialité.
+        var university = plan.InstitutionType == InstitutionProfiles.SuperieurLmd;
+        var filiereChoices = university
+            ? (await shell.Api.GetAsync<List<LmdStructureDto>>("api/etablissement/lmd/structures"))
+                .Where(u => u.IsActive && u.Kind is "Filiere" or "Pathway" or "Speciality")
+                .Select(u => new ChoiceItem(u.Id.ToString(), u.Name)).ToList()
+            : [];
 
         var form = new FormViewModel(existing is null ? "Nouvelle promotion" : "Modifier la promotion",
             schoolIsPublic
@@ -1206,7 +1213,10 @@ public sealed class SettingsPage : PageViewModel
             foreach (var category in shown)
             {
                 var amount = f.Amount($"categorie-{category.Id:N}");
-                if (amount > 0) fees.Add(new { categoryId = category.Id, amount });
+                // Une tranche universitaire garde son échéance quand la promotion est modifiée.
+                DateOnly? due = category.Name.StartsWith("Frais académiques — ", StringComparison.Ordinal) &&
+                                applied.TryGetValue(category.Id, out var tranche) ? tranche.DueDate : null;
+                if (amount > 0) fees.Add(new { categoryId = category.Id, amount, dueDate = due });
             }
             int? capacity = Format.TryAmount(f.Text("capacite"), out var cap) ? (int?)(int)cap : null;
             var body = new
@@ -1220,6 +1230,8 @@ public sealed class SettingsPage : PageViewModel
                 nextPromotionCode = f.OptionalText("suivante"),
                 schoolCycleId = schoolUsesCycles && f.ChoiceValue("cycle") is { } selected
                     ? Guid.Parse(selected) : (Guid?)null,
+                academicUnitId = university && f.ChoiceValue("filiere") is { Length: > 0 } unit
+                    ? Guid.Parse(unit) : (Guid?)null,
                 monthlyFee = monthly,
                 oneTimeFees = fees,
                 managesCategories = true,
@@ -1235,8 +1247,12 @@ public sealed class SettingsPage : PageViewModel
             form.AddChoice("cycle", "Cycle scolaire", cycleChoices,
                 existing?.SchoolCycleId?.ToString() ?? (cycleChoices.Count == 1 ? cycleChoices[0].Value : null),
                 required: true);
+        if (university)
+            form.AddChoice("filiere", "Filière, parcours ou spécialité", filiereChoices,
+                existing?.AcademicUnitId?.ToString(), required: filiereChoices.Count > 0);
         form.AddChoice("section", "Section", sectionChoices, existing?.SectionId?.ToString());
-        form.Add("niveau", "Niveau", FieldKind.Amount, existing?.Level.ToString() ?? "1", required: true);
+        form.Add("niveau", university ? "Niveau (1 à 3 : L1 à L3 ; 4 et 5 : M1, M2)" : "Niveau", FieldKind.Amount,
+            existing?.Level.ToString() ?? "1", required: true);
         form.Add("capacite", "Capacité", FieldKind.Amount, existing?.Capacity?.ToString());
         form.Add("suivante", "Promotion suivante", value: existing?.NextPromotionCode, hint: "Code de la promotion de l'année suivante");
         form.Add("mensualite", schoolIsPublic ? "Mensualité (public : zéro)"

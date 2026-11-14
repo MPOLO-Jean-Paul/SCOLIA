@@ -107,7 +107,7 @@
                 <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
                 <TextBlock Text="{Binding Code}" Classes="muted" />
                 <TextBlock Text="{Binding TermCode}" Classes="muted" />
-                <TextBlock Text="{Binding Mode}" Classes="muted" />
+                <TextBlock Text="{Binding Kind}" Classes="muted" />
               </StackPanel>
             </Border>
           </DataTemplate>
@@ -130,15 +130,19 @@
               <StackPanel Spacing="3">
                 <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
                 <TextBlock Text="{Binding Code}" Classes="muted" />
-                <TextBlock Text="{Binding Coefficient, StringFormat='Coefficient : {0}'}" Classes="muted" />
+                <TextBlock Text="{Binding MaxLabel}" Classes="muted" />
               </StackPanel>
             </Border>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
-      <Button Content="Ajouter une matière annuelle" Command="{Binding AddSubject}"
-              MinHeight="44" HorizontalAlignment="Stretch" />
-      <TextBlock Text="L'année scolaire, les matières et les évaluations sont préparées sans création de note, de moyenne ou de bulletin officiel."
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+        <Button Grid.Column="0" Content="Ajouter une branche" Command="{Binding AddSubject}"
+                MinHeight="44" HorizontalAlignment="Stretch" />
+        <Button Grid.Column="1" Content="Modifier un maximum" Command="{Binding SetSubjectMax}"
+                MinHeight="44" HorizontalAlignment="Stretch" />
+      </Grid>
+      <TextBlock Text="Chaque trimestre ou semestre compte ses périodes de travail suivies d'un examen. Les bulletins officiels s'impriment dans Scolarité › Résultats et bulletins, une fois le règlement pédagogique validé."
                  Classes="muted" TextWrapping="Wrap" />
     </StackPanel>
   </ScrollViewer>

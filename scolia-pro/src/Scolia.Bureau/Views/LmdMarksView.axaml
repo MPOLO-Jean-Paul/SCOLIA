@@ -1,0 +1,41 @@
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.LmdMarksView">
+  <Grid RowDefinitions="Auto,Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Élément constitutif" Classes="fieldlabel" />
+          <ComboBox Width="360" ItemsSource="{Binding Elements}" SelectedItem="{Binding Element}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Session" Classes="fieldlabel" />
+          <ComboBox Width="200" ItemsSource="{Binding Sessions}" SelectedItem="{Binding Session}" />
+        </StackPanel>
+      </WrapPanel>
+    </Border>
+    <Border Grid.Row="1" Classes="band" Margin="0,0,0,8" Padding="12,8" IsVisible="{Binding IsLocked}">
+      <TextBlock Text="{Binding LockReason}" TextWrapping="Wrap" Classes="muted" />
+    </Border>
+    <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding FullName}" IsReadOnly="True" Width="2*" MinWidth="240" />
+        <DataGridTemplateColumn Header="Note" Width="Auto" MinWidth="120">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBox Text="{Binding Score, Mode=TwoWay}" IsEnabled="{Binding Editable}" MinWidth="90" HorizontalContentAlignment="Right" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="2" Icon="PencilBoxMultipleOutline" Title="Aucun étudiant" Hint="Choisissez une promotion et un élément constitutif de sa maquette." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

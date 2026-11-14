@@ -66,6 +66,7 @@ public sealed class SchoolCyclesPage : PageViewModel
         Save = new AsyncCommand(SaveAsync);
         AddPeriod = new AsyncCommand(AddPeriodAsync);
         AddSubject = new AsyncCommand(AddSubjectAsync);
+        SetSubjectMax = new AsyncCommand(SetSubjectMaxAsync);
         Action("Enregistrer les cycles", MaterialIconKind.ContentSaveOutline, SaveAsync, primary: true);
         ActionRefresh();
     }
@@ -234,6 +235,7 @@ public sealed class SchoolCyclesPage : PageViewModel
                         code = f.Text("code"), name = f.Text("nom"),
                         termCode = f.Text("trimestre"),
                         startDate = f.Day("debut"), endDate = f.Day("fin"),
+                        isExam = f.Flag("examen"),
                     });
                 Shell.Notify("Période pédagogique enregistrée sans modifier les anciennes évaluations.");
                 return true;
@@ -243,6 +245,7 @@ public sealed class SchoolCyclesPage : PageViewModel
         form.Add("trimestre", "Trimestre ou regroupement", value: "T1", required: true);
         form.AddDay("debut", "Début", start, true);
         form.AddDay("fin", "Fin", end, true);
+        form.AddFlag("examen", "Examen de fin de trimestre ou de semestre (maximum doublé selon le règlement)", false);
         if (await Shell.Ask(form)) await LoadPeriodsAsync();
     }
 
@@ -263,6 +266,7 @@ public sealed class SchoolCyclesPage : PageViewModel
                     {
                         code = f.Text("code"), name = f.Text("nom"),
                         coefficient = f.Amount("coefficient"), hours = f.Amount("heures"),
+                        periodMaxScore = f.Amount("maximum") is > 0 and var max ? max : (decimal?)null,
                     });
                 Shell.Notify("Matière annuelle enregistrée.");
                 return true;
@@ -271,6 +275,30 @@ public sealed class SchoolCyclesPage : PageViewModel
         form.Add("nom", "Dénomination", required: true);
         form.Add("coefficient", "Coefficient", FieldKind.Amount, "1", required: true);
         form.Add("heures", "Volume horaire annuel", FieldKind.Amount, "30", required: true);
+        form.Add("maximum", "Maximum par période", FieldKind.Amount, "10",
+            hint: "Points de la branche pour une période de travail (par exemple 10, 20 ou 50). Laissez vide en maternelle.");
+        if (await Shell.Ask(form)) await LoadSubjectsAsync();
+    }
+
+    public AsyncCommand SetSubjectMax { get; }
+
+    /// <summary>Corrige le maximum par période d'une branche tant que la délibération n'est pas publiée.</summary>
+    private async Task SetSubjectMaxAsync()
+    {
+        if (Subjects.Count == 0) { Shell.Notify("Ajoutez d'abord les branches de la classe."); return; }
+        var choices = Subjects.Select(s => new ChoiceItem(s.Id.ToString(), $"{s.Code} · {s.Name}")).ToList();
+        var form = new FormViewModel("Maximum d'une branche",
+            "Le maximum de l'examen en découle selon le règlement pédagogique de l'année.",
+            async f =>
+            {
+                await Shell.Api.SendAsync(HttpMethod.Put,
+                    $"api/etablissement/cycles/matieres/{f.ChoiceValue("branche")}/maximum",
+                    new { periodMaxScore = f.Amount("maximum") });
+                Shell.Notify("Maximum de la branche enregistré.");
+                return true;
+            });
+        form.AddChoice("branche", "Branche", choices, choices[0].Value, required: true);
+        form.Add("maximum", "Maximum par période", FieldKind.Amount, "10", required: true);
         if (await Shell.Ask(form)) await LoadSubjectsAsync();
     }
 

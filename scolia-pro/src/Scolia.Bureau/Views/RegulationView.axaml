@@ -1,0 +1,32 @@
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.RegulationView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10" Padding="12,10">
+      <TextBlock TextWrapping="Wrap" Classes="muted"
+                 Text="SCOLIA propose les usages de la RDC. Relisez chaque règle avec les instructions de l'année, modifiez-la si besoin, puis validez : les bulletins, procès-verbaux et décisions officiels exigent un règlement validé." />
+    </Border>
+    <ListBox Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}">
+      <ListBox.ItemTemplate>
+        <DataTemplate>
+          <Border Classes="phonegroup" Padding="14,12" Margin="0,0,0,6">
+            <StackPanel Spacing="4">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontSize="{DynamicResource FsHeading}" />
+                <StackPanel Grid.Column="1" Classes="status">
+                  <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding StatusLabel}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Grid>
+              <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding Validation}" Classes="muted" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding Reference}" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+  </Grid>
+</UserControl>
