@@ -1764,6 +1764,51 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.ToTable("RubriquesFrais", (string)null);
                 });
 
+            modelBuilder.Entity("Scolia.Domain.School.NationalExamResult", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("EnrollmentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Exam")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool?>("Passed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("Percent")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(60)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnrollmentId", "Exam")
+                        .IsUnique();
+
+                    b.ToTable("ExamensNationaux", (string)null);
+                });
+
             modelBuilder.Entity("Scolia.Domain.School.PedagogicalPeriod", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3256,6 +3301,15 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .WithMany("Fees")
                         .HasForeignKey("PromotionId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Scolia.Domain.School.NationalExamResult", b =>
+                {
+                    b.HasOne("Scolia.Domain.Students.Enrollment", null)
+                        .WithMany()
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

@@ -140,3 +140,55 @@ public static class EpstDeliberationRules
             "Les points de repêchage sont compris entre zéro et le maximum.");
     }
 }
+
+/// <summary>Examens nationaux de fin de cycle. Valeurs persistées : ne pas renuméroter.</summary>
+public enum NationalExam
+{
+    /// <summary>Examen national de fin d'études primaires (6e primaire).</summary>
+    Enafep = 1,
+    /// <summary>Examen de fin du cycle terminal de l'éducation de base (8e).</summary>
+    FinCteb = 2,
+    /// <summary>Examen d'État (dernière année des humanités).</summary>
+    ExamenEtat = 3,
+}
+
+/// <summary>Résultat officiel communiqué par l'autorité nationale : saisi, jamais calculé.</summary>
+public sealed class NationalExamResult : Entity
+{
+    public Guid EnrollmentId { get; set; }
+    public NationalExam Exam { get; set; }
+    public bool? Passed { get; set; }
+    public decimal? Percent { get; set; }
+    public string? Reference { get; set; }
+}
+
+public static class NationalExams
+{
+    public static string Label(NationalExam exam) => exam switch
+    {
+        NationalExam.Enafep => "ENAFEP",
+        NationalExam.FinCteb => "Examen de fin du CTEB",
+        NationalExam.ExamenEtat => "Examen d'État",
+        _ => exam.ToString(),
+    };
+
+    /// <summary>
+    /// Examen passé par une classe : 6e primaire (niveau 6), 8e de l'éducation de base
+    /// (secondaire niveau 2) et dernière année des humanités (secondaire niveau 6).
+    /// </summary>
+    public static NationalExam? For(SchoolCycleKind cycle, int level) => (cycle, level) switch
+    {
+        (SchoolCycleKind.Primaire, 6) => NationalExam.Enafep,
+        (SchoolCycleKind.Secondaire, 2) => NationalExam.FinCteb,
+        (SchoolCycleKind.Secondaire, 6) => NationalExam.ExamenEtat,
+        _ => null,
+    };
+
+    public static void Validate(NationalExamResult r)
+    {
+        if (r.Percent is < 0 or > 100)
+            throw new DomainException("examenNational", "Le pourcentage obtenu est compris entre 0 et 100.");
+        if (r.Reference is { Length: > 60 })
+            throw new DomainException("examenNational", "La référence (numéro de candidat, centre) est trop longue.");
+    }
+}

@@ -34,6 +34,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<EpstDeliberation> EpstDeliberations => Set<EpstDeliberation>();
     public DbSet<EpstDecision> EpstDecisions => Set<EpstDecision>();
     public DbSet<EpstRepechageMark> EpstRepechageMarks => Set<EpstRepechageMark>();
+    public DbSet<NationalExamResult> NationalExamResults => Set<NationalExamResult>();
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<FeeItem> FeeItems => Set<FeeItem>();
@@ -196,6 +197,13 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.HasOne<EpstDeliberation>().WithMany().HasForeignKey(x => x.DeliberationId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<CurriculumItem>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<NationalExamResult>(e =>
+        {
+            e.ToTable("ExamensNationaux");
+            e.Property(x => x.Reference).HasMaxLength(60);
+            e.HasIndex(x => new { x.EnrollmentId, x.Exam }).IsUnique();
+            e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
         });
         b.Entity<SchoolCycleAssessment>(e =>
         {

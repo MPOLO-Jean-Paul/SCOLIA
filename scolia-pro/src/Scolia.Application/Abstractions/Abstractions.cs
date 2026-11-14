@@ -27,6 +27,7 @@ public interface IAppDbContext
     DbSet<EpstDeliberation> EpstDeliberations { get; }
     DbSet<EpstDecision> EpstDecisions { get; }
     DbSet<EpstRepechageMark> EpstRepechageMarks { get; }
+    DbSet<NationalExamResult> NationalExamResults { get; }
     DbSet<Section> Sections { get; }
     DbSet<Promotion> Promotions { get; }
     DbSet<FeeItem> FeeItems { get; }

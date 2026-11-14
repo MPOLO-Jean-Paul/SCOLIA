@@ -322,6 +322,17 @@ public static class ScoliaEndpoints
             (Guid promotionId, EpstDeliberationService s, CancellationToken ct) =>
                 s.CloseAsync(promotionId, ct)).RequireAuthorization(Permissions.DeliberationManage);
 
+        // Examens nationaux : finalistes, export pour l'inscription, résultats saisis.
+        g.MapGet("/examens-nationaux/{exam}", (string exam, NationalExamService s, CancellationToken ct) =>
+            s.CandidatesAsync(exam, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapGet("/examens-nationaux/{exam}/liste", async (string exam, string? format, NationalExamService s,
+            ReportService reports, CancellationToken ct) =>
+                Table(await s.TableAsync(exam, ct), format, $"candidats-{exam.ToLowerInvariant()}", reports))
+            .RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPut("/examens-nationaux/{exam}/eleves/{enrollmentId:guid}",
+            (string exam, Guid enrollmentId, NationalExamResultInput input, NationalExamService s, CancellationToken ct) =>
+                s.SaveAsync(exam, enrollmentId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+
         // LMD : structures, calendrier semestriel et maquettes de cours séparés
         // des délibérations ITM. Tous les changements exigent SettingsWrite.
         g.MapGet("/lmd/structures", (LmdPlanningService s, CancellationToken ct) =>

@@ -62,6 +62,7 @@ public static class DependencyInjection
         services.AddScoped<EpstResultsService>();
         services.AddScoped<EpstConductService>();
         services.AddScoped<EpstDeliberationService>();
+        services.AddScoped<NationalExamService>();
         services.AddScoped<FeeCategoryService>();
         services.AddScoped<AccountService>();
         services.AddScoped<StudentService>();
