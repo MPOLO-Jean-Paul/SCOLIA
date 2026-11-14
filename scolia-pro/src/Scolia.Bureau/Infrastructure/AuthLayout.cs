@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.VisualTree;
 
 namespace Scolia.Bureau.Infrastructure;
 
@@ -44,6 +45,32 @@ public static class AuthLayout
             Apply(host.Classes, e.NewSize);
             changed?.Invoke(e.NewSize);
         };
+    }
+
+    /// <summary>
+    /// Rend une action complètement accessible dans un ScrollViewer, même quand
+    /// la zone visible diminue à l'ouverture du clavier Android. Ne défile que
+    /// la distance nécessaire : les actions textuelles en bas restent disponibles.
+    /// </summary>
+    public static void EnsureVisible(ScrollViewer scroll, Control target, double padding = 8)
+    {
+        ArgumentNullException.ThrowIfNull(scroll);
+        ArgumentNullException.ThrowIfNull(target);
+        var viewportHeight = scroll.Viewport.Height;
+        if (viewportHeight <= 0 || target.Bounds.Width <= 0 || target.Bounds.Height <= 0) return;
+        if (target.TransformToVisual(scroll) is not { } matrix) return;
+
+        var bounds = new Rect(target.Bounds.Size).TransformToAABB(matrix);
+        var inset = bounds.Height + 2 * padding > viewportHeight ? 0 : padding;
+        double delta = 0;
+        if (bounds.Top < inset) delta = bounds.Top - inset;
+        else if (bounds.Bottom > viewportHeight - inset)
+            delta = bounds.Bottom - viewportHeight + inset;
+        if (Math.Abs(delta) < 0.5) return;
+
+        var maxOffset = Math.Max(0, scroll.Extent.Height - viewportHeight);
+        var y = Math.Clamp(scroll.Offset.Y + delta, 0, maxOffset);
+        scroll.Offset = new Vector(scroll.Offset.X, y);
     }
 
     /// <summary>Classes d'adaptation pour une taille donnée ; une taille nulle (pas encore mesurée) ne change rien.</summary>

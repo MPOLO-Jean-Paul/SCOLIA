@@ -59,6 +59,39 @@ public sealed class MobileIosAuthenticationViewsTests
     }
 
     [Fact]
+    public void Lien_mot_de_passe_a_gauche_et_empreinte_a_droite_sur_une_seule_ligne()
+    {
+        var nodes = Elements("LoginView.axaml");
+        var row = Assert.Single(nodes, e => e.Name.LocalName == "Grid" &&
+            Attribute(e, "Name", "IosRecoveryBiometricRow"));
+        Assert.True(Attribute(row, "ColumnDefinitions", "*,Auto"));
+        Assert.True(Attribute(row, "HorizontalAlignment", "Stretch"));
+
+        var forgot = Assert.Single(row.Elements(), e => e.Name.LocalName == "Button" &&
+            Attribute(e, "Name", "IosForgotPasswordLink"));
+        Assert.True(Attribute(forgot, "Grid.Column", "0"));
+        Assert.True(Attribute(forgot, "HorizontalAlignment", "Left"));
+        Assert.True(Attribute(forgot, "Padding", "0"));
+        Assert.True(Attribute(forgot, "Command", "{Binding ToggleRecoveryHelp}"));
+        Assert.Contains(forgot.Descendants(), e => e.Name.LocalName == "TextBlock" &&
+            Attribute(e, "Text", "Mot de passe oublié ?"));
+
+        var fingerprint = Assert.Single(row.Elements(), e => e.Name.LocalName == "Button" &&
+            Attribute(e, "Name", "IosFingerprintSignIn"));
+        Assert.True(Attribute(fingerprint, "Grid.Column", "1"));
+        Assert.True(Attribute(fingerprint, "HorizontalAlignment", "Right"));
+        Assert.True(Attribute(fingerprint, "Command", "{Binding SignInWithBiometrics}"));
+        Assert.True(Attribute(fingerprint, "IsVisible", "{Binding ShowBiometricSignIn}"));
+        Assert.True(Attribute(fingerprint, "Width", "48"));
+        Assert.True(Attribute(fingerprint, "MinHeight", "44"));
+        Assert.True(Attribute(fingerprint, "AutomationProperties.Name", "Se connecter avec mon empreinte"));
+        Assert.Contains(fingerprint.Descendants(), e => e.Name.LocalName == "MaterialIcon" &&
+            Attribute(e, "Kind", "Fingerprint"));
+        Assert.DoesNotContain(fingerprint.Descendants(), e => e.Name.LocalName == "TextBlock" &&
+            Attribute(e, "Text", "Se connecter avec mon empreinte"));
+    }
+
+    [Fact]
     public void Champs_login_lisibles_sur_fond_cobalt_en_themes_clair_et_sombre()
     {
         var nodes = Elements("LoginView.axaml");
