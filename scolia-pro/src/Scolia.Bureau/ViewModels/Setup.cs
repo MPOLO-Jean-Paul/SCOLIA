@@ -85,6 +85,10 @@ public sealed class SetupViewModel : Observable
     private bool busy;
     private string error = string.Empty;
 
+    /// <summary>Contact officiel JP-Services, commun aux assistants Windows et Android.</summary>
+    public string SupportEmail => AboutInfo.Email;
+    public string SupportContactLine => $"Assistance JP-Services : {AboutInfo.Email}";
+
     public SetupViewModel(ShellViewModel shell)
     {
         this.shell = shell;

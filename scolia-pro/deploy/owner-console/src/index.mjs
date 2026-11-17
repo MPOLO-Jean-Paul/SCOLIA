@@ -372,7 +372,8 @@ table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #edf1f6;
 @media(max-width:640px){.wrap{margin:15px auto}table{display:block;overflow-x:auto}h1{font-size:21px}}
 </style><style>${ownerThemeCss}</style></head><body><header><div class="owner-brandline"><span class="owner-mark" aria-hidden="true">S</span><small>JP-SERVICES · ADMINISTRATION COMMERCIALE</small><small class="owner-tag">● Espace sécurisé</small></div>
 <h1>SCOLIA Pro — Console propriétaire</h1>
-<small>Établissements serveurs, licences et activité. Aucun dossier d'apprenant n'est accessible.</small></header>
+<small>Établissements serveurs, licences et activité. Aucun dossier d'apprenant n'est accessible.</small><br>
+<small>Assistance JP-Services : <a href="mailto:contact@jp-services.org">contact@jp-services.org</a></small></header>
 <main class="wrap"><section class="panel" id="auth">
 <h2>Accès réservé</h2><p>La console requiert le jeton administrateur secret de JP-Services.
 Il n'est ni stocké dans le navigateur ni transmis à une autre origine.</p>
