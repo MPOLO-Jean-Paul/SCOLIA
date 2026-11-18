@@ -5,12 +5,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>SCOLIA-Console</AssemblyName>
-    <Version>1.1.1</Version>
+    <Version>1.2.0</Version>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop"/>
     <PackageReference Include="Avalonia.Themes.Fluent"/>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData"/>
     <ProjectReference Include="../Core/Scolia.Owner.Core.csproj"/>
   </ItemGroup>
   <PropertyGroup>

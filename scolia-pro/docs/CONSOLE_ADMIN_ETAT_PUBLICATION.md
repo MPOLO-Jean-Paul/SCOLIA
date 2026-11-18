@@ -4,6 +4,34 @@ Date de l'audit : 10 novembre 2026. Branche de travail : `claude/escolia-admin-c
 basée sur la révision la plus récente de la console (`7e4ab94`, branche
 `feature/cloudflare-sqlite-d1-automatic-sync-20261109`, 9 novembre 23 h 18).
 
+## 0. Mise à jour du 18 novembre 2026 — SCOLIA Console 1.2.0
+
+La console native n'est plus une vitrine : elle lit et modifie les données du Worker sans navigateur
+(établissements, invitations, licences, serveurs, relais, journal, sauvegardes). Elle s'authentifie avec un
+**jeton de service Cloudflare Access** et le **jeton propriétaire**, chiffrés sur l'appareil (DPAPI sous Windows,
+Android Keystore). Le Worker n'a pas changé : il exige toujours Access (`ctx.access.aud`) **et** le jeton.
+
+Les numéros de version passent tous à **1.2.0** (Android `ApplicationVersion` 4) ; le tag officiel attendu devient
+`scolia-owner-v1.2.0`. Un nouveau job CI « Tests de la console native » (26 tests, captures en artefact) conditionne
+la préversion et la publication. `main` épingle désormais cette révision (voir §4, étape 3, faite le 18 novembre).
+
+### Créer le jeton de service (une fois, dans Cloudflare Zero Trust)
+
+1. **Access → Service Auth → Service Tokens → Create Service Token** : nom `scolia-console`, durée 1 an
+   (ou « non-expiring »). Copier immédiatement le *Client ID* et le *Client Secret* : le secret n'est plus réaffiché.
+2. **Access → Applications →** l'application qui protège `/console` et `/api/v1/owner/*` (AUD `beb99695…`) →
+   **Policies → Add a policy** : action **Service Auth**, règle *Include → Service Token → scolia-console*.
+   Ne pas modifier les exclusions existantes (`/health`, `/api/v1/notice`, `/api/v1/register`, `/api/v1/heartbeat`,
+   `/api/v1/server/*` restent hors Access).
+3. Dans SCOLIA Console : **Compte → Accès sécurisé de cet appareil**, saisir le Client ID, le Client Secret et le
+   jeton propriétaire (`SCOLIA_OWNER_ADMIN_TOKEN`), puis « Enregistrer et vérifier ». Rien n'est enregistré si le
+   service refuse.
+
+Messages possibles : « redirection vers la connexion » = règle Service Auth absente ou jeton inconnu ;
+« Jeton propriétaire refusé » = jeton propriétaire différent de celui du Worker.
+Pour révoquer un appareil perdu : supprimer ou renouveler le jeton de service dans Zero Trust (effet immédiat),
+puis changer le jeton propriétaire si l'appareil le contenait.
+
 ## 1. Où en est la console
 
 La console administrateur est composée de trois éléments, tous dans `scolia-pro/` :
@@ -119,8 +147,8 @@ tester le point `health`.
    `.github/workflows/scolia-owner-production.yml` de cette branche (un commit sur `main`, comme pour les
    épinglages précédents). Le push déclenche automatiquement le job « Tests sans secrets ».
 4. **Publier les installateurs** : Actions → « JP-Services Admin - publication Android et Windows » depuis `main`,
-   `publish_release` = true. Résultat : release **`scolia-owner-v1.1.1`** avec
-   `SCOLIA_Console_1.1.1_Android.apk`, `SCOLIA_Console_Setup_1.1.1_Windows_x64.exe` et leurs `.sha256`.
+   `publish_release` = true. Résultat : release **`scolia-owner-v1.2.0`** avec
+   `SCOLIA_Console_1.2.0_Android.apk`, `SCOLIA_Console_Setup_1.2.0_Windows_x64.exe` et leurs `.sha256`.
    Sans les 4 secrets, le workflow s'arrête avant toute publication.
 5. **Redéployer le Worker** : Actions → « SCOLIA Pro - Console JP-Services (production protegee) » depuis `main`,
    `confirm_production` coché. Le Worker passe de `742c81f` à `fa74f05` (D1 scolaire, TURN, Netlify désactivé).
@@ -134,13 +162,13 @@ tester le point `health`.
 Avant chaque nouvelle publication, incrémenter ensemble : `OWNER_VERSION` et `RELEASE_TAG` dans
 `scolia-owner-avalonia.yml`, `Version` dans `Desktop/Scolia.Owner.Desktop.csproj`, `ApplicationDisplayVersion`
 **et** `ApplicationVersion` (+1) dans `Android/Scolia.Owner.Android.csproj`, `AdminVersion` dans
-`Installer.Avalonia.iss`, `Version` dans `Core/OwnerShell.cs`. Le job Windows refuse toute incohérence. Une
+`Installer.Avalonia.iss`, `OwnerInfo.Version` dans `Core/OwnerApi.cs`. Le job Windows refuse toute incohérence. Une
 release publiée n'est jamais remplacée.
 
 ## 6. Limites connues (pas des blocages)
 
-- SCOLIA Console 1.1.1 est un pilote d'interface : les opérations sensibles ouvrent la console web protégée par
-  Access dans le navigateur ; l'authentification native Cloudflare Access n'est pas implémentée.
+- Depuis la 1.2.0, la console native s'authentifie avec un jeton de service Access ; le stockage R2, la découverte
+  TURN, l'ajout de relais et Netlify restent dans la console web.
 - Le jumelage D1 scolaire et le journal chiffré automatique restent des pilotes à tester de bout en bout avec
   une vraie école (voir `CLOUDFLARE_D1_SQLITE_AUTO_SYNC.md`).
 - Les secrets et variables GitHub n'ont pas pu être listés par l'API depuis cet environnement ; leur présence est

@@ -7,11 +7,22 @@ et une seule palette `Core/OwnerPalette.cs` pour Windows et Android.
 
 - Android : `com.jpservices.scolia.owner.preview` en Debug, `com.jpservices.scolia.owner` en Release SIGNÉE.
 - Windows : fenêtre Avalonia + installateur Inno Setup. Ni WinForms ni WebView2.
-- Interface actuelle : navigation et composants Avalonia natifs, tableau de bord sans fausses données, pages établissements, licences, serveurs, activité, sauvegardes, compte.
-- Opérations administratives : tant que le flux d'authentification native Cloudflare Access/OIDC n'est pas implémenté et audité, les actions sensibles ouvrent le site officiel protégé dans le navigateur système. **Le jeton et les cookies Cloudflare ne sont jamais embarqués ou copiés dans l'application.** Cette version est un pilote de la nouvelle interface native, pas encore une administration 100 % hors navigateur.
+- **Version 1.2.0 : administration native complète.** Vue d'ensemble chiffrée, établissements (liste, fiche,
+  invitation et invitation de reprise), licences (paiement, délai, essai, blocage en lecture seule, dérogation,
+  facturation), serveurs, relais WSS (activation/désactivation), journal d'activité et sauvegardes.
+- **Authentification** : chaque appel porte un **jeton de service Cloudflare Access** (`CF-Access-Client-Id` /
+  `CF-Access-Client-Secret`) et le **jeton propriétaire** (`Authorization: Bearer`), exactement comme la console web
+  exige Access + jeton. Les redirections ne sont jamais suivies : une redirection vers la connexion Access est un refus.
+- **Coffre** : les trois secrets sont vérifiés auprès du service avant d'être enregistrés, puis chiffrés par la
+  plateforme — DPAPI (compte Windows courant) ou clé AES-256 non exportable de l'Android Keystore. Ils ne sont jamais
+  affichés ni journalisés ; « Effacer l'accès de cet appareil » les supprime.
+- **Écritures** : toute action modifiant une licence, une sauvegarde ou un relais demande une confirmation en deux temps.
+- Restent dans la console web : stockage R2, découverte TURN, ajout d'un relais, Netlify.
 - Mises à jour : canal propriétaire indépendant `scolia-owner-v...`, filtre la liste des Releases GitHub. Les APK Preview ne sont pas des releases signées permanentes.
+- Tests : `Tests/` (client, coffre, libellés, rendu hors écran de chaque page sur un service simulé ;
+  `SCOLIA_CONSOLE_CAPTURES=<dossier>` enregistre les captures).
 
-Ne pas publier la version Android officielle sans les quatre secrets de signature Admin et un audit d'intégration Cloudflare Access.
+Ne pas publier la version Android officielle sans les quatre secrets de signature Admin.
 
 ## Publication
 

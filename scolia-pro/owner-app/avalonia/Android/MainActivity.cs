@@ -10,6 +10,13 @@ public sealed class MainApplication : AvaloniaAndroidApplication<JPServices.Owne
 {
     public MainApplication(IntPtr javaReference, JniHandleOwnership transfer)
         : base(javaReference, transfer) { }
+
+    public override void OnCreate()
+    {
+        // Identifiants de la console : dossier privé de l'application, chiffrés par l'Android Keystore.
+        OwnerVault.Current = new OwnerVault(new KeystoreProtector(), FilesDir!.AbsolutePath);
+        base.OnCreate();
+    }
 }
 
 [Activity(Label = "SCOLIA Console", Icon = "@mipmap/icon", RoundIcon = "@mipmap/icon_round", MainLauncher = true, Exported = true,

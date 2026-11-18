@@ -44,8 +44,8 @@ concurrency:
   cancel-in-progress: ${{ inputs.publish_release != true }}
 
 env:
-  OWNER_VERSION: '1.1.1'
-  RELEASE_TAG: 'scolia-owner-v1.1.1'
+  OWNER_VERSION: '1.2.0'
+  RELEASE_TAG: 'scolia-owner-v1.2.0'
   ANDROID_PACKAGE: 'com.jpservices.scolia.owner'
   ANDROID_PREVIEW_PACKAGE: 'com.jpservices.scolia.owner.preview'
 
@@ -69,8 +69,8 @@ jobs:
           $csproj = [xml](Get-Content 'scolia-pro/owner-app/avalonia/Desktop/Scolia.Owner.Desktop.csproj')
           $desktop = ($csproj.Project.PropertyGroup | ForEach-Object { $_.Version } | Where-Object { $_ }) | Select-Object -First 1
           $iss = (Select-String -Path 'scolia-pro/owner-app/avalonia/Desktop/Installer.Avalonia.iss' -Pattern '#define AdminVersion "([^"]+)"').Matches[0].Groups[1].Value
-          $shell = (Select-String -Path 'scolia-pro/owner-app/avalonia/Core/OwnerShell.cs' -Pattern 'private const string Version = "([^"]+)"').Matches[0].Groups[1].Value
-          foreach ($pair in @(@('Desktop csproj', $desktop), @('Installer.Avalonia.iss', $iss), @('OwnerShell.cs', $shell))) {
+          $shell = (Select-String -Path 'scolia-pro/owner-app/avalonia/Core/OwnerApi.cs' -Pattern 'public const string Version = "([^"]+)"').Matches[0].Groups[1].Value
+          foreach ($pair in @(@('Desktop csproj', $desktop), @('Installer.Avalonia.iss', $iss), @('OwnerApi.cs (OwnerInfo)', $shell))) {
             if ($pair[1] -ne $env:OWNER_VERSION) { throw "Version $($pair[0]) = $($pair[1]) differente de OWNER_VERSION = $env:OWNER_VERSION" }
           }
           Write-Host "Version SCOLIA Console coherente : $env:OWNER_VERSION"
@@ -337,6 +337,31 @@ jobs:
             exit 1
           fi
 
+  native-tests:
+    name: Tests de la console native (API, coffre chiffré, rendu de chaque page)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Tester le client propriétaire, le coffre et les écrans sur un service simulé
+        working-directory: scolia-pro/owner-app/avalonia/Tests
+        env:
+          SCOLIA_CONSOLE_CAPTURES: ${{ runner.temp }}/scolia-console-captures
+        run: dotnet test -c Release
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Console_Captures
+          path: ${{ runner.temp }}/scolia-console-captures/
+          if-no-files-found: ignore
+          retention-days: 14
+
   smoke-android:
     name: Vérifier que SCOLIA Console reste ouverte sur émulateur Android
     runs-on: ubuntu-latest
@@ -415,7 +440,7 @@ jobs:
     name: Publier pilote Avalonia Android + Windows (PREVIEW)
     # Push sur la branche surveillee : preversion automatique. Lancement manuel : seulement si demande.
     if: inputs.publish_release != true && (github.event_name == 'push' || inputs.publish_preview == true)
-    needs: [android, windows, smoke-android, console-tests]
+    needs: [android, windows, smoke-android, console-tests, native-tests]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -459,7 +484,7 @@ jobs:
   release:
     name: Publier la version officielle SCOLIA Console (Android signe + Windows)
     if: inputs.publish_release == true
-    needs: [windows, android-release, smoke-android, console-tests]
+    needs: [windows, android-release, smoke-android, console-tests, native-tests]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -496,7 +521,7 @@ jobs:
           (cd distribution/android && sha256sum -c "SCOLIA_Console_${OWNER_VERSION}_Android.apk.sha256")
           (cd distribution/windows && sha256sum -c "SCOLIA_Console_Setup_${OWNER_VERSION}_Windows_x64.exe.sha256")
           # Une version publiee est IMMUTABLE : incrementer OWNER_VERSION, ApplicationVersion,
-          # Installer.Avalonia.iss et OwnerShell.Version avant toute nouvelle publication.
+          # Installer.Avalonia.iss et OwnerInfo.Version (Core/OwnerApi.cs) avant toute nouvelle publication.
           if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "::error::La version $RELEASE_TAG existe deja. Augmenter les numeros de version."
             exit 1
