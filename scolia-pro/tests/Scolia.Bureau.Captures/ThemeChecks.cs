@@ -48,6 +48,10 @@ static class ThemeChecks
             }
             Pair($"{theme} · texte secondaire sur bloc", ThemeBrush.Get("MutedBrush"), ThemeBrush.Get("GroupBrush"));
             Pair($"{theme} · bordure des champs", ThemeBrush.Get("LineStrongBrush"), ThemeBrush.Get("FieldBrush"), 3);
+            Pair($"{theme} · contour des champs métier", ThemeBrush.Get("FieldLineBrush"), ThemeBrush.Get("FieldBrush"), 3);
+            Pair($"{theme} · texte sur le fond de page", ThemeBrush.Get("TextBrush"), ThemeBrush.Get("BgBrush"));
+            Pair($"{theme} · texte secondaire sur le fond de page", ThemeBrush.Get("MutedBrush"), ThemeBrush.Get("BgBrush"));
+            Pair($"{theme} · texte secondaire sur sélection du volet", ThemeBrush.Get("MutedBrush"), ThemeBrush.Get("SidebarSelectedBrush"));
         }
         prefs.Theme = "light";
         prefs.Apply();

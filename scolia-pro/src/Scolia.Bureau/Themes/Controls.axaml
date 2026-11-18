@@ -660,9 +660,11 @@
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
   </Style>
     <!-- Blocs de réglages macOS : gris clair, coins de 12 px, sans trait ni ombre -->
+  <!-- Carte façon SCOLIA Console : blanche sur le fond clair, cernée d'un filet fin et d'une ombre à peine visible. -->
   <Style Selector="Border.card">
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
     <Setter Property="Padding" Value="16" />
   </Style>
@@ -678,7 +680,8 @@
   </Style>
   <Style Selector="Border.tile">
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
     <Setter Property="Padding" Value="16,12" />
   </Style>
@@ -754,7 +757,7 @@
     <Setter Property="Padding" Value="14,12,8,12" />
     <Setter Property="Margin" Value="0,0,0,8" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
   </Style>
   <Style Selector="Border.phonecard.selected">
     <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
@@ -850,9 +853,9 @@
   <Style Selector="ComboBox, CalendarDatePicker, NumericUpDown">
     <Setter Property="MinHeight" Value="36" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
-    <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
   <Style Selector="ComboBox">
@@ -861,14 +864,14 @@
   <Style Selector="ComboBox.w11, CalendarDatePicker.w11">
     <Setter Property="MinHeight" Value="36" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
-    <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
   <Style Selector="ComboBox /template/ Border#Background, ComboBox.w11 /template/ Border#Background">
     <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
-    <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
   <Style Selector="ComboBox:pointerover /template/ Border#Background, ComboBox.w11:pointerover /template/ Border#Background">
@@ -885,23 +888,23 @@
   <Style Selector="TextBox:not(.onbrand):not(.iosauthfield):not(.ioslockfield):not(.search):not(.searchfield):not(.code)">
     <Setter Property="MinHeight" Value="36" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
-    <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Padding" Value="11,5" />
   </Style>
   <Style Selector="TextBox.w11:not(.onbrand):not(.code)">
     <Setter Property="MinHeight" Value="36" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
-    <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Padding" Value="11,5" />
   </Style>
   <Style Selector="TextBox.w11:not(.onbrand):not(.code) /template/ Border#PART_BorderElement">
     <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
-    <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
   <Style Selector="TextBox.w11:not(.onbrand):not(.code):pointerover /template/ Border#PART_BorderElement">
@@ -919,6 +922,18 @@
   </Style>
   <Style Selector="CalendarDatePicker /template/ TextBox#PART_TextBox /template/ Border#PART_BorderElement">
     <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <!-- La zone de texte interne d'un champ de date ne dessine jamais son propre cadre : seul le champ entier
+       porte le contour (sinon un second cadre apparaît sur les champs blancs). -->
+  <Style Selector="CalendarDatePicker /template/ TextBox#PART_TextBox:not(.onbrand)">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="CalendarDatePicker /template/ TextBox#PART_TextBox:pointerover /template/ Border#PART_BorderElement, CalendarDatePicker /template/ TextBox#PART_TextBox:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
   </Style>
 
@@ -950,7 +965,8 @@
     <Setter Property="infra:RowMenu.Enabled" Value="True" />
     <Setter Property="infra:PhoneCards.Enabled" Value="True" />
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
     <Setter Property="RowHeight" Value="{DynamicResource RowHeight}" />
     <Setter Property="GridLinesVisibility" Value="{DynamicResource GridLines}" />
@@ -1379,14 +1395,14 @@
   <!-- Carte d'outil de l'accueil -->
   <Style Selector="Border.toolcard">
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
     <Setter Property="Padding" Value="18,18,18,16" />
     <Setter Property="MinHeight" Value="170" />
   </Style>
   <Style Selector="Border.toolcard:pointerover">
-    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
   </Style>
   <!-- Bouton Fermer des fenêtres : une croix ronde et discrète en haut à droite, comme sur macOS -->
   <Style Selector="Button.closex">
