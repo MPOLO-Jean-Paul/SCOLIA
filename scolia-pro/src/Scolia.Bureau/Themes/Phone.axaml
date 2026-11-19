@@ -3,7 +3,8 @@
      grandes pour le doigt. -->
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:mi="using:Material.Icons.Avalonia">
+        xmlns:mi="using:Material.Icons.Avalonia"
+        xmlns:infra="using:Scolia.Bureau.Infrastructure">
     <!-- Barre du haut : retour, titre de la page, recherche et actions -->
     <Style Selector="Border.phonebar">
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
@@ -209,6 +210,7 @@
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="Border.phonegroup">
+      <Setter Property="infra:Reveal.Enabled" Value="True" />
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
       <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />

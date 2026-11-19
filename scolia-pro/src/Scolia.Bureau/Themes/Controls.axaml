@@ -662,6 +662,7 @@
     <!-- Blocs de réglages macOS : gris clair, coins de 12 px, sans trait ni ombre -->
   <!-- Carte façon SCOLIA Console : blanche sur le fond clair, cernée d'un filet fin et d'une ombre à peine visible. -->
   <Style Selector="Border.card">
+    <Setter Property="infra:Reveal.Enabled" Value="True" />
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
@@ -679,6 +680,7 @@
     <Setter Property="Padding" Value="16" />
   </Style>
   <Style Selector="Border.tile">
+    <Setter Property="infra:Reveal.Enabled" Value="True" />
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
@@ -961,6 +963,7 @@
 
   <!-- Tableaux : liste posée dans un bloc gris arrondi, traits fins entre les lignes, sélection bleu pâle -->
   <Style Selector="DataGrid">
+    <Setter Property="infra:Reveal.Enabled" Value="True" />
     <Setter Property="infra:GridPriority.Adaptive" Value="True" />
     <Setter Property="infra:RowMenu.Enabled" Value="True" />
     <Setter Property="infra:PhoneCards.Enabled" Value="True" />
@@ -1394,15 +1397,25 @@
   </Style>
   <!-- Carte d'outil de l'accueil -->
   <Style Selector="Border.toolcard">
+    <Setter Property="infra:Reveal.Enabled" Value="True" />
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
     <Setter Property="Padding" Value="18,18,18,16" />
     <Setter Property="MinHeight" Value="170" />
+    <Setter Property="BoxShadow" Value="0 1 2 0 #0F152C4D" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.18" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
   </Style>
+  <!-- Élévation au survol, façon Material/Flutter : l'ombre s'élargit doucement, le filet se renforce. -->
   <Style Selector="Border.toolcard:pointerover">
     <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
+    <Setter Property="BoxShadow" Value="0 8 22 0 #1F152C4D" />
   </Style>
   <!-- Bouton Fermer des fenêtres : une croix ronde et discrète en haut à droite, comme sur macOS -->
   <Style Selector="Button.closex">
