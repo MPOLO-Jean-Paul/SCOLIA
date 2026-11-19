@@ -9,7 +9,6 @@
   <UserControl.Styles>
     <!-- Carte d'accueil légèrement surélevée, comme la carte du compte sur iPhone -->
     <Style Selector="Border.welcomecard">
-      <Setter Property="BoxShadow" Value="0 4 16 0 #14000000" />
       <Setter Property="Margin" Value="0,4,0,2" />
     </Style>
     <Style Selector="TextBlock.rowvalue">
@@ -50,7 +49,7 @@
           <Grid Classes="homeintro" ColumnDefinitions="Auto,*" ColumnSpacing="14" Margin="16,18,16,16">
             <Grid Width="68" Height="68" VerticalAlignment="Center">
               <Ellipse Fill="{DynamicResource AccentBrush}" Opacity="0.12" />
-              <Border Classes="homeavatar" BorderBrush="White" BorderThickness="3" BoxShadow="0 4 12 0 #2B0B4FC4"
+              <Border Classes="homeavatar" BorderBrush="White" BorderThickness="3"
                       HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Border.Background>
                   <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -155,7 +154,7 @@
                 <Border Classes="rowsep" />
                 <Button Classes="settingsentry" Command="{Binding Open}">
                   <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
-                    <Grid Classes="featureavatar mini"><Ellipse Classes="halo" Fill="{Binding Brush}" /><Border Classes="appicon avatar" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border><Ellipse Classes="sheen" /></Grid>
+                    <Image Classes="rowillustration" Source="{Binding Illustration}" />
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
                       <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
                       <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" MaxLines="2" />
@@ -183,7 +182,7 @@
                   <Border Classes="rowsep" />
                   <Button Classes="settingsentry" Command="{Binding Open}">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                      <Grid Classes="featureavatar mini"><Ellipse Classes="halo" Fill="{Binding Brush}" /><Border Classes="appicon avatar" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border><Ellipse Classes="sheen" /></Grid>
+                      <Image Classes="rowillustration" Source="{Binding Illustration}" />
                       <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
                         <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
                         <TextBlock Text="{Binding Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
@@ -250,7 +249,7 @@
                   <Border Classes="rowsep" />
                   <Button Classes="settingsentry" Command="{Binding Open}">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
-                      <Grid Classes="featureavatar mini"><Ellipse Classes="halo" Fill="{DynamicResource TonePurple}" /><Border Classes="appicon avatar" Background="{DynamicResource TonePurple}"><mi:MaterialIcon Kind="ReceiptTextOutline" /></Border><Ellipse Classes="sheen" /></Grid>
+                      <Image Classes="rowillustration" Source="{Binding Illustration}" />
                       <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
                         <TextBlock Text="{Binding Student}" TextTrimming="CharacterEllipsis" />
                         <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis">

@@ -795,48 +795,18 @@
     <Setter Property="Width" Value="20" />
     <Setter Property="Height" Value="20" />
   </Style>
-  <!-- Avatars professionnels de l'authentification : disque blanc, initiales ou pictogramme bleu,
-       halo translucide sur le fond bleu, pastille verte quand le compte est reconnu sur cet appareil. -->
-  <Style Selector="Grid.authavatar"><Setter Property="Width" Value="88" /><Setter Property="Height" Value="88" /><Setter Property="HorizontalAlignment" Value="Center" /></Style>
-  <Style Selector="Grid.authavatar > Ellipse.halo"><Setter Property="Fill" Value="White" /><Setter Property="Opacity" Value="0.16" /></Style>
-  <Style Selector="Grid.authavatar > Ellipse.ring"><Setter Property="Width" Value="74" /><Setter Property="Height" Value="74" /><Setter Property="Fill" Value="White" /><Setter Property="Opacity" Value="0.22" /></Style>
-  <Style Selector="Grid.authavatar > Border.disc">
-    <Setter Property="Width" Value="62" /><Setter Property="Height" Value="62" /><Setter Property="CornerRadius" Value="31" />
-    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
-    <Setter Property="Background" Value="White" /><Setter Property="BoxShadow" Value="0 6 18 0 #33061A4D" />
-  </Style>
-  <Style Selector="Grid.authavatar > Border.disc > TextBlock">
-    <Setter Property="Foreground" Value="#1258D0" /><Setter Property="FontSize" Value="24" /><Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
-  </Style>
-  <Style Selector="Grid.authavatar > Border.disc > mi|MaterialIcon">
-    <Setter Property="Foreground" Value="#1258D0" /><Setter Property="Width" Value="28" /><Setter Property="Height" Value="28" />
-    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
-  </Style>
-  <Style Selector="Grid.authavatar > Border.badge">
-    <Setter Property="Width" Value="24" /><Setter Property="Height" Value="24" /><Setter Property="CornerRadius" Value="12" />
-    <Setter Property="Background" Value="#16A34A" /><Setter Property="BorderBrush" Value="White" /><Setter Property="BorderThickness" Value="2" />
-    <Setter Property="HorizontalAlignment" Value="Right" /><Setter Property="VerticalAlignment" Value="Bottom" /><Setter Property="Margin" Value="0,0,12,12" />
-  </Style>
-  <Style Selector="Grid.authavatar.small"><Setter Property="Width" Value="68" /><Setter Property="Height" Value="68" /></Style>
-  <Style Selector="Grid.authavatar.small > Ellipse.ring"><Setter Property="Width" Value="58" /><Setter Property="Height" Value="58" /></Style>
-  <Style Selector="Grid.authavatar.small > Border.disc"><Setter Property="Width" Value="48" /><Setter Property="Height" Value="48" /><Setter Property="CornerRadius" Value="24" /></Style>
-  <Style Selector="Grid.authavatar.small > Border.disc > mi|MaterialIcon"><Setter Property="Width" Value="24" /><Setter Property="Height" Value="24" /></Style>
-  <!-- Puce de compte : mini avatar aux initiales puis le nom -->
-  <Style Selector="Border.accountdot">
-    <Setter Property="Width" Value="26" /><Setter Property="Height" Value="26" /><Setter Property="CornerRadius" Value="13" /><Setter Property="Background" Value="White" />
-  </Style>
-  <Style Selector="Border.accountdot > TextBlock">
-    <Setter Property="Foreground" Value="#1258D0" /><Setter Property="FontSize" Value="11" /><Setter Property="FontWeight" Value="Bold" />
-    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
-  </Style>
-  <Style Selector="Grid.authavatar > Border.badge.locked"><Setter Property="Background" Value="#F59E0B" /></Style>
+  <!-- Avatars des pages d'accès : voir Themes/Auth.axaml -->
   <!-- Carte d'avatar de l'accueil : numéro discret dans le bandeau, illustration prête à s'animer -->
   <Style Selector="TextBlock.cardnumber">
     <Setter Property="FontSize" Value="12" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
     <Setter Property="Opacity" Value="0.7" />
+  </Style>
+  <!-- Petit avatar illustré des listes de l'accueil (aperçu, à faire, reçus) -->
+  <Style Selector="Image.rowillustration">
+    <Setter Property="Width" Value="40" /><Setter Property="Height" Value="40" />
+    <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
   <Style Selector="Image.featureillustration">
     <Setter Property="RenderTransformOrigin" Value="50%,60%" />

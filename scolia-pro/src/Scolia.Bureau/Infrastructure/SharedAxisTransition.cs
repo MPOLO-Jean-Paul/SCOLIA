@@ -13,11 +13,19 @@ namespace Scolia.Bureau.Infrastructure;
 /// </summary>
 public sealed class SharedAxisTransition : IPageTransition
 {
-    public SharedAxisTransition(TimeSpan duration, double distance)
+    public SharedAxisTransition(TimeSpan duration, double distance, bool lightweight = false)
     {
         Duration = duration;
         Distance = distance;
+        Lightweight = lightweight;
     }
+
+    /// <summary>
+    /// Téléphone : l'ancienne page disparaît aussitôt et seule la nouvelle s'anime (fondu et léger glissement).
+    /// Une seule page dessinée en transparence au lieu de deux : le toucher répond tout de suite, même sur un
+    /// Android d'entrée de gamme.
+    /// </summary>
+    public bool Lightweight { get; }
 
     public TimeSpan Duration { get; }
     public double Distance { get; }
@@ -32,6 +40,16 @@ public sealed class SharedAxisTransition : IPageTransition
     {
         if (cancellationToken.IsCancellationRequested) return;
         var shift = forward ? Distance : -Distance;
+        if (Lightweight)
+        {
+            if (from is not null) from.IsVisible = false;
+            if (to is null) return;
+            to.IsVisible = true;
+            await Task.WhenAll(
+                Fade(to, [(0, 0), (1, 1)], cancellationToken),
+                Slide(to, shift, 0, cancellationToken));
+            return;
+        }
         var tasks = new List<Task>(4);
         if (from is not null)
         {

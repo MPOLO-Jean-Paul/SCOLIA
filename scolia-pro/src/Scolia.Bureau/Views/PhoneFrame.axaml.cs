@@ -93,8 +93,9 @@ public partial class PhoneFrame : UserControl
         // Les durées restent bornées même si l'utilisateur choisit « Douce ».
         // Aucun Task.Delay ni animation de toute la fenêtre : le menu demeure aussi réactif que les onglets.
         // Axe partagé d'Android 16 : glissement de quelques points et fondu, jamais toute la largeur.
+        // Version légère : la nouvelle page arrive seule en 150 ms, sans attendre le fondu de l'ancienne.
         PhoneHost.PageTransition = new Infrastructure.SharedAxisTransition(
-            TimeSpan.FromMilliseconds(Math.Clamp(240 * shell.Prefs.SpeedFactor, 180, 340)), 24);
+            TimeSpan.FromMilliseconds(Math.Clamp(150 * shell.Prefs.SpeedFactor, 110, 220)), 16, lightweight: true);
     }
 
     private void OnPreferencesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)

@@ -1,0 +1,275 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mi="using:Material.Icons.Avalonia">
+
+  <!-- Pages d'accès (connexion, session protégée, récupération, premier serveur) : le modèle sobre des
+       connexions Microsoft et Google. Fond clair du thème, champs blancs à filet fin, un seul bouton bleu
+       plein, liens bleus. Téléphone : le contenu se pose sur le fond, sans cadre. Grand écran : une carte
+       blanche centrée de 420 px. Toutes les couleurs suivent le thème (clair et sombre, Windows 11 et Material 3). -->
+
+  <!-- Fond de page -->
+  <Style Selector="Border.authbackdrop"><Setter Property="Background" Value="{DynamicResource BgBrush}" /></Style>
+  <Style Selector="ScrollViewer.authpage"><Setter Property="Background" Value="{DynamicResource BgBrush}" /></Style>
+
+  <!-- Colonne du formulaire : 400 px au plus, marges de téléphone -->
+  <Style Selector="StackPanel.authbody">
+    <Setter Property="MaxWidth" Value="440" />
+    <Setter Property="Margin" Value="20,24,20,20" />
+    <Setter Property="Spacing" Value="14" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="ScrollViewer.compact StackPanel.authbody"><Setter Property="Margin" Value="16,18,16,16" /></Style>
+  <Style Selector="ScrollViewer.tiny StackPanel.authbody"><Setter Property="Margin" Value="12,14,12,12" /><Setter Property="Spacing" Value="10" /></Style>
+  <Style Selector="ScrollViewer.micro StackPanel.authbody"><Setter Property="Margin" Value="12,8,12,8" /><Setter Property="Spacing" Value="8" /></Style>
+  <Style Selector="ScrollViewer.wide StackPanel.authbody"><Setter Property="Margin" Value="24,32" /></Style>
+
+  <!-- Carte : invisible sur téléphone, carte blanche sur grand écran -->
+  <Style Selector="Border.authcard">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="ScrollViewer.wide Border.authcard">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="Padding" Value="36,32,36,28" />
+    <Setter Property="BoxShadow" Value="0 8 30 0 #12000000" />
+  </Style>
+
+  <!-- En-tête : petit logo, nom de l'application, établissement -->
+  <Style Selector="Border.authlogo">
+    <Setter Property="Width" Value="52" /><Setter Property="Height" Value="52" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="ScrollViewer.wide Border.authlogo"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /></Style>
+  <Style Selector="ScrollViewer.micro Border.authlogo"><Setter Property="IsVisible" Value="False" /></Style>
+  <Style Selector="Border.authlogo > Image"><Setter Property="Width" Value="36" /><Setter Property="Height" Value="36" /></Style>
+  <Style Selector="TextBlock.authtitle">
+    <Setter Property="FontSize" Value="22" /><Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="TextAlignment" Value="Center" /><Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="ScrollViewer.tiny TextBlock.authtitle"><Setter Property="FontSize" Value="20" /></Style>
+  <Style Selector="ScrollViewer.micro TextBlock.authtitle"><Setter Property="FontSize" Value="19" /></Style>
+  <Style Selector="TextBlock.authsubtitle">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    <Setter Property="TextAlignment" Value="Center" /><Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="MaxLines" Value="2" />
+  </Style>
+  <Style Selector="TextBlock.authlabel">
+    <Setter Property="FontSize" Value="12" /><Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+  </Style>
+  <Style Selector="TextBlock.authhint">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
+  <!-- Champ : blanc, filet gris, bleu au focus ; aucun saut de taille -->
+  <Style Selector="TextBox.authfield">
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="PlaceholderForeground" Value="{DynamicResource MutedBrush}" />
+    <Setter Property="CaretBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="SelectionBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="SelectionForegroundBrush" Value="{DynamicResource OnAccentBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusField}" />
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Padding" Value="14,0,14,0" />
+    <Setter Property="MinHeight" Value="48" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBox.authfield.witheye"><Setter Property="Padding" Value="14,0,48,0" /></Style>
+  <Style Selector="TextBox.authfield /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusField}" />
+  </Style>
+  <Style Selector="TextBox.authfield:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
+  </Style>
+  <Style Selector="TextBox.authfield:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="1,1,1,2" />
+  </Style>
+  <Style Selector="TextBox.authfield:disabled /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" />
+  </Style>
+  <Style Selector="TextBox.authfield /template/ TextBlock#PART_Placeholder">
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+  </Style>
+  <Style Selector="TextBox.authfield:disabled /template/ TextBlock#PART_Placeholder">
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+  </Style>
+  <Style Selector="ScrollViewer.tiny TextBox.authfield"><Setter Property="MinHeight" Value="46" /><Setter Property="FontSize" Value="14" /></Style>
+  <Style Selector="ScrollViewer.micro TextBox.authfield"><Setter Property="MinHeight" Value="44" /></Style>
+
+  <!-- Œil dans le champ -->
+  <Style Selector="Button.autheye">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Width" Value="44" /><Setter Property="Height" Value="44" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0,0,2,0" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusField}" />
+    <Setter Property="HorizontalAlignment" Value="Right" /><Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" /><Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.autheye /template/ ContentPresenter"><Setter Property="Background" Value="Transparent" /></Style>
+  <Style Selector="Button.autheye:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
+  <Style Selector="Button.autheye mi|MaterialIcon"><Setter Property="Width" Value="20" /><Setter Property="Height" Value="20" /></Style>
+
+  <!-- Bouton principal : bleu plein -->
+  <Style Selector="Button.authprimary">
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusField}" />
+    <Setter Property="MinHeight" Value="48" />
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.authprimary /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+  </Style>
+  <Style Selector="Button.authprimary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" /><Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" /></Style>
+  <Style Selector="Button.authprimary:pressed /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" /><Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" /></Style>
+  <!-- Désactivé à la manière de Material : surface neutre et texte atténué, toujours lisible -->
+  <Style Selector="Button.authprimary:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+  </Style>
+  <Style Selector="ScrollViewer.tiny Button.authprimary"><Setter Property="MinHeight" Value="46" /></Style>
+  <Style Selector="ScrollViewer.micro Button.authprimary"><Setter Property="MinHeight" Value="44" /></Style>
+
+  <!-- Bouton secondaire : contour fin, texte bleu -->
+  <Style Selector="Button.authsecondary">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ButtonLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusField}" />
+    <Setter Property="MinHeight" Value="46" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.authsecondary /template/ ContentPresenter"><Setter Property="Background" Value="Transparent" /><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource ButtonLineBrush}" /></Style>
+  <Style Selector="Button.authsecondary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource ButtonLineBrush}" /></Style>
+  <Style Selector="Button.authsecondary:pressed /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" /></Style>
+  <Style Selector="Button.authsecondary:disabled /template/ ContentPresenter"><Setter Property="Background" Value="Transparent" /><Setter Property="Opacity" Value="0.5" /></Style>
+
+  <!-- Lien : texte bleu, zone tactile de 40 px -->
+  <Style Selector="Button.authlink">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.authlink /template/ ContentPresenter"><Setter Property="Background" Value="Transparent" /><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /></Style>
+  <Style Selector="Button.authlink:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /><Setter Property="Foreground" Value="{DynamicResource AccentHoverBrush}" /></Style>
+  <Style Selector="Button.authlink:pressed /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" /></Style>
+  <Style Selector="Button.authlink:disabled /template/ ContentPresenter"><Setter Property="Background" Value="Transparent" /><Setter Property="Opacity" Value="0.5" /></Style>
+  <Style Selector="Button.authlink TextBlock"><Setter Property="TextWrapping" Value="Wrap" /><Setter Property="TextAlignment" Value="Center" /></Style>
+  <Style Selector="Button.authlink.danger"><Setter Property="Foreground" Value="{DynamicResource ToneRed}" /></Style>
+  <Style Selector="Button.authlink.danger /template/ ContentPresenter"><Setter Property="Foreground" Value="{DynamicResource ToneRed}" /></Style>
+
+  <!-- « Autres options » : bascule discrète, mêmes couleurs qu'un lien -->
+  <Style Selector="ToggleButton.authmore">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="ToggleButton.authmore /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent" /><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /></Style>
+  <Style Selector="ToggleButton.authmore:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
+  <Style Selector="ToggleButton.authmore:checked /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
+
+  <!-- Séparateur « ou » -->
+  <Style Selector="Grid.author > Border"><Setter Property="Height" Value="1" /><Setter Property="Background" Value="{DynamicResource LineBrush}" /><Setter Property="VerticalAlignment" Value="Center" /></Style>
+  <Style Selector="Grid.author > TextBlock"><Setter Property="FontSize" Value="12" /><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /><Setter Property="Margin" Value="12,0" /></Style>
+
+  <!-- Messages : bandeaux tonals du thème -->
+  <Style Selector="Border.authmessage">
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusField}" />
+    <Setter Property="Padding" Value="12,10" />
+  </Style>
+  <Style Selector="Border.authmessage.error"><Setter Property="Background" Value="{DynamicResource RedSoftBrush}" /></Style>
+  <Style Selector="Border.authmessage.warning"><Setter Property="Background" Value="{DynamicResource OrangeSoftBrush}" /></Style>
+  <Style Selector="Border.authmessage.success"><Setter Property="Background" Value="{DynamicResource GreenSoftBrush}" /></Style>
+  <Style Selector="Border.authmessage TextBlock"><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /><Setter Property="FontSize" Value="13" /><Setter Property="TextWrapping" Value="Wrap" /></Style>
+  <Style Selector="Border.authmessage.error mi|MaterialIcon"><Setter Property="Foreground" Value="{DynamicResource ToneRed}" /></Style>
+  <Style Selector="Border.authmessage.warning mi|MaterialIcon"><Setter Property="Foreground" Value="{DynamicResource ToneOrange}" /></Style>
+  <Style Selector="Border.authmessage.success mi|MaterialIcon"><Setter Property="Foreground" Value="{DynamicResource ToneGreen}" /></Style>
+
+  <!-- Avatar du compte : disque bleu aux initiales blanches, anneau de surface, halo bleu pâle -->
+  <Style Selector="Grid.authavatar"><Setter Property="Width" Value="76" /><Setter Property="Height" Value="76" /><Setter Property="HorizontalAlignment" Value="Center" /></Style>
+  <Style Selector="Grid.authavatar > Ellipse.halo"><Setter Property="Fill" Value="{DynamicResource AccentSoftBrush}" /><Setter Property="Opacity" Value="1" /></Style>
+  <Style Selector="Grid.authavatar > Ellipse.ring"><Setter Property="Width" Value="66" /><Setter Property="Height" Value="66" /><Setter Property="Fill" Value="{DynamicResource SurfaceBrush}" /><Setter Property="Opacity" Value="1" /></Style>
+  <Style Selector="Grid.authavatar > Border.disc">
+    <Setter Property="Width" Value="58" /><Setter Property="Height" Value="58" /><Setter Property="CornerRadius" Value="29" />
+    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" /><Setter Property="BoxShadow" Value="0 0 0 0 #00000000" />
+  </Style>
+  <Style Selector="Grid.authavatar > Border.disc > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" /><Setter Property="FontSize" Value="22" /><Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Grid.authavatar > Border.disc > mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" /><Setter Property="Width" Value="26" /><Setter Property="Height" Value="26" />
+    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Grid.authavatar > Border.badge">
+    <Setter Property="Width" Value="22" /><Setter Property="Height" Value="22" /><Setter Property="CornerRadius" Value="11" />
+    <Setter Property="Background" Value="#16A34A" /><Setter Property="BorderBrush" Value="{DynamicResource SurfaceBrush}" /><Setter Property="BorderThickness" Value="2" />
+    <Setter Property="HorizontalAlignment" Value="Right" /><Setter Property="VerticalAlignment" Value="Bottom" /><Setter Property="Margin" Value="0,0,8,8" />
+  </Style>
+  <Style Selector="Grid.authavatar > Border.badge.locked"><Setter Property="Background" Value="#D97706" /></Style>
+  <Style Selector="Grid.authavatar.small"><Setter Property="Width" Value="60" /><Setter Property="Height" Value="60" /></Style>
+  <Style Selector="Grid.authavatar.small > Ellipse.ring"><Setter Property="Width" Value="52" /><Setter Property="Height" Value="52" /></Style>
+  <Style Selector="Grid.authavatar.small > Border.disc"><Setter Property="Width" Value="44" /><Setter Property="Height" Value="44" /><Setter Property="CornerRadius" Value="22" /></Style>
+  <Style Selector="Grid.authavatar.small > Border.disc > mi|MaterialIcon"><Setter Property="Width" Value="22" /><Setter Property="Height" Value="22" /></Style>
+  <Style Selector="ScrollViewer.micro Grid.authavatar"><Setter Property="IsVisible" Value="False" /></Style>
+  <Style Selector="Border.accountdot">
+    <Setter Property="Width" Value="26" /><Setter Property="Height" Value="26" /><Setter Property="CornerRadius" Value="13" /><Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="Border.accountdot > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" /><Setter Property="FontSize" Value="11" /><Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- Pied de page de marque : petit logo et nom, en bas de la page -->
+  <Style Selector="StackPanel.authbrand"><Setter Property="Orientation" Value="Horizontal" /><Setter Property="Spacing" Value="7" /><Setter Property="HorizontalAlignment" Value="Center" /></Style>
+  <Style Selector="StackPanel.authbrand > Image"><Setter Property="Width" Value="18" /><Setter Property="Height" Value="18" /><Setter Property="VerticalAlignment" Value="Center" /></Style>
+  <Style Selector="StackPanel.authbrand > TextBlock"><Setter Property="FontSize" Value="12" /><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /><Setter Property="VerticalAlignment" Value="Center" /></Style>
+</Styles>

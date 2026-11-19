@@ -191,11 +191,7 @@
                             Margin="3" Padding="8,8" MinHeight="44"
                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                       <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                        <Grid Classes="featureavatar mini" Width="24" Height="24">
-                          <Border Classes="appicon avatar" Background="{Binding Brush}" Width="24" Height="24" CornerRadius="12">
-                            <mi:MaterialIcon Kind="{Binding Icon}" Width="14" Height="14" />
-                          </Border>
-                        </Grid>
+                        <Image Source="{Binding Illustration}" Width="28" Height="28" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="1" Text="{Binding ShortTitle}" FontSize="12"
                                    TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1"
                                    VerticalAlignment="Center" FontWeight="SemiBold" />
@@ -310,7 +306,7 @@
                   <Button Classes="desktopentry" Command="{Binding Open}"
                           ToolTip.Tip="Ouvrir le détail">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
-                      <Grid Classes="featureavatar mini" VerticalAlignment="Center"><Ellipse Classes="halo" Fill="{Binding Brush}" /><Border Classes="appicon avatar" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border><Ellipse Classes="sheen" /></Grid>
+                      <Image Classes="rowillustration" VerticalAlignment="Center" Source="{Binding Illustration}" />
                       <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
                         <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
                                    TextWrapping="NoWrap" MaxLines="1" />
@@ -350,7 +346,7 @@
                       <DataTemplate>
                         <Button Classes="tooltile" Command="{Binding Open}" Margin="0,0,7,7" MinHeight="44">
                           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
-                            <Grid Classes="featureavatar mini" VerticalAlignment="Center"><Ellipse Classes="halo" Fill="{Binding Brush}" /><Border Classes="appicon avatar" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border><Ellipse Classes="sheen" /></Grid>
+                            <Image Classes="rowillustration" VerticalAlignment="Center" Source="{Binding Illustration}" />
                             <TextBlock Grid.Column="1" Text="{Binding Label}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1"
                                        VerticalAlignment="Center" FontWeight="SemiBold" />
                           </Grid>
@@ -379,7 +375,7 @@
                   <DataTemplate>
                     <Button Classes="listrow" Command="{Binding Open}" Padding="9,6" ToolTip.Tip="Ouvrir le reçu">
                       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-                        <Grid Classes="featureavatar mini" VerticalAlignment="Center"><Ellipse Classes="halo" Fill="{DynamicResource TonePurple}" /><Border Classes="appicon avatar" Background="{DynamicResource TonePurple}"><mi:MaterialIcon Kind="ReceiptTextOutline" /></Border><Ellipse Classes="sheen" /></Grid>
+                        <Image Classes="rowillustration" VerticalAlignment="Center" Source="{Binding Illustration}" />
                         <StackPanel Grid.Column="1" Spacing="0" VerticalAlignment="Center">
                           <TextBlock Text="{Binding Student}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                           <StackPanel Orientation="Horizontal" Spacing="8">
@@ -410,7 +406,7 @@
                   <DataTemplate>
                     <Button Classes="listrow" Command="{Binding Open}" Padding="9,6">
                       <Grid ColumnDefinitions="Auto,*,Auto">
-                        <Grid Classes="featureavatar mini" VerticalAlignment="Center" Margin="0,0,10,0"><Ellipse Classes="halo" Fill="{Binding Brush}" /><Border Classes="appicon avatar" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border><Ellipse Classes="sheen" /></Grid>
+                        <Image Classes="rowillustration" VerticalAlignment="Center" Margin="0,0,10,0" Source="{Binding Illustration}" />
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                           <TextBlock Text="{Binding Text}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
                           <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />

@@ -275,6 +275,7 @@ public sealed class LoginViewModel : Observable
             if (!Set(ref recoveryOpen, value)) return;
             Raise(nameof(ShowSignInPassword));
             Raise(nameof(RecoveryActionLabel));
+            Raise(nameof(PageTitle));
             Raise(nameof(CanRecoverWithCode));
             Raise(nameof(CanRecoverWithBiometrics));
             Raise(nameof(ShowBiometricSignIn));
@@ -328,9 +329,11 @@ public sealed class LoginViewModel : Observable
         Error = null;
         Notice = null;
     }
-    public string RecoveryInstructions =>
-        "Choisissez un nouveau mot de passe. Validez avec votre empreinte déjà associée à ce compte, " +
-        "ou saisissez le code de secours détenu par le responsable du serveur. Aucune ouverture des paramètres n'est nécessaire.";
+    /// <summary>Une seule ligne sous le titre : comment valider le nouveau mot de passe.</summary>
+    public string RecoveryInstructions => "Validez avec votre empreinte ou le code de secours du serveur.";
+
+    /// <summary>Titre de la page d'accès : « Connexion », ou « Nouveau mot de passe » pendant la récupération.</summary>
+    public string PageTitle => RecoveryOpen ? "Nouveau mot de passe" : "Connexion";
 
     private void RefreshRecoveryValidation()
     {

@@ -23,14 +23,8 @@ public partial class LoginView : UserControl
         Backdrop.IsVisible = !ios;
         Halo.IsVisible = !ios;
         IosBackdrop.IsVisible = ios;
-        // PC large : options de compte et serveur dans la colonne à droite.
-        // Téléphone / fenêtre étroite : liens textuels sous le formulaire, jamais d'icônes.
-        AuthLayout.Track(IosLoginScroll, size =>
-        {
-            var desktop = !Platform.IsMobile && size.Width >= 850;
-            IosDesktopActions.IsVisible = desktop;
-            IosMobileActions.IsVisible = !desktop;
-        });
+        // Densité de la page (téléphone, petit écran, grand écran avec carte centrée).
+        AuthLayout.Track(IosLoginScroll);
         // Quand le clavier réduit la hauteur du téléphone, garder « Se connecter »
         // entièrement atteignable sans masquer ni supprimer les liens Compte/Serveur.
         void KeepSubmitVisible()

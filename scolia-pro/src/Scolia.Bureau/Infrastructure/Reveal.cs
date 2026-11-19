@@ -46,6 +46,9 @@ public static class Reveal
     private static void OnAttached(object? sender, VisualTreeAttachmentEventArgs e)
     {
         if (sender is not Control control || !MotionAllowed(control)) return;
+        // Téléphone : le contenu s'affiche d'un coup. La cascade coûte un rendu transparent par carte
+        // et retarde le premier toucher sur les Android modestes.
+        if (Platform.IsMobile || PhoneLayout.Active) return;
         // Une carte recyclée par une liste virtualisée ne rejoue pas l'animation pendant le défilement.
         if (control.GetVisualAncestors().Any(a => a is DataGrid or ListBox)) return;
 

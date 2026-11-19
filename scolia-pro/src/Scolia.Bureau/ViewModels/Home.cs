@@ -19,13 +19,26 @@ public sealed record ToolCardVm(string Title, string Description, MaterialIconKi
 }
 
 /// <summary>Reçu récent de l'accueil : une ligne de la liste « Récents », qui ouvre le reçu.</summary>
-public sealed record RecentReceiptVm(string Number, string Student, string Date, string Method, string Amount, string Status, AsyncCommand Open);
+public sealed record RecentReceiptVm(string Number, string Student, string Date, string Method, string Amount, string Status, AsyncCommand Open)
+{
+    private static readonly IBrush ReceiptBrush = new SolidColorBrush(Color.Parse("#7C3AED"));
+    /// <summary>Avatar illustré du reçu, le même dessin que la carte « Reçus » de l'accueil.</summary>
+    public IImage Illustration => Illustrations.For(MaterialIconKind.ReceiptTextOutline, ReceiptBrush);
+}
 
 /// <summary>Indicateur de l'accueil : une icône, un chiffre, une précision ; un clic ouvre la page détaillée.</summary>
-public sealed record HomeKpiVm(string Label, string Value, string Hint, MaterialIconKind Icon, IBrush Brush, AsyncCommand Open);
+public sealed record HomeKpiVm(string Label, string Value, string Hint, MaterialIconKind Icon, IBrush Brush, AsyncCommand Open)
+{
+    /// <summary>Avatar illustré de l'indicateur (mêmes personnages que les cartes de fonctionnalités).</summary>
+    public IImage Illustration => Illustrations.For(Icon, Brush);
+}
 
 /// <summary>Point de la liste « Aujourd'hui » : ce qui demande une action dans la journée.</summary>
-public sealed record HomeTaskVm(string Text, string Detail, MaterialIconKind Icon, IBrush Brush, AsyncCommand Open);
+public sealed record HomeTaskVm(string Text, string Detail, MaterialIconKind Icon, IBrush Brush, AsyncCommand Open)
+{
+    /// <summary>Avatar illustré de la tâche du jour.</summary>
+    public IImage Illustration => Illustrations.For(Icon, Brush);
+}
 
 /// <summary>
 /// Accueil : un bandeau de bienvenue avec la date et l'état de la caisse, quatre indicateurs, les outils

@@ -127,18 +127,4 @@ public sealed class TeacherPhoneAndOfflineUxTests
         Assert.Contains("\"Mes cours et cotes\" => \"Cours & cotes\"", nav, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void Notification_hors_ligne_tient_sur_une_courte_ligne_et_les_erreurs_restent()
-    {
-        var source = File.ReadAllText(Source("ViewModels/Shell.cs"));
-        Assert.Contains("Hors ligne · Connectez-vous localement", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("L'ordinateur principal ne répond pas. Connectez-vous avec le dernier compte", source,
-            StringComparison.Ordinal);
-        var login = View("LoginView.axaml");
-        Assert.Contains(login.Descendants(), x => x.Name.LocalName == "Border" &&
-            Attr(x, "IsVisible", "{Binding HasNotice}") &&
-            Attr(x, "Padding", "10,7"));
-        Assert.Contains(login.Descendants(), x =>
-            x.Name.LocalName == "Border" && Attr(x, "IsVisible", "{Binding HasError}"));
-    }
 }

@@ -18,5 +18,6 @@
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
     <StyleInclude Source="avares://SCOLIA/Themes/Controls.axaml" />
     <StyleInclude Source="avares://SCOLIA/Themes/Phone.axaml" />
+    <StyleInclude Source="avares://SCOLIA/Themes/Auth.axaml" />
   </Application.Styles>
 </Application>

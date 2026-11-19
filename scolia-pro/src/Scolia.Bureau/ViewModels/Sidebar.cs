@@ -33,6 +33,8 @@ public sealed class NavItemVm : Observable
     };
     public MaterialIconKind Icon { get; }
     public IBrush Brush { get; }
+    /// <summary>Avatar illustré de la page, pour les listes de l'accueil.</summary>
+    public IImage Illustration => Infrastructure.Illustrations.For(Icon, Brush);
     public Type PageType { get; }
     public AsyncCommand Open { get; }
     public bool IsSelected { get => selected; set => Set(ref selected, value); }
