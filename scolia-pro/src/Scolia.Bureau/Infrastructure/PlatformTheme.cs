@@ -18,7 +18,7 @@ public static class PlatformTheme
     {
         // L'iPhone garde le style iOS de SCOLIA : Material 3 est le langage d'Android.
         if (mobile && OperatingSystem.IsIOS()) return;
-        if (Application.Current is not { } app || appliedMobile == mobile) return;
+        if (Avalonia.Application.Current is not { } app || appliedMobile == mobile) return;
         if (applied is not null) app.Resources.MergedDictionaries.Remove(applied);
         var source = new Uri(mobile ? "avares://SCOLIA/Themes/Material3.axaml" : "avares://SCOLIA/Themes/Windows11.axaml");
         applied = (IResourceProvider)AvaloniaXamlLoader.Load(source);
