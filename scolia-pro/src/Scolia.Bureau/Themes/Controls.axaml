@@ -762,6 +762,24 @@
       </LinearGradientBrush>
     </Setter>
   </Style>
+  <!-- Avatar des lignes (état, caisse, aperçu, reçus) : même dessin, à la taille des lignes -->
+  <Style Selector="Grid.featureavatar.mini">
+    <Setter Property="Width" Value="38" />
+    <Setter Property="Height" Value="38" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Grid.featureavatar.mini > Border.appicon.avatar, Grid.featureavatar.mini > Ellipse.sheen">
+    <Setter Property="Width" Value="30" />
+    <Setter Property="Height" Value="30" />
+  </Style>
+  <Style Selector="Grid.featureavatar.mini > Border.appicon.avatar">
+    <Setter Property="CornerRadius" Value="15" />
+    <Setter Property="BoxShadow" Value="0 2 5 0 #22000000" />
+  </Style>
+  <Style Selector="Grid.featureavatar.mini > Border.appicon.avatar > mi|MaterialIcon">
+    <Setter Property="Width" Value="17" />
+    <Setter Property="Height" Value="17" />
+  </Style>
   <Style Selector="Grid.featureavatar.small">
     <Setter Property="Width" Value="50" />
     <Setter Property="Height" Value="50" />
@@ -777,6 +795,42 @@
     <Setter Property="Width" Value="20" />
     <Setter Property="Height" Value="20" />
   </Style>
+  <!-- Avatars professionnels de l'authentification : disque blanc, initiales ou pictogramme bleu,
+       halo translucide sur le fond bleu, pastille verte quand le compte est reconnu sur cet appareil. -->
+  <Style Selector="Grid.authavatar"><Setter Property="Width" Value="88" /><Setter Property="Height" Value="88" /><Setter Property="HorizontalAlignment" Value="Center" /></Style>
+  <Style Selector="Grid.authavatar > Ellipse.halo"><Setter Property="Fill" Value="White" /><Setter Property="Opacity" Value="0.16" /></Style>
+  <Style Selector="Grid.authavatar > Ellipse.ring"><Setter Property="Width" Value="74" /><Setter Property="Height" Value="74" /><Setter Property="Fill" Value="White" /><Setter Property="Opacity" Value="0.22" /></Style>
+  <Style Selector="Grid.authavatar > Border.disc">
+    <Setter Property="Width" Value="62" /><Setter Property="Height" Value="62" /><Setter Property="CornerRadius" Value="31" />
+    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Background" Value="White" /><Setter Property="BoxShadow" Value="0 6 18 0 #33061A4D" />
+  </Style>
+  <Style Selector="Grid.authavatar > Border.disc > TextBlock">
+    <Setter Property="Foreground" Value="#1258D0" /><Setter Property="FontSize" Value="24" /><Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Grid.authavatar > Border.disc > mi|MaterialIcon">
+    <Setter Property="Foreground" Value="#1258D0" /><Setter Property="Width" Value="28" /><Setter Property="Height" Value="28" />
+    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Grid.authavatar > Border.badge">
+    <Setter Property="Width" Value="24" /><Setter Property="Height" Value="24" /><Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Background" Value="#16A34A" /><Setter Property="BorderBrush" Value="White" /><Setter Property="BorderThickness" Value="2" />
+    <Setter Property="HorizontalAlignment" Value="Right" /><Setter Property="VerticalAlignment" Value="Bottom" /><Setter Property="Margin" Value="0,0,12,12" />
+  </Style>
+  <Style Selector="Grid.authavatar.small"><Setter Property="Width" Value="68" /><Setter Property="Height" Value="68" /></Style>
+  <Style Selector="Grid.authavatar.small > Ellipse.ring"><Setter Property="Width" Value="58" /><Setter Property="Height" Value="58" /></Style>
+  <Style Selector="Grid.authavatar.small > Border.disc"><Setter Property="Width" Value="48" /><Setter Property="Height" Value="48" /><Setter Property="CornerRadius" Value="24" /></Style>
+  <Style Selector="Grid.authavatar.small > Border.disc > mi|MaterialIcon"><Setter Property="Width" Value="24" /><Setter Property="Height" Value="24" /></Style>
+  <!-- Puce de compte : mini avatar aux initiales puis le nom -->
+  <Style Selector="Border.accountdot">
+    <Setter Property="Width" Value="26" /><Setter Property="Height" Value="26" /><Setter Property="CornerRadius" Value="13" /><Setter Property="Background" Value="White" />
+  </Style>
+  <Style Selector="Border.accountdot > TextBlock">
+    <Setter Property="Foreground" Value="#1258D0" /><Setter Property="FontSize" Value="11" /><Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Grid.authavatar > Border.badge.locked"><Setter Property="Background" Value="#F59E0B" /></Style>
   <!-- Barre de filtres : les critères posés directement sur le fond, sans encadré -->
   <Style Selector="Border.band, Border.filterbar">
     <Setter Property="Background" Value="Transparent" />

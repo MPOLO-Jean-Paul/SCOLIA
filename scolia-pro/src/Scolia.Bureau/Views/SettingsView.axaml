@@ -187,20 +187,49 @@
                   <DataTemplate><Border Classes="chip" Margin="0,0,6,6" Padding="9,4"><TextBlock Text="{Binding}" /></Border></DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="9">
-                <TextBlock Grid.Row="0" Classes="muted" Text="Éditeur" />
-                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding AboutModel.Publisher}" FontWeight="SemiBold" />
-                <TextBlock Grid.Row="1" Classes="muted" Text="Développement" />
-                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding AboutModel.Developer}" TextWrapping="Wrap" />
-                <TextBlock Grid.Row="2" Classes="muted" Text="Téléphone / WhatsApp" />
-                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding AboutModel.Phone}" />
-                <TextBlock Grid.Row="3" Classes="muted" Text="E-mail" />
-                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding AboutModel.Email}" />
-              </Grid>
+              <!-- Coordonnées de JP-Services : une ligne par contact, avec son avatar -->
+              <StackPanel>
+                <Grid ColumnDefinitions="Auto,*" Margin="0,7">
+                  <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneIndigo}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneIndigo}"><mi:MaterialIcon Kind="OfficeBuildingOutline" /></Border><Ellipse Classes="sheen" /></Grid>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="Éditeur" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                    <TextBlock Text="{Binding AboutModel.Publisher}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*" Margin="0,7">
+                  <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneBlue}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="AccountTie" /></Border><Ellipse Classes="sheen" /></Grid>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="Développement" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                    <TextBlock Text="{Binding AboutModel.Developer}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*" Margin="0,7">
+                  <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneGreen}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneGreen}"><mi:MaterialIcon Kind="Whatsapp" /></Border><Ellipse Classes="sheen" /></Grid>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="Téléphone et WhatsApp" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                    <TextBlock Text="{Binding AboutModel.Phone}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*" Margin="0,7">
+                  <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneOrange}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneOrange}"><mi:MaterialIcon Kind="EmailOutline" /></Border><Ellipse Classes="sheen" /></Grid>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="E-mail" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                    <TextBlock Text="{Binding AboutModel.Email}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*" Margin="0,7">
+                  <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneTeal}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneTeal}"><mi:MaterialIcon Kind="Web" /></Border><Ellipse Classes="sheen" /></Grid>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="Site Internet" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                    <TextBlock Text="{Binding AboutModel.Website}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </Grid>
+              </StackPanel>
               <TextBlock Text="{Binding AboutModel.Copyright}" Classes="muted" TextWrapping="Wrap" />
               <WrapPanel>
                 <Button infra:Icons.Lead="ContentCopy" Content="Copier les coordonnées" Command="{Binding AboutModel.CopyContacts}" Margin="0,0,8,4" />
-                <Button infra:Icons.Lead="EmailOutline" Content="Écrire au développeur" Command="{Binding AboutModel.WriteEmail}" Margin="0,0,8,4" />
+                <Button infra:Icons.Lead="EmailOutline" Content="Écrire à JP-Services" Command="{Binding AboutModel.WriteEmail}" Margin="0,0,8,4" />
+                <Button infra:Icons.Lead="OpenInNew" Content="Ouvrir le site" Command="{Binding AboutModel.OpenWebsite}" Margin="0,0,8,4" />
               </WrapPanel>
             </StackPanel>
           </Border>

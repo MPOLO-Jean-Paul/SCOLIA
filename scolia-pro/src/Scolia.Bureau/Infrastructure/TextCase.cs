@@ -25,5 +25,20 @@ public static class TextCase
         _ => kind ?? string.Empty,
     };
 
+    /// <summary>
+    /// Initiales d'un compte pour son avatar : « jean.paul » → « JP », « Secrétariat Kasongo » → « SK »,
+    /// « admin » → « A ». Jamais vide : « ? » pour un compte encore inconnu.
+    /// </summary>
+    public static string InitialsOf(string? name)
+    {
+        var parts = (name ?? string.Empty).Split([' ', '.', '_', '-', '@'], StringSplitOptions.RemoveEmptyEntries)
+            .Where(p => char.IsLetterOrDigit(p[0])).ToArray();
+        if (parts.Length == 0) return "?";
+        var first = char.ToUpper(parts[0][0], French);
+        return parts.Length == 1 ? first.ToString() : $"{first}{char.ToUpper(parts[1][0], French)}";
+    }
+
+    public static readonly IValueConverter Initials = new FuncValueConverter<string?, string>(InitialsOf);
+
     public static readonly IValueConverter LmdKind = new FuncValueConverter<string?, string>(LmdKindLabel);
 }

@@ -180,20 +180,21 @@
 
         <!-- Les contrôles reprennent les mêmes marges et largeurs que LoginView. -->
         <StackPanel Grid.Row="1" MaxWidth="360" Margin="20,0" HorizontalAlignment="Stretch" Spacing="12">
-          <Border CornerRadius="12" Background="#26FFFFFF" Padding="12,11">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-              <Border Width="48" Height="48" CornerRadius="24" Background="White" VerticalAlignment="Center">
-                <TextBlock Text="{Binding Initials}" FontSize="18" FontWeight="SemiBold" Foreground="#1258D0"
-                           HorizontalAlignment="Center" VerticalAlignment="Center" />
-              </Border>
-              <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                <TextBlock Text="{Binding DisplayName}" Foreground="White" FontSize="17"
-                           FontWeight="SemiBold" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding AccountLine}" Foreground="#E6FFFFFF" FontSize="12" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding LockedSince}" Foreground="#C8FFFFFF" FontSize="11" TextWrapping="Wrap" />
-              </StackPanel>
-            </Grid>
-          </Border>
+          <!-- Compte verrouillé : grand avatar aux initiales, pastille cadenas, puis le nom et l'heure du verrouillage -->
+            <StackPanel Spacing="4" HorizontalAlignment="Center">
+              <Grid Classes="authavatar">
+                <Ellipse Classes="halo" />
+                <Ellipse Classes="ring" />
+                <Border Classes="disc"><TextBlock Text="{Binding Initials}" /></Border>
+                <Border Classes="badge locked" ToolTip.Tip="Session verrouillée">
+                  <mi:MaterialIcon Kind="Lock" Width="13" Height="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+              </Grid>
+              <TextBlock Text="{Binding DisplayName}" Foreground="White" FontSize="19" FontWeight="SemiBold"
+                         TextAlignment="Center" TextWrapping="Wrap" MaxLines="2" />
+              <TextBlock Text="{Binding AccountLine}" Foreground="#E6FFFFFF" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" MaxLines="2" />
+              <TextBlock Text="{Binding LockedSince}" Foreground="#C8FFFFFF" FontSize="11" TextAlignment="Center" TextWrapping="Wrap" />
+            </StackPanel>
 
           <TextBlock Text="{Binding Message}" Foreground="#E6FFFFFF" FontSize="13"
                      TextWrapping="Wrap" TextAlignment="Center" Margin="0,2,0,3" />
@@ -304,25 +305,21 @@
 
         <Border Classes="ioslockcard">
           <StackPanel Spacing="16">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-              <Border Width="48" Height="48" CornerRadius="24" VerticalAlignment="Center">
-                <Border.Background>
-                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                    <GradientStop Offset="0" Color="#3A86F0" />
-                    <GradientStop Offset="1" Color="#0B4FC4" />
-                  </LinearGradientBrush>
-                </Border.Background>
-                <TextBlock Text="{Binding Initials}" Foreground="White" FontSize="19" FontWeight="SemiBold"
-                           HorizontalAlignment="Center" VerticalAlignment="Center" />
-              </Border>
-              <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                <TextBlock Text="{Binding DisplayName}" Foreground="White" FontSize="18" FontWeight="SemiBold"
-                           TextWrapping="Wrap" MaxLines="2" />
-                <TextBlock Text="{Binding AccountLine}" Foreground="#E3EDFF" FontSize="12"
-                           TextWrapping="Wrap" MaxLines="2" />
-                <TextBlock Text="{Binding LockedSince}" Foreground="#E3EDFF" FontSize="11" TextWrapping="Wrap" />
-              </StackPanel>
-            </Grid>
+            <!-- Compte verrouillé : grand avatar aux initiales, pastille cadenas, puis le nom et l'heure du verrouillage -->
+            <StackPanel Spacing="4" HorizontalAlignment="Center">
+              <Grid Classes="authavatar">
+                <Ellipse Classes="halo" />
+                <Ellipse Classes="ring" />
+                <Border Classes="disc"><TextBlock Text="{Binding Initials}" /></Border>
+                <Border Classes="badge locked" ToolTip.Tip="Session verrouillée">
+                  <mi:MaterialIcon Kind="Lock" Width="13" Height="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+              </Grid>
+              <TextBlock Text="{Binding DisplayName}" Foreground="White" FontSize="19" FontWeight="SemiBold"
+                         TextAlignment="Center" TextWrapping="Wrap" MaxLines="2" />
+              <TextBlock Text="{Binding AccountLine}" Foreground="#E3EDFF" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" MaxLines="2" />
+              <TextBlock Text="{Binding LockedSince}" Foreground="#E3EDFF" FontSize="11" TextAlignment="Center" TextWrapping="Wrap" />
+            </StackPanel>
             <Border Height="1" Background="#7192E5" />
             <TextBlock Text="{Binding Message}" Foreground="#E3EDFF" FontSize="13"
                        TextAlignment="Center" TextWrapping="Wrap" />

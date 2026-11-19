@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.LoginView">
   <!-- Connexion façon Windows 11 : un seul fond bleu dégradé avec un halo blanc, sans carte ni cadre ;
        au centre le logo, l'établissement, puis des champs de verre translucide avec un trait en bas. -->
@@ -14,6 +15,7 @@
     <SolidColorBrush x:Key="LoginLink" Color="White" />
   </UserControl.Resources>
   <UserControl.Styles>
+
     <Style Selector="mi|MaterialIcon.inicon">
       <Setter Property="Width" Value="19" /><Setter Property="Height" Value="19" />
       <Setter Property="Margin" Value="14,0,0,0" />
@@ -587,10 +589,11 @@
             <StackPanel Spacing="12" IsVisible="{Binding ShowPairingCallToAction}">
               <Border Background="Transparent" BorderThickness="0" CornerRadius="0" Padding="0">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                  <Border Width="44" Height="44" CornerRadius="14" Background="#D5E6FE">
-                    <mi:MaterialIcon Kind="QrcodeScan" Width="24" Height="24"
-                                     Foreground="#1769E6" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                  </Border>
+                  <Grid Classes="authavatar small">
+                    <Ellipse Classes="halo" />
+                    <Ellipse Classes="ring" />
+                    <Border Classes="disc"><mi:MaterialIcon Kind="QrcodeScan" /></Border>
+                  </Grid>
                   <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
                     <TextBlock Text="Relier cet appareil" FontWeight="SemiBold" Foreground="White" />
                     <TextBlock Text="Scannez une invitation du serveur scolaire pour activer votre accès."
@@ -611,11 +614,23 @@
 
             <StackPanel Spacing="9" IsVisible="{Binding ShowManualCredentials}">
               <StackPanel Spacing="9" IsVisible="{Binding !RecoveryOpen}">
-                <StackPanel Spacing="3" HorizontalAlignment="Center"
-                            IsVisible="{Binding HasRememberedAccount}" Margin="0,0,0,4">
-                  <TextBlock Text="Compte enregistré" FontSize="11" Foreground="#DCE7FF" TextAlignment="Center" />
-                  <TextBlock Text="{Binding UserName}" FontWeight="SemiBold" Foreground="#FFFFFF"
+                <!-- Compte reconnu : son avatar aux initiales, une pastille verte, le nom puis la mention -->
+                <StackPanel x:Name="IosAccountAvatar" Spacing="4" HorizontalAlignment="Center"
+                            IsVisible="{Binding HasRememberedAccount}" Margin="0,0,0,6">
+                  <Grid Classes="authavatar">
+                    <Ellipse Classes="halo" />
+                    <Ellipse Classes="ring" />
+                    <Border Classes="disc">
+                      <TextBlock Text="{Binding UserName, Converter={x:Static infra:TextCase.Initials}}" />
+                    </Border>
+                    <Border Classes="badge" ToolTip.Tip="Compte enregistré sur cet appareil">
+                      <mi:MaterialIcon Kind="Check" Width="14" Height="14" Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                  </Grid>
+                  <TextBlock Text="{Binding UserName}" FontSize="18" FontWeight="SemiBold" Foreground="#FFFFFF"
                              TextTrimming="CharacterEllipsis" TextAlignment="Center" />
+                  <TextBlock Text="Compte enregistré sur cet appareil" FontSize="12" Foreground="#DCE7FF" TextAlignment="Center" />
                 </StackPanel>
 
                 <Expander Header="Comptes" IsExpanded="False" IsVisible="{Binding ShowRememberedChoices}"
@@ -625,10 +640,15 @@
                     <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                       <DataTemplate>
-                        <Button Classes="iosauthsecondary" MinHeight="42" Margin="0,0,7,7" Padding="12,6"
+                        <Button Classes="iosauthsecondary" MinHeight="42" Margin="0,0,7,7" Padding="8,6,14,6"
                                 Command="{Binding $parent[ItemsControl].DataContext.ChooseRememberedAccount}"
                                 CommandParameter="{Binding}">
-                          <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                          <DockPanel LastChildFill="True">
+                            <Border Classes="accountdot" DockPanel.Dock="Left" Margin="0,0,9,0">
+                              <TextBlock Text="{Binding Converter={x:Static infra:TextCase.Initials}}" />
+                            </Border>
+                            <TextBlock Text="{Binding}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                          </DockPanel>
                         </Button>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -697,6 +717,12 @@
 
               <!-- Récupération : aucune session n'est créée, biométrie ou code serveur obligatoires. -->
               <StackPanel Spacing="13" IsVisible="{Binding RecoveryOpen}">
+                <!-- Réinitialisation : avatar bouclier, l'accès est rétabli sans ouvrir de session -->
+                <Grid x:Name="IosRecoveryAvatar" Classes="authavatar small">
+                  <Ellipse Classes="halo" />
+                  <Ellipse Classes="ring" />
+                  <Border Classes="disc"><mi:MaterialIcon Kind="ShieldKeyOutline" /></Border>
+                </Grid>
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
                   <Button Classes="iosauthlink" Command="{Binding ToggleRecoveryHelp}" MinWidth="44"
                           ToolTip.Tip="Revenir à la connexion" HorizontalAlignment="Left">

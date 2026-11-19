@@ -166,9 +166,7 @@
           <Button Classes="desktopentry" Command="{Binding Network}" ToolTip.Tip="{Binding Sync.StatusDetail}"
                   Margin="7,2,7,2" Padding="13,11" MinHeight="67">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="13">
-              <Border Classes="appicon medium" Background="{Binding Sync.StatusBrush}" VerticalAlignment="Center">
-                <mi:MaterialIcon Kind="{Binding Sync.StatusIcon}" />
-              </Border>
+              <Grid Classes="featureavatar mini" VerticalAlignment="Center"><Ellipse Classes="halo" Fill="{Binding Sync.StatusBrush}" /><Border Classes="appicon avatar" Background="{Binding Sync.StatusBrush}"><mi:MaterialIcon Kind="{Binding Sync.StatusIcon}" /></Border><Ellipse Classes="sheen" /></Grid>
               <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                 <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
                 <TextBlock Text="{Binding Sync.StatusHint}" Foreground="{DynamicResource Text2Brush}"
@@ -182,9 +180,7 @@
           <StackPanel IsVisible="{Binding HasCashLine}">
             <Border Height="1" Background="{DynamicResource LineBrush}" Margin="70,0,18,0" />
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="13" Margin="20,11,20,13" MinHeight="34">
-              <Border Classes="appicon medium" Background="{Binding CashBrush}" VerticalAlignment="Center">
-                <mi:MaterialIcon Kind="CashRegister" />
-              </Border>
+              <Grid Classes="featureavatar mini" VerticalAlignment="Center"><Ellipse Classes="halo" Fill="{Binding CashBrush}" /><Border Classes="appicon avatar" Background="{Binding CashBrush}"><mi:MaterialIcon Kind="CashRegister" /></Border><Ellipse Classes="sheen" /></Grid>
               <TextBlock Grid.Column="1" Text="{Binding CashLine}" FontWeight="Medium"
                          VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxLines="1" />
             </Grid>
@@ -258,9 +254,7 @@
                   <Button Classes="desktopentry" Command="{Binding Open}"
                           ToolTip.Tip="Ouvrir le détail">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
-                      <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center">
-                        <mi:MaterialIcon Kind="{Binding Icon}" />
-                      </Border>
+                      <Grid Classes="featureavatar mini" VerticalAlignment="Center"><Ellipse Classes="halo" Fill="{Binding Brush}" /><Border Classes="appicon avatar" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border><Ellipse Classes="sheen" /></Grid>
                       <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
                         <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
                                    TextWrapping="NoWrap" MaxLines="1" />
@@ -300,9 +294,7 @@
                       <DataTemplate>
                         <Button Classes="tooltile" Command="{Binding Open}" Margin="0,0,7,7" MinHeight="44">
                           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
-                            <Border Classes="appicon" Background="{Binding Brush}" VerticalAlignment="Center">
-                              <mi:MaterialIcon Kind="{Binding Icon}" />
-                            </Border>
+                            <Grid Classes="featureavatar mini" VerticalAlignment="Center"><Ellipse Classes="halo" Fill="{Binding Brush}" /><Border Classes="appicon avatar" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border><Ellipse Classes="sheen" /></Grid>
                             <TextBlock Grid.Column="1" Text="{Binding Label}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1"
                                        VerticalAlignment="Center" FontWeight="SemiBold" />
                           </Grid>
@@ -331,9 +323,7 @@
                   <DataTemplate>
                     <Button Classes="listrow" Command="{Binding Open}" Padding="9,6" ToolTip.Tip="Ouvrir le reçu">
                       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-                        <Border Classes="appicon" Background="{DynamicResource TonePurple}" VerticalAlignment="Center">
-                          <mi:MaterialIcon Kind="ReceiptTextOutline" />
-                        </Border>
+                        <Grid Classes="featureavatar mini" VerticalAlignment="Center"><Ellipse Classes="halo" Fill="{DynamicResource TonePurple}" /><Border Classes="appicon avatar" Background="{DynamicResource TonePurple}"><mi:MaterialIcon Kind="ReceiptTextOutline" /></Border><Ellipse Classes="sheen" /></Grid>
                         <StackPanel Grid.Column="1" Spacing="0" VerticalAlignment="Center">
                           <TextBlock Text="{Binding Student}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                           <StackPanel Orientation="Horizontal" Spacing="8">
@@ -364,7 +354,7 @@
                   <DataTemplate>
                     <Button Classes="listrow" Command="{Binding Open}" Padding="9,6">
                       <Grid ColumnDefinitions="Auto,*,Auto">
-                        <Border Classes="appicon" Background="{Binding Brush}" VerticalAlignment="Center" Margin="0,0,10,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                        <Grid Classes="featureavatar mini" VerticalAlignment="Center" Margin="0,0,10,0"><Ellipse Classes="halo" Fill="{Binding Brush}" /><Border Classes="appicon avatar" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border><Ellipse Classes="sheen" /></Grid>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                           <TextBlock Text="{Binding Text}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
                           <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />

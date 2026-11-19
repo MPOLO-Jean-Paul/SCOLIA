@@ -1272,6 +1272,7 @@ public sealed class AboutViewModel : Observable
         Close = new RelayCommand(shell.CloseDialog);
         WriteEmail = new RelayCommand(() => Files.Open($"mailto:{AboutInfo.Email}?subject=SCOLIA%20Pro%20{AboutInfo.Version}"));
         OpenWhatsApp = new RelayCommand(() => Files.Open($"https://wa.me/{AboutInfo.PhoneDigits}"));
+        OpenWebsite = new RelayCommand(() => Files.Open($"https://{AboutInfo.Website}"));
         CopyContacts = new AsyncCommand(CopyAsync);
     }
 
@@ -1295,12 +1296,14 @@ public sealed class AboutViewModel : Observable
     public string Role => AboutInfo.Role;
     public string Phone => AboutInfo.Phone;
     public string Email => AboutInfo.Email;
+    public string Website => AboutInfo.Website;
     public string Copyright => AboutInfo.Copyright;
     public string Accounts => "Quatre espaces : Secrétariat, Comptabilité, Promoteur (consultation des indicateurs uniquement) et Enseignant (encodage de ses cours, par code anonyme).";
 
     public RelayCommand Close { get; }
     public RelayCommand WriteEmail { get; }
     public RelayCommand OpenWhatsApp { get; }
+    public RelayCommand OpenWebsite { get; }
     public AsyncCommand CopyContacts { get; }
 
     private async Task CopyAsync()
