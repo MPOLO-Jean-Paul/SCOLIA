@@ -192,90 +192,95 @@
         </StackPanel>
       </Border>
 
-      <!-- Les raccourcis du rôle suivent exactement les QUATRE outils Android :
-           icône colorée, titre, description et chevron. Sur desktop, Aperçu est
-           placé en deuxième colonne et passe au-dessous quand la fenêtre rétrécit. -->
-      <Grid ColumnDefinitions="6*,16,5*" infra:Adaptive.StackBelow="920">
-        <StackPanel Grid.Column="0" Spacing="9">
-          <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="410" Margin="10,7,8,0">
-            <TextBlock Text="RACCOURCIS" Classes="desktopgroupcaps" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="link" Content="{Binding AllToolsLabel}" Command="{Binding ShowAllTools}"
-                    HorizontalAlignment="Right" MinHeight="28"
-                    ToolTip.Tip="Afficher toutes les fonctionnalités autorisées" />
-          </Grid>
-          <Border Classes="desktopgroup" Padding="0" ClipToBounds="True">
-            <ItemsControl Classes="desktopgroupitems" ItemsSource="{Binding PhoneTools}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <StackPanel>
-                    <Border Classes="desktoprowsep" />
-                    <Button Classes="desktopentry" Command="{Binding Open}" ToolTip.Tip="{Binding Description}">
-                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="13">
-                        <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center">
+      <!-- Fonctionnalités principales du rôle : une carte par fonctionnalité, avec son avatar
+           (disque coloré, halo et reflet), son titre et sa description. Trois par ligne sur un grand
+           écran, deux puis une quand la fenêtre rétrécit. -->
+      <StackPanel Spacing="9">
+        <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="410" Margin="10,7,8,0">
+          <TextBlock Text="FONCTIONNALITÉS PRINCIPALES" Classes="desktopgroupcaps" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Classes="link" Content="{Binding AllToolsLabel}" Command="{Binding ShowAllTools}"
+                  HorizontalAlignment="Right" MinHeight="28"
+                  ToolTip.Tip="Afficher toutes les fonctionnalités autorisées" />
+        </Grid>
+        <ItemsControl x:Name="FeatureCards" ItemsSource="{Binding Tools}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Columns="3" infra:Adaptive.MinItemWidth="250" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Button Classes="cardbutton" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" Margin="0,0,12,12" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch">
+                <Border Classes="toolcard feature">
+                  <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <Grid Classes="featureavatar">
+                        <Ellipse Classes="halo" Fill="{Binding Brush}" />
+                        <Border Classes="appicon avatar" Background="{Binding Brush}">
                           <mi:MaterialIcon Kind="{Binding Icon}" />
                         </Border>
-                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
-                                     TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" MaxLines="1" />
-                          <TextBlock Text="{Binding Description}" Classes="muted"
-                                     FontSize="{DynamicResource FsSmall}"
-                                     TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" MaxLines="1" />
-                        </StackPanel>
-                        <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
-                                         Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                        <Ellipse Classes="sheen" />
                       </Grid>
-                    </Button>
+                      <mi:MaterialIcon Grid.Column="1" Kind="ArrowTopRight" Width="18" Height="18"
+                                       Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Top" />
+                    </Grid>
+                    <StackPanel Spacing="3">
+                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="{DynamicResource FsHeading}"
+                                 TextTrimming="CharacterEllipsis" MaxLines="1" />
+                      <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                                 TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
                   </StackPanel>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </Border>
-        </StackPanel>
+                </Border>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
 
-        <StackPanel Grid.Column="2" Spacing="9" IsVisible="{Binding HasKpis}">
-          <Grid ColumnDefinitions="*,Auto" Margin="10,7,8,0">
-            <TextBlock Text="APERÇU" Classes="desktopgroupcaps" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="1" Text="Établissement" Classes="muted"
-                       FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
-          </Grid>
-          <Border Classes="desktopgroup" Padding="0" ClipToBounds="True">
-            <ItemsControl Classes="desktopgroupitems" ItemsSource="{Binding Kpis}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <UniformGrid Columns="1" infra:Adaptive.MinItemWidth="205" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <StackPanel>
-                    <Border Classes="desktoprowsep" />
-                    <Button Classes="desktopentry" Command="{Binding Open}"
-                            ToolTip.Tip="Ouvrir le détail">
-                      <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
-                        <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center">
-                          <mi:MaterialIcon Kind="{Binding Icon}" />
-                        </Border>
-                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                          <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
-                                     TextWrapping="NoWrap" MaxLines="1" />
-                          <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsSmall}"
-                                     TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                        </StackPanel>
-                        <TextBlock Grid.Column="2" Text="{Binding Value}" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"
-                                   TextAlignment="Right" TextWrapping="NoWrap"
-                                   TextTrimming="CharacterEllipsis" MaxLines="1" />
-                        <mi:MaterialIcon Grid.Column="3" Kind="ChevronRight" Width="17" Height="17"
-                                         Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
-                      </Grid>
-                    </Button>
-                  </StackPanel>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </Border>
-        </StackPanel>
-      </Grid>
+      <StackPanel Spacing="9" IsVisible="{Binding HasKpis}">
+        <Grid ColumnDefinitions="*,Auto" Margin="10,7,8,0">
+          <TextBlock Text="APERÇU" Classes="desktopgroupcaps" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Text="Établissement" Classes="muted"
+                     FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
+        </Grid>
+        <Border Classes="desktopgroup" Padding="0" ClipToBounds="True">
+          <ItemsControl Classes="desktopgroupitems" ItemsSource="{Binding Kpis}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <UniformGrid Columns="2" infra:Adaptive.MinItemWidth="205" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <StackPanel>
+                  <Border Classes="desktoprowsep" />
+                  <Button Classes="desktopentry" Command="{Binding Open}"
+                          ToolTip.Tip="Ouvrir le détail">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                      <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center">
+                        <mi:MaterialIcon Kind="{Binding Icon}" />
+                      </Border>
+                      <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                   TextWrapping="NoWrap" MaxLines="1" />
+                        <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                                   TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="2" Text="{Binding Value}" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"
+                                 TextAlignment="Right" TextWrapping="NoWrap"
+                                 TextTrimming="CharacterEllipsis" MaxLines="1" />
+                      <mi:MaterialIcon Grid.Column="3" Kind="ChevronRight" Width="17" Height="17"
+                                       Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                    </Grid>
+                  </Button>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Border>
+      </StackPanel>
 
       <!-- Le bouton Afficher tous les outils ouvre vraiment le catalogue du rôle,
            même lorsque le volet latéral est déjà visible. -->

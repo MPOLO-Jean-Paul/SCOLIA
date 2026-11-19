@@ -726,6 +726,57 @@
     <Setter Property="Width" Value="18" />
     <Setter Property="Height" Value="18" />
   </Style>
+  <!-- Avatar de fonctionnalité (accueil) : disque de couleur franche et son pictogramme, entouré d'un halo doux
+       de la même teinte, avec un léger reflet. Le pictogramme garde le contrôle de contraste des tuiles. -->
+  <Style Selector="Grid.featureavatar">
+    <Setter Property="Width" Value="60" />
+    <Setter Property="Height" Value="60" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style Selector="Grid.featureavatar > Ellipse.halo">
+    <Setter Property="Opacity" Value="0.16" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="Grid.featureavatar > Border.appicon.avatar">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="BoxShadow" Value="0 3 8 0 #26000000" />
+  </Style>
+  <Style Selector="Grid.featureavatar > Border.appicon.avatar > mi|MaterialIcon">
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+  </Style>
+  <Style Selector="Grid.featureavatar > Ellipse.sheen">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Fill">
+      <LinearGradientBrush StartPoint="20%,0%" EndPoint="60%,70%">
+        <GradientStop Offset="0" Color="#47FFFFFF" />
+        <GradientStop Offset="0.55" Color="#00FFFFFF" />
+      </LinearGradientBrush>
+    </Setter>
+  </Style>
+  <Style Selector="Grid.featureavatar.small">
+    <Setter Property="Width" Value="50" />
+    <Setter Property="Height" Value="50" />
+  </Style>
+  <Style Selector="Grid.featureavatar.small > Border.appicon.avatar, Grid.featureavatar.small > Ellipse.sheen">
+    <Setter Property="Width" Value="38" />
+    <Setter Property="Height" Value="38" />
+  </Style>
+  <Style Selector="Grid.featureavatar.small > Border.appicon.avatar">
+    <Setter Property="CornerRadius" Value="19" />
+  </Style>
+  <Style Selector="Grid.featureavatar.small > Border.appicon.avatar > mi|MaterialIcon">
+    <Setter Property="Width" Value="20" />
+    <Setter Property="Height" Value="20" />
+  </Style>
   <!-- Barre de filtres : les critères posés directement sur le fond, sans encadré -->
   <Style Selector="Border.band, Border.filterbar">
     <Setter Property="Background" Value="Transparent" />
@@ -1416,6 +1467,15 @@
   <Style Selector="Border.toolcard:pointerover">
     <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
     <Setter Property="BoxShadow" Value="0 8 22 0 #1F152C4D" />
+  </Style>
+  <!-- Carte de fonctionnalité de l'accueil : avatar, titre et description sur deux lignes -->
+  <Style Selector="Border.toolcard.feature">
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="16,16,16,14" />
+  </Style>
+  <Style Selector="Border.toolcard.feature.compact">
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="13,13,13,12" />
   </Style>
   <!-- Bouton Fermer des fenêtres : une croix ronde et discrète en haut à droite, comme sur macOS -->
   <Style Selector="Button.closex">

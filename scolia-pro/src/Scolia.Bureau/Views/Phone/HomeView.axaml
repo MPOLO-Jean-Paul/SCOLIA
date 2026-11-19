@@ -85,30 +85,38 @@
       </StackPanel>
     </Border>
 
-    <!-- Raccourcis : les outils du rôle, en lignes de réglage -->
-    <StackPanel Spacing="5" IsVisible="{Binding !!PhoneTools.Count}">
-      <TextBlock Text="RACCOURCIS" Classes="groupcaps" />
-      <Border Classes="phonegroup">
-        <ItemsControl Classes="iosgroup" ItemsSource="{Binding PhoneTools}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate>
-              <StackPanel>
-                <Border Classes="rowsep" />
-                <Button Classes="settingsentry quick" Command="{Binding Open}" ToolTip.Tip="{Binding Description}">
-                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                    <Border Classes="appicon medium" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
-                      <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                      <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" MaxLines="2" />
-                    </StackPanel>
-                    <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+    <!-- Fonctionnalités principales : deux cartes par ligne, chacune avec son avatar, son titre et sa description -->
+    <StackPanel Spacing="6" IsVisible="{Binding !!Tools.Count}">
+      <TextBlock Text="FONCTIONNALITÉS PRINCIPALES" Classes="groupcaps" />
+      <ItemsControl x:Name="FeatureCards" ItemsSource="{Binding Tools}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Columns="2" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Button Classes="cardbutton" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" Margin="0,0,8,8" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch">
+              <Border Classes="toolcard feature compact">
+                <StackPanel Spacing="8">
+                  <Grid Classes="featureavatar small">
+                    <Ellipse Classes="halo" Fill="{Binding Brush}" />
+                    <Border Classes="appicon avatar" Background="{Binding Brush}">
+                      <mi:MaterialIcon Kind="{Binding Icon}" />
+                    </Border>
+                    <Ellipse Classes="sheen" />
                   </Grid>
-                </Button>
-              </StackPanel>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </Border>
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding ShortTitle}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                    <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                               TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
     </StackPanel>
 
     <!-- Aperçu du jour : une ligne par indicateur, le chiffre à droite comme une valeur de réglage -->

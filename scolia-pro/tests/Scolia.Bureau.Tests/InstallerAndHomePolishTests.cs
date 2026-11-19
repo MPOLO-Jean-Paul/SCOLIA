@@ -116,7 +116,7 @@ public sealed class InstallerAndHomePolishTests
             e.Attributes().Any(a => a.Name.LocalName == "Command" && a.Value.Contains("ShowAllTools")));
     }
     [Fact]
-    public void Accueil_Windows_reprend_les_groupes_et_quatre_raccourcis_du_mobile()
+    public void Accueil_Windows_et_telephone_presentent_les_fonctionnalites_avec_leurs_avatars()
     {
         var desktop = XDocument.Load(Source("src/Scolia.Bureau/Views/HomeView.axaml"));
         var phone = XDocument.Load(Source("src/Scolia.Bureau/Views/Phone/HomeView.axaml"));
@@ -125,20 +125,20 @@ public sealed class InstallerAndHomePolishTests
 
         // Ne jamais créer une liste de fonctionnalités Windows différente du téléphone.
         foreach (var nodes in new[] { desktopNodes, phoneNodes })
+        {
             Assert.Contains(nodes, e => e.Name.LocalName == "ItemsControl" &&
-                e.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value == "{Binding PhoneTools}"));
-
-        // Les raccourcis sont des lignes GROUPÉES, et non des tuiles isolées sans contexte.
-        Assert.Contains(desktopNodes, e => e.Name.LocalName == "Border" &&
-            e.Attributes().Any(a => a.Name.LocalName == "Classes" && a.Value == "desktopgroup"));
-        Assert.Contains(desktopNodes, e => e.Name.LocalName == "Button" &&
-            e.Attributes().Any(a => a.Name.LocalName == "Classes" && a.Value == "desktopentry") &&
-            e.Descendants().Any(d => d.Name.LocalName == "TextBlock" &&
-                d.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value == "{Binding Description}")) &&
-            e.Descendants().Any(d => d.Name.LocalName == "MaterialIcon" &&
-                d.Attributes().Any(a => a.Name.LocalName == "Kind" && a.Value == "ChevronRight")));
-        Assert.Contains(desktopNodes, e => e.Name.LocalName == "TextBlock" &&
-            e.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value == "RACCOURCIS"));
+                e.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value == "{Binding Tools}") &&
+                e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "FeatureCards"));
+            // Chaque fonctionnalité est une carte avec son avatar (halo, disque coloré, reflet), son titre et sa description.
+            Assert.Contains(nodes, e => e.Name.LocalName == "Grid" &&
+                e.Attributes().Any(a => a.Name.LocalName == "Classes" && a.Value.StartsWith("featureavatar", StringComparison.Ordinal)) &&
+                e.Elements().Any(d => d.Name.LocalName == "Ellipse" && d.Attributes().Any(a => a.Value == "halo")) &&
+                e.Elements().Any(d => d.Name.LocalName == "Border" && d.Attributes().Any(a => a.Value == "appicon avatar")));
+            Assert.Contains(nodes, e => e.Name.LocalName == "TextBlock" &&
+                e.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value == "FONCTIONNALITÉS PRINCIPALES"));
+            Assert.Contains(nodes, e => e.Name.LocalName == "TextBlock" &&
+                e.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value == "{Binding Description}"));
+        }
         Assert.Contains(desktopNodes, e => e.Name.LocalName == "TextBlock" &&
             e.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value == "APERÇU"));
 
