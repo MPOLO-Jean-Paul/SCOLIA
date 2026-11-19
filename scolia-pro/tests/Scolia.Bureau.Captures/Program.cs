@@ -171,6 +171,19 @@ var taille = (Environment.GetEnvironmentVariable("SCOLIA_TAILLE") ?? "1280x820")
 var window = new MainWindow { DataContext = shell, Width = int.Parse(taille[0]), Height = int.Parse(taille[1]) };
 if (Preferences.MobileLayout) { window.MinWidth = 0; window.MinHeight = 0; window.Width = int.Parse(taille[0]); window.Height = int.Parse(taille[1]); }
 window.Show();
+// Simulation du fond Mica de Windows 11 (SCOLIA_MICA=1) : un bureau teinté derrière une fenêtre translucide,
+// pour vérifier la lisibilité du bandeau et du fond de page. Les cartes restent opaques.
+if (Environment.GetEnvironmentVariable("SCOLIA_MICA") == "1" && window.Content is Scolia.Bureau.Views.MainView micaView)
+{
+    window.Background = new Avalonia.Media.LinearGradientBrush
+    {
+        StartPoint = new Avalonia.RelativePoint(0, 0, Avalonia.RelativeUnit.Relative),
+        EndPoint = new Avalonia.RelativePoint(1, 1, Avalonia.RelativeUnit.Relative),
+        GradientStops = { new Avalonia.Media.GradientStop(Avalonia.Media.Color.Parse("#7FA3C7"), 0),
+                          new Avalonia.Media.GradientStop(Avalonia.Media.Color.Parse("#C9A27A"), 1) }
+    };
+    micaView.Classes.Add("mica");
+}
 // Barre de titre de Windows dessinée par SCOLIA : simulée ici, la fenêtre sans écran n'a pas celle du système.
 if (!Preferences.MobileLayout && Environment.GetEnvironmentVariable("SCOLIA_BARRE_TITRE") != "0" && window.Content is Scolia.Bureau.Views.MainView main) main.ShowTitleBar(32);
 // Parcours de caisse autonome : aucune écriture sur les données d'un établissement.

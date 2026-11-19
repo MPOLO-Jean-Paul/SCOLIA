@@ -65,6 +65,13 @@
       <SolidColorBrush x:Key="HeaderHoverBrush" Color="#D9FFFFFF" />
       <SolidColorBrush x:Key="HeaderLineBrush" Color="#7FB6DD" />
       <SolidColorBrush x:Key="FileTabBrush" Color="#0062D1" />
+      <!-- Fond Mica de Windows 11 : le fond de page et le bandeau laissent passer la teinte du bureau, les cartes
+           restent opaques (lisibilité inchangée). Utilisés seulement quand Windows confirme l'effet. -->
+      <SolidColorBrush x:Key="MicaBgBrush" Color="#C7F5F7FC" />
+      <LinearGradientBrush x:Key="MicaHeaderBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Offset="0" Color="#D9BFE4FF" />
+        <GradientStop Offset="1" Color="#D993CDF8" />
+      </LinearGradientBrush>
       <Color x:Key="AccentColor">#0062D1</Color>
       <Color x:Key="ShadowColor">#14152C4D</Color>
     </ResourceDictionary>
@@ -131,6 +138,11 @@
       <SolidColorBrush x:Key="HeaderHoverBrush" Color="#38FFFFFF" />
       <SolidColorBrush x:Key="HeaderLineBrush" Color="#2A5885" />
       <SolidColorBrush x:Key="FileTabBrush" Color="#78B9FF" />
+      <SolidColorBrush x:Key="MicaBgBrush" Color="#C7131316" />
+      <LinearGradientBrush x:Key="MicaHeaderBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Offset="0" Color="#D90F2E4C" />
+        <GradientStop Offset="1" Color="#D9164272" />
+      </LinearGradientBrush>
       <Color x:Key="AccentColor">#78B9FF</Color>
       <Color x:Key="ShadowColor">#66000000</Color>
     </ResourceDictionary>

@@ -8,9 +8,13 @@
              xmlns:ctl="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.MainView"
              x:DataType="vm:ShellViewModel"
-             Background="{DynamicResource BgBrush}"
              KeyDown="OnKeyDown">
   <UserControl.Styles>
+    <!-- Windows 11 avec Mica confirmé : fond de page et bandeau translucides, cartes et volet opaques. -->
+    <Style Selector="views|MainView"><Setter Property="Background" Value="{DynamicResource BgBrush}" /></Style>
+    <Style Selector="views|MainView.mica"><Setter Property="Background" Value="{DynamicResource MicaBgBrush}" /></Style>
+    <Style Selector="views|MainView.mica Border.titlerow:not(.onbrand)"><Setter Property="Background" Value="{DynamicResource MicaHeaderBrush}" /></Style>
+    <Style Selector="views|MainView.mica Border.appheader"><Setter Property="Background" Value="{DynamicResource MicaHeaderBrush}" /></Style>
     <!-- Clavier ouvert sur le téléphone : la barre d'onglets du bas se retire pour laisser voir la saisie -->
     <Style Selector="views|MainView.keyboard Border.phonetabs"><Setter Property="MaxHeight" Value="0" /><Setter Property="ClipToBounds" Value="True" /></Style>
     <Style Selector="TransitioningContentControl#PageHost"><Setter Property="Margin" Value="20,8,20,16" /></Style>

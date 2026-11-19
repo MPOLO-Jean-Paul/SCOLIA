@@ -21,6 +21,7 @@ public partial class MainWindow : Window
         // La barre de titre native reste distincte du bandeau bleu : pas de texte superposé
         // aux décorations système sur Windows, même avec une mise à l’échelle élevée.
         if (OperatingSystem.IsWindows()) ExtendClientAreaToDecorationsHint = false;
+        RequestMica();
         Opened += (_, _) => ApplyWindowMode();
         Closed += (_, _) => ReleaseShell();
         DataContextChanged += (_, _) =>
@@ -33,6 +34,32 @@ public partial class MainWindow : Window
             shell.SyncFullscreenState(WindowState == WindowState.FullScreen);
             if (IsVisible) ApplyWindowMode();
         };
+    }
+
+    /// <summary>
+    /// Fond Mica de Windows 11 (build 22000 et plus) : demandé à l'ouverture, appliqué seulement si Windows le
+    /// confirme. Sur Windows 10, avec la transparence désactivée par l'utilisateur, ou sur un autre système,
+    /// la fenêtre garde son fond opaque habituel.
+    /// </summary>
+    private void RequestMica()
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000)) return;
+        TransparencyLevelHint = [WindowTransparencyLevel.Mica, WindowTransparencyLevel.None];
+        Background = Avalonia.Media.Brushes.Transparent;
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == ActualTransparencyLevelProperty) ApplyMica();
+        };
+        Opened += (_, _) => ApplyMica();
+    }
+
+    private void ApplyMica()
+    {
+        var mica = ActualTransparencyLevel == WindowTransparencyLevel.Mica;
+        View.Classes.Set("mica", mica);
+        // Sans Mica, aucun fond transparent : la fenêtre reprend son fond opaque.
+        if (!mica) ClearValue(BackgroundProperty);
+        else Background = Avalonia.Media.Brushes.Transparent;
     }
 
     private void OnShellChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
