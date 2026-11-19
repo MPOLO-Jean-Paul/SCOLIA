@@ -831,6 +831,17 @@
     <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
   </Style>
   <Style Selector="Grid.authavatar > Border.badge.locked"><Setter Property="Background" Value="#F59E0B" /></Style>
+  <!-- Carte d'avatar de l'accueil : numéro discret dans le bandeau, illustration prête à s'animer -->
+  <Style Selector="TextBlock.cardnumber">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    <Setter Property="Opacity" Value="0.7" />
+  </Style>
+  <Style Selector="Image.featureillustration">
+    <Setter Property="RenderTransformOrigin" Value="50%,60%" />
+    <Setter Property="RenderTransform" Value="none" />
+  </Style>
   <!-- Barre de filtres : les critères posés directement sur le fond, sans encadré -->
   <Style Selector="Border.band, Border.filterbar">
     <Setter Property="Background" Value="Transparent" />

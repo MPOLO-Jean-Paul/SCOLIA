@@ -201,6 +201,20 @@
         </Animation>
       </Style.Animations>
     </Style>
+    <!-- Cartes d'avatar : l'illustration grandit doucement au survol et à l'appui (désactivé sans animations) -->
+    <Style Selector="LayoutTransformControl.anim Image.featureillustration">
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="LayoutTransformControl.anim Button.cardbutton:pointerover Image.featureillustration">
+      <Setter Property="RenderTransform" Value="scale(1.06) translateY(-2px)" />
+    </Style>
+    <Style Selector="LayoutTransformControl.anim Button.cardbutton:pressed Image.featureillustration">
+      <Setter Property="RenderTransform" Value="scale(0.97)" />
+    </Style>
     <!-- Liste de la recherche de la barre : une carte claire, ombrée, posée sous la barre -->
     <Style Selector="Border.finderdrop">
       <Setter Property="Background" Value="{DynamicResource BgBrush}" />

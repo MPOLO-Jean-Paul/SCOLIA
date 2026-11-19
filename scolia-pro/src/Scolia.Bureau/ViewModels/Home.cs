@@ -14,6 +14,8 @@ public sealed record ToolCardVm(string Title, string Description, MaterialIconKi
     public string ShortTitle { get; init; } = Title;
     /// <summary>Avatar illustré de la fonctionnalité (personnage, objet et pastille), dessiné en vecteurs.</summary>
     public Avalonia.Media.IImage Illustration => Infrastructure.Illustrations.For(Icon, Brush);
+    /// <summary>Numéro de la carte sur l'accueil (« 01 », « 02 »…).</summary>
+    public string Number { get; init; } = string.Empty;
 }
 
 /// <summary>Reçu récent de l'accueil : une ligne de la liste « Récents », qui ouvre le reçu.</summary>
@@ -222,7 +224,7 @@ public sealed class HomePage : PageViewModel
         {
             if (perm is null || Shell.Can(perm))
                 Tools.Add(new ToolCardVm(title, description, icon, ThemeBrush.Get(tone), new AsyncCommand(() => Shell.Run(run)))
-                    { ShortTitle = shortTitle ?? title });
+                    { ShortTitle = shortTitle ?? title, Number = (Tools.Count + 1).ToString("00", System.Globalization.CultureInfo.InvariantCulture) });
         }
 
         Add(Perm.PaymentsCreate, "Encaisser", "Choisir les mois payés, imprimer le reçu.", MaterialIconKind.HandCoin, "ToneGreen",
