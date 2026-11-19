@@ -21,7 +21,11 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     private static readonly (EnrollmentStatus, string)[] StatusLabels =
         [(EnrollmentStatus.Diplome, "Diplômé"), (EnrollmentStatus.Transfere, "Transféré")];
 
-    public async Task<PagedResult<StudentListItem>> SearchAsync(string? search, Guid? promotionId, string? status, Guid? yearId, int page, int pageSize, Guid? sectionId = null, CancellationToken ct = default)
+    /// <param name="gender">« M » ou « F » : apprenants de ce sexe seulement.</param>
+    /// <param name="payment">Situation de paiement : « en_ordre », « en_retard », « jamais_paye » ou « pris_en_charge ».
+    /// Avec <paramref name="periodId"/>, elle porte sur ce mois précis : payé, non soldé, ou rien versé.</param>
+    public async Task<PagedResult<StudentListItem>> SearchAsync(string? search, Guid? promotionId, string? status, Guid? yearId, int page, int pageSize,
+        Guid? sectionId = null, string? gender = null, string? payment = null, Guid? periodId = null, CancellationToken ct = default)
     {
         var year = await YearContext.GetAsync(db, yearId, ct);
         pageSize = Math.Clamp(pageSize, 1, 500);
@@ -38,15 +42,46 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             var st = EnumText.Parse(status, "status", StatusLabels);
             query = query.Where(x => x.e.Status == st);
         }
+        if (!string.IsNullOrWhiteSpace(gender))
+        {
+            var g = gender.Trim().ToUpperInvariant() switch
+            {
+                "M" or "MASCULIN" or "GARCON" or "GARÇON" => Gender.M,
+                "F" or "FEMININ" or "FÉMININ" or "FILLE" => Gender.F,
+                _ => throw new DomainException("gender", "Sexe inconnu : utilisez M ou F.")
+            };
+            query = query.Where(x => x.s.Gender == g);
+        }
         foreach (var term in TextKey.Normalize(search).Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
             var t = term;
             query = query.Where(x => x.s.SearchText.Contains(t));
         }
-        var total = await query.CountAsync(ct);
-        var rows = await query.OrderBy(x => x.p.Code).ThenBy(x => x.s.LastName).ThenBy(x => x.s.MiddleName).ThenBy(x => x.s.FirstName)
-            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
-        var map = await accounts.ComputeAsync(year.Id, rows.Select(r => r.e.Id).ToList(), null, ct);
+        var ordered = query.OrderBy(x => x.p.Code).ThenBy(x => x.s.LastName).ThenBy(x => x.s.MiddleName).ThenBy(x => x.s.FirstName);
+        var filter = PaymentFilter.Parse(payment);
+        if (filter is null && periodId is not null)
+            throw new DomainException("payment", "Choisissez la situation de paiement à vérifier pour ce mois.");
+
+        int total;
+        List<(Enrollment e, Student s, Promotion p)> rows;
+        IReadOnlyDictionary<Guid, AccountService.EnrollmentAccount> map;
+        if (filter is null)
+        {
+            total = await query.CountAsync(ct);
+            rows = (await ordered.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct)).Select(x => (x.e, x.s, x.p)).ToList();
+            map = await accounts.ComputeAsync(year.Id, rows.Select(r => r.e.Id).ToList(), null, ct);
+        }
+        else
+        {
+            // La situation de paiement se calcule sur le compte : tous les inscrits retenus, puis la page.
+            if (periodId is { } pid && !await db.Periods.AsNoTracking().AnyAsync(x => x.Id == pid && x.AcademicYearId == year.Id, ct))
+                throw new NotFoundException("Mois introuvable pour cette année scolaire.");
+            var all = (await ordered.ToListAsync(ct)).Select(x => (x.e, x.s, x.p)).ToList();
+            map = await accounts.ComputeAsync(year.Id, all.Select(r => r.e.Id).ToList(), null, ct);
+            var kept = all.Where(r => map.GetValueOrDefault(r.e.Id) is { } entry && PaymentFilter.Matches(filter.Value, entry, periodId)).ToList();
+            total = kept.Count;
+            rows = kept.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        }
         var items = rows.Select(r =>
         {
             var entry = map.GetValueOrDefault(r.e.Id);

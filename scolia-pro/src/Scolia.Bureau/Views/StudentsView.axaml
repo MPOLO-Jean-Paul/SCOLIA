@@ -41,6 +41,19 @@
           <TextBlock Text="Statut" Classes="fieldlabel" />
           <ComboBox Width="190" ItemsSource="{Binding StatusChoices}" SelectedItem="{Binding Status}" />
         </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Sexe" Classes="fieldlabel" />
+          <ComboBox Width="160" ItemsSource="{Binding GenderChoices}" SelectedItem="{Binding Gender}" />
+        </StackPanel>
+        <!-- Paiement : en ordre, en retard, jamais payé ou pris en charge ; puis un mois précis si besoin -->
+        <StackPanel Classes="field">
+          <TextBlock Text="Paiement" Classes="fieldlabel" />
+          <ComboBox Width="190" ItemsSource="{Binding PaymentChoices}" SelectedItem="{Binding Payment}" />
+        </StackPanel>
+        <StackPanel Classes="field" IsVisible="{Binding HasMonthFilter}">
+          <TextBlock Text="Mois" Classes="fieldlabel" />
+          <ComboBox Width="170" ItemsSource="{Binding Months}" SelectedItem="{Binding Month}" />
+        </StackPanel>
         <Button Classes="ghost" Command="{Binding ClearFilters}" VerticalAlignment="Bottom" Margin="0,0,12,12"
                 ToolTip.Tip="{Binding ResetFiltersTooltip}">
           <StackPanel Orientation="Horizontal" Spacing="6">

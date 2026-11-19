@@ -59,12 +59,19 @@ public sealed class StudentsPage : PageViewModel
             promotion = Promotions.Count > 0 ? Promotions[0] : null;
             sectionChoice = Sections.Count > 0 ? Sections[0] : null;
             status = StatusChoices[0];
+            gender = GenderChoices[0];
+            payment = PaymentChoices[0];
+            month = Months.Count > 0 ? Months[0] : null;
             page = 1;
             Selected = null;
             Raise(nameof(Search));
             Raise(nameof(Promotion));
             Raise(nameof(SectionChoice));
             Raise(nameof(Status));
+            Raise(nameof(Gender));
+            Raise(nameof(Payment));
+            Raise(nameof(Month));
+            Raise(nameof(HasMonthFilter));
             await RefreshAsync();
         });
         PreviousPage = new AsyncCommand(async () => { page--; await RefreshAsync(); });
@@ -156,6 +163,45 @@ public sealed class StudentsPage : PageViewModel
         set { if (Set(ref status, value) && ready) ApplyFilter(); }
     }
 
+    // ---------- Tri par sexe, par situation de paiement et par mois ----------
+    private ChoiceItem? gender;
+    private ChoiceItem? payment;
+    private ChoiceItem? month;
+    private IReadOnlyList<ChoiceItem> months = [new ChoiceItem(string.Empty, "Toute l'année")];
+    public IReadOnlyList<ChoiceItem> GenderChoices { get; } =
+        [new(string.Empty, "Tous les sexes"), new("M", "Masculin"), new("F", "Féminin")];
+    /// <summary>Les pris en charge ont leur propre choix : jamais comptés « en ordre » ni « en retard ».</summary>
+    public IReadOnlyList<ChoiceItem> PaymentChoices { get; } =
+    [
+        new(string.Empty, "Tous les paiements"), new("en_ordre", "En ordre"), new("en_retard", "En retard"),
+        new("jamais_paye", "Jamais payé"), new("pris_en_charge", "Pris en charge")
+    ];
+    public IReadOnlyList<ChoiceItem> Months { get => months; private set => Set(ref months, value); }
+    public ChoiceItem? Gender
+    {
+        get => gender;
+        set { if (Set(ref gender, value) && ready) ApplyFilter(); }
+    }
+    public ChoiceItem? Payment
+    {
+        get => payment;
+        set
+        {
+            if (!Set(ref payment, value)) return;
+            // Le mois n'a de sens qu'avec une situation de paiement (hors pris en charge).
+            if (!HasMonthFilter && month is { Value.Length: > 0 }) { month = Months[0]; Raise(nameof(Month)); }
+            Raise(nameof(HasMonthFilter));
+            if (ready) ApplyFilter();
+        }
+    }
+    /// <summary>Le choix du mois s'affiche avec « En ordre », « En retard » ou « Jamais payé ».</summary>
+    public bool HasMonthFilter => payment is { Value: "en_ordre" or "en_retard" or "jamais_paye" } && months.Count > 1;
+    public ChoiceItem? Month
+    {
+        get => month;
+        set { if (Set(ref month, value) && ready) ApplyFilter(); }
+    }
+
     public StudentRow? Selected { get => selected; set => Set(ref selected, value); }
     public string EmptyTitle { get; private set; } = string.Empty;
     public string EmptyHint { get; private set; } = string.Empty;
@@ -192,14 +238,33 @@ public sealed class StudentsPage : PageViewModel
             sectionChoice = Sections[0];
             Raise(nameof(SectionChoice));
             status = StatusChoices[0];
+            gender = GenderChoices[0];
+            payment = PaymentChoices[0];
+            try
+            {
+                var years = await Shell.Api.GetAsync<List<AcademicYearDto>>("api/etablissement/annees");
+                if (years.FirstOrDefault(y => y.IsCurrent) is { } current)
+                    Months = [new ChoiceItem(string.Empty, "Toute l'année"), .. current.Periods.OrderBy(x => x.Order)
+                        .Select(x => new ChoiceItem(x.Id.ToString(), x.Name))];
+            }
+            catch (Exception ex) when (ex is OfflineException or ApiException or HttpRequestException) { }
+            month = Months[0];
             Raise(nameof(Promotion));
             Raise(nameof(Status));
+            Raise(nameof(Gender));
+            Raise(nameof(Payment));
+            Raise(nameof(Month));
+            Raise(nameof(HasMonthFilter));
             ready = true;
         }
 
         var query = ScoliaClient.Query(
-            ("q", Search.Trim()), ("promotionId", Promotion?.Value), ("sectionId", SectionChoice?.Value), ("statut", Status?.Value), ("page", page), ("taille", PageSize));
+            ("q", Search.Trim()), ("promotionId", Promotion?.Value), ("sectionId", SectionChoice?.Value), ("statut", Status?.Value),
+            ("sexe", Gender?.Value), ("paiement", Payment?.Value), ("periodeId", HasMonthFilter ? Month?.Value : null),
+            ("page", page), ("taille", PageSize));
         OfflineStudentSearch.Result? local = null;
+        if (!Shell.Api.IsOnline && (Gender is { Value.Length: > 0 } || Payment is { Value.Length: > 0 }))
+            Shell.Notify("Hors ligne : le tri par sexe et par paiement reprend dès le retour du serveur.");
         if (!Shell.Api.IsOnline && Shell.Api.Offline is { } store)
         {
             var promotionCode = Promotion?.Value is { Length: > 0 } selectedPromotion
@@ -234,13 +299,16 @@ public sealed class StudentsPage : PageViewModel
                 s.GuardianPhone ?? "—", Money(s.Balance), situation, ThemeBrush.Get(sponsored ? "TonePurple" : late ? "ToneRed" : "ToneGreen"));
         }));
 
-        subtitle = Format.Count(total, Shell.StudentTerms.Singular, Shell.StudentTerms.Plural) + (Promotion is { Value.Length: > 0 } ? $" · {Promotion.Label}" : string.Empty);
+        subtitle = Format.Count(total, Shell.StudentTerms.Singular, Shell.StudentTerms.Plural) + (Promotion is { Value.Length: > 0 } ? $" · {Promotion.Label}" : string.Empty)
+            + (Gender is { Value.Length: > 0 } ? $" · {Gender.Label}" : string.Empty)
+            + (Payment is { Value.Length: > 0 } ? $" · {Payment.Label}" + (HasMonthFilter && Month is { Value.Length: > 0 } ? $" en {Month.Label}" : string.Empty) : string.Empty);
         if (!Shell.Api.IsOnline)
             subtitle += local is { Complete: false }
                 ? $" · recherche locale ({local.Loaded}/{local.Registered} dossiers disponibles)"
                 : " · copie locale, non actualisée";
         // Liste vide : sans filtre, l'établissement n'a encore aucun apprenant ; avec un filtre, il faut l'élargir.
-        var filtered = Search.Trim().Length > 0 || Promotion is { Value.Length: > 0 } || SectionChoice is { Value.Length: > 0 } || Status is { Value.Length: > 0 };
+        var filtered = Search.Trim().Length > 0 || Promotion is { Value.Length: > 0 } || SectionChoice is { Value.Length: > 0 } || Status is { Value.Length: > 0 }
+            || Gender is { Value.Length: > 0 } || Payment is { Value.Length: > 0 };
         EmptyTitle = filtered ? $"Aucun {Shell.StudentTerms.Singular} trouvé" : $"Aucun {Shell.StudentTerms.Singular} inscrit";
         EmptyHint = local is { Complete: false }
             ? "Recherche limitée aux dossiers téléchargés sur cet appareil. Reconnectez-vous pour voir le registre complet."
