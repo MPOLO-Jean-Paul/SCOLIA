@@ -42,27 +42,43 @@
          contexte, puis l'état de la connexion et de la caisse en lignes de réglage dans la même carte. -->
     <Border x:Name="WelcomeCard" Classes="phonegroup welcomecard">
       <StackPanel>
-        <Grid Classes="homeintro" ColumnDefinitions="Auto,*" ColumnSpacing="14" Margin="16,16,16,14">
-          <Border Classes="homeavatar" VerticalAlignment="Center">
-            <Border.Background>
-              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                <GradientStop Offset="0" Color="#3A86F0" />
-                <GradientStop Offset="1" Color="#0B4FC4" />
-              </LinearGradientBrush>
-            </Border.Background>
-            <TextBlock Text="{Binding Initials}" Foreground="White" FontSize="21" FontWeight="SemiBold"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
-          <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-            <TextBlock Classes="homegreeting" Text="{Binding Greeting}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" />
-            <!-- Rôle et nom complet de l'établissement : sur deux lignes plutôt que coupés. -->
-            <TextBlock Text="{Binding AccountContextLine}" Classes="muted" FontSize="{DynamicResource FsSmall}"
-                       TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
-            <TextBlock Text="{Binding DateLine}" Classes="muted" FontSize="{DynamicResource FsSmall}"
-                       TextTrimming="CharacterEllipsis" />
-          </StackPanel>
+        <!-- En-tête teinté de l'accent : avatar cerclé de blanc, salutation, rôle, date en pastille -->
+        <Grid ClipToBounds="True">
+          <Border Background="{DynamicResource AccentSoftBrush}" Opacity="0.55" />
+          <Ellipse Fill="{DynamicResource AccentBrush}" Opacity="0.06" Width="170" Height="170"
+                   HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-80,-60,0" IsHitTestVisible="False" />
+          <Grid Classes="homeintro" ColumnDefinitions="Auto,*" ColumnSpacing="14" Margin="16,18,16,16">
+            <Grid Width="68" Height="68" VerticalAlignment="Center">
+              <Ellipse Fill="{DynamicResource AccentBrush}" Opacity="0.12" />
+              <Border Classes="homeavatar" BorderBrush="White" BorderThickness="3" BoxShadow="0 4 12 0 #2B0B4FC4"
+                      HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Offset="0" Color="#3A86F0" />
+                    <GradientStop Offset="1" Color="#0B4FC4" />
+                  </LinearGradientBrush>
+                </Border.Background>
+                <TextBlock Text="{Binding Initials}" Foreground="White" FontSize="21" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+            </Grid>
+            <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+              <TextBlock Classes="homegreeting" Text="{Binding Greeting}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" />
+              <!-- Rôle et nom complet de l'établissement : sur deux lignes plutôt que coupés. -->
+              <TextBlock Text="{Binding AccountContextLine}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                         TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+              <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                      CornerRadius="10" Padding="8,3" HorizontalAlignment="Left" Margin="0,3,0,0">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <mi:MaterialIcon Kind="CalendarBlankOutline" Width="13" Height="13" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding DateLine}" FontSize="{DynamicResource FsCaption}"
+                             Foreground="{DynamicResource Text2Brush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                </Grid>
+              </Border>
+            </StackPanel>
+          </Grid>
         </Grid>
-        <Border Height="1" Background="{DynamicResource LineBrush}" Margin="16,0,0,0" />
+        <Border Height="1" Background="{DynamicResource LineBrush}" />
         <!-- Connexion, toujours visible : en ligne, hors ligne ou synchronisation ; un toucher ouvre Réseau. -->
         <Button Classes="settingsentry" Command="{Binding Network}" ToolTip.Tip="{Binding Sync.StatusDetail}">
           <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">

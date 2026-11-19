@@ -79,9 +79,12 @@ public sealed class InstallerAndHomePolishTests
 
         Assert.Contains(elements, e => e.Name.LocalName == "Border" &&
             e.Attributes().Any(a => a.Name.LocalName == "Classes" && a.Value == "desktopwelcome"));
+        // Fond teinté de l'accent derrière la carte de bienvenue, tuiles d'état côte à côte.
         Assert.Contains(elements, e => e.Name.LocalName == "Border" &&
-            e.Attributes().Any(a => a.Name.LocalName == "Height" && a.Value == "3") &&
-            e.Attributes().Any(a => a.Name.LocalName == "Background" && a.Value.Contains("AccentBrush")));
+            e.Attributes().Any(a => a.Name.LocalName == "Background" && a.Value.Contains("AccentSoftBrush")) &&
+            e.Attributes().Any(a => a.Name.LocalName == "Opacity"));
+        Assert.Contains(elements, e => e.Name.LocalName == "Button" &&
+            e.Attributes().Any(a => a.Name.LocalName == "Classes" && a.Value == "statustile"));
         // Les boutons doivent demeurer à droite du séparateur VERTICAL sur petits
         // et grands écrans, et non sous le message d'accueil.
         Assert.Contains(elements, e => e.Name.LocalName == "Grid" &&
