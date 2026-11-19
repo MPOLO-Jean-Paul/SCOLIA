@@ -210,13 +210,7 @@
                 <Border Classes="toolcard feature">
                   <StackPanel Spacing="10">
                     <Grid ColumnDefinitions="*,Auto">
-                      <Grid Classes="featureavatar">
-                        <Ellipse Classes="halo" Fill="{Binding Brush}" />
-                        <Border Classes="appicon avatar" Background="{Binding Brush}">
-                          <mi:MaterialIcon Kind="{Binding Icon}" />
-                        </Border>
-                        <Ellipse Classes="sheen" />
-                      </Grid>
+                      <Image Classes="featureillustration" Source="{Binding Illustration}" Width="92" Height="92" HorizontalAlignment="Left" />
                       <mi:MaterialIcon Grid.Column="1" Kind="ArrowTopRight" Width="18" Height="18"
                                        Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Top" />
                     </Grid>

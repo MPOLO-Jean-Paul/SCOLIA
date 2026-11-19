@@ -12,6 +12,8 @@ public sealed record ToolCardVm(string Title, string Description, MaterialIconKi
 {
     /// <summary>Libellé d'un seul mot pour les gros boutons du téléphone : jamais coupé au milieu d'un mot.</summary>
     public string ShortTitle { get; init; } = Title;
+    /// <summary>Avatar illustré de la fonctionnalité (personnage, objet et pastille), dessiné en vecteurs.</summary>
+    public Avalonia.Media.IImage Illustration => Infrastructure.Illustrations.For(Icon, Brush);
 }
 
 /// <summary>Reçu récent de l'accueil : une ligne de la liste « Récents », qui ouvre le reçu.</summary>

@@ -129,7 +129,10 @@ public sealed class InstallerAndHomePolishTests
             Assert.Contains(nodes, e => e.Name.LocalName == "ItemsControl" &&
                 e.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value == "{Binding Tools}") &&
                 e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "FeatureCards"));
-            // Chaque fonctionnalité est une carte avec son avatar (halo, disque coloré, reflet), son titre et sa description.
+            // Chaque fonctionnalité est une carte avec son avatar illustré (personnage, objet, pastille), son titre et sa description.
+            Assert.Contains(nodes, e => e.Name.LocalName == "Image" &&
+                e.Attributes().Any(a => a.Name.LocalName == "Source" && a.Value == "{Binding Illustration}"));
+            // Les lignes (état, caisse, aperçu) gardent un avatar rond (halo, disque coloré, reflet).
             Assert.Contains(nodes, e => e.Name.LocalName == "Grid" &&
                 e.Attributes().Any(a => a.Name.LocalName == "Classes" && a.Value.StartsWith("featureavatar", StringComparison.Ordinal)) &&
                 e.Elements().Any(d => d.Name.LocalName == "Ellipse" && d.Attributes().Any(a => a.Value == "halo")) &&

@@ -99,13 +99,7 @@
             <Button Classes="cardbutton" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" Margin="0,0,8,8" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch">
               <Border Classes="toolcard feature compact">
                 <StackPanel Spacing="8">
-                  <Grid Classes="featureavatar small">
-                    <Ellipse Classes="halo" Fill="{Binding Brush}" />
-                    <Border Classes="appicon avatar" Background="{Binding Brush}">
-                      <mi:MaterialIcon Kind="{Binding Icon}" />
-                    </Border>
-                    <Ellipse Classes="sheen" />
-                  </Grid>
+                  <Image Classes="featureillustration" Source="{Binding Illustration}" Width="72" Height="72" HorizontalAlignment="Left" />
                   <StackPanel Spacing="2">
                     <TextBlock Text="{Binding ShortTitle}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
                     <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}"
