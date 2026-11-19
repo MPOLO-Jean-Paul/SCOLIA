@@ -25,6 +25,14 @@ public sealed class InstallerAndHomePolishTests
         Assert.Contains("AppPublisherURL={#AppWebsite}", iss);
         Assert.Contains("ShellExecAsOriginalUser('open', '{#AppWebsite}'", iss);
         Assert.DoesNotContain("gmail.com", iss);
+        // Les textes affichés par l'assistant (licence, avant et après installation) portent la même adresse.
+        foreach (var text in new[] { "CONDITIONS_UTILISATION.txt", "AVANT_INSTALLATION.txt", "APRES_INSTALLATION.txt" })
+        {
+            var content = File.ReadAllText(Source("scripts/windows/" + text));
+            Assert.DoesNotContain("gmail.com", content);
+            Assert.Contains("contact@jp-services.org", content);
+            Assert.Contains("www.jp-services.org", content);
+        }
         Assert.Contains("AppSupportURL={#AppSupportLink}", iss);
         Assert.Contains("LienAssistance.Parent := WizardForm", iss);
         Assert.Contains("LienAssistance.OnClick := @OuvrirAssistance", iss);

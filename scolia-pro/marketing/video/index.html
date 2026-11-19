@@ -438,8 +438,8 @@ phoneScene({ a: 31.6, b: 39.0, enter: 'push', k: 'Hors ligne', color: '#ff9500',
   shine(pill, V ? 700 : 560, a + 1.9);
   tracks.push({ e: pill, fn: t => ({ s: 1 + .025 * Math.sin(Math.max(0, t - a - 1.6) * 3) }) });
   const contact = V
-    ? '<b style="color:#1d1d1f">Jp-Services</b><br>Jean Paul MPOLO LONO<br>+243 977 152 825<br>jeanpaulmpolo242@gmail.com'
-    : '<b style="color:#1d1d1f">Jp-Services</b> · Jean Paul MPOLO LONO<br>+243 977 152 825 · jeanpaulmpolo242@gmail.com';
+    ? '<b style="color:#1d1d1f">Jp-Services</b><br>Jean Paul MPOLO LONO<br>+243 977 152 825<br>contact@jp-services.org'
+    : '<b style="color:#1d1d1f">Jp-Services</b> · Jean Paul MPOLO LONO<br>+243 977 152 825 · contact@jp-services.org';
   centeredText(contact, y0 + size + (V ? 510 : 400), V ? 38 : 30, 500, '#515154', a + 1.1, b, { ls: '-.01em' }).style.lineHeight = 1.55;
   centeredText('Windows · Android', V ? H - 170 : H - 90, V ? 30 : 24, 600, '#8e8e93', a + 1.4, b, { ls: '.02em' });
 }

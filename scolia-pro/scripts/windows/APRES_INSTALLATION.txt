@@ -3,7 +3,8 @@ INSTALLATION TERMINÉE - SCOLIA PRO
 Vous pouvez lancer SCOLIA Pro depuis le menu Démarrer ou le raccourci du Bureau.
 
 ASSISTANCE ET QUESTIONS
-Contact JP-Services : jeanpaulmpolo242@gmail.com
+Contact JP-Services : contact@jp-services.org
+Site : www.jp-services.org
 Cliquez sur l'adresse d'assistance en bas de cette fenêtre pour écrire directement un e-mail.
 Les mises à jour sont proposées par l'application SCOLIA Pro ; aucun accès à GitHub
 n'est nécessaire dans l'assistant Windows pour obtenir de l'aide.

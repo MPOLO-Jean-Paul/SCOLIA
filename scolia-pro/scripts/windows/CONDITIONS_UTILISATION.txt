@@ -45,7 +45,8 @@ aucun droit supplémentaire sur ces composants.
 
 7. ASSISTANCE
 Éditeur indiqué pour cette distribution : JP-Services.
-Adresse e-mail de contact : jeanpaulmpolo242@gmail.com
+Adresse e-mail de contact : contact@jp-services.org
+Site : www.jp-services.org
 
 En cliquant sur « Je comprends et j'accepte » dans cet assistant, vous
 confirmez avoir pris connaissance de ces conditions pour l'installation.

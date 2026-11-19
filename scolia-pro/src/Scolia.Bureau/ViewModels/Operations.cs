@@ -1305,7 +1305,7 @@ public sealed class AboutViewModel : Observable
 
     private async Task CopyAsync()
     {
-        var text = $"SCOLIA Pro {AboutInfo.Version} · {AboutInfo.Publisher}{Environment.NewLine}{AboutInfo.Developer}{Environment.NewLine}{AboutInfo.Phone}{Environment.NewLine}{AboutInfo.Email}";
+        var text = $"SCOLIA Pro {AboutInfo.Version} · {AboutInfo.Publisher}{Environment.NewLine}{AboutInfo.Developer}{Environment.NewLine}{AboutInfo.Phone}{Environment.NewLine}{AboutInfo.Email}{Environment.NewLine}{AboutInfo.Website}";
         if (shell.CopyHandler is { } copy) await copy(text);
         shell.Notify("Coordonnées du développeur copiées.");
     }

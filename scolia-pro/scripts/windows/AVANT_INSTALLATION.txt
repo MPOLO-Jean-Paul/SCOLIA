@@ -2,8 +2,9 @@ BIENVENUE DANS SCOLIA PRO
 
 Gestion scolaire professionnelle
 Éditeur : JP-Services
-Assistance : jeanpaulmpolo242@gmail.com
-Cliquez sur cette adresse, en bas de l'assistant, pour ouvrir votre messagerie.
+Assistance : contact@jp-services.org
+Site : www.jp-services.org
+Cliquez sur l'adresse ou sur le site, en bas de l'assistant, pour les ouvrir.
 
 Un seul programme d'installation pour le poste Windows 64 bits.
 Il installe l'interface SCOLIA Pro, le moteur serveur local, les ressources
