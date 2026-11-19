@@ -119,7 +119,7 @@
         </StackPanel>
       </ScrollViewer>
 
-      <Border Classes="formerror" Grid.Row="2" Background="{DynamicResource RedSoftBrush}" CornerRadius="{StaticResource RadiusSmall}" Padding="12,8" Margin="24,4,24,8" IsVisible="{Binding HasError}">
+      <Border Classes="formerror" Grid.Row="2" Background="{DynamicResource RedSoftBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="12,8" Margin="24,4,24,8" IsVisible="{Binding HasError}">
         <TextBlock Text="{Binding Error}" Classes="error" TextWrapping="Wrap" />
       </Border>
 

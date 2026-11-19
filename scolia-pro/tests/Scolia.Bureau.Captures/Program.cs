@@ -157,6 +157,7 @@ if (Environment.GetEnvironmentVariable("SCOLIA_ASTUCES") == "0") prefs.Tips = fa
 if (Environment.GetEnvironmentVariable("SCOLIA_MOBILE") == "1")
 {
     Preferences.MobileLayout = true;
+    Scolia.Bureau.Infrastructure.PlatformTheme.Apply(true);
     Platform.IsMobile = true;
     // Comme sur Android : le téléphone peut être le serveur de l'établissement (sans le démarrer ici).
     Platform.LocalServer = new CaptureServer();

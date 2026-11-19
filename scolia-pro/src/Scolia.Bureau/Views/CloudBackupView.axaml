@@ -14,7 +14,7 @@
 
     <!-- Ce qu'il faut faire maintenant -->
     <Border Grid.Row="1" Background="{DynamicResource OrangeSoftBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
-            CornerRadius="{StaticResource RadiusSmall}" Padding="16,12" Margin="0,0,0,12" IsVisible="{Binding HasNotice}">
+            CornerRadius="{DynamicResource RadiusSmall}" Padding="16,12" Margin="0,0,0,12" IsVisible="{Binding HasNotice}">
       <Grid ColumnDefinitions="Auto,*">
         <mi:MaterialIcon Kind="InformationOutline" Width="20" Height="20" Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Top" Margin="0,1,10,0" />
         <TextBlock Grid.Column="1" Text="{Binding Notice}" TextWrapping="Wrap" />

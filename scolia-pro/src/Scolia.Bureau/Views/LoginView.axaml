@@ -630,7 +630,6 @@
                   </Grid>
                   <TextBlock Text="{Binding UserName}" FontSize="18" FontWeight="SemiBold" Foreground="#FFFFFF"
                              TextTrimming="CharacterEllipsis" TextAlignment="Center" />
-                  <TextBlock Text="Compte enregistré sur cet appareil" FontSize="12" Foreground="#DCE7FF" TextAlignment="Center" />
                 </StackPanel>
 
                 <Expander Header="Comptes" IsExpanded="False" IsVisible="{Binding ShowRememberedChoices}"
@@ -809,19 +808,15 @@
             </StackPanel>
             <!-- Téléphone / petite fenêtre : liens rédigés, sans icônes, sous le formulaire. -->
             <StackPanel x:Name="IosMobileActions" Spacing="2" Margin="0,9,0,0" HorizontalAlignment="Center">
-              <TextBlock Text="Un problème avec votre compte ?" Foreground="#E4EEFF" FontSize="12"
-                         TextAlignment="Center" TextWrapping="Wrap" />
               <Button Classes="iosauthlink" Command="{Binding ChangeAccount}" IsEnabled="{Binding NotBusy}"
                       IsVisible="{Binding HasRememberedAccount}" AutomationProperties.Name="Changer de compte"
                       HorizontalAlignment="Center"><TextBlock Text="Changer de compte" /></Button>
               <Button Classes="iosauthlink" Command="{Binding ForgetSelectedAccount}" IsEnabled="{Binding NotBusy}"
                       IsVisible="{Binding HasRememberedAccount}" AutomationProperties.Name="Retirer le compte localement"
-                      HorizontalAlignment="Center"><TextBlock Text="Retirer le compte de cet appareil" /></Button>
-              <TextBlock Text="Besoin de configurer votre établissement ?" Foreground="#E4EEFF"
-                         FontSize="12" TextAlignment="Center" TextWrapping="Wrap" Margin="0,6,0,0" />
+                      HorizontalAlignment="Center"><TextBlock Text="Retirer ce compte" /></Button>
               <Button Classes="iosauthlink" Command="{Binding ChangeServer}" IsEnabled="{Binding NotBusy}"
                       AutomationProperties.Name="Configurer le serveur" HorizontalAlignment="Center">
-                <TextBlock Text="Configurer ou changer le serveur" />
+                <TextBlock Text="Changer de serveur" />
               </Button>
               <ToggleButton x:Name="IosLoginMore" Classes="iosmoretoggle" IsChecked="False"
                             ToolTip.Tip="Afficher les autres options de connexion"

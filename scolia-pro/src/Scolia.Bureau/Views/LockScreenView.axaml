@@ -196,8 +196,6 @@
               <TextBlock Text="{Binding LockedSince}" Foreground="#C8FFFFFF" FontSize="11" TextAlignment="Center" TextWrapping="Wrap" />
             </StackPanel>
 
-          <TextBlock Text="{Binding Message}" Foreground="#E6FFFFFF" FontSize="13"
-                     TextWrapping="Wrap" TextAlignment="Center" Margin="0,2,0,3" />
 
           <!-- Le même champ verre, icône, œil et flèche que sur la page de connexion. -->
           <Panel IsVisible="{Binding RequireCode}">
@@ -320,12 +318,7 @@
               <TextBlock Text="{Binding AccountLine}" Foreground="#E3EDFF" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" MaxLines="2" />
               <TextBlock Text="{Binding LockedSince}" Foreground="#E3EDFF" FontSize="11" TextAlignment="Center" TextWrapping="Wrap" />
             </StackPanel>
-            <Border Height="1" Background="#7192E5" />
-            <TextBlock Text="{Binding Message}" Foreground="#E3EDFF" FontSize="13"
-                       TextAlignment="Center" TextWrapping="Wrap" />
             <StackPanel Spacing="6" IsVisible="{Binding RequireCode}">
-              <TextBlock Text="VOTRE CODE PERSONNEL" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap"
-                         Foreground="White" />
               <Grid>
                 <TextBox x:Name="IosLockCode" Classes="ioslockfield onbrand" Background="#1845B1" Foreground="#FFFFFF" CaretBrush="#FFFFFF" PlaceholderForeground="#E4EEFF" Text="{Binding Code}"
                          PasswordChar="•" RevealPassword="{Binding ShowCode}"

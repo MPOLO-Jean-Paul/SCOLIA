@@ -67,7 +67,7 @@
 
       <!-- Code provisoire : rien ne s'ouvre avant le choix de son propre code -->
       <Border Background="{DynamicResource OrangeSoftBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
-              CornerRadius="{StaticResource RadiusSmall}" Padding="16,12" IsVisible="{Binding IsBlocked}">
+              CornerRadius="{DynamicResource RadiusSmall}" Padding="16,12" IsVisible="{Binding IsBlocked}">
         <Grid ColumnDefinitions="Auto,*,Auto" infra:Adaptive.StackBelow="560">
           <mi:MaterialIcon Kind="KeyChange" Width="22" Height="22" Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Center" Margin="0,0,12,0" />
           <TextBlock Grid.Column="1" Text="{Binding Blocked}" TextWrapping="Wrap" VerticalAlignment="Center" />

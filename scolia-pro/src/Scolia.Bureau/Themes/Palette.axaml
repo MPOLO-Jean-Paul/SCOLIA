@@ -27,6 +27,8 @@
       <SolidColorBrush x:Key="SearchBrush" Color="#FFFFFF" />
       <SolidColorBrush x:Key="LineBrush" Color="#E1E8F2" />
       <SolidColorBrush x:Key="LineStrongBrush" Color="#7D8798" />
+      <SolidColorBrush x:Key="SidebarStrokeBrush" Color="#E1E8F2" />
+      <SolidColorBrush x:Key="NavItemBrush" Color="#FFFFFF" />
       <!-- Contour des champs blancs : visible (3:1 sur blanc) sans alourdir, l'accent marque le focus -->
       <SolidColorBrush x:Key="FieldLineBrush" Color="#8A94A6" />
       <SolidColorBrush x:Key="ButtonLineBrush" Color="#7D8798" />
@@ -100,6 +102,8 @@
       <SolidColorBrush x:Key="SearchBrush" Color="#26262B" />
       <SolidColorBrush x:Key="LineBrush" Color="#303036" />
       <SolidColorBrush x:Key="LineStrongBrush" Color="#808088" />
+      <SolidColorBrush x:Key="SidebarStrokeBrush" Color="#303036" />
+      <SolidColorBrush x:Key="NavItemBrush" Color="#212126" />
       <SolidColorBrush x:Key="FieldLineBrush" Color="#85858D" />
       <SolidColorBrush x:Key="ButtonLineBrush" Color="#808088" />
       <SolidColorBrush x:Key="ButtonHoverBrush" Color="#3A3A41" />
@@ -172,6 +176,7 @@
   <CornerRadius x:Key="RadiusField">6</CornerRadius>
   <CornerRadius x:Key="RadiusPill">14</CornerRadius>
   <CornerRadius x:Key="RadiusSmall">6</CornerRadius>
+  <BoxShadows x:Key="SidebarShadow">0 1 5 0 #10000000</BoxShadows>
   <x:Double x:Key="FsBase">13.5</x:Double>
   <x:Double x:Key="FsSmall">12</x:Double>
   <x:Double x:Key="FsCaption">11</x:Double>

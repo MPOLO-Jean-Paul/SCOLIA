@@ -8,7 +8,7 @@
 
       <!-- Rappel de sauvegarde : barre d'information de Windows, seulement s'il y a lieu -->
       <Border Background="{DynamicResource OrangeSoftBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
-              CornerRadius="{StaticResource RadiusSmall}" Padding="14,8" IsVisible="{Binding HasBackupLine}">
+              CornerRadius="{DynamicResource RadiusSmall}" Padding="14,8" IsVisible="{Binding HasBackupLine}">
         <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
           <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Center" Margin="0,0,10,0" />
           <TextBlock Grid.Column="1" Text="{Binding BackupLine}" TextWrapping="Wrap" VerticalAlignment="Center" />

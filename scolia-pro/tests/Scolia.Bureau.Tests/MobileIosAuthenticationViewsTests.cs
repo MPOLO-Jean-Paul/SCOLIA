@@ -217,9 +217,10 @@ public sealed class MobileIosAuthenticationViewsTests
                     Attribute(e, "Command", action));
             Assert.DoesNotContain(panel.Descendants(), e => e.Name.LocalName == "MaterialIcon");
         }
-        Assert.Contains(mobile.Descendants(), e => e.Name.LocalName == "TextBlock" &&
+        // Écrans d'avant connexion sobres : des liens d'action, sans phrases d'introduction.
+        Assert.DoesNotContain(mobile.Descendants(), e => e.Name.LocalName == "TextBlock" &&
             Attribute(e, "Text", "Un problème avec votre compte ?"));
-        Assert.Contains(mobile.Descendants(), e => e.Name.LocalName == "TextBlock" &&
+        Assert.DoesNotContain(mobile.Descendants(), e => e.Name.LocalName == "TextBlock" &&
             Attribute(e, "Text", "Besoin de configurer votre établissement ?"));
         var code = File.ReadAllText(Source("Views/LoginView.axaml.cs"));
         Assert.Contains("!Platform.IsMobile && size.Width >= 850", code);

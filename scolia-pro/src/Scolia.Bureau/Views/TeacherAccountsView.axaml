@@ -14,7 +14,7 @@
 
     <!-- Identifiants à remettre : affichés une seule fois, jamais enregistrés sur ce poste -->
     <Border Grid.Row="1" Background="{DynamicResource GreenSoftBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
-            CornerRadius="{StaticResource RadiusSmall}" Padding="16,12" Margin="0,0,0,12" IsVisible="{Binding HasCredentials}">
+            CornerRadius="{DynamicResource RadiusSmall}" Padding="16,12" Margin="0,0,0,12" IsVisible="{Binding HasCredentials}">
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" infra:Adaptive.StackBelow="620">
         <mi:MaterialIcon Kind="AccountKey" Width="24" Height="24" Foreground="{DynamicResource ToneGreen}" VerticalAlignment="Top" Margin="0,2,0,0" />
         <StackPanel Grid.Column="1" Spacing="4">

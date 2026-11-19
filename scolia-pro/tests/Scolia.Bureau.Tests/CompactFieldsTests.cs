@@ -31,7 +31,7 @@ public sealed class CompactFieldsTests
             s.Attribute("Value")?.Value == "36");
         Assert.Contains(controls.Descendants(ax + "Setter"), s =>
             s.Attribute("Property")?.Value == "CornerRadius" &&
-            s.Attribute("Value")?.Value == "{StaticResource RadiusSmall}");
+            s.Attribute("Value")?.Value == "{DynamicResource RadiusSmall}");
     }
 
     [Fact]

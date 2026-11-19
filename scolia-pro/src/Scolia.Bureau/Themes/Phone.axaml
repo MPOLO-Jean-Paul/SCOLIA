@@ -212,7 +212,7 @@
     <Style Selector="Border.phonegroup">
       <Setter Property="infra:Reveal.Enabled" Value="True" />
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-      <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="ClipToBounds" Value="True" />

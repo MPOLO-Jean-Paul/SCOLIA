@@ -68,7 +68,7 @@
     <Setter Property="Padding" Value="14,4" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
     <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     <Setter Property="BorderThickness" Value="0" />
@@ -95,7 +95,7 @@
   <Style Selector="Button.quiet">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
     <Setter Property="Padding" Value="10,4" />
     <Setter Property="FontWeight" Value="Normal" />
   </Style>
@@ -125,7 +125,7 @@
     <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
     <Setter Property="Padding" Value="16,4" />
   </Style>
   <Style Selector="Button.primary:pointerover">
@@ -150,7 +150,7 @@
     <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource OnDangerBrush}" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
     <Setter Property="Padding" Value="16,4" />
   </Style>
   <Style Selector="Button.danger:pointerover">
@@ -666,7 +666,7 @@
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="Padding" Value="16" />
   </Style>
   <!-- Les mêmes blocs de contenu sont utilisés par l'accueil du secrétariat
@@ -684,7 +684,7 @@
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="Padding" Value="16,12" />
   </Style>
   <!-- Icône façon Android 16 et macOS : pictogramme blanc plein sur un carré très arrondi de couleur franche.
@@ -860,7 +860,7 @@
   <!-- Téléphone : une carte par ligne de tableau -->
   <Style Selector="Border.phonecard">
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="Padding" Value="14,12,8,12" />
     <Setter Property="Margin" Value="0,0,0,8" />
     <Setter Property="BorderThickness" Value="1" />
@@ -886,7 +886,7 @@
   <Style Selector="Button.phoneshowmore">
     <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="MinHeight" Value="44" />
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
@@ -915,7 +915,7 @@
   <!-- Étiquette neutre : critère requis, format, catégorie -->
   <Style Selector="Border.chip">
     <Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Padding" Value="6,1" />
   </Style>
   <Style Selector="Border.chip > TextBlock">
@@ -927,7 +927,7 @@
     <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Padding" Value="2" />
   </Style>
   <Style Selector="RadioButton.segment">
@@ -959,7 +959,7 @@
        conservent leur présentation et leur accessibilité propres. -->
   <Style Selector="ComboBox, CalendarDatePicker, NumericUpDown">
     <Setter Property="MinHeight" Value="36" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
@@ -970,13 +970,13 @@
   </Style>
   <Style Selector="ComboBox.w11, CalendarDatePicker.w11">
     <Setter Property="MinHeight" Value="36" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
   <Style Selector="ComboBox /template/ Border#Background, ComboBox.w11 /template/ Border#Background">
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
@@ -994,7 +994,7 @@
        alors que le texte demeurait blanc (champ blanc sur blanc). -->
   <Style Selector="TextBox:not(.onbrand):not(.iosauthfield):not(.ioslockfield):not(.search):not(.searchfield):not(.code)">
     <Setter Property="MinHeight" Value="36" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
@@ -1002,14 +1002,14 @@
   </Style>
   <Style Selector="TextBox.w11:not(.onbrand):not(.code)">
     <Setter Property="MinHeight" Value="36" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Padding" Value="11,5" />
   </Style>
   <Style Selector="TextBox.w11:not(.onbrand):not(.code) /template/ Border#PART_BorderElement">
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
@@ -1058,7 +1058,7 @@
     <Setter Property="Margin" Value="10,0" />
   </Style>
   <Style Selector="Border.badge">
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Padding" Value="8,2" />
   </Style>
   <Style Selector="TextBlock.badge">
@@ -1075,7 +1075,7 @@
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="RowHeight" Value="{DynamicResource RowHeight}" />
     <Setter Property="GridLinesVisibility" Value="{DynamicResource GridLines}" />
     <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource LineBrush}" />
@@ -1154,7 +1154,7 @@
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="Padding" Value="6,5" />
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="FontWeight" Value="Normal" />
   </Style>
   <Style Selector="Button.listrow:pointerover">
@@ -1193,7 +1193,7 @@
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Padding" Value="14,6" />
   </Style>
   <Style Selector="Button.tab.selected">
@@ -1225,7 +1225,7 @@
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Padding" Value="6,4" />
     <Setter Property="MinHeight" Value="0" />
   </Style>
@@ -1319,10 +1319,10 @@
   <!-- Volet latéral natif : une seule surface, peu d'ombre et des groupes clairs. -->
   <Style Selector="Border.sidebar">
     <Setter Property="Background" Value="{DynamicResource SidebarBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SidebarStrokeBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="16" />
-    <Setter Property="BoxShadow" Value="0 1 5 0 #10000000" />
+    <Setter Property="BoxShadow" Value="{DynamicResource SidebarShadow}" />
   </Style>
   <!-- Blocs métier continus inspirés des réglages natifs, sans séparateur au-dessus du premier outil. -->
   <Style Selector="TextBlock.navblocktitle">
@@ -1332,7 +1332,7 @@
     <Setter Property="Margin" Value="12,7,0,3" />
   </Style>
   <Style Selector="Border.navaccordion">
-    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="Background" Value="{DynamicResource NavItemBrush}" />
     <Setter Property="CornerRadius" Value="12" />
     <Setter Property="ClipToBounds" Value="True" />
   </Style>
@@ -1422,7 +1422,7 @@
   </Style>
   <Style Selector="Border.snackbar">
     <Setter Property="Background" Value="{DynamicResource SnackbarBrush}" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="BoxShadow" Value="0 4 12 0 #26000000" />
     <Setter Property="Padding" Value="16,12" />
     <Setter Property="MaxWidth" Value="520" />
@@ -1439,7 +1439,7 @@
   <!-- Bouton « Menu » en tête de la barre, comme dans Acrobat -->
   <Style Selector="Button.menubutton">
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Padding" Value="10,5" />
     <Setter Property="Margin" Value="0,0,6,6" />
     <Setter Property="FontWeight" Value="SemiBold" />
@@ -1479,7 +1479,7 @@
   </Style>
   <Style Selector="Button.tabclose">
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Padding" Value="3" />
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Margin" Value="0,0,6,0" />
@@ -1506,7 +1506,7 @@
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="Padding" Value="18,18,18,16" />
     <Setter Property="MinHeight" Value="170" />
     <Setter Property="BoxShadow" Value="0 1 2 0 #0F152C4D" />
@@ -1558,7 +1558,7 @@
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Padding" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="Cursor" Value="Hand" />

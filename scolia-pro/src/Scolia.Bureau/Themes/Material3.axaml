@@ -1,0 +1,73 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Téléphone : Material 3 d'Android (palette générée à partir du bleu #0061A4). Fond « surface container »,
+       cartes « surface container lowest » blanches, conteneurs primaires #D1E4FF pour la sélection, contours
+       « outline variant », coins de 12 px pour les cartes et 8 px pour les champs. -->
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="AccentBrush" Color="#0061A4" />
+      <SolidColorBrush x:Key="AccentHoverBrush" Color="#004E86" />
+      <SolidColorBrush x:Key="AccentSoftBrush" Color="#D1E4FF" />
+      <SolidColorBrush x:Key="BgBrush" Color="#F3F6FB" />
+      <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="Surface2Brush" Color="#E6EBF2" />
+      <SolidColorBrush x:Key="GroupBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="ToolbarBrush" Color="#F3F6FB" />
+      <SolidColorBrush x:Key="SidebarBrush" Color="#F3F6FB" />
+      <SolidColorBrush x:Key="FieldBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="SearchBrush" Color="#E6EBF2" />
+      <SolidColorBrush x:Key="LineBrush" Color="#DDE3EA" />
+      <SolidColorBrush x:Key="LineStrongBrush" Color="#73777F" />
+      <SolidColorBrush x:Key="FieldLineBrush" Color="#73777F" />
+      <SolidColorBrush x:Key="ButtonLineBrush" Color="#73777F" />
+      <SolidColorBrush x:Key="ButtonHoverBrush" Color="#DCE3EC" />
+      <SolidColorBrush x:Key="TextBrush" Color="#1A1C1E" />
+      <SolidColorBrush x:Key="Text2Brush" Color="#2E3135" />
+      <SolidColorBrush x:Key="MutedBrush" Color="#43474E" />
+      <SolidColorBrush x:Key="TableHeadBrush" Color="#F7F9FC" />
+      <SolidColorBrush x:Key="TableAltBrush" Color="#F9FAFD" />
+      <SolidColorBrush x:Key="SidebarSelectedBrush" Color="#D1E4FF" />
+      <SolidColorBrush x:Key="HoverBrush" Color="#E9EEF5" />
+      <SolidColorBrush x:Key="SnackbarBrush" Color="#2F3033" />
+      <SolidColorBrush x:Key="NeutralSoftBrush" Color="#ECF0F5" />
+      <Color x:Key="AccentColor">#0061A4</Color>
+      <Color x:Key="ShadowColor">#1A000000</Color>
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="AccentBrush" Color="#9ECAFF" />
+      <SolidColorBrush x:Key="AccentHoverBrush" Color="#BCD9FF" />
+      <SolidColorBrush x:Key="AccentSoftBrush" Color="#00497D" />
+      <SolidColorBrush x:Key="OnAccentBrush" Color="#003258" />
+      <SolidColorBrush x:Key="BgBrush" Color="#111316" />
+      <SolidColorBrush x:Key="SurfaceBrush" Color="#1E2023" />
+      <SolidColorBrush x:Key="Surface2Brush" Color="#282A2D" />
+      <SolidColorBrush x:Key="GroupBrush" Color="#1E2023" />
+      <SolidColorBrush x:Key="ToolbarBrush" Color="#111316" />
+      <SolidColorBrush x:Key="SidebarBrush" Color="#111316" />
+      <SolidColorBrush x:Key="FieldBrush" Color="#1E2023" />
+      <SolidColorBrush x:Key="SearchBrush" Color="#282A2D" />
+      <SolidColorBrush x:Key="LineBrush" Color="#33363B" />
+      <SolidColorBrush x:Key="LineStrongBrush" Color="#8D9199" />
+      <SolidColorBrush x:Key="FieldLineBrush" Color="#8D9199" />
+      <SolidColorBrush x:Key="ButtonLineBrush" Color="#8D9199" />
+      <SolidColorBrush x:Key="ButtonHoverBrush" Color="#33363B" />
+      <SolidColorBrush x:Key="TextBrush" Color="#E2E2E6" />
+      <SolidColorBrush x:Key="Text2Brush" Color="#D3D5DA" />
+      <SolidColorBrush x:Key="MutedBrush" Color="#C3C7CF" />
+      <SolidColorBrush x:Key="TableHeadBrush" Color="#1E2023" />
+      <SolidColorBrush x:Key="TableAltBrush" Color="#191B1E" />
+      <SolidColorBrush x:Key="SidebarSelectedBrush" Color="#00497D" />
+      <SolidColorBrush x:Key="HoverBrush" Color="#282A2D" />
+      <SolidColorBrush x:Key="SnackbarBrush" Color="#E2E2E6" />
+      <SolidColorBrush x:Key="NeutralSoftBrush" Color="#282A2D" />
+      <Color x:Key="AccentColor">#9ECAFF</Color>
+      <Color x:Key="ShadowColor">#66000000</Color>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <CornerRadius x:Key="RadiusCard">12</CornerRadius>
+  <CornerRadius x:Key="RadiusField">8</CornerRadius>
+  <CornerRadius x:Key="RadiusPill">20</CornerRadius>
+  <CornerRadius x:Key="RadiusSmall">8</CornerRadius>
+</ResourceDictionary>
