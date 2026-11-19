@@ -17,14 +17,19 @@
   </Styles.Resources>
 
   <!-- Base : police du système, couleurs et tailles des Réglages de macOS. -->
+  <!-- Typographie homogène : une seule famille, texte courant en Medium (500) pour un trait plein et lisible,
+       titres en SemiBold, textes secondaires en Regular dans la couleur atténuée. Rendu en niveaux de gris avec
+       un lissage léger : le même trait doux sur Windows et Android, aligné avec les icônes. -->
   <Style Selector="TemplatedControl">
     <Setter Property="FontFamily" Value="{DynamicResource UiFont}" />
     <Setter Property="FontSize" Value="{DynamicResource FsBase}" />
+    <Setter Property="FontWeight" Value="Medium" />
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
   </Style>
   <Style Selector="TextBlock">
     <Setter Property="FontFamily" Value="{DynamicResource UiFont}" />
     <Setter Property="FontSize" Value="{DynamicResource FsBase}" />
+    <Setter Property="FontWeight" Value="Medium" />
   </Style>
 
   <Style Selector="Window">
@@ -36,6 +41,7 @@
   <Style Selector="TextBlock.title">
     <Setter Property="FontSize" Value="{DynamicResource FsTitle}" />
     <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="-0.2" />
   </Style>
   <Style Selector="TextBlock.heading">
     <Setter Property="FontSize" Value="{DynamicResource FsHeading}" />
@@ -44,10 +50,12 @@
   <Style Selector="TextBlock.muted">
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+    <Setter Property="FontWeight" Value="Normal" />
   </Style>
   <Style Selector="TextBlock.caption">
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     <Setter Property="FontSize" Value="{DynamicResource FsCaption}" />
+    <Setter Property="FontWeight" Value="Normal" />
   </Style>
   <Style Selector="TextBlock.kpi">
     <Setter Property="FontSize" Value="{DynamicResource FsTitle}" />
@@ -1083,6 +1091,8 @@
     <Setter Property="Padding" Value="22,4,8,4" />
     <Setter Property="MinWidth" Value="0" />
   </Style>
+  <!-- Tableaux denses : le chiffre et le nom restent en Regular, l'en-tête porte la graisse -->
+  <Style Selector="DataGridCell TextBlock"><Setter Property="FontWeight" Value="Normal" /></Style>
   <Style Selector="DataGridColumnHeader TextBlock">
     <Setter Property="TextWrapping" Value="NoWrap" />
     <Setter Property="TextTrimming" Value="None" />

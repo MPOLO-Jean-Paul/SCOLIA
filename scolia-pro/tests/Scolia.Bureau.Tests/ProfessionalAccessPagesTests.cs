@@ -212,4 +212,21 @@ public sealed class ProfessionalAccessPagesTests
         // La vue d'un écran n'est cherchée par réflexion qu'une fois.
         Assert.Contains("ConcurrentDictionary", File.ReadAllText(Source("Views/ViewLocator.cs")), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void La_typographie_est_homogene_et_pleine()
+    {
+        // Roboto en vraies graisses fixes : Medium et SemiBold ne retombent plus sur un trait fin sur Android.
+        foreach (var weight in new[] { "Regular", "Medium", "SemiBold", "Bold" })
+            Assert.True(File.Exists(Source($"Assets/Fonts/Roboto-{weight}.ttf")), weight);
+        Assert.False(File.Exists(Source("Assets/Fonts/Roboto-Variable.ttf")));
+        var nodes = Elements("Themes/Controls.axaml");
+        Assert.Equal("Medium", Setting(StyleOf(nodes, "TextBlock"), "FontWeight"));
+        Assert.Equal("Medium", Setting(StyleOf(nodes, "TemplatedControl"), "FontWeight"));
+        Assert.Equal("Normal", Setting(StyleOf(nodes, "TextBlock.muted"), "FontWeight"));
+        Assert.Equal("Normal", Setting(StyleOf(nodes, "DataGridCell TextBlock"), "FontWeight"));
+        var main = File.ReadAllText(Source("Views/MainView.axaml.cs"));
+        Assert.Contains("TextRenderingMode.Antialias", main, StringComparison.Ordinal);
+        Assert.Contains("TextHintingMode.Light", main, StringComparison.Ordinal);
+    }
 }

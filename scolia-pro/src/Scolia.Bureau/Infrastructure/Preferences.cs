@@ -336,9 +336,11 @@ public sealed class Preferences : Observable
         r["UiFont"] = FamilyOf(font);
         var k = Factor;
         GridPriority.SetTextFactor(k);
-        r["FsBase"] = 13.5 * k;
-        r["FsSmall"] = 12.0 * k;
-        r["FsCaption"] = 11.0 * k;
+        // Téléphone : un demi-point de plus, la lecture à bout de bras reste confortable.
+        var phoneText = MobileLayout ? 0.5 : 0.0;
+        r["FsBase"] = (13.5 + 2 * phoneText) * k;
+        r["FsSmall"] = (12.0 + phoneText) * k;
+        r["FsCaption"] = (11.0 + phoneText) * k;
         r["FsHeading"] = 15.0 * k;
         r["FsTitle"] = 22.0 * k;
         r["FsDisplay"] = 28.0 * k;

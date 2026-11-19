@@ -39,6 +39,9 @@ public partial class MainView : UserControl
 
     public MainView()
     {
+        // Même trait doux partout : lissage en niveaux de gris et calage léger, sur Windows comme sur Android.
+        Avalonia.Media.TextOptions.SetTextRenderingMode(this, Avalonia.Media.TextRenderingMode.Antialias);
+        Avalonia.Media.TextOptions.SetTextHintingMode(this, Avalonia.Media.TextHintingMode.Light);
         pickFileHandler = PickFileAsync;
         copyHandler = CopyAsync;
         isTypingHandler = IsTypingInView;
