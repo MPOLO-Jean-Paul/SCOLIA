@@ -10,7 +10,7 @@ namespace Scolia.Bureau.Infrastructure;
 
 /// <summary>
 /// Apparition en cascade, façon Flutter : quand une page s'affiche, ses cartes montent de quelques pixels en
-/// fondu, l'une après l'autre (40 ms d'écart, 240 ms au plus). Seulement si l'utilisateur garde les animations
+/// fondu, l'une après l'autre (25 ms d'écart, 150 ms au plus, 200 ms chacune : la page reste prête à l'emploi en moins de 0,4 s). Seulement si l'utilisateur garde les animations
 /// (classe « anim » posée par la fenêtre) ; jamais pendant le défilement d'une liste déjà affichée.
 /// </summary>
 public static class Reveal
@@ -21,10 +21,10 @@ public static class Reveal
     public static bool GetEnabled(Control control) => control.GetValue(EnabledProperty);
     public static void SetEnabled(Control control, bool value) => control.SetValue(EnabledProperty, value);
 
-    private static readonly TimeSpan Step = TimeSpan.FromMilliseconds(40);
-    private static readonly TimeSpan MaxDelay = TimeSpan.FromMilliseconds(240);
-    private static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(260);
-    private static readonly TransformOperations Lowered = TransformOperations.Parse("translateY(10px)");
+    private static readonly TimeSpan Step = TimeSpan.FromMilliseconds(25);
+    private static readonly TimeSpan MaxDelay = TimeSpan.FromMilliseconds(150);
+    private static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(200);
+    private static readonly TransformOperations Lowered = TransformOperations.Parse("translateY(8px)");
 
     // Cartes arrivées dans la même « vague » (même affichage de page) : leur rang fixe le décalage.
     private static int wave;

@@ -517,7 +517,7 @@ public partial class MainView : UserControl
     /// <summary>Fondu entre les pages, désactivé par la préférence « Animations ».</summary>
     private void ApplyPageTransition(Preferences prefs) =>
         PageHost.PageTransition = prefs.Animations && prefs.PageTransitions
-            ? new SharedAxisTransition(TimeSpan.FromMilliseconds(Math.Clamp(250 * prefs.SpeedFactor, 180, 320)), 18)
+            ? new SharedAxisTransition(TimeSpan.FromMilliseconds(Math.Clamp(200 * prefs.SpeedFactor, 140, 300)), 14)
             : null;
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;
