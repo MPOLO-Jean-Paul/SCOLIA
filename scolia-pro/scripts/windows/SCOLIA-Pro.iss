@@ -8,8 +8,10 @@
 #define AppName "SCOLIA Pro"
 #define AppPublisher "JP-Services"
 #define AppExe "SCOLIA.exe"
-#define AppContactEmail "jeanpaulmpolo242@gmail.com"
-#define AppSupportLink "mailto:jeanpaulmpolo242@gmail.com"
+#define AppContactEmail "contact@jp-services.org"
+#define AppSupportLink "mailto:contact@jp-services.org"
+#define AppWebsite "https://www.jp-services.org"
+#define AppWebsiteLabel "www.jp-services.org"
 
 [Setup]
 AppId=JP-Services.SCOLIA-Pro.Desktop
@@ -18,12 +20,13 @@ AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppPublisher}
 AppContact={#AppContactEmail}
-AppPublisherURL={#AppSupportLink}
+AppPublisherURL={#AppWebsite}
 AppSupportURL={#AppSupportLink}
+AppUpdatesURL={#AppWebsite}
 ; Les mises à jour restent détectées et téléchargées par SCOLIA Pro,
 ; sans afficher de lien GitHub dans l'assistant d'installation Windows.
 AppCopyright=Copyright 2026 JP-Services
-AppComments=Gestion scolaire : apprenants, paiements, scolarite, rapports et partage prive. Assistance : jeanpaulmpolo242@gmail.com
+AppComments=Gestion scolaire : apprenants, paiements, scolarite, rapports et partage prive. Assistance : contact@jp-services.org - Site : www.jp-services.org
 VersionInfoVersion={#AppVersion}
 VersionInfoCompany={#AppPublisher}
 VersionInfoDescription=Installation de SCOLIA Pro pour Windows 64 bits
@@ -94,9 +97,20 @@ begin
       'Vous pouvez écrire à : {#AppContactEmail}', mbInformation, MB_OK);
 end;
 
+procedure OuvrirSite(Sender: TObject);
+var
+  CodeRetour: Integer;
+begin
+  if not ShellExecAsOriginalUser('open', '{#AppWebsite}', '', '',
+      SW_SHOWNORMAL, ewNoWait, CodeRetour) then
+    MsgBox('Impossible d''ouvrir le navigateur sur ce poste.' + #13#10 +
+      'Site de JP-Services : {#AppWebsiteLabel}', mbInformation, MB_OK);
+end;
+
 procedure InitializeWizard;
 var
   LienAssistance: TNewStaticText;
+  LienSite: TNewStaticText;
 begin
   if WizardSilent then Exit;
   // Lien permanent dans le pied de l'assistant, pas dans un fichier texte statique.
@@ -114,6 +128,20 @@ begin
   LienAssistance.Top := WizardForm.CancelButton.Top +
     (WizardForm.CancelButton.Height - LienAssistance.Height) div 2;
   LienAssistance.Anchors := [akLeft, akBottom];
+  // Site de JP-Services, à côté de l'adresse d'assistance.
+  LienSite := TNewStaticText.Create(WizardForm);
+  LienSite.Parent := WizardForm;
+  LienSite.Caption := '{#AppWebsiteLabel}';
+  LienSite.Hint := 'Site de JP-Services : ouvrir dans le navigateur';
+  LienSite.ShowHint := True;
+  LienSite.Cursor := crHand;
+  LienSite.OnClick := @OuvrirSite;
+  LienSite.Font.Style := LienSite.Font.Style + [fsUnderline];
+  LienSite.Font.Color := clHotLight;
+  LienSite.AutoSize := True;
+  LienSite.Left := LienAssistance.Left + LienAssistance.Width + ScaleX(16);
+  LienSite.Top := LienAssistance.Top;
+  LienSite.Anchors := [akLeft, akBottom];
 end;
 
 function ServiceSCOLIAInstalle(): Boolean;

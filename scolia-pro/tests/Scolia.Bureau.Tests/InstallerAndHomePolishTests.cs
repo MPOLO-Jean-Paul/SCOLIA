@@ -19,8 +19,12 @@ public sealed class InstallerAndHomePolishTests
     public void L_assistance_de_l_installeur_est_un_lien_mailto_cliquable_sur_toutes_les_pages()
     {
         var iss = File.ReadAllText(Source("scripts/windows/SCOLIA-Pro.iss"));
-        Assert.Contains("#define AppContactEmail \"jeanpaulmpolo242@gmail.com\"", iss);
-        Assert.Contains("#define AppSupportLink \"mailto:jeanpaulmpolo242@gmail.com\"", iss);
+        Assert.Contains("#define AppContactEmail \"contact@jp-services.org\"", iss);
+        Assert.Contains("#define AppSupportLink \"mailto:contact@jp-services.org\"", iss);
+        Assert.Contains("#define AppWebsite \"https://www.jp-services.org\"", iss);
+        Assert.Contains("AppPublisherURL={#AppWebsite}", iss);
+        Assert.Contains("ShellExecAsOriginalUser('open', '{#AppWebsite}'", iss);
+        Assert.DoesNotContain("gmail.com", iss);
         Assert.Contains("AppSupportURL={#AppSupportLink}", iss);
         Assert.Contains("LienAssistance.Parent := WizardForm", iss);
         Assert.Contains("LienAssistance.OnClick := @OuvrirAssistance", iss);
