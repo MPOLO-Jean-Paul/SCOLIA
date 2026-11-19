@@ -79,7 +79,7 @@ public sealed class Preferences : Observable
 
     public static readonly IReadOnlyList<ChoiceItem> StartupModes =
     [
-        new("normale", "Fenêtre normale"), new("agrandie", "Agrandie"), new("pleinecran", "Plein écran"),
+        new("normale", "Comme à la dernière fermeture"), new("agrandie", "Agrandie"), new("pleinecran", "Plein écran"),
     ];
 
     /// <summary>Vitesse des transitions : facteur appliqué à leur durée.</summary>
@@ -158,6 +158,9 @@ public sealed class Preferences : Observable
 
     public string Font { get => font; set => Set(ref font, Fonts.Any(f => f.Value == value) ? value : DefaultFont); }
     /// <summary>Taille de la fenêtre au lancement, une fois connecté.</summary>
+    /// <summary>Taille, position et état de la fenêtre Windows à la dernière fermeture (rien avant la première).</summary>
+    public WindowPlacement? Window { get; set; }
+
     public string Startup { get => startup; set => Set(ref startup, value is "agrandie" or "pleinecran" ? value : "normale"); }
     public string Speed { get => speed; set { if (Set(ref speed, value is "rapide" or "douce" ? value : "normale")) Raise(nameof(SpeedFactor)); } }
     public double SpeedFactor => speed switch { "rapide" => 0.6, "douce" => 1.5, _ => 1.0 };
@@ -407,6 +410,7 @@ public sealed class Preferences : Observable
         public bool AlertBackups { get; set; } = true;
         public bool AlertReports { get; set; } = true;
         public List<string>? RecentSearches { get; set; }
+        public WindowPlacement? Window { get; set; }
 
         public static Stored From(Preferences p) => new()
         {
@@ -416,6 +420,7 @@ public sealed class Preferences : Observable
             Sounds = p.sounds, SoundVolume = p.soundVolume, SoundStyle = p.soundStyle, SoundSuccess = p.soundSuccess,
             SoundError = p.soundError, SoundNotify = p.soundNotify, SoundOpening = p.soundOpening,
             Alerts = p.alerts, LockMinutes = p.lockMinutes, AlertPayments = p.alertPayments, AlertBackups = p.alertBackups, AlertReports = p.alertReports, RecentSearches = [.. p.recentSearches],
+            Window = p.Window,
         };
 
         public void ApplyTo(Preferences p)
@@ -432,6 +437,7 @@ public sealed class Preferences : Observable
             p.Sidebar = Sidebar;
             p.Font = Font ?? DefaultFont;
             p.Startup = Startup ?? "normale";
+            p.Window = Window is { Width: >= 200 and <= 20000, Height: >= 200 and <= 20000 } ? Window : null;
             p.Speed = Speed ?? "normale";
             p.OpeningSeconds = OpeningSeconds;
             p.PageTransitions = PageTransitions;
@@ -451,3 +457,6 @@ public sealed class Preferences : Observable
         }
     }
 }
+
+/// <summary>Position et taille de la fenêtre « normale » (non agrandie), en pixels logiques, et son état.</summary>
+public sealed record WindowPlacement(int X, int Y, double Width, double Height, bool Maximized);
