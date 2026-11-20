@@ -1878,6 +1878,58 @@ if (args.Length > 3 && args[3] == "commandes")
 
 // Défilement du téléphone (argument « defilement ») : la page reste là où le doigt la laisse, en descendant
 // comme en remontant. Chaque pas compare la position demandée à celle obtenue après la mise en page.
+// Défilement à la molette amorti (ordinateur) : chaque cran fixe une destination, la page y glisse.
+// SCOLIA_MOBILE=0 dotnet run -- <sortie> <serveur> <mot_de_passe> molette
+if (args.Length > 3 && args[3] == "molette")
+{
+    if (Preferences.MobileLayout) throw new InvalidOperationException("Le parcours molette nécessite SCOLIA_MOBILE=0.");
+    prefs.Animations = true;
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    var wheelFailures = 0;
+    void WheelCheck(string label, bool ok)
+    {
+        Console.WriteLine($"{(ok ? "OK  " : "ECHEC")} {label}");
+        if (!ok) wheelFailures++;
+    }
+    void Frames(int count)
+    {
+        for (var i = 0; i < count; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(16); }
+    }
+    window.Width = 1280; window.Height = 600;
+    Frames(20);
+    var viewer = window.GetVisualDescendants().OfType<ScrollViewer>()
+        .Where(v => v.IsEffectivelyVisible && v.Extent.Height - v.Viewport.Height > 200)
+        .OrderByDescending(v => v.Viewport.Height).FirstOrDefault();
+    WheelCheck("Accueil : une zone défilante est trouvée", viewer is not null);
+    if (viewer is not null)
+    {
+        viewer.Offset = default;
+        Frames(3);
+        var center = viewer.TranslatePoint(new Point(viewer.Bounds.Width / 2, viewer.Bounds.Height / 2), window) ?? default;
+        // Positions successives de la zone pendant un cran : un glissement en passe par plusieurs.
+        var positions = new List<double>();
+        void OnScroll(object? sender, ScrollChangedEventArgs e) => positions.Add(viewer.Offset.Y);
+        viewer.ScrollChanged += OnScroll;
+        window.MouseWheel(center, new Vector(0, -1));
+        Frames(40);
+        viewer.ScrollChanged -= OnScroll;
+        var settled = viewer.Offset.Y;
+        var between = positions.Count(y => y > 0.5 && y < SmoothScroll.Step - 0.5);
+        WheelCheck($"Un cran : glissement progressif ({between} positions intermédiaires)", between >= 4);
+        WheelCheck($"Un cran : arrivée à {settled:0.0} px", Math.Abs(settled - SmoothScroll.Step) < 1);
+        window.MouseWheel(center, new Vector(0, -1));
+        window.MouseWheel(center, new Vector(0, -1));
+        Frames(40);
+        WheelCheck($"Deux crans rapides s'additionnent ({viewer.Offset.Y:0.0} px)", Math.Abs(viewer.Offset.Y - 3 * SmoothScroll.Step) < 1);
+        window.MouseWheel(center, new Vector(0, 0.4));
+        Frames(2);
+        WheelCheck("Pavé tactile : défilement natif immédiat", viewer.Offset.Y < 3 * SmoothScroll.Step - 1);
+    }
+    Console.WriteLine(wheelFailures == 0 ? "Molette : tout est en place." : $"Molette : {wheelFailures} échec(s).");
+    Environment.ExitCode = wheelFailures == 0 ? 0 : 1;
+    return;
+}
+
 if (args.Length > 3 && args[3] == "defilement")
 {
     var scrollSession = Result(api.LoginAsync("admin", password));

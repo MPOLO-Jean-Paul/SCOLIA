@@ -13,6 +13,8 @@ public partial class App : Avalonia.Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        // Défilement à la molette amorti, au rythme de macOS (ordinateur seulement).
+        Infrastructure.SmoothScroll.Install();
         PlatformTheme.Apply(Preferences.MobileLayout);
         PhoneFit.Install();
     }

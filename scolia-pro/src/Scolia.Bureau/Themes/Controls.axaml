@@ -35,6 +35,10 @@
   <Style Selector="Window">
     <Setter Property="Background" Value="{DynamicResource BgBrush}" />
   </Style>
+  <!-- Défilement à inertie au pavé tactile et au toucher, comme sur macOS -->
+  <Style Selector="ScrollViewer">
+    <Setter Property="IsScrollInertiaEnabled" Value="True" />
+  </Style>
 
   <!-- Typographie -->
   <!-- Le texte hérite de son contrôle : un bouton clair conserve son texte foncé en thème sombre. -->
@@ -86,7 +90,7 @@
          Seule l'opacité peut être animée sans interférence avec la palette. -->
     <Setter Property="Transitions">
       <Transitions>
-        <DoubleTransition Property="Opacity" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        <DoubleTransition Property="Opacity" Duration="0:0:0.14" Easing="{x:Static infra:Motion.Spring}" />
       </Transitions>
     </Setter>
     <!-- Lecteurs d'écran (Narrateur, TalkBack) : un bouton-icône est nommé par son info-bulle.
@@ -207,7 +211,7 @@
     <!-- Indication de focus animée en 120 ms : aucune largeur de champ ne change. -->
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.12" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.12" Easing="{x:Static infra:Motion.Smooth}" />
       </Transitions>
     </Setter>
   </Style>
@@ -1395,7 +1399,7 @@
   </Style>
   <Style Selector="Border.alertbanner[IsVisible=True]">
     <Style.Animations>
-      <Animation Duration="0:0:0.28" Easing="CubicEaseOut" FillMode="Both">
+      <Animation Duration="0:0:0.28" Easing="{x:Static infra:Motion.Spring}" FillMode="Both">
         <KeyFrame Cue="0%"><Setter Property="TranslateTransform.Y" Value="-28" /><Setter Property="Opacity" Value="0" /></KeyFrame>
         <KeyFrame Cue="100%"><Setter Property="TranslateTransform.Y" Value="0" /><Setter Property="Opacity" Value="1" /></KeyFrame>
       </Animation>
@@ -1503,8 +1507,8 @@
     <Setter Property="BoxShadow" Value="0 1 2 0 #0F152C4D" />
     <Setter Property="Transitions">
       <Transitions>
-        <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.18" Easing="CubicEaseOut" />
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.18" Easing="{x:Static infra:Motion.Spring}" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.18" Easing="{x:Static infra:Motion.Smooth}" />
       </Transitions>
     </Setter>
   </Style>

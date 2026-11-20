@@ -34,7 +34,7 @@ public sealed class SharedAxisTransition : IPageTransition
     public const double FadeOutShare = 0.35;
 
     /// <summary>Courbe « standard » de Material 3 : départ franc, arrivée très douce.</summary>
-    private static readonly Easing Standard = new SplineEasing(0.2, 0, 0, 1);
+    private static readonly Easing Standard = Motion.Spring;
 
     public async Task Start(Visual? from, Visual? to, bool forward, CancellationToken cancellationToken)
     {
@@ -69,7 +69,7 @@ public sealed class SharedAxisTransition : IPageTransition
 
     private Task Fade(Visual target, (double Cue, double Opacity)[] steps, CancellationToken token)
     {
-        var animation = new Animation { Duration = Duration, Easing = new LinearEasing(), FillMode = FillMode.Forward };
+        var animation = new Animation { Duration = Duration, Easing = Motion.Smooth, FillMode = FillMode.Forward };
         foreach (var (cue, opacity) in steps)
             animation.Children.Add(new KeyFrame { Cue = new Cue(cue), Setters = { new Setter(Visual.OpacityProperty, opacity) } });
         return animation.RunAsync(target, token);

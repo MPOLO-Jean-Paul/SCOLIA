@@ -21,10 +21,10 @@ public static class Reveal
     public static bool GetEnabled(Control control) => control.GetValue(EnabledProperty);
     public static void SetEnabled(Control control, bool value) => control.SetValue(EnabledProperty, value);
 
-    private static readonly TimeSpan Step = TimeSpan.FromMilliseconds(25);
-    private static readonly TimeSpan MaxDelay = TimeSpan.FromMilliseconds(150);
-    private static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(200);
-    private static readonly TransformOperations Lowered = TransformOperations.Parse("translateY(8px)");
+    private static readonly TimeSpan Step = TimeSpan.FromMilliseconds(20);
+    private static readonly TimeSpan MaxDelay = TimeSpan.FromMilliseconds(120);
+    private static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(260);
+    private static readonly TransformOperations Lowered = TransformOperations.Parse("translateY(6px)");
 
     // Cartes arrivées dans la même « vague » (même affichage de page) : leur rang fixe le décalage.
     private static int wave;
@@ -61,7 +61,7 @@ public static class Reveal
         control.RenderTransform = Lowered;
         Dispatcher.UIThread.Post(() =>
         {
-            var easing = new CubicEaseOut();
+            var easing = Motion.Spring;
             control.Transitions =
             [
                 new DoubleTransition { Property = Visual.OpacityProperty, Duration = Duration, Delay = delay, Easing = easing },

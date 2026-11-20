@@ -215,8 +215,8 @@ public partial class MainView : UserControl
             follower.Transitions = animate
                 ?
                 [
-                    new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(320), Easing = new Avalonia.Animation.Easings.CubicEaseOut() },
-                    new Avalonia.Animation.TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(360), Easing = new Avalonia.Animation.Easings.CubicEaseOut() },
+                    new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(320), Easing = Infrastructure.Motion.Spring },
+                    new Avalonia.Animation.TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(360), Easing = Infrastructure.Motion.Spring },
                 ]
                 : null;
             follower.Opacity = animate ? 0 : 1;
@@ -405,7 +405,7 @@ public partial class MainView : UserControl
             var fade = new Animation
             {
                 Duration = TimeSpan.FromMilliseconds(220) * shell.Prefs.SpeedFactor,
-                Easing = new Avalonia.Animation.Easings.QuadraticEaseOut(),
+                Easing = Infrastructure.Motion.Smooth,
                 FillMode = FillMode.Forward,
                 Children =
                 {
@@ -520,7 +520,7 @@ public partial class MainView : UserControl
     /// <summary>Fondu entre les pages, désactivé par la préférence « Animations ».</summary>
     private void ApplyPageTransition(Preferences prefs) =>
         PageHost.PageTransition = prefs.Animations && prefs.PageTransitions
-            ? new SharedAxisTransition(TimeSpan.FromMilliseconds(Math.Clamp(200 * prefs.SpeedFactor, 140, 300)), 14)
+            ? new SharedAxisTransition(TimeSpan.FromMilliseconds(Math.Clamp(240 * prefs.SpeedFactor, 170, 340)), 12)
             : null;
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;

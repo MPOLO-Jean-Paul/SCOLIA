@@ -81,7 +81,7 @@
       <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
       <Setter Property="Transitions">
         <Transitions>
-          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="{x:Static infra:Motion.Smooth}" />
         </Transitions>
       </Setter>
     </Style>
@@ -97,7 +97,7 @@
       <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
       <Setter Property="Transitions">
         <Transitions>
-          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="{x:Static infra:Motion.Smooth}" />
         </Transitions>
       </Setter>
     </Style>
@@ -115,7 +115,7 @@
       <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
       <Setter Property="Transitions">
         <Transitions>
-          <BrushTransition Property="BorderBrush" Duration="0:0:0.14" Easing="CubicEaseOut" />
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.14" Easing="{x:Static infra:Motion.Smooth}" />
         </Transitions>
       </Setter>
     </Style>
