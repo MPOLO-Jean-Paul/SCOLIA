@@ -240,7 +240,8 @@ public sealed class DisciplineService(IAppDbContext db, IWriteGate gate, IAuditL
     }
 
     private async Task<DisciplineRowDto> RowAsync(Guid id, CancellationToken ct) =>
-        (await RowsAsync(db.DisciplineDecisions.AsNoTracking().Where(d => d.Id == id), ct)).Single();
+        (await RowsAsync(db.DisciplineDecisions.AsNoTracking().Where(d => d.Id == id), ct)).SingleOrDefault()
+            ?? throw new NotFoundException("Décision disciplinaire introuvable.");
 
     private async Task<List<DisciplineRowDto>> RowsAsync(IQueryable<DisciplineDecision> query, CancellationToken ct)
     {

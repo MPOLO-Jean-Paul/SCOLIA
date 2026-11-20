@@ -19,13 +19,15 @@ public static class TailscaleEndpoint
         if (!candidate.Contains("://", StringComparison.Ordinal))
             candidate = "http://" + candidate;
         if (!Uri.TryCreate(candidate, UriKind.Absolute, out var uri)
-            || uri.Scheme != Uri.UriSchemeHttp || uri.Host.Length == 0
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+            || (uri.Scheme == Uri.UriSchemeHttps && !IsSecureTailnetDns(uri.Host))
+            || uri.Host.Length == 0
             || uri.UserInfo.Length != 0 || uri.Query.Length != 0 || uri.Fragment.Length != 0
             || uri.AbsolutePath != "/" || !IsTailnetHost(uri.Host))
             return false;
-        var port = uri.IsDefaultPort ? defaultPort : uri.Port;
+        var port = uri.Scheme == Uri.UriSchemeHttps ? uri.Port : uri.IsDefaultPort ? defaultPort : uri.Port;
         if (port is < 1 or > 65535) return false;
-        endpoint = new UriBuilder(Uri.UriSchemeHttp, uri.Host, port, "/").Uri;
+        endpoint = new UriBuilder(uri.Scheme, uri.Host, port, "/").Uri;
         return true;
     }
 
@@ -76,6 +78,10 @@ public static class TailscaleEndpoint
             && address[4] == 0xa1 && address[5] == 0xe0;
     }
 
+    public static bool IsSecureTailnetDns(string host) =>
+        !IPAddress.TryParse(host, out _) && IsTailnetHost(host);
+
     public static bool IsTailnetAddress(Uri uri) =>
-        uri.Scheme == Uri.UriSchemeHttp && IsTailnetHost(uri.Host);
+        uri.Scheme == Uri.UriSchemeHttp && IsTailnetHost(uri.Host)
+        || uri.Scheme == Uri.UriSchemeHttps && IsSecureTailnetDns(uri.Host);
 }

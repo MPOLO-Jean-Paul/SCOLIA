@@ -1,4 +1,5 @@
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using Scolia.Bureau.Infrastructure;
 
 namespace Scolia.Bureau.ViewModels;
@@ -8,7 +9,7 @@ public sealed record PairingRouteVm(Material.Icons.MaterialIconKind Icon, string
 
 /// <summary>
 /// « Relier un appareil » sur le serveur : un grand code QR que l'autre appareil scanne. Il contient les adresses
-/// du Wi-Fi, celle de Tailscale et l'invitation Internet si elle est active ; aucun mot de passe.
+/// du Wi-Fi local et l'invitation Internet si elle est active ; aucun mot de passe.
 /// </summary>
 public sealed class PairingViewModel : Observable
 {
@@ -21,8 +22,10 @@ public sealed class PairingViewModel : Observable
         var machine = Platform.DeviceName ?? Environment.MachineName;
         var remote = RemoteConnection.Load();
         var invitation = remote is { Host: true, Enabled: true } && remote.Link.ExpiresUtc > DateTime.UtcNow ? remote.Link.Invitation() : null;
-        Shared = Platform.IsMobile || PosteAdmin.LanEnabled();
-        Code = PairingCode.ForThisServer(school, machine, Shared ? PosteAdmin.Addresses() : [], invitation);
+        var localAvailable = Platform.IsMobile || PosteAdmin.LanEnabled();
+        Shared = localAvailable || invitation is not null;
+        InternetOnly = !localAvailable && invitation is not null;
+        Code = PairingCode.ForThisServer(school, machine, localAvailable ? PosteAdmin.Addresses() : [], invitation);
         School = school;
         CodeText = string.Empty;
         Image = null;
@@ -32,10 +35,8 @@ public sealed class PairingViewModel : Observable
         var routes = new List<PairingRouteVm>();
         foreach (var lan in Code.LanAddresses)
             routes.Add(new(Material.Icons.MaterialIconKind.Wifi, "Wi-Fi de l'établissement", $"{lan.Host}:{lan.Port}"));
-        foreach (var tailnet in Code.TailnetAddresses)
-            routes.Add(new(Material.Icons.MaterialIconKind.ShieldLockOutline, "Tailscale, à distance", $"{tailnet.Host}:{tailnet.Port}"));
         if (Code.HasInvitation)
-            routes.Add(new(Material.Icons.MaterialIconKind.Web, "Internet", $"Invitation valable jusqu'au {Format.Date(DateOnly.FromDateTime(remote!.Link.ExpiresUtc.ToLocalTime()))}"));
+            routes.Add(new(Material.Icons.MaterialIconKind.Web, "Internet", "Postes reconnus jusqu’au retrait ; nouveau QR valable 5 minutes"));
         Routes = routes;
 
         Copy = new AsyncCommand(async () =>
@@ -44,8 +45,57 @@ public sealed class PairingViewModel : Observable
             if (shell.CopyHandler is { } copy) await copy(CodeText);
             shell.Notify("Invitation copiée : utilisez-la sur l'autre appareil avant son expiration.");
         });
-        Close = new RelayCommand(shell.CloseDialog);
+        Close = new RelayCommand(() => { countdown?.Stop(); shell.CloseDialog(); });
+        OpenSharing = new RelayCommand(() =>
+        {
+            countdown?.Stop();
+            shell.CloseDialog();
+            _ = shell.Run(() => shell.Open(() => new NetworkHubPage(shell)));
+        });
     }
+
+    // ---------- Validité du code : 5 minutes, un seul appareil ----------
+    private DispatcherTimer? countdown;
+    private DateTime expiresUtc;
+    public string RemainingText { get; private set; } = string.Empty;
+    public bool HasRemaining => RemainingText.Length > 0;
+    public bool Expired { get; private set; }
+
+    private void StartCountdown(DateTime expires)
+    {
+        expiresUtc = expires;
+        Expired = false;
+        countdown?.Stop();
+        countdown = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => Tick());
+        countdown.Start();
+        Tick();
+    }
+
+    private void Tick()
+    {
+        // La fenêtre a été fermée autrement (Échap, clic à côté) : ne plus rien mettre à jour.
+        if (!ReferenceEquals(shell.Dialog, this)) { countdown?.Stop(); return; }
+        var left = expiresUtc - DateTime.UtcNow;
+        if (left <= TimeSpan.Zero)
+        {
+            countdown?.Stop();
+            Expired = true;
+            Image = null;
+            CodeText = string.Empty;
+            RemainingText = string.Empty;
+            ProgressText = "Ce code a expiré sans être utilisé. Générez-en un nouveau pour relier l'appareil.";
+            foreach (var name in new[] { nameof(Expired), nameof(Image), nameof(CodeText), nameof(Ready), nameof(RemainingText), nameof(HasRemaining), nameof(ProgressText) })
+                Raise(name);
+            return;
+        }
+        RemainingText = $"Valable encore {(int)left.TotalMinutes}:{left.Seconds:00}";
+        Raise(nameof(RemainingText));
+        Raise(nameof(HasRemaining));
+    }
+
+    /// <summary>Wi-Fi fermé mais Internet actif : le code fonctionne, par Internet uniquement.</summary>
+    public bool InternetOnly { get; }
+    public RelayCommand OpenSharing { get; }
 
     private sealed record InvitationReply(string Token, DateTime ExpiresUtc);
     public PairingCode Code { get; private set; }
@@ -66,6 +116,8 @@ public sealed class PairingViewModel : Observable
             return;
         }
         ProgressText = "Génération d'un accès à usage unique…";
+        Expired = false;
+        Raise(nameof(Expired));
         Raise(nameof(ProgressText));
         CodeText = string.Empty;
         Image = null;
@@ -75,9 +127,21 @@ public sealed class PairingViewModel : Observable
         {
             var invite = await shell.Api.SendAsync<InvitationReply>(HttpMethod.Post, "api/jumelage/inviter", new { });
             Code = Code with { AccessTicket = invite.Token };
+            if (Code.Addresses.Count == 0 && !Code.HasInvitation)
+            {
+                // Un QR composé uniquement d'un ticket, sans adresse de serveur,
+                // paraît valable visuellement mais ne permet aucun jumelage.
+                ProgressText = "Ce serveur n'est pas partagé : ouvrez le Wi-Fi de l'établissement ou l'accès par Internet, puis générez un nouveau code.";
+                Raise(nameof(ProgressText));
+                Raise(nameof(Ready));
+                return;
+            }
             CodeText = Code.Text();
             Image = QrCodes.Render(CodeText);
-            ProgressText = "Invitation valable 5 minutes, une seule utilisation.";
+            ProgressText = InternetOnly
+                ? "Utilisable une seule fois. Le Wi-Fi de ce serveur est fermé : l'appareil se connectera par Internet."
+                : "Utilisable une seule fois. L'appareil choisit seul le Wi-Fi ou Internet.";
+            StartCountdown(invite.ExpiresUtc);
             Raise(nameof(Code));
             Raise(nameof(CodeText));
             Raise(nameof(Image));
@@ -89,18 +153,18 @@ public sealed class PairingViewModel : Observable
         }
         Raise(nameof(ProgressText));
     }
-    public IReadOnlyList<PairingRouteVm> Routes { get; }
+    public IReadOnlyList<PairingRouteVm> Routes { get; private set; }
     public bool HasRoutes => Routes.Count > 0;
 
     /// <summary>Ordinateur dont le partage est fermé : aucun autre appareil ne pourrait le joindre.</summary>
-    public bool Shared { get; }
+    public bool Shared { get; private set; }
     public bool NotShared => !Shared;
 
     public string Title => "Relier un autre appareil";
     public string Steps => Platform.IsMobile
         ? "Sur l'autre appareil : Changer d'ordinateur principal, puis Scanner le code QR."
         : "Sur l'autre appareil : Changer d'ordinateur principal, puis Scanner le code QR. Sur un ordinateur, collez le code copié.";
-    public string Footer => "Ce QR autorise temporairement un autre appareil à ouvrir ce compte avec les mêmes droits. Ne le partagez qu\u2019avec un appareil de confiance. Vous pourrez révoquer sa liaison.";
+    public string Footer => "Ce QR autorise uniquement un appareil à retrouver le serveur. Chaque personne doit ensuite ouvrir sa propre session. L'appareil reste autorisé après une coupure, jusqu'à son retrait dans Réseau et activité.";
 
     public AsyncCommand Copy { get; }
     public RelayCommand Close { get; }

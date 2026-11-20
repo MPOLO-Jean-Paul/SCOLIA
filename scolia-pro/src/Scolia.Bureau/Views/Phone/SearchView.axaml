@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.Phone.SearchView">
   <!-- Recherche de l'accueil, façon Google et Play Store : tout l'écran, le champ en haut avec le clavier ouvert,
@@ -19,7 +20,7 @@
         </Button>
         <Button x:Name="MicButton" Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding Listening}" Command="{Binding Listen}"
                 IsVisible="{Binding VoiceAvailable}" ToolTip.Tip="Rechercher à la voix">
-          <mi:MaterialIcon Kind="Microphone" />
+          <mi:MaterialIcon Kind="MicrophoneOutline" />
         </Button>
       </Grid>
     </Border>
@@ -31,7 +32,7 @@
           <StackPanel IsVisible="{Binding HasRecent}">
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Text="Recherches récentes" Classes="searchsection" />
-              <Button Grid.Column="1" Classes="ghost" Content="Effacer" Command="{Binding ClearRecent}" Margin="0,10,12,0" VerticalAlignment="Center" />
+              <Button infra:Icons.Lead="Eraser" Grid.Column="1" Classes="ghost" Content="Effacer" Command="{Binding ClearRecent}" Margin="0,10,12,0" VerticalAlignment="Center" />
             </Grid>
             <ItemsControl ItemsSource="{Binding Recent}">
               <ItemsControl.ItemTemplate>
@@ -62,7 +63,7 @@
                   <Button Classes="searchtile" Command="{Binding Open}">
                     <Grid ColumnDefinitions="*,Auto">
                       <TextBlock Text="{Binding Label}" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"
-                                 TextWrapping="WrapWithOverflow" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                                 TextWrapping="Wrap" />
                       <Border Grid.Column="1" Width="38" Height="38" CornerRadius="12" Background="{Binding Brush}" Margin="6,0,0,0">
                         <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" Foreground="White"
                                          HorizontalAlignment="Center" VerticalAlignment="Center" />

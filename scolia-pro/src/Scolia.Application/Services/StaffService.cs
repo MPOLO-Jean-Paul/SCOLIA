@@ -105,8 +105,8 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
         if (entry.Status == PayrollStatus.Paye) throw new ConflictException("Ce bulletin est déjà payé.");
         var s = await db.Staff.AsNoTracking().FirstAsync(x => x.Id == entry.StaffMemberId, ct);
         var year = await YearContext.CurrentAsync(db, ct);
-        var lastClosing = await PaymentService.LastClosingAsync(db, ct);
-        if (lastClosing is not null && clock.Today <= lastClosing) throw new DomainException("date", "La caisse du jour est déjà arrêtée.");
+        var lastClosing = await CashLock.LastAsync(db, ct);
+        if (CashLock.RefusesNew(lastClosing, clock.Today, clock.Today)) throw new DomainException("date", "La caisse du jour est déjà arrêtée.");
         entry.Status = PayrollStatus.Paye;
         entry.PaidOn = clock.Today;
         if (entry.Net > 0)

@@ -1,0 +1,121 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.SchoolBulletinView">
+  <!-- Classes, polices et brosses du secrétariat Avalonia ; aucun autre thème. -->
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Spacing="12" MaxWidth="960" Margin="0,0,6,12">
+      <TextBlock Text="DOCUMENT PÉDAGOGIQUE NON OFFICIEL" Classes="groupcaps" />
+      <Border Classes="phonegroup" Padding="14,12">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+          <Border Classes="appicon medium" Background="{DynamicResource ToneOrange}"
+                  VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="FileDocumentOutline" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="5">
+            <TextBlock Text="{Binding DocumentTitle}" FontWeight="SemiBold"
+                       FontSize="{DynamicResource FsHeading}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Grille par matière, conservant les évaluations distinctes et toutes les
+           périodes, y compris lorsqu'aucune cote n'a encore été saisie. -->
+      <TextBlock Text="BRANCHES ET PÉRIODES" Classes="groupcaps"
+                 IsVisible="{Binding HasSubjectGrid}" />
+      <ItemsControl ItemsSource="{Binding Subjects}" IsVisible="{Binding HasSubjectGrid}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="phonegroup" Padding="14,12" Margin="0,0,0,8">
+              <StackPanel Spacing="8">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Details}" Classes="muted" TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding Periods}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <StackPanel Spacing="3" Margin="0,0,0,8">
+                        <TextBlock Text="{Binding PeriodLabel}" Classes="muted"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- Les cotes historiques non rattachées à une branche sont visibles
+           sans apparaître dans les résultats d'une autre matière. -->
+      <TextBlock Text="ÉVALUATIONS HISTORIQUES SANS BRANCHE ASSOCIÉE"
+                 Classes="groupcaps" IsVisible="{Binding HasUnassigned}" />
+      <ItemsControl ItemsSource="{Binding Unassigned}"
+                    IsVisible="{Binding HasUnassigned}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="phonegroup" Padding="14,12" Margin="0,0,0,8">
+              <StackPanel Spacing="5">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Comment}" Classes="muted"
+                           IsVisible="{Binding HasComment}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <ItemsControl ItemsSource="{Binding Terms}" IsVisible="{Binding ShowPeriods}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <StackPanel Spacing="10" Margin="0,0,0,12">
+              <TextBlock Text="{Binding Label}" Classes="groupcaps" />
+              <ItemsControl ItemsSource="{Binding Periods}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Classes="phonegroup" Padding="14,12" Margin="0,0,0,8">
+                      <StackPanel Spacing="9">
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="Aucune donnée pédagogique saisie pour cette période."
+                                   Classes="muted" IsVisible="{Binding !HasLines}" />
+                        <TextBlock Text="{Binding EntryHeading}" Classes="groupcaps"
+                                   IsVisible="{Binding HasLines}" />
+                        <ItemsControl ItemsSource="{Binding Lines}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <StackPanel Spacing="4" Margin="0,0,0,10">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12"
+                                      IsVisible="{Binding !IsObservation}">
+                                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                                             TextWrapping="Wrap" />
+                                  <TextBlock Grid.Column="1" Text="{Binding Value}"
+                                             FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </Grid>
+                                <StackPanel Spacing="3" IsVisible="{Binding IsObservation}">
+                                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                                             TextWrapping="Wrap" />
+                                  <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding Comment}" Classes="muted"
+                                           IsVisible="{Binding HasComment}" TextWrapping="Wrap" />
+                              </StackPanel>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

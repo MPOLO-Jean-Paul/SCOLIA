@@ -27,7 +27,10 @@ public static class DevicePairingStore
             if (!File.Exists(path)) return null;
             var plain = SecretStore.Unprotect(File.ReadAllBytes(path));
             var credentials = JsonSerializer.Deserialize<Credential>(plain);
-            return credentials is { ExpiresUtc: var expires } && expires > DateTime.UtcNow ? credentials : null;
+            // La durée historique ne doit plus déjumeler un appareil : le serveur vérifie
+            // l'autorisation persistante et son éventuelle révocation à chaque reprise.
+            return credentials is { GrantId: var grantId, DeviceSecret: { Length: > 0 } }
+                && grantId != Guid.Empty ? credentials : null;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or
             CryptographicException or JsonException) { return null; }
@@ -35,6 +38,19 @@ public static class DevicePairingStore
 
     public static void Save(Uri server, Credential credentials) =>
         SecretStore.Save(PathFor(server), JsonSerializer.SerializeToUtf8Bytes(credentials));
+
+    /// <summary>
+    /// Le QR officiel peut autoriser simultanément le chemin LAN et le chemin WSS
+    /// du MÊME serveur. Copier l'autorisation chiffrée localement permet le
+    /// basculement sans demander un second QR ; jamais depuis une annonce UDP seule.
+    /// </summary>
+    public static bool CopyForTrustedRoute(Uri source, Uri destination)
+    {
+        var credential = Read(source);
+        if (credential is null) return false;
+        Save(destination, credential);
+        return true;
+    }
 
     public static void Forget(Uri server)
     {

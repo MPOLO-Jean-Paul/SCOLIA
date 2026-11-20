@@ -32,6 +32,7 @@ public static class PhoneCards
     public static void SetEnabled(DataGrid grid, bool value) => grid.SetValue(EnabledProperty, value);
 
     /// <summary>En-têtes de colonnes qui portent un montant : il se place à droite du titre, en gras.</summary>
+    private static readonly string[] RankHeaders = ["Place", "Rang", "N°", "#"];
     private static readonly string[] AmountHeaders = ["Montant", "Solde", "Reste", "Total", "Net", "Payé", "Encaissé", "Salaire"];
 
     static PhoneCards()
@@ -130,7 +131,10 @@ public static class PhoneCards
         var others = columns.Where(c => !IsCheck(c)).ToList();
         var title = others.FirstOrDefault(c => c.Width.IsStar) ?? others.FirstOrDefault();
         var amount = others.FirstOrDefault(c => c != title && IsAmount(c));
-        var subtitle = title is null ? null : others.Take(others.IndexOf(title)).OfType<DataGridTextColumn>().FirstOrDefault();
+        // Sous-titre : le matricule ou le code, jamais un rang ou un numéro d'ordre, qui seul sous un nom ne dit rien.
+        // Ceux-là restent des lignes à libellé (« Place : 2 »).
+        var subtitle = title is null ? null : others.Take(others.IndexOf(title)).OfType<DataGridTextColumn>()
+            .FirstOrDefault(c => !RankHeaders.Contains(HeaderText(c), StringComparer.OrdinalIgnoreCase));
         var fields = others.Where(c => c != title && c != amount && c != subtitle).ToList();
 
         var body = new StackPanel { Spacing = 3 };

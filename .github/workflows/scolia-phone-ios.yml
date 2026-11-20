@@ -1,29 +1,10 @@
 name: SCOLIA Phone iPhone - compilation de verification
 
 # Validation sans certificat : chaque changement du code natif est compile par GitHub sur macOS.
+# Livraison 1.2.62 : Android et Windows uniquement. Les validations iOS
+# restent disponibles sur déclenchement manuel, sans vérification automatique
+# lors des changements des vues Avalonia communes.
 on:
-  push:
-    paths:
-      - 'scolia-pro/src/Scolia.Phone.iOS/**'
-      - 'scolia-pro/src/Scolia.Bureau/**'
-      - 'scolia-pro/src/Scolia.Transport/**'
-      - 'scolia-pro/Directory.Packages.props'
-      - 'scolia-pro/global.json'
-      - 'scolia-pro/scripts/ios_signing.py'
-      - 'scolia-pro/scripts/test_ios_signing.py'
-      - '.github/workflows/scolia-phone-ios.yml'
-      - '.github/workflows/scolia-phone-ipa.yml'
-  pull_request:
-    paths:
-      - 'scolia-pro/src/Scolia.Phone.iOS/**'
-      - 'scolia-pro/src/Scolia.Bureau/**'
-      - 'scolia-pro/src/Scolia.Transport/**'
-      - 'scolia-pro/Directory.Packages.props'
-      - 'scolia-pro/global.json'
-      - 'scolia-pro/scripts/ios_signing.py'
-      - 'scolia-pro/scripts/test_ios_signing.py'
-      - '.github/workflows/scolia-phone-ios.yml'
-      - '.github/workflows/scolia-phone-ipa.yml'
   workflow_dispatch:
 
 permissions:
@@ -41,6 +22,10 @@ jobs:
   simulateur:
     name: iOS natif - simulateur Apple Silicon, sans signature
     runs-on: xcode-27
+    # Le SDK .NET iOS 27.2 ne peut pas compiler avec l'Xcode 27.1
+    # fourni par défaut sur l'image xcode-27.
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
     timeout-minutes: 50
     steps:
       - uses: actions/checkout@v5
@@ -88,6 +73,8 @@ jobs:
   ipa-appareil:
     name: iOS natif - IPA iPhone et iPad (arm64), a signer avec votre identifiant Apple
     runs-on: xcode-27
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
     # La compilation AOT de l'IPA dépasse 80 minutes depuis l'ajout des codes QR (QRCoder, ZXing) : marge large.
     timeout-minutes: 150
     steps:

@@ -29,6 +29,11 @@
     <AvaloniaResource Include="Assets/**" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Contrat de generatrice cartes identique a celui du serveur, sans bibliotheque PDF dans le client. -->
+    <ProjectReference Include="../Scolia.Domain/Scolia.Domain.csproj" />
+  </ItemGroup>
+
   <!-- Protocole de découverte réseau, partagé avec le serveur : un seul fichier, aucune divergence possible. -->
   <ItemGroup>
     <Compile Include="../Scolia.Infrastructure/Network/LanProtocol.cs" Link="Infrastructure/LanProtocol.cs" />

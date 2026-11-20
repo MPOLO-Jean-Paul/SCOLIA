@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Command, HandCoins, KeyRound, LogOut, RefreshCw, Search } from 'lucide-react';
 import { api, openDocument } from '../api/client';
 import { P, saveTheme, storedTheme, useSession, type Theme } from '../lib/session';
+import { adapt } from '../lib/terms';
 import { initials } from '../lib/format';
 import { canOpenPath } from '../lib/access';
 import { allCommands, buildTabs, type RibbonCommand } from '../lib/ribbon';
@@ -76,7 +77,8 @@ export function Layout() {
   // Même si un ancien lien reste en cache, ne pas l'afficher à un compte sans le droit correspondant.
   const visibleRecents = useMemo(() => recents.filter(r =>
     canOpenPath(r.to.split('?')[0], session?.permissions ?? [])), [recents, session?.permissions]);
-  const tabs = useMemo(() => buildTabs({ pathname: location.pathname, recents: visibleRecents, can }), [location.pathname, visibleRecents, can]);
+  const tabs = useMemo(() => buildTabs({ pathname: location.pathname, recents: visibleRecents, can, institutionType: session?.institutionType }),
+    [location.pathname, visibleRecents, can, session?.institutionType]);
   const pageLabels = useMemo(() => {
     const labels = new Map<string, string>();
     for (const c of allCommands()) if (c.to && !labels.has(c.to)) labels.set(c.to, c.label);
@@ -270,7 +272,7 @@ export function Layout() {
           {session?.schoolName ?? 'SCOLIA'}{session?.currentYear && <span> · année {session.currentYear}</span>} <span>— SCOLIA Pro</span>
         </div>
         <button type="button" className="titlebar-search" onClick={() => setPalette(true)}>
-          <Search /><span>Rechercher un apprenant, un reçu, une page…</span><kbd>Ctrl K</kbd>
+          <Search /><span>{adapt('Rechercher un apprenant, un reçu, une page…', session?.institutionType)}</span><kbd>Ctrl K</kbd>
         </button>
         <UserMenu name={session?.displayName ?? ''} role={session?.roleLabel ?? ''} onPalette={() => setPalette(true)} onLogout={async () => { await logout(); navigate('/connexion'); }} />
       </header>

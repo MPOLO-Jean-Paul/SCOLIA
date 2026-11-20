@@ -6,6 +6,7 @@ using Scolia.Domain.Academics;
 using Scolia.Domain.Discipline;
 using Scolia.Domain.Common;
 using Scolia.Domain.Students;
+using Scolia.Domain.School;
 
 namespace Scolia.Application.Services;
 
@@ -133,6 +134,10 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
 
     public async Task<byte[]> ReportCardPdfAsync(Guid promotionId, Guid enrollmentId, int? term, CancellationToken ct = default)
     {
+        var sourceSchool = await YearContext.SchoolAsync(db, ct);
+        if (InstitutionProfiles.Canonicalize(sourceSchool.InstitutionType) != InstitutionProfiles.ItmIm)
+            throw new DomainException("bulletin",
+                "Le bulletin ITM ne s'applique pas à cet établissement. Utilisez les aperçus pédagogiques propres aux cycles ; les documents officiels exigent une validation réglementaire.");
         var results = await ResultsAsync(promotionId, term, ct);
         var row = results.Rows.FirstOrDefault(r => r.EnrollmentId == enrollmentId) ?? throw new NotFoundException("Apprenant absent de cette promotion.");
         var school = await YearContext.SchoolAsync(db, ct);

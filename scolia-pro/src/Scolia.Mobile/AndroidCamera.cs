@@ -11,6 +11,9 @@ namespace Scolia.Mobile;
 public static class AndroidCamera
 {
     private const int RequestCode = 4721;
+    private const int GalleryRequestCode = 4722;
+    private const int MaximumQrImageBytes = 12 * 1024 * 1024;
+    private static TaskCompletionSource<byte[]?>? galleryPending;
     private static TaskCompletionSource<byte[]?>? pending;
     private static string? photoPath;
     private static WeakReference<Activity>? current;
@@ -49,9 +52,63 @@ public static class AndroidCamera
         return waiting.Task;
     }
 
-    /// <summary>Retour de l'appareil photo ; faux si la réponse concerne une autre demande.</summary>
-    public static bool Complete(int requestCode, Result resultCode)
+    /// <summary>Importe un QR déjà enregistré ou une capture d'écran, sans permission de lecture générale.</summary>
+    public static Task<byte[]?> PickImageAsync()
     {
+        if (current?.TryGetTarget(out var activity) != true || activity is null)
+            return Task.FromResult<byte[]?>(null);
+        galleryPending?.TrySetResult(null);
+        var waiting = new TaskCompletionSource<byte[]?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        galleryPending = waiting;
+        try
+        {
+            var intent = new Intent(Intent.ActionOpenDocument);
+            intent.SetType("image/*");
+            intent.AddCategory(Intent.CategoryOpenable);
+            intent.AddFlags(ActivityFlags.GrantReadUriPermission);
+            activity.StartActivityForResult(intent, GalleryRequestCode);
+        }
+        catch (Exception ex) when (ex is Java.Lang.Exception or InvalidOperationException or ArgumentException)
+        {
+            Android.Util.Log.Warn("SCOLIA-QR", $"Importation d'image indisponible : {ex.GetType().Name}");
+            waiting.TrySetResult(null);
+        }
+        return waiting.Task;
+    }
+
+    /// <summary>Retour de l'appareil photo ou du sélecteur de photo Android.</summary>
+    public static bool Complete(int requestCode, Result resultCode, Intent? intentData = null)
+    {
+        if (requestCode == GalleryRequestCode)
+        {
+            byte[]? qrImage = null;
+            try
+            {
+                if (resultCode == Result.Ok && intentData?.Data is { } uri &&
+                    current?.TryGetTarget(out var activity) == true)
+                {
+                    using var input = activity.ContentResolver?.OpenInputStream(uri);
+                    if (input is not null)
+                    {
+                        using var output = new MemoryStream();
+                        var buffer = new byte[64 * 1024];
+                        int count;
+                        while ((count = input.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            if (output.Length + count > MaximumQrImageBytes)
+                                throw new IOException("La photo QR dépasse la limite de 12 Mo.");
+                            output.Write(buffer, 0, count);
+                        }
+                        qrImage = output.ToArray();
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is IOException or Java.Lang.Exception or UnauthorizedAccessException)
+            { Android.Util.Log.Warn("SCOLIA-QR", $"Photo QR non lisible : {ex.GetType().Name}"); }
+            galleryPending?.TrySetResult(qrImage);
+            galleryPending = null;
+            return true;
+        }
         if (requestCode != RequestCode) return false;
         byte[]? data = null;
         try

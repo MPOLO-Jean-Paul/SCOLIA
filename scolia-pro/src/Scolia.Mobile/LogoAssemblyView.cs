@@ -60,13 +60,14 @@ public sealed class LogoAssemblyView : AndroidView
         canvas.Translate((Width - size) / 2f, (Height - size) / 2f);
         canvas.Scale(size / Grid, size / Grid);
         // Tout le logo fait un dernier quart de tour en s'assemblant.
-        canvas.Rotate(-90f * (1 - Ease(progress, 0f, 0.85f)), Grid / 2, Grid / 2);
+        // Un léger pivot remplace le quart de tour brusque ; le symbole reste immédiatement reconnaissable.
+        canvas.Rotate(-16f * (1 - Ease(progress, 0f, 0.85f)), Grid / 2, Grid / 2);
 
         // Chaque pièce part à son tour (décalage), vient de son coin en tournant et se pose avec un léger rebond.
-        Piece(canvas, 0.00f, -150, -130, -140, 237, 176, c => c.DrawPath(upper, blueStroke));
-        Piece(canvas, 0.10f, 150, 130, 140, 273, 336, c => c.DrawPath(lower, greenStroke));
-        Piece(canvas, 0.22f, 170, -150, 0, 418, 118, c => c.DrawCircle(418, 118, 38, blueFill));
-        Piece(canvas, 0.30f, -170, 150, 0, 94, 394, c => c.DrawCircle(94, 394, 38, greenFill));
+        Piece(canvas, 0.00f, -68, -54, -20, 237, 176, c => c.DrawPath(upper, blueStroke));
+        Piece(canvas, 0.10f, 68, 54, 20, 273, 336, c => c.DrawPath(lower, greenStroke));
+        Piece(canvas, 0.22f, 52, -58, 0, 418, 118, c => c.DrawCircle(418, 118, 38, blueFill));
+        Piece(canvas, 0.30f, -52, 58, 0, 94, 394, c => c.DrawCircle(94, 394, 38, greenFill));
         canvas.Restore();
     }
 
@@ -99,7 +100,7 @@ public sealed class LogoAssemblyView : AndroidView
     /// <summary>Petit dépassement puis retour, comme une pièce qui s'emboîte.</summary>
     private static float Overshoot(float x)
     {
-        const float tension = 1.6f;
+        const float tension = 0.85f;
         var y = x - 1;
         return y * y * ((tension + 1) * y + tension) + 1;
     }

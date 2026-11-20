@@ -24,15 +24,21 @@ public sealed class PhoneHeaderSearchVm : Observable
 
     /// <summary>Micro du filtre, comme la recherche de l'accueil.</summary>
     public bool VoiceAvailable => VoiceInput.Available;
+    private readonly VoiceCaptureSession voiceSession = new();
     private bool listening;
-    public bool Listening { get => listening; private set { if (Set(ref listening, value)) Raise(nameof(Placeholder)); } }
-    public AsyncCommand Listen => listen ??= new AsyncCommand(async () =>
+    public bool Listening { get => listening; private set { if (Set(ref listening, value)) { Raise(nameof(Placeholder)); Raise(nameof(VoiceTip)); } } }
+    public string VoiceTip => Listening ? "Arrêter l'écoute vocale" : "Filtrer à la voix";
+    public ToggleVoiceCommand Listen => listen ??= new ToggleVoiceCommand(() =>
     {
-        Listening = true;
-        try { if (await VoiceInput.ListenAsync() is { } text) Query = text; }
-        finally { Listening = false; }
+        var page = shell.Current;
+        return voiceSession.ToggleAsync(text =>
+        {
+            // Une dictée démarrée sur une liste ne peut filtrer une autre page.
+            if (ReferenceEquals(page, shell.Current)) Query = text;
+        }, active => Listening = active);
     });
-    private AsyncCommand? listen;
+    private ToggleVoiceCommand? listen;
+    public void StopListening() => voiceSession.Cancel(active => Listening = active);
     // À chaque ouverture, le micro suit le service vocal du moment (installé, coupé ou refusé entre-temps).
     public bool IsOpen { get => isOpen; private set { if (Set(ref isOpen, value) && value) Raise(nameof(VoiceAvailable)); } }
     public bool HasQuery => Query.Length > 0;
@@ -58,13 +64,13 @@ public sealed class PhoneHeaderSearchVm : Observable
     };
     public string Placeholder => listening ? "Parlez maintenant…" : Scope(shell.Current) switch
     {
-        "apprenants" => "Nom ou matricule de l'apprenant",
+        "apprenants" => $"Nom ou matricule de {shell.StudentTerms.Elided}",
         "recus" => "Reçu, matricule ou nom",
-        "mensualites" => "Apprenant ou matricule",
-        "debiteurs" => "Apprenant en dette",
-        "encaissement" => "Apprenant à encaisser",
-        "encaissement_lot" => "Apprenants du lot",
-        "cartes" => "Apprenant ou matricule de la carte",
+        "mensualites" => $"{shell.StudentTerms.SingularTitle} ou matricule",
+        "debiteurs" => $"{shell.StudentTerms.SingularTitle} en dette",
+        "encaissement" => $"{shell.StudentTerms.SingularTitle} à encaisser",
+        "encaissement_lot" => $"{shell.StudentTerms.PluralTitle} du lot",
+        "cartes" => $"{shell.StudentTerms.SingularTitle} ou matricule de la carte",
         "audit" => "Événement du journal d'audit",
         "depenses" => "Dépense ou référence",
         _ => shell.Current is SettingsPage ? "Rechercher un réglage ou une option" : "Rechercher dans SCOLIA",
@@ -135,6 +141,9 @@ public sealed class PhoneHeaderSearchVm : Observable
 
     public void PageChanged()
     {
+        // Changer de module arrête immédiatement le micro : aucun texte d'un ancien
+        // écran ne peut être transféré vers le filtre de la page suivante.
+        StopListening();
         // Ordinateur : sur une liste, le champ de la barre du haut est ouvert d'emblée, prêt à la saisie.
         // Téléphone : seul Encaisser l'ouvre, pour ne pas sortir le clavier à chaque page.
         IsOpen = shell.Current is CashierPage { OpensHeaderSearch: true }

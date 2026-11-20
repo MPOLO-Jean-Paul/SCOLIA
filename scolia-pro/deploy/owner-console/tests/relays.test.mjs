@@ -1,0 +1,2 @@
+import test from "node:test";import assert from "node:assert/strict";import {safeRelayUrl} from "../src/relays.mjs";
+test("Relais HTTPS WebSocket chiffré seulement",()=>{assert.equal(safeRelayUrl("wss://relais.example.org/"),"wss://relais.example.org/");for(const s of ["http://relais.example.org","ws://relais.example.org","wss://u:p@relais.example.org","wss://relais.example.org/?token=secret","wss://127.0.0.1/"])assert.equal(safeRelayUrl(s),null);});

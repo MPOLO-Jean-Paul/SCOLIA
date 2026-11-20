@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Avalonia.Android repose sur AppCompatActivity : un thème AppCompat est obligatoire,
+       sinon l'activité plante au lancement (« You need to use a Theme.AppCompat theme »). -->
+  <style name="ScoliaConsoleTheme" parent="@style/Theme.AppCompat.Light.NoActionBar">
+    <item name="android:windowBackground">@color/fond_lancement</item>
+    <item name="android:windowActionBar">false</item>
+    <item name="android:windowNoTitle">true</item>
+    <item name="android:statusBarColor">@color/fond_lancement</item>
+    <item name="android:navigationBarColor">@color/fond_lancement</item>
+    <item name="android:windowLightStatusBar">true</item>
+    <item name="android:windowLightNavigationBar">true</item>
+  </style>
+</resources>

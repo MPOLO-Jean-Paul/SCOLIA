@@ -1,0 +1,57 @@
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.TeacherCurriculumView">
+  <Grid RowDefinitions="Auto,Auto,Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,8">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Branche ou élément constitutif" Classes="fieldlabel" />
+          <ComboBox Width="380" ItemsSource="{Binding ElementChoices}" SelectedItem="{Binding Element}" />
+        </StackPanel>
+        <StackPanel Classes="field" IsVisible="{Binding IsSchoolElement}">
+          <TextBlock Text="Période" Classes="fieldlabel" />
+          <ComboBox Width="220" ItemsSource="{Binding PeriodChoices}" SelectedItem="{Binding Period}" />
+        </StackPanel>
+        <StackPanel Classes="field" IsVisible="{Binding IsUniversityElement}">
+          <TextBlock Text="Session" Classes="fieldlabel" />
+          <ComboBox Width="200" ItemsSource="{Binding Sessions}" SelectedItem="{Binding Session}" />
+        </StackPanel>
+      </WrapPanel>
+    </Border>
+    <Border Grid.Row="1" Classes="band" Margin="0,0,0,8" IsVisible="{Binding IsSchoolElement}">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Code de l'évaluation" Classes="fieldlabel" />
+          <TextBox Width="160" Text="{Binding EvaluationCode}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Intitulé" Classes="fieldlabel" />
+          <TextBox Width="220" Text="{Binding EvaluationTitle}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Maximum" Classes="fieldlabel" />
+          <TextBox Width="100" Text="{Binding MaxScore}" />
+        </StackPanel>
+      </WrapPanel>
+    </Border>
+    <Border Grid.Row="2" Classes="band" Margin="0,0,0,8" Padding="12,8" IsVisible="{Binding IsLocked}">
+      <TextBlock Text="{Binding LockReason}" TextWrapping="Wrap" Classes="muted" />
+    </Border>
+    <DataGrid Grid.Row="3" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding FullName}" IsReadOnly="True" Width="2*" MinWidth="240" />
+        <DataGridTemplateColumn Header="Note" Width="Auto" MinWidth="120">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBox Text="{Binding Score, Mode=TwoWay}" IsEnabled="{Binding Editable}" MinWidth="90" HorizontalContentAlignment="Right" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="3" Icon="Pen" Title="Aucune feuille à afficher" Hint="Choisissez votre branche ou votre EC. Pour une nouvelle évaluation, saisissez son code puis « Charger l'évaluation »." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

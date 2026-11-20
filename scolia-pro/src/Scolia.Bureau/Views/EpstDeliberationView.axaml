@@ -1,0 +1,38 @@
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.EpstDeliberationView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Classe" Classes="fieldlabel" />
+          <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+      </WrapPanel>
+    </Border>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Place" Binding="{Binding Rank}" Width="Auto" MinWidth="70" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Dto.FullName}" Width="2*" MinWidth="240" />
+        <DataGridTextColumn Header="%" Binding="{Binding Percent}" Width="Auto" MinWidth="90" />
+        <DataGridTextColumn Header="Échecs" Binding="{Binding Dto.FailedSubjects}" Width="Auto" MinWidth="80" />
+        <DataGridTextColumn Header="Calcul" Binding="{Binding Computed}" Width="Auto" MinWidth="130" />
+        <DataGridTemplateColumn Header="Décision" Width="Auto" MinWidth="170">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding DecisionBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Decision}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Repêchage" Binding="{Binding Repechage}" Width="2*" MinWidth="220" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Décision du jury" Binding="{Binding Jury}" Width="2*" MinWidth="240" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="1" Icon="Gavel" Title="Aucun élève à délibérer" Hint="Les résultats de la classe doivent être disponibles." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

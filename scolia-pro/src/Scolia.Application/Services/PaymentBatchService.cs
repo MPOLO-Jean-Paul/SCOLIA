@@ -47,7 +47,7 @@ public sealed class PaymentBatchService(IAppDbContext db, IWriteGate gate, IAudi
             try
             {
                 var data = await accounts.ForEnrollmentAsync(item.EnrollmentId, null, ct);
-                var plan = PaymentAllocator.Months(data.Account, item.FeeItemIds);
+                var plan = PaymentAllocator.Months(data.Account, item.FeeItemIds, monthsOnly: true);
                 var total = plan.Sum(p => p.Amount);
                 var duplicates = (await db.Receipts.AsNoTracking()
                         .Where(r => r.EnrollmentId == item.EnrollmentId && r.Status == OperationStatus.Valide && r.Date == date)
@@ -88,7 +88,7 @@ public sealed class PaymentBatchService(IAppDbContext db, IWriteGate gate, IAudi
                     continue;
                 }
                 var data = await accounts.ForEnrollmentAsync(item.EnrollmentId, null, ct);
-                var amount = PaymentAllocator.Months(data.Account, item.FeeItemIds).Sum(p => p.Amount);
+                var amount = PaymentAllocator.Months(data.Account, item.FeeItemIds, monthsOnly: true).Sum(p => p.Amount);
                 var receipt = await payments.CreateAsync(new PaymentRequest(item.EnrollmentId, amount, input.Date, item.Method, item.Reference,
                     item.PayerName, item.PayerPhone, null, item.FeeItemIds, key), ct);
                 lines.Add(new BatchPaymentLineDto(item.EnrollmentId, matricule, name, true, receipt.Id, receipt.Number, receipt.Amount, null));

@@ -61,7 +61,8 @@ public sealed class EraseDataPage : PageViewModel
 
     public EraseDataPage(ShellViewModel shell, bool payments) : base(shell)
     {
-        this.payments = payments;
+        // Chaque compte n'efface que ce qu'il gère : les paiements (annulation de reçus), les dossiers (secrétariat).
+        this.payments = payments ? shell.Can(Perm.PaymentsCancel) || !shell.Can(Perm.StudentsWrite) : !shell.Can(Perm.StudentsWrite);
         scope = Scopes[0];
         Erase = new AsyncCommand(() => Shell.Run(EraseAsync));
         RebuildActions();
@@ -70,7 +71,7 @@ public sealed class EraseDataPage : PageViewModel
     private void RebuildActions()
     {
         Actions.Clear();
-        if (Shell.Can(Perm.BackupManage))
+        if (Shell.Can(Perm.BackupManage) && (payments ? CanErasePayments : CanEraseStudents))
             Action(payments ? "Effacer les paiements" : "Effacer les dossiers", MaterialIconKind.DeleteForeverOutline, EraseAsync, primary: true, danger: true);
         Action("Tout cocher", MaterialIconKind.CheckboxMultipleMarked, () => { SetAll(true); return Task.CompletedTask; });
         Action("Tout décocher", MaterialIconKind.CheckboxMultipleBlank, () => { SetAll(false); return Task.CompletedTask; });
@@ -81,13 +82,16 @@ public sealed class EraseDataPage : PageViewModel
     public override string Subtitle => subtitle;
     public override MaterialIconKind Glyph => MaterialIconKind.DeleteSweepOutline;
 
+    public bool CanErasePayments => Shell.Can(Perm.PaymentsCancel);
+    public bool CanEraseStudents => Shell.Can(Perm.StudentsWrite);
+
     /// <summary>Étape 1 : effacer les paiements (les dossiers restent) ou les dossiers entiers.</summary>
     public bool ErasePayments
     {
         get => payments;
         set
         {
-            if (!value || payments) return;
+            if (!value || payments || !CanErasePayments) return;
             payments = true;
             KindChanged();
         }
@@ -98,7 +102,7 @@ public sealed class EraseDataPage : PageViewModel
         get => !payments;
         set
         {
-            if (!value || !payments) return;
+            if (!value || !payments || !CanEraseStudents) return;
             payments = false;
             KindChanged();
         }
@@ -112,8 +116,8 @@ public sealed class EraseDataPage : PageViewModel
     }
 
     public string KindHint => payments
-        ? "Les reçus et les paiements des apprenants choisis sont effacés. Les dossiers restent, et chaque solde revient à son montant dû."
-        : "Les dossiers des apprenants choisis sont effacés, avec leurs inscriptions, reçus, notes, présences, discipline et prises en charge.";
+        ? Vocabulary.Adapt("Les reçus et les paiements des apprenants choisis sont effacés. Les dossiers restent, et chaque solde revient à son montant dû.")
+        : Vocabulary.Adapt("Les dossiers des apprenants choisis sont effacés, avec leurs inscriptions, reçus, notes, présences, discipline et prises en charge.");
 
     public string EraseText => payments ? "Effacer les paiements" : "Effacer les dossiers";
     public bool CanErase => Shell.Can(Perm.BackupManage);
@@ -122,8 +126,8 @@ public sealed class EraseDataPage : PageViewModel
     public ObservableCollection<EraseRowVm> Items { get; } = [];
     public IReadOnlyList<ChoiceItem> Scopes { get; } =
     [
-        new(ErasureScope.Selection, "Les apprenants cochés"),
-        new(ErasureScope.All, "Tous les apprenants"),
+        new(ErasureScope.Selection, Vocabulary.Adapt("Les apprenants cochés")),
+        new(ErasureScope.All, Vocabulary.Adapt("Tous les apprenants")),
     ];
 
     public string Search
@@ -172,7 +176,7 @@ public sealed class EraseDataPage : PageViewModel
         }
         total = page.Total;
         subtitle = "Sauvegarde automatique avant chaque effacement.";
-        if (page.Items.Count < page.Total) subtitle += $" Liste limitée à {page.Items.Count} apprenant(s) sur {page.Total} : utilisez la recherche.";
+        if (page.Items.Count < page.Total) subtitle += Vocabulary.Adapt($" Liste limitée à {page.Items.Count} apprenant(s) sur {page.Total} : utilisez la recherche.");
         Raise(nameof(Subtitle));
         SelectionChanged();
     }
@@ -193,9 +197,9 @@ public sealed class EraseDataPage : PageViewModel
 
     private void SelectionChanged()
     {
-        SelectionSummary = !IsSelectionScope ? $"Tous les apprenants seront concernés{(total > 0 ? $" ({Format.Count(total, "dossier", "dossiers")})" : string.Empty)}."
+        SelectionSummary = Vocabulary.Adapt(!IsSelectionScope ? $"Tous les apprenants seront concernés{(total > 0 ? $" ({Format.Count(total, "dossier", "dossiers")})" : string.Empty)}."
             : chosen.Count == 0 ? "Aucun apprenant coché : cochez les lignes concernées, ou choisissez « Tous les apprenants »."
-            : $"{Format.Count(chosen.Count, "apprenant coché", "apprenants cochés")}.";
+            : $"{Format.Count(chosen.Count, "apprenant coché", "apprenants cochés")}.");
     }
 
     private async Task EraseAsync()

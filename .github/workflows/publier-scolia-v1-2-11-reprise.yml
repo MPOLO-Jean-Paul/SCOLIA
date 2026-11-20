@@ -1,0 +1,112 @@
+name: SCOLIA Pro 1.2.11 - publication fiable des executables verifies
+
+on:
+  push:
+    branches:
+      - release/direct-apk-scolia-pro-20261103
+    paths:
+      - '.github/workflows/publier-scolia-v1-2-11-reprise.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publier:
+    name: Reprendre les APK et EXE certifies sans recompiler
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Recuperer uniquement les compilations qui ont reussi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/android dist/windows
+          gh run download 41815321669 --repo "$GH_REPO" --name SCOLIA_Natif_Android_APK --dir dist/android
+          gh run download 41815321669 --repo "$GH_REPO" --name SCOLIA_Pro_Windows_Installateur_EXE --dir dist/windows
+
+      - name: Verifier la version, le certificat et les empreintes SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq '<Version>1.2.11</Version>' scolia-pro/Directory.Build.props
+          apk=dist/android/SCOLIA_Pro_1.2.11_Android.apk
+          exe=dist/windows/SCOLIA_Pro_Installation_1.2.11_Windows_x64.exe
+          test -s "$apk" && test -s "$apk.sha256"
+          test -s "$exe" && test -s "$exe.sha256"
+          test "$(stat -c %s "$apk")" -gt 1048576
+          test "$(stat -c %s "$exe")" -gt 1048576
+          (cd dist/android && sha256sum --check SCOLIA_Pro_1.2.11_Android.apk.sha256)
+          (cd dist/windows && sha256sum --check SCOLIA_Pro_Installation_1.2.11_Windows_x64.exe.sha256)
+          grep -Fq 'E5:B5:F7:FA:41:54:11:EE:AC:4B:F7:34:84:90:24:FF:CF:7F:93:50:0C:60:13:83:99:31:B0:20:38:F5:89:80' \
+            dist/android/IMPORTANT-SIGNATURE.txt
+          echo 'APK et EXE valides, certificat de la version 1.2.10 conserve.'
+
+      - name: Publier en brouillon puis rendre public seulement avec les 4 fichiers
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag=scolia-pro-v1.2.11
+          apk=dist/android/SCOLIA_Pro_1.2.11_Android.apk
+          exe=dist/windows/SCOLIA_Pro_Installation_1.2.11_Windows_x64.exe
+
+          if ! gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
+            # Un brouillon ne change pas la mise à jour détectée par les applications.
+            for tentative in 1 2 3 4; do
+              if gh release create "$tag" --repo "$GH_REPO" --target "$GITHUB_SHA" \
+                --draft --title 'SCOLIA Pro 1.2.11 - recherche vocale Windows corrigee' \
+                --notes 'Mise a jour : deuxieme clic sur le micro pour stopper la dictee Windows. Recherche globale et filtres de page preserves. Donnees scolaires et bases SQLite conservees ; sauvegarde recommandee avant installation. APK et EXE controles SHA-256. Certificat Android conforme a la version 1.2.10.'; then
+                break
+              fi
+              if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then break; fi
+              test "$tentative" -lt 4 || exit 1
+              sleep $((tentative * 5))
+            done
+          fi
+
+          etat="$(gh release view "$tag" --repo "$GH_REPO" --json isDraft --jq '.isDraft')"
+          if [ "$etat" = false ]; then
+            echo 'Publication déjà ouverte : ne pas écraser des exécutables diffusés.' >&2
+            exit 1
+          fi
+          test "$etat" = true
+
+          for fichier in "$apk" "$apk.sha256" "$exe" "$exe.sha256"; do
+            succes=0
+            for tentative in 1 2 3 4; do
+              if gh release upload "$tag" "$fichier" --repo "$GH_REPO" --clobber; then
+                succes=1
+                break
+              fi
+              sleep $((tentative * 6))
+            done
+            test "$succes" = 1 || { echo "Upload impossible : $fichier" >&2; exit 1; }
+          done
+
+          noms="$(gh release view "$tag" --repo "$GH_REPO" --json assets --jq '.assets[].name')"
+          for attendu in "$(basename "$apk")" "$(basename "$apk.sha256")" "$(basename "$exe")" "$(basename "$exe.sha256")"; do
+            echo "$noms" | grep -Fxq "$attendu" || { echo "Fichier absent : $attendu" >&2; exit 1; }
+          done
+
+          publie=0
+          for tentative in 1 2 3 4; do
+            if gh release edit "$tag" --repo "$GH_REPO" --draft=false --latest; then
+              publie=1
+              break
+            fi
+            sleep $((tentative * 5))
+          done
+          test "$publie" = 1
+          gh release view "$tag" --repo "$GH_REPO" --json url,isDraft,assets \
+            --jq '{url,isDraft,fichiers:[.assets[].name]}'

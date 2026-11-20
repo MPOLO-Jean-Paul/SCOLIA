@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.DeliberationView">
+  <Grid RowDefinitions="Auto,Auto,2*,Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Période" Classes="fieldlabel" />
+          <ComboBox Width="200" ItemsSource="{Binding Periods}" SelectedItem="{Binding Period}" />
+        </StackPanel>
+        <CheckBox Content="Cas à examiner seulement" IsChecked="{Binding OnlyCases}" VerticalAlignment="Bottom" Margin="0,0,12,12" />
+      </WrapPanel>
+    </Border>
+
+    <StackPanel Grid.Row="1" Margin="2,0,2,8" Spacing="2">
+      <TextBlock Text="{Binding Summary}" Classes="heading" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding JuryLine}" Classes="muted" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Rang" Binding="{Binding Rank}" Width="Auto" MinWidth="76" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="100" infra:GridPriority.Level="3" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding FullName}" Width="2*" MinWidth="220" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Points" Binding="{Binding Points}" Width="Auto" MinWidth="120" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="%" Binding="{Binding Percent}" Width="Auto" MinWidth="90" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Manquantes" Binding="{Binding Missing}" Width="Auto" MinWidth="110" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Échecs" Binding="{Binding Failed}" Width="Auto" MinWidth="84" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Mention" Binding="{Binding Mention}" Width="Auto" MinWidth="90" infra:GridPriority.Level="3" />
+        <DataGridTemplateColumn Header="Décision" Width="Auto" MinWidth="190">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding DecisionBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Decision}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Observation du jury" Binding="{Binding Reason}" Width="2*" MinWidth="200" infra:GridPriority.Level="2" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="2" Icon="Gavel" Title="Rien à délibérer"
+                  Hint="Inscrivez les apprenants, créez les cours et encodez les cotes : les résultats apparaissent ici." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+
+    <TextBlock Grid.Row="3" Text="Statistiques par cours" Classes="section" Margin="0,14,0,6" />
+    <DataGrid Grid.Row="4" ItemsSource="{Binding CourseStats}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="60" />
+        <DataGridTextColumn Header="Cours" Binding="{Binding Course}" Width="*" MinWidth="200" />
+        <DataGridTextColumn Header="Org." Binding="{Binding Semester}" Width="Auto" MinWidth="80" infra:GridPriority.Level="3" />
+        <DataGridTextColumn Header="Maxima" Binding="{Binding Max, StringFormat={}{0:0.##}}" Width="Auto" MinWidth="90" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Réussites" Binding="{Binding Passed}" Width="Auto" MinWidth="100" />
+        <DataGridTextColumn Header="Échecs" Binding="{Binding Failed}" Width="Auto" MinWidth="84" />
+        <DataGridTextColumn Header="Manquantes" Binding="{Binding Missing}" Width="Auto" MinWidth="110" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Moyenne" Binding="{Binding Average, StringFormat={}{0:0.##}}" Width="Auto" MinWidth="96" infra:GridPriority.Level="2" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </Grid>
+</UserControl>

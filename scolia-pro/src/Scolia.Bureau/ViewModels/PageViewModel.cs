@@ -69,6 +69,7 @@ public abstract class PageViewModel : Observable
     /// <summary>Nombre de boutons fixé par la largeur de la fenêtre ; -1 tant qu'elle ne l'a pas mesuré.</summary>
     private int visibleCount = -1;
     private bool busy;
+    private bool lastLoadSucceeded;
     private TaskCompletionSource? refreshCompletion;
 
     protected PageViewModel(ShellViewModel shell)
@@ -80,6 +81,8 @@ public abstract class PageViewModel : Observable
             Raise(nameof(MoreActions));
             Raise(nameof(HasMoreActions));
             Raise(nameof(HasHeaderActions));
+            Raise(nameof(PrimaryAction));
+            Raise(nameof(HasPrimaryAction));
         };
     }
 
@@ -101,6 +104,13 @@ public abstract class PageViewModel : Observable
     /// <remarks>L'action principale vient toujours en tête : en fenêtre étroite, c'est elle qui reste visible.</remarks>
     public IReadOnlyList<ActionVm> HeaderActions => Actions.Where(a => !a.MenuOnly).OrderByDescending(a => a.IsPrimary).ToList();
     public bool HasHeaderActions => Actions.Any(a => !a.MenuOnly);
+
+    /// <summary>
+    /// Action principale de la page (« Nouvelle section », « Nouvelle inscription »…) : sur le téléphone, un bouton visible
+    /// dans la barre, comme le bouton d'ajout de la barre de navigation d'iOS, au lieu d'être caché dans « ⋯ ».
+    /// </summary>
+    public ActionVm? PrimaryAction => Actions.FirstOrDefault(a => a.IsPrimary && !a.Row && !a.MenuOnly);
+    public bool HasPrimaryAction => PrimaryAction is not null;
 
     /// <summary>Nombre de boutons affichés : la place mesurée, ou par défaut trois boutons et le menu pour les autres.</summary>
     private int Shown
@@ -205,7 +215,12 @@ public abstract class PageViewModel : Observable
             {
                 if (Busy && !loadedOnce) ShowSkeleton = true;
             }), TaskScheduler.Default);
-        try { await LoadAsync(); }
+        lastLoadSucceeded = false;
+        try
+        {
+            await LoadAsync();
+            lastLoadSucceeded = true;
+        }
         catch (ApiException ex) { if (!quiet) Shell.Notify(ex.Message); }
         catch (HttpRequestException) { if (!quiet) Shell.Notify("Le serveur SCOLIA ne répond pas."); }
         catch (Exception ex) when (ex is not OperationCanceledException) { if (!quiet) Shell.Notify($"Erreur inattendue : {ex.Message}"); }
@@ -276,7 +291,10 @@ public abstract class PageViewModel : Observable
         Actions.Add(new ActionVm("Actualiser", MaterialIconKind.Refresh, new AsyncCommand(async () =>
         {
             await RefreshAsync();
-            Shell.Notify($"{Title} : données à jour.");
+            if (!lastLoadSucceeded) return;
+            Shell.Notify(Shell.Api.IsOnline
+                ? $"{Title} : données à jour."
+                : $"{Title} : dernière copie disponible sur cet appareil · hors ligne.");
         })));
 
     /// <summary>Date d'un sélecteur de calendrier, ou aujourd'hui.</summary>

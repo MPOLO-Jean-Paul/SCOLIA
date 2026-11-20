@@ -16,13 +16,25 @@ public sealed class MainActivity : AvaloniaMainActivity
     private static bool launchPresented;
     private StartupScreen? startup;
 
+    // L'état réel du splash, pas une estimation basée sur un délai :
+    // la vérification des mises à jour attend que cet écran ait disparu.
+    internal bool IsStartupOverlayVisible => startup?.Parent is not null;
+
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         MobilePlatform.Attach(this);
         AndroidSpeech.Attach(this);
         AndroidCamera.Attach(this);
+        AndroidQrScanner.Attach(this);
         // Le fond du thème couvre aussi la préparation d'Avalonia dans base.OnCreate.
         base.OnCreate(savedInstanceState);
+        // Activer le service AVANT toute attente de synchronisation, d'écran de
+        // connexion ou de chargement Avalonia. L'utilisateur peut toucher Accueil
+        // immédiatement : l'hébergement reste indépendant de cette activité.
+        try { Server.PhoneServer.Get(this).EnsureServingOnResume(); }
+        catch (Exception ex) when (ex is Java.Lang.RuntimeException or
+            Java.Lang.SecurityException or InvalidOperationException or IOException)
+        { Android.Util.Log.Warn("SCOLIA-Serveur", $"Démarrage anticipé refusé : {ex.GetType().Name}"); }
         // Android 13+ : permission des notifications (encaissements et sauvegardes des autres postes).
         AndroidAlerts.AskPermission(this);
         // Une reprise d'activité déjà prête ne rejoue pas le lancement. Une rotation pendant la préparation le garde.
@@ -59,6 +71,8 @@ public sealed class MainActivity : AvaloniaMainActivity
         // Après la reprise, réactualiser les indicateurs de disponibilité affichés
         // sur la page Réseau : ne pas montrer un état capturé avant la réparation.
         ScoliaPlatform.NotifyAppResumed();
+        // Vérifier la disponibilité d'une nouvelle version et reprendre un téléchargement Android terminé.
+        AndroidAppUpdates.OnResume(this);
         // Téléphone serveur encore freiné par les économies de batterie : Android le demande, une fois par lancement.
         try { AndroidBackground.AskOnceIfServer(this); }
         catch (Exception ex) { Android.Util.Log.Warn("SCOLIA", $"Demande batterie impossible : {ex.GetType().Name}"); }
@@ -70,9 +84,13 @@ public sealed class MainActivity : AvaloniaMainActivity
 
     protected override void OnPause()
     {
+        AndroidAppUpdates.OnPause(this);
         AndroidAlerts.SetForeground(false);
         startup?.SetActive(false);
         MobilePlatform.HoldMulticast(false);
+        // Vérifier la connexion depuis le service, deux secondes APRÈS la disparition
+        // de l'interface. La notification seule ne valide pas l'accessibilité du serveur.
+        Server.ServeurScolia.CheckAfterInterfacePaused();
         // Ne jamais arrêter PhoneServer ni ServeurScolia ici : OnPause est déclenché
         // quand on affiche le bureau Android, le VPN, une notification ou un dialogue.
         Security.AndroidBiometrics.Detach(this);
@@ -90,7 +108,7 @@ public sealed class MainActivity : AvaloniaMainActivity
     protected override void OnActivityResult(int requestCode, Result resultCode, Android.Content.Intent? data)
     {
         if (AndroidSpeech.Complete(requestCode, resultCode, data)) return;
-        if (AndroidCamera.Complete(requestCode, resultCode)) return;
+        if (AndroidCamera.Complete(requestCode, resultCode, data)) return;
         base.OnActivityResult(requestCode, resultCode, data);
     }
 

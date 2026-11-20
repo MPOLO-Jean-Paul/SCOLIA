@@ -21,7 +21,11 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     private static readonly (EnrollmentStatus, string)[] StatusLabels =
         [(EnrollmentStatus.Diplome, "Diplômé"), (EnrollmentStatus.Transfere, "Transféré")];
 
-    public async Task<PagedResult<StudentListItem>> SearchAsync(string? search, Guid? promotionId, string? status, Guid? yearId, int page, int pageSize, CancellationToken ct = default)
+    /// <param name="gender">« M » ou « F » : apprenants de ce sexe seulement.</param>
+    /// <param name="payment">Situation de paiement : « en_ordre », « en_retard », « jamais_paye » ou « pris_en_charge ».
+    /// Avec <paramref name="periodId"/>, elle porte sur ce mois précis : payé, non soldé, ou rien versé.</param>
+    public async Task<PagedResult<StudentListItem>> SearchAsync(string? search, Guid? promotionId, string? status, Guid? yearId, int page, int pageSize,
+        Guid? sectionId = null, string? gender = null, string? payment = null, Guid? periodId = null, CancellationToken ct = default)
     {
         var year = await YearContext.GetAsync(db, yearId, ct);
         pageSize = Math.Clamp(pageSize, 1, 500);
@@ -32,25 +36,59 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
                     where e.AcademicYearId == year.Id
                     select new { e, s, p };
         if (promotionId is not null) query = query.Where(x => x.e.PromotionId == promotionId);
+        if (sectionId is not null) query = query.Where(x => x.p.SectionId == sectionId);
         if (!string.IsNullOrWhiteSpace(status))
         {
             var st = EnumText.Parse(status, "status", StatusLabels);
             query = query.Where(x => x.e.Status == st);
+        }
+        if (!string.IsNullOrWhiteSpace(gender))
+        {
+            var g = gender.Trim().ToUpperInvariant() switch
+            {
+                "M" or "MASCULIN" or "GARCON" or "GARÇON" => Gender.M,
+                "F" or "FEMININ" or "FÉMININ" or "FILLE" => Gender.F,
+                _ => throw new DomainException("gender", "Sexe inconnu : utilisez M ou F.")
+            };
+            query = query.Where(x => x.s.Gender == g);
         }
         foreach (var term in TextKey.Normalize(search).Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
             var t = term;
             query = query.Where(x => x.s.SearchText.Contains(t));
         }
-        var total = await query.CountAsync(ct);
-        var rows = await query.OrderBy(x => x.p.Code).ThenBy(x => x.s.LastName).ThenBy(x => x.s.MiddleName).ThenBy(x => x.s.FirstName)
-            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
-        var map = await accounts.ComputeAsync(year.Id, rows.Select(r => r.e.Id).ToList(), null, ct);
+        var ordered = query.OrderBy(x => x.p.Code).ThenBy(x => x.s.LastName).ThenBy(x => x.s.MiddleName).ThenBy(x => x.s.FirstName);
+        var filter = PaymentFilter.Parse(payment);
+        if (filter is null && periodId is not null)
+            throw new DomainException("payment", "Choisissez la situation de paiement à vérifier pour ce mois.");
+
+        int total;
+        List<(Enrollment e, Student s, Promotion p)> rows;
+        IReadOnlyDictionary<Guid, AccountService.EnrollmentAccount> map;
+        if (filter is null)
+        {
+            total = await query.CountAsync(ct);
+            rows = (await ordered.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct)).Select(x => (x.e, x.s, x.p)).ToList();
+            map = await accounts.ComputeAsync(year.Id, rows.Select(r => r.e.Id).ToList(), null, ct);
+        }
+        else
+        {
+            // La situation de paiement se calcule sur le compte : tous les inscrits retenus, puis la page.
+            if (periodId is { } pid && !await db.Periods.AsNoTracking().AnyAsync(x => x.Id == pid && x.AcademicYearId == year.Id, ct))
+                throw new NotFoundException("Mois introuvable pour cette année scolaire.");
+            var all = (await ordered.ToListAsync(ct)).Select(x => (x.e, x.s, x.p)).ToList();
+            map = await accounts.ComputeAsync(year.Id, all.Select(r => r.e.Id).ToList(), null, ct);
+            var kept = all.Where(r => map.GetValueOrDefault(r.e.Id) is { } entry && PaymentFilter.Matches(filter.Value, entry, periodId)).ToList();
+            total = kept.Count;
+            rows = kept.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        }
         var items = rows.Select(r =>
         {
-            var account = map.TryGetValue(r.e.Id, out var a) ? a.Account : null;
+            var entry = map.GetValueOrDefault(r.e.Id);
+            var account = entry?.Account;
             return new StudentListItem(r.s.Id, r.e.Id, r.s.Matricule, r.s.LastName, r.s.MiddleName, r.s.FirstName, r.s.Gender.ToString(), r.p.Code,
-                Labels.Of(r.e.Status), r.s.GuardianPhone, account?.Balance ?? 0, account?.Overdue ?? 0);
+                Labels.Of(r.e.Status), r.s.GuardianPhone, account?.Balance ?? 0, account?.Overdue ?? 0,
+                entry is null ? null : CoverageText.Of(entry.Coverage));
         }).ToList();
         return new PagedResult<StudentListItem>(items, total, page, pageSize);
     }
@@ -67,7 +105,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
                                  .ToListAsync(ct);
         return new StudentDto(s.Id, s.Matricule, s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(), s.BirthDate, s.BirthPlace, s.Nationality,
             s.Address, s.Phone, s.Email, s.GuardianName, s.GuardianRelation, s.GuardianPhone, s.GuardianPhone2, s.Notes, s.Photo is { Length: > 0 },
-            enrollments, s.Version);
+            enrollments, s.Version, s.PermanentNumber);
     }
 
     private void Apply(Student s, StudentUpsert input)
@@ -81,7 +119,8 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             .Require(input.BirthDate is null || (input.BirthDate <= clock.Today && input.BirthDate > clock.Today.AddYears(-100)), "birthDate", "Date de naissance invalide.")
             .Require(!string.IsNullOrWhiteSpace(input.BirthPlace), "birthPlace", "Lieu de naissance obligatoire.")
             .Require(!string.IsNullOrWhiteSpace(input.GuardianPhone), "guardianPhone", "Contact parent obligatoire : 10 chiffres, par exemple 0812345678.")
-            .Require(input.Email is null || input.Email.Length == 0 || (input.Email.Contains('@') && input.Email.Length <= 160), "email", "Adresse e-mail invalide.");
+            .Require(input.Email is null || input.Email.Length == 0 || (input.Email.Contains('@') && input.Email.Length <= 160), "email", "Adresse e-mail invalide.")
+            .Require(IsValidPermanentNumber(input.PermanentNumber), "permanentNumber", "N° permanent : 20 caractères au plus, chiffres, lettres, points, barres ou tirets.");
         Gender gender = Gender.M;
         try { gender = EnumText.Parse<Gender>(input.Gender, "gender", [(Gender.M, "Masculin"), (Gender.F, "Féminin")]); }
         catch (DomainException) { v.Add("gender", "Choisissez le sexe."); }
@@ -99,6 +138,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         s.BirthDate = input.BirthDate;
         s.BirthPlace = Clean(input.BirthPlace);
         s.Nationality = Clean(input.Nationality);
+        s.PermanentNumber = Clean(input.PermanentNumber)?.ToUpperInvariant();
         s.Address = Clean(input.Address);
         s.Phone = phone;
         s.Email = Clean(input.Email);
@@ -109,6 +149,11 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         s.Notes = Clean(input.Notes);
         s.RefreshKeys();
     }
+
+    /// <summary>N° permanent EPST : facultatif, recopié tel qu'il figure sur les documents officiels.</summary>
+    public static bool IsValidPermanentNumber(string? value) =>
+        string.IsNullOrWhiteSpace(value) ||
+        (value.Trim().Length <= 20 && value.Trim().All(ch => char.IsAsciiLetterOrDigit(ch) || ch is '.' or '/' or '-' or ' '));
 
     public async Task<IReadOnlyList<DuplicateCandidate>> FindDuplicatesAsync(string lastName, string middleName, string firstName, Guid? excludeId, CancellationToken ct = default)
     {
@@ -278,11 +323,18 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             throw new DomainException("apprenant", "Ce dossier a des reçus : il ne peut pas être supprimé. Changez son statut en « Sorti ».");
         var enrollments = await db.Enrollments.Where(e => e.StudentId == id).ToListAsync(ct);
         var enrollmentIds = enrollments.Select(e => e.Id).ToList();
-        if (await db.Grades.AnyAsync(g => enrollmentIds.Contains(g.EnrollmentId), ct) || await db.Attendance.AnyAsync(a => enrollmentIds.Contains(a.EnrollmentId), ct))
-            throw new DomainException("apprenant", "Ce dossier a des notes ou des présences : changez son statut au lieu de le supprimer.");
+        if (await db.Grades.AnyAsync(g => enrollmentIds.Contains(g.EnrollmentId), ct) || await db.Attendance.AnyAsync(a => enrollmentIds.Contains(a.EnrollmentId), ct)
+            || await db.CourseMarks.AnyAsync(m => enrollmentIds.Contains(m.EnrollmentId), ct)
+            || await db.JuryDecisions.AnyAsync(d => enrollmentIds.Contains(d.EnrollmentId), ct)
+            || await db.DeliberationResults.AnyAsync(d => enrollmentIds.Contains(d.EnrollmentId), ct))
+            throw new DomainException("apprenant", "Ce dossier possède des notes, des présences ou des résultats officiels de délibération : changez son statut au lieu de le supprimer.");
+        // Un code anonyme sans cote ne retient pas le dossier : il part avec lui.
+        db.AnonymousCodes.RemoveRange(await db.AnonymousCodes.Where(c => enrollmentIds.Contains(c.EnrollmentId)).ToListAsync(ct));
         var sponsorships = await db.Sponsorships.Include(s => s.Lines).Where(s => enrollmentIds.Contains(s.EnrollmentId)).ToListAsync(ct);
         db.Sponsorships.RemoveRange(sponsorships);
         db.Enrollments.RemoveRange(enrollments);
+        // L'accès en ligne d'un étudiant disparaît avec son dossier.
+        db.Users.RemoveRange(await db.Users.Where(u => u.StudentId == id).ToListAsync(ct));
         db.Students.Remove(student);
         audit.Record("apprenant.supprime", "Apprenant", id.ToString(), $"Dossier {student.Matricule} {student.FullName} supprimé (aucune opération financière).");
         await db.SaveChangesAsync(ct);
@@ -303,36 +355,188 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     }
 
     // ---------- Réinscriptions ----------
+    private static string ExpectedPromotionCode(Promotion source) =>
+        Promotion.NormalizeCode(string.IsNullOrWhiteSpace(source.NextPromotionCode)
+            ? source.Code : source.NextPromotionCode);
+
+    /// <summary>
+    /// Le plan annonce également les promotions manquantes : elles seront créées
+    /// au moment de valider, jamais par une simple consultation de l'écran.
+    /// En absence de promotion suivante paramétrée, on conserve la promotion actuelle.
+    /// </summary>
     public async Task<IReadOnlyList<ReEnrollmentPlanItem>> ReEnrollmentPlanAsync(Guid targetYearId, CancellationToken ct = default)
     {
         var target = await YearContext.GetAsync(db, targetYearId, ct);
-        var source = await db.AcademicYears.AsNoTracking().Where(y => y.StartDate < target.StartDate).OrderByDescending(y => y.StartDate).FirstOrDefaultAsync(ct)
+        var source = await db.AcademicYears.AsNoTracking().Where(y => y.StartDate < target.StartDate)
+            .OrderByDescending(y => y.StartDate).FirstOrDefaultAsync(ct)
             ?? throw new DomainException("annee", "Aucune année précédente à partir de laquelle réinscrire.");
-        var targetPromotions = await db.Promotions.AsNoTracking().Where(p => p.AcademicYearId == target.Id && p.IsActive).ToListAsync(ct);
-        var already = await db.Enrollments.AsNoTracking().Where(e => e.AcademicYearId == target.Id).Select(e => e.StudentId).ToListAsync(ct);
+        var targetPromotions = await db.Promotions.AsNoTracking()
+            .Where(p => p.AcademicYearId == target.Id).ToListAsync(ct);
+        var already = (await db.Enrollments.AsNoTracking().Where(e => e.AcademicYearId == target.Id)
+            .Select(e => e.StudentId).ToListAsync(ct)).ToHashSet();
         var map = await accounts.ComputeAsync(source.Id, null, null, ct);
+        // Passage de classe d'ITMCD : un jury annuel clôturé décide ; ajourné, l'apprenant reste dans sa promotion (redoublement).
+        var jury = await (from r in db.DeliberationResults.AsNoTracking()
+                          join session in db.DeliberationSessions.AsNoTracking() on r.SessionId equals session.Id
+                          where session.AcademicYearId == source.Id && session.Period == Domain.Deliberation.DeliberationPeriod.Annuel
+                              && session.Status == Domain.Deliberation.SessionStatus.Cloturee
+                          select new { r.EnrollmentId, r.Final }).ToDictionaryAsync(x => x.EnrollmentId, x => x.Final, ct);
+        // Primaire et secondaire : seule une délibération de fin d'année clôturée décide du passage.
+        var epst = await (from decision in db.EpstDecisions.AsNoTracking()
+                          join session in db.EpstDeliberations.AsNoTracking() on decision.DeliberationId equals session.Id
+                          where session.AcademicYearId == source.Id && session.Status == EpstSessionStatus.Cloturee
+                              && decision.Final != null
+                          select new { decision.EnrollmentId, Final = decision.Final!.Value })
+            .ToDictionaryAsync(x => x.EnrollmentId, x => x.Final, ct);
+        // Université LMD : décision définitive de l'année (admis, admis avec dettes, ajourné).
+        var lmd = await (from decision in db.LmdDecisions.AsNoTracking()
+                         join session in db.LmdDeliberations.AsNoTracking() on decision.DeliberationId equals session.Id
+                         where session.AcademicYearId == source.Id && session.Status == LmdSessionStatus.Cloturee
+                             && decision.Final != null
+                         select new { decision.EnrollmentId, Final = decision.Final!.Value })
+            .ToDictionaryAsync(x => x.EnrollmentId, x => x.Final, ct);
         return map.Values.Where(x => x.Enrollment.Status == EnrollmentStatus.Actif && !already.Contains(x.Enrollment.StudentId))
             .OrderBy(x => x.Promotion.Code).ThenBy(x => x.Enrollment.Student!.LastName)
             .Select(x =>
             {
-                var next = x.Promotion.NextPromotionCode is null ? null : targetPromotions.FirstOrDefault(p => p.Code == x.Promotion.NextPromotionCode)?.Code;
-                return new ReEnrollmentPlanItem(x.Enrollment.StudentId, x.Enrollment.Student!.Matricule, x.Enrollment.Student.FullName, x.Promotion.Code, next,
-                    x.Account.Balance, next is not null);
+                var decided = jury.TryGetValue(x.Enrollment.Id, out var final) ? final : (Domain.Deliberation.Outcome?)null;
+                var school = epst.TryGetValue(x.Enrollment.Id, out var schoolFinal) ? schoolFinal : (EpstOutcome?)null;
+                var university = lmd.TryGetValue(x.Enrollment.Id, out var lmdFinal) ? lmdFinal : (LmdOutcome?)null;
+                var stays = decided == Domain.Deliberation.Outcome.Ajourne ||
+                            school is { } o && !EpstDeliberationRules.Promotes(o) ||
+                            university is { } u && !LmdResultsCalculator.Promotes(u);
+                var next = stays ? x.Promotion.Code : ExpectedPromotionCode(x.Promotion);
+                // Une classe existante mais désactivée exige une décision du secrétariat.
+                bool available = !targetPromotions.Any(p => p.Code == next && !p.IsActive);
+                return new ReEnrollmentPlanItem(x.Enrollment.StudentId, x.Enrollment.Student!.Matricule,
+                    x.Enrollment.Student.FullName, x.Promotion.Code, next, x.Account.Balance, available,
+                    decided is { } outcome ? Domain.Deliberation.DeliberationEngine.Label(outcome)
+                        : school is { } epstOutcome ? EpstDeliberationRules.Label(epstOutcome)
+                        : university is { } lmdOutcome ? LmdResultsCalculator.Label(lmdOutcome) : null);
             }).ToList();
+    }
+
+    /// <summary>Conserve la désignation scolaire quand la progression d'année est reconnaissable.</summary>
+    private static string SuggestedPromotionName(Promotion source, string code)
+    {
+        if (string.Equals(source.Code, code, StringComparison.OrdinalIgnoreCase)) return source.Name;
+        string[] levels = ["Première", "Deuxième", "Troisième", "Quatrième", "Cinquième", "Sixième"];
+        int nextLevel = char.IsAsciiDigit(code[^1]) ? code[^1] - '0' : 0;
+        if (source.Level >= 1 && source.Level <= levels.Length && nextLevel >= 1 && nextLevel <= levels.Length)
+        {
+            var previous = levels[source.Level - 1];
+            if (source.Name.StartsWith(previous + " ", StringComparison.OrdinalIgnoreCase))
+                return levels[nextLevel - 1] + source.Name[previous.Length..];
+        }
+        return $"Promotion {code}";
+    }
+
+    /// <summary>
+    /// Création atomique d'une promotion absente dans l'année cible.
+    /// Les frais sont repris comme paramètres initiaux de la classe d'origine.
+    /// Le calendrier est toujours celui de l'année cible, jamais celui des anciens mois.
+    /// </summary>
+    private static Promotion CopyPromotionForYear(Promotion sourcePromotion, AcademicYear sourceYear,
+        AcademicYear targetYear, string code)
+    {
+        var sameLevel = string.Equals(code, sourcePromotion.Code, StringComparison.OrdinalIgnoreCase);
+        var created = new Promotion
+        {
+            AcademicYearId = targetYear.Id,
+            Code = code,
+            Name = SuggestedPromotionName(sourcePromotion, code),
+            SectionId = sourcePromotion.SectionId,
+            // Une classe du primaire ou du secondaire reste dans son cycle scolaire.
+            SchoolCycleId = sourcePromotion.SchoolCycleId,
+            AcademicUnitId = sourcePromotion.AcademicUnitId,
+            Level = sameLevel ? sourcePromotion.Level : char.IsAsciiDigit(code[^1])
+                ? code[^1] - '0' : sourcePromotion.Level,
+            Capacity = sourcePromotion.Capacity,
+            IsActive = true,
+            NextPromotionCode = sameLevel ? sourcePromotion.NextPromotionCode : null,
+        };
+        var monthly = sourcePromotion.Fees.Where(f => f.Kind == FeeKind.Mensualite).ToList();
+        if (monthly.Count > 0)
+        {
+            var amount = monthly.Select(f => f.Amount).DefaultIfEmpty(0).Max();
+            created.Fees.AddRange(SchoolService.MonthlyFees(created.Id, targetYear, amount));
+        }
+        var yearOffset = targetYear.FirstCalendarYear - sourceYear.FirstCalendarYear;
+        foreach (var fee in sourcePromotion.Fees.Where(f => f.Kind != FeeKind.Mensualite))
+            created.Fees.Add(new FeeItem
+            {
+                PromotionId = created.Id, Kind = fee.Kind, Label = fee.Label, Amount = fee.Amount,
+                DueDate = fee.DueDate.AddYears(yearOffset), Order = fee.Order,
+            });
+        return created;
     }
 
     public Task<int> ReEnrollAsync(ReEnrollmentRequest input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
         var target = await YearContext.GetAsync(db, input.TargetYearId, ct);
-        var promotions = await db.Promotions.Where(p => p.AcademicYearId == target.Id).ToDictionaryAsync(p => p.Id, ct);
+        if (target.Status == AcademicYearStatus.Closed)
+            throw new DomainException("annee", "L'année cible est clôturée : aucune réinscription n'est possible.");
+        var sourceYear = await db.AcademicYears.AsNoTracking()
+            .Where(y => y.StartDate < target.StartDate).OrderByDescending(y => y.StartDate)
+            .FirstOrDefaultAsync(ct) ?? throw new DomainException("annee", "Aucune année précédente pour ces réinscriptions.");
+        var sourceEnrollments = await db.Enrollments.AsNoTracking()
+            .Where(e => e.AcademicYearId == sourceYear.Id && e.Status == EnrollmentStatus.Actif)
+            .ToDictionaryAsync(e => e.StudentId, ct);
+        var templates = await db.Promotions.AsNoTracking().Include(p => p.Fees)
+            .Where(p => p.AcademicYearId == sourceYear.Id).ToDictionaryAsync(p => p.Id, ct);
+        var destinations = await db.Promotions.Where(p => p.AcademicYearId == target.Id).ToListAsync(ct);
+        var byId = destinations.ToDictionary(p => p.Id);
+        var enrolled = (await db.Enrollments.AsNoTracking().Where(e => e.AcademicYearId == target.Id)
+            .Select(e => e.StudentId).ToListAsync(ct)).ToHashSet();
+        var capacities = await db.Enrollments.AsNoTracking()
+            .Where(e => e.AcademicYearId == target.Id && e.Status == EnrollmentStatus.Actif)
+            .GroupBy(e => e.PromotionId).Select(g => new { Id = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Id, x => x.Count, ct);
+        var processed = new HashSet<Guid>();
         var count = 0;
         foreach (var choice in input.Choices)
         {
-            if (!promotions.TryGetValue(choice.PromotionId, out var promotion)) throw new DomainException("choices", "Promotion cible invalide.");
-            if (await db.Enrollments.AnyAsync(e => e.StudentId == choice.StudentId && e.AcademicYearId == target.Id, ct)) continue;
+            if (!processed.Add(choice.StudentId))
+                throw new DomainException("choices", "Un apprenant apparaît plusieurs fois dans le même lot.");
+            if (enrolled.Contains(choice.StudentId)) continue; // répétition sans doublon
+            if (!sourceEnrollments.TryGetValue(choice.StudentId, out var previous)
+                || !templates.TryGetValue(previous.PromotionId, out var sourcePromotion))
+                throw new DomainException("choices", "Un apprenant sélectionné n'a pas d'inscription active dans l'année précédente.");
+
+            Promotion promotion;
+            if (choice.PromotionId is { } promotionId && promotionId != Guid.Empty)
+            {
+                if (!byId.TryGetValue(promotionId, out var existingPromotion))
+                    throw new DomainException("choices", "Promotion cible invalide pour cette année.");
+                promotion = existingPromotion;
+            }
+            else
+            {
+                var code = Promotion.NormalizeCode(choice.PromotionCode);
+                // Progression normale, ou redoublement décidé par le jury (même code de promotion).
+                if (code.Length == 0 || (code != ExpectedPromotionCode(sourcePromotion) && code != sourcePromotion.Code))
+                    throw new DomainException("choices", "La promotion à créer ne correspond pas à la progression scolaire configurée.");
+                promotion = destinations.FirstOrDefault(p => p.Code == code)!;
+                if (promotion is null)
+                {
+                    promotion = CopyPromotionForYear(sourcePromotion, sourceYear, target, code);
+                    db.Promotions.Add(promotion);
+                    destinations.Add(promotion);
+                    byId.Add(promotion.Id, promotion);
+                    audit.Record("promotion.creee.reinscription", "Promotion", promotion.Id.ToString(),
+                        $"Promotion {code} créée automatiquement pour {target.Label}, frais repris de {sourcePromotion.Code}.");
+                }
+            }
+            if (!promotion.IsActive)
+                throw new DomainException("choices", $"La promotion {promotion.Code} existe mais est désactivée. Activez-la avant la réinscription.");
+            var occupied = capacities.GetValueOrDefault(promotion.Id);
+            if (promotion.Capacity is { } limit && occupied >= limit)
+                throw new DomainException("choices", $"La promotion {promotion.Code} est complète ({limit} places).");
+            capacities[promotion.Id] = occupied + 1;
             db.Enrollments.Add(new Enrollment
             {
-                StudentId = choice.StudentId, AcademicYearId = target.Id, PromotionId = promotion.Id, EnrolledOn = clock.Today, IsReEnrollment = true,
+                StudentId = choice.StudentId, AcademicYearId = target.Id, PromotionId = promotion.Id,
+                EnrolledOn = clock.Today, IsReEnrollment = true,
             });
             count++;
         }

@@ -1,0 +1,51 @@
+name: SCOLIA Console - Netlify HTTPS backup (tests seulement)
+
+on:
+  push:
+    branches:
+      - feature/scolia-netlify-https-backup-20261109
+    paths:
+      - 'scolia-pro/deploy/netlify-backup/**'
+      - 'scolia-pro/deploy/owner-console/**'
+      - '.github/workflows/scolia-netlify-backup-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  netlify-https:
+    name: Protocole Netlify HTTPS - tests de sécurité
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: scolia-pro/deploy/netlify-backup
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier le code serverless
+        run: npm run check
+      - name: Tester authentification, chiffrement opaque, idempotence et expiration
+        run: npm test
+
+  console-owner:
+    name: Console propriétaire - tests intégration D1 et fournisseur Netlify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: scolia-pro/deploy/owner-console
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exécuter les tests du Worker
+        run: npm test

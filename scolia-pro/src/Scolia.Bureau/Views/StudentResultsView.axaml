@@ -1,0 +1,53 @@
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.StudentResultsView">
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,8" Padding="12,10">
+      <StackPanel Spacing="6">
+        <StackPanel Classes="field">
+          <TextBlock Text="Année et promotion" Classes="fieldlabel" />
+          <ComboBox MinWidth="280" ItemsSource="{Binding Years}" SelectedItem="{Binding Year}" />
+        </StackPanel>
+        <TextBlock Text="{Binding Summary}" FontWeight="SemiBold" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding Decision}" FontWeight="Bold" FontSize="{DynamicResource FsHeading}" TextWrapping="Wrap" IsVisible="{Binding HasDecision}" />
+      </StackPanel>
+    </Border>
+    <Border Grid.Row="1" Classes="band" Margin="0,0,0,8" Padding="12,8" IsVisible="{Binding HasNotice}">
+      <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" Classes="muted" />
+    </Border>
+    <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Sem." Binding="{Binding Semester}" Width="Auto" MinWidth="60" />
+        <DataGridTextColumn Header="UE" Binding="{Binding Name}" Width="2*" MinWidth="200" />
+        <DataGridTextColumn Header="Crédits" Binding="{Binding Credits}" Width="Auto" MinWidth="80" />
+        <DataGridTextColumn Header="Moyenne" Binding="{Binding Average}" Width="Auto" MinWidth="90" />
+        <DataGridTemplateColumn Header="Résultat" Width="Auto" MinWidth="170">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Éléments constitutifs" Binding="{Binding Elements}" Width="3*" MinWidth="280" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="2" Icon="Certificate" Title="Aucun résultat publié" Hint="Vos résultats apparaissent ici dès que le jury les publie." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <Border Grid.Row="3" Classes="band" Margin="0,8,0,0" Padding="12,8" IsVisible="{Binding HasDebts}">
+      <StackPanel Spacing="4">
+        <TextBlock Text="Dettes académiques" FontWeight="SemiBold" />
+        <ItemsControl ItemsSource="{Binding Debts}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding}" TextWrapping="Wrap" Classes="muted" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

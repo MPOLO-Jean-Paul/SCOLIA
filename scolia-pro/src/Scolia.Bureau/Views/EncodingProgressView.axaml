@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.EncodingProgressView">
+  <Grid RowDefinitions="Auto,Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Période" Classes="fieldlabel" />
+          <ComboBox Width="230" ItemsSource="{Binding Periods}" SelectedItem="{Binding Period}" />
+        </StackPanel>
+        <CheckBox Content="Feuilles à relancer seulement" IsChecked="{Binding OnlyLate}" VerticalAlignment="Bottom" Margin="0,0,12,12" />
+      </WrapPanel>
+    </Border>
+    <TextBlock Grid.Row="1" Text="{Binding Summary}" Classes="muted" TextWrapping="Wrap" Margin="4,0,4,8" />
+    <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="180" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="90" infra:GridPriority.Level="3" />
+        <DataGridTextColumn Header="Cours" Binding="{Binding Course}" Width="*" MinWidth="200" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Cote" Binding="{Binding Kind}" Width="Auto" MinWidth="96" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Enseignant" Binding="{Binding Teacher}" Width="Auto" MinWidth="160" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Encodées" Binding="{Binding Progress}" Width="Auto" MinWidth="150" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Échecs" Binding="{Binding Failed}" Width="Auto" MinWidth="120" infra:GridPriority.Level="4" />
+        <DataGridTextColumn Header="Moyenne" Binding="{Binding Average}" Width="Auto" MinWidth="130" infra:GridPriority.Level="4" />
+        <DataGridTemplateColumn Header="État" Width="Auto" MinWidth="140">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="12,0" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="2" Icon="ProgressClock" Title="Aucun cours à suivre"
+                  Hint="Créez les cours des promotions dans « Cours et notes », avec leur maxima et leur organisation (S1, S2 ou annuel)." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

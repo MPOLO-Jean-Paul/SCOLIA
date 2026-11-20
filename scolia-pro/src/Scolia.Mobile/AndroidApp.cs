@@ -21,6 +21,8 @@ public sealed class AndroidApp : AvaloniaAndroidApplication<Scolia.Bureau.App>
         CultureInfo.CurrentCulture = fr;
         CultureInfo.CurrentUICulture = fr;
         MobilePlatform.Prepare(this);
+        // Contrôle périodique, limité au réseau disponible ; aucun APK téléchargé sans accord.
+        AndroidAppUpdates.Schedule(this);
         return base.CustomizeAppBuilder(builder);
     }
 }

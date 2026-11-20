@@ -35,6 +35,26 @@ static class ThemeChecks
         prefs.Animations = false;
         prefs.Theme = "light";
         prefs.Apply();
+        // Contraste élevé des icônes : pictogramme de chaque tuile et teinte employée en texte (« À jour », retards).
+        foreach (var theme in new[] { "light", "dark" })
+        {
+            prefs.Theme = theme;
+            prefs.Apply();
+            foreach (var tone in new[] { "ToneBlue", "ToneGreen", "ToneOrange", "TonePurple", "ToneRed", "ToneTeal", "ToneIndigo", "TonePink", "ToneNeutral" })
+            {
+                var tile = ColorOf(ThemeBrush.Get(tone));
+                Pair($"{theme} · pictogramme sur tuile {tone}", new SolidColorBrush(TileGlyph.GlyphFor(tile)), ThemeBrush.Get(tone));
+                Pair($"{theme} · texte {tone} sur bloc", ThemeBrush.Get(tone), ThemeBrush.Get("GroupBrush"));
+            }
+            Pair($"{theme} · texte secondaire sur bloc", ThemeBrush.Get("MutedBrush"), ThemeBrush.Get("GroupBrush"));
+            Pair($"{theme} · bordure des champs", ThemeBrush.Get("LineStrongBrush"), ThemeBrush.Get("FieldBrush"), 3);
+            Pair($"{theme} · contour des champs métier", ThemeBrush.Get("FieldLineBrush"), ThemeBrush.Get("FieldBrush"), 3);
+            Pair($"{theme} · texte sur le fond de page", ThemeBrush.Get("TextBrush"), ThemeBrush.Get("BgBrush"));
+            Pair($"{theme} · texte secondaire sur le fond de page", ThemeBrush.Get("MutedBrush"), ThemeBrush.Get("BgBrush"));
+            Pair($"{theme} · texte secondaire sur sélection du volet", ThemeBrush.Get("MutedBrush"), ThemeBrush.Get("SidebarSelectedBrush"));
+        }
+        prefs.Theme = "light";
+        prefs.Apply();
         var retained = ThemeBrush.Get("ToneIndigo");
         var oldColor = ColorOf(retained);
         var ordinary = new TextBlock { Text = "Apprenant et solde du compte" };

@@ -97,10 +97,23 @@ Champs du formulaire : nom, post-nom, prénom, sexe, date et lieu de naissance, 
 Obligatoires, comme dans SCOLIA V79 : nom, post-nom, prénom, sexe, date et lieu de naissance, contact parent et promotion.
 Un seul numéro est saisi, celui du parent. Les relances WhatsApp et SMS partent vers ce numéro.
 
+## 3 bis. Mensualités et catégories de frais
+
+- **La mensualité est obligatoire** : chaque promotion en a une, répartie sur les mois de l'année scolaire.
+- Les autres frais (inscription, examen, tenue, carte…) sont des **catégories** créées dans Paramètres,
+  **Catégories de frais**, avec leur montant et, si besoin, leur échéance (à défaut : exigibles dès la rentrée).
+  Une catégorie qui n'a pas été créée n'existe pas : aucun frais n'est imposé.
+- À la création, « Appliquer à toutes les promotions de l'année courante » ajoute la catégorie partout avec son montant.
+  Dans la fiche d'une promotion, chaque catégorie a son propre montant ; vide, elle ne s'applique pas à cette promotion.
+- Une catégorie déjà encaissée ne peut plus être supprimée : la désactiver. Son nouveau nom apparaît aussi sur les reçus.
+- Les frais saisis avec une version précédente (inscription, examen) sont rattachés automatiquement à une catégorie
+  du même nom à la mise à jour, sans changer leur montant.
+
 ## 4. Encaisser
 
 1. Encaisser, puis rechercher l'apprenant par nom ou matricule.
-2. Saisir le montant reçu et le mode de paiement (espèces, mobile money, banque, chèque, autre).
+2. Cocher les mois et les frais payés (les frais sont marqués « (frais) »), saisir le montant reçu et le mode de paiement
+   (espèces, mobile money, banque, chèque, autre), puis confirmer le récapitulatif. L'encaissement par lot reste réservé aux mensualités.
 3. SCOLIA répartit le versement sur les échéances les plus anciennes, sans jamais dépasser le reste dû.
 4. Imprimer le reçu ou l'envoyer. Chaque reçu porte un numéro sans trou et un QR de vérification.
 
@@ -114,9 +127,14 @@ Un reçu erroné ne se supprime pas : ouvrir le journal des reçus, puis l'annul
 
 ## 6. Prises en charge
 
-Une bourse, un sponsor ou une exonération se crée depuis la fiche de l'apprenant.
-Elle couvre un pourcentage de chaque frais. Le net ne peut jamais descendre sous
-ce qui est déjà payé.
+Une bourse, un sponsor ou une exonération se crée depuis la fiche de l'apprenant : complète (tous les frais)
+ou partielle (un montant par mois). Le net ne peut jamais descendre sous ce qui est déjà payé.
+
+- Un apprenant **totalement pris en charge** n'est pas compté parmi les payants, ni parmi les apprenants en ordre
+  ou en retard : le tableau de bord, le pilotage et le suivi mensuel lui donnent son propre total (nombre et montant couvert).
+- Dans la liste d'une promotion, les payants viennent d'abord, puis les pris en charge, signalés avec leur organisme.
+  Les listes générales, le suivi mensuel et les débiteurs signalent aussi les prises en charge partielles.
+- La page Prises en charge les range par promotion, avec le total couvert.
 
 ## 7. Caisse et arrêté
 
@@ -154,9 +172,26 @@ calcule le net : salaire, primes, retenues et avances. Le paiement crée la dép
 Le journal liste qui a fait quoi et quand. La vérification de la chaîne confirme
 qu'aucune entrée n'a été modifiée en dehors de SCOLIA.
 
-## 13. Plusieurs postes
+## 13. Plusieurs postes et partage
 
-Voir le paquet, fichier `LIRE_MOI.txt`, section « Plusieurs postes en réseau local ».
+Tout se règle sur l'ordinateur principal, menu **Réseau et postes** :
+
+- **En haut, la synthèse** : « Ce serveur n'est pas partagé » ou « Les autres appareils peuvent joindre ce serveur »,
+  avec trois pastilles (Wi-Fi, Internet, nombre d'appareils autorisés) et le bouton **Relier un appareil**.
+- **Wi-Fi de l'établissement** : l'interrupteur ouvre le partage aux postes du réseau local (Windows demande une seule
+  autorisation pour le pare-feu). L'adresse pour un navigateur s'affiche avec un bouton **Copier**.
+- **Accès par Internet** : relie les téléphones et ordinateurs qui ne sont pas sur le Wi-Fi, par un relais chiffré
+  (Cloudflare ou Render). « Activer l'accès par Internet », puis « Vérifier la connexion ». « Désactiver » demande confirmation :
+  les appareils distants devront être reliés de nouveau. L'adresse du relais est un réglage avancé, replié.
+- **Appareils autorisés** : chaque appareil relié par code QR, avec sa validité. « Retirer l'accès » coupe un appareil
+  perdu ou qui ne doit plus servir (confirmation demandée) ; il devra scanner un nouveau code.
+- **Relier un appareil** : le code QR est valable 5 minutes et pour un seul appareil ; un compte à rebours l'indique et le
+  code disparaît à l'expiration (« Nouveau code »). Si rien n'est partagé, la fenêtre l'explique et mène aux réglages.
+- « Rejoindre un autre serveur » reste disponible, replié en bas de page.
+
+La fenêtre **Réseau et activité** montre les postes connectés et, sur un poste relié, les opérations en attente et la
+préparation hors ligne. Sur le serveur, elle renvoie aux réglages de partage. Voir aussi `LIRE_MOI.txt`, section
+« Plusieurs postes en réseau local ».
 
 ## 14. Reprendre les données de SCOLIA V79 (Excel)
 

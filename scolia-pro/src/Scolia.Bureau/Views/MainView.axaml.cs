@@ -39,6 +39,9 @@ public partial class MainView : UserControl
 
     public MainView()
     {
+        // Même trait doux partout : lissage en niveaux de gris et calage léger, sur Windows comme sur Android.
+        Avalonia.Media.TextOptions.SetTextRenderingMode(this, Avalonia.Media.TextRenderingMode.Antialias);
+        Avalonia.Media.TextOptions.SetTextHintingMode(this, Avalonia.Media.TextHintingMode.Light);
         pickFileHandler = PickFileAsync;
         copyHandler = CopyAsync;
         isTypingHandler = IsTypingInView;
@@ -51,7 +54,12 @@ public partial class MainView : UserControl
         AddHandler(PointerWheelChangedEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(KeyDownEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(TextInputEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
-        SizeChanged += (_, e) => FitWindow(e.NewSize);
+        SizeChanged += (_, e) =>
+        {
+            FitWindow(e.NewSize);
+            if (Shell?.HeaderFinderOpen == true)
+                Avalonia.Threading.Dispatcher.UIThread.Post(PlaceHeaderFinder);
+        };
         AttachedToVisualTree += (_, _) =>
         {
             ShowThemeIcon();
@@ -68,6 +76,10 @@ public partial class MainView : UserControl
         };
         ActualThemeVariantChanged += (_, _) => ShowThemeIcon();
         PageBar.SizeChanged += (_, _) => QueueFitPageActions();
+        HeaderFinderBar.SizeChanged += (_, _) =>
+        {
+            if (Shell?.HeaderFinderOpen == true) PlaceHeaderFinder();
+        };
         PageHost.AddHandler(PointerReleasedEvent, OnPagePointerReleased, Avalonia.Interactivity.RoutingStrategies.Bubble);
         DataContextChanged += (_, _) => AttachShell();
     }
@@ -143,6 +155,11 @@ public partial class MainView : UserControl
             or nameof(Preferences.Compact) or nameof(Preferences.Sidebar)
             or nameof(Preferences.RibbonCollapsed))
             QueueFitPageActions();
+        // L'ouverture du volet décale le champ sans nécessairement changer sa largeur.
+        // Repositionner la liste de suggestions après la nouvelle mise en page.
+        if (args.PropertyName == nameof(Preferences.Sidebar) && shell.HeaderFinderOpen)
+            Avalonia.Threading.Dispatcher.UIThread.Post(PlaceHeaderFinder,
+                Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     /// <summary>Place le curseur dans le filtre de la page sans ouvrir la recherche globale.</summary>
@@ -163,6 +180,10 @@ public partial class MainView : UserControl
     {
         if (subscribedShell is not { } shell) return;
         if (args.PropertyName == nameof(ShellViewModel.CompactWindow)) FitWindow(Bounds.Size);
+        if (args.PropertyName is nameof(ShellViewModel.SidebarShown) or nameof(ShellViewModel.Narrow)
+            && shell.HeaderFinderOpen)
+            Avalonia.Threading.Dispatcher.UIThread.Post(PlaceHeaderFinder,
+                Avalonia.Threading.DispatcherPriority.Loaded);
         // Un résultat ouvert (page, fiche, fenêtre, menu Fichier) ou la veille : la liste de la barre se referme et se vide.
         if (shell.HeaderFinderOpen && args.PropertyName is nameof(ShellViewModel.Current) or nameof(ShellViewModel.Dialog)
                 or nameof(ShellViewModel.BackstageOpen) or nameof(ShellViewModel.IsLocked) or nameof(ShellViewModel.IsLoggedIn))
@@ -194,8 +215,8 @@ public partial class MainView : UserControl
             follower.Transitions = animate
                 ?
                 [
-                    new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(320), Easing = new Avalonia.Animation.Easings.CubicEaseOut() },
-                    new Avalonia.Animation.TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(360), Easing = new Avalonia.Animation.Easings.CubicEaseOut() },
+                    new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(320), Easing = Infrastructure.Motion.Spring },
+                    new Avalonia.Animation.TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(360), Easing = Infrastructure.Motion.Spring },
                 ]
                 : null;
             follower.Opacity = animate ? 0 : 1;
@@ -237,11 +258,6 @@ public partial class MainView : UserControl
         if (Shell is { } shell) OpenHeaderFinder(shell);
     }
 
-    private void OnHeaderFinderMic(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        if (Shell is { } shell) OpenHeaderFinder(shell);
-    }
-
     private void OpenHeaderFinder(ShellViewModel shell)
     {
         // Champ vide : récentes et accès rapides relus pour le compte connecté.
@@ -254,10 +270,14 @@ public partial class MainView : UserControl
     private void PlaceHeaderFinder()
     {
         if (HeaderFinderBar.Bounds.Width <= 0 || HeaderFinderBar.TranslatePoint(new Point(0, HeaderFinderBar.Bounds.Height), DesktopArea) is not { } corner) return;
-        var width = Math.Max(HeaderFinderBar.Bounds.Width, 560);
-        width = Math.Min(width, Math.Max(320, DesktopArea.Bounds.Width - 24));
+        // La liste se cale sous le champ et se recompose même après redimensionnement.
+        var space = Math.Max(0, DesktopArea.Bounds.Width - 24);
+        if (space <= 0) return;
+        var width = Math.Min(Math.Max(HeaderFinderBar.Bounds.Width, 500), 580);
+        width = Math.Min(width, space);
         var left = Math.Max(12, Math.Min(corner.X, DesktopArea.Bounds.Width - width - 12));
         HeaderFinderDrop.Width = width;
+        HeaderFinderDrop.MaxHeight = Math.Max(100, Math.Min(490, DesktopArea.Bounds.Height - corner.Y - 16));
         HeaderFinderDrop.Margin = new Thickness(left, corner.Y + 8, 0, 0);
     }
 
@@ -385,7 +405,7 @@ public partial class MainView : UserControl
             var fade = new Animation
             {
                 Duration = TimeSpan.FromMilliseconds(220) * shell.Prefs.SpeedFactor,
-                Easing = new Avalonia.Animation.Easings.QuadraticEaseOut(),
+                Easing = Infrastructure.Motion.Smooth,
                 FillMode = FillMode.Forward,
                 Children =
                 {
@@ -500,7 +520,7 @@ public partial class MainView : UserControl
     /// <summary>Fondu entre les pages, désactivé par la préférence « Animations ».</summary>
     private void ApplyPageTransition(Preferences prefs) =>
         PageHost.PageTransition = prefs.Animations && prefs.PageTransitions
-            ? new SharedAxisTransition(TimeSpan.FromMilliseconds(Math.Clamp(250 * prefs.SpeedFactor, 180, 320)), 18)
+            ? new SharedAxisTransition(TimeSpan.FromMilliseconds(Math.Clamp(240 * prefs.SpeedFactor, 170, 340)), 12)
             : null;
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;
@@ -535,7 +555,6 @@ public partial class MainView : UserControl
         else if (shell.Dialog is FormViewModel form) { if (!form.Busy) form.Cancel.Execute(null); }
         else if (shell.HasDialog) shell.CloseDialog();
         else if (shell.BackstageOpen) { if (shell.Backstage.ShowDetail) shell.Backstage.BackToList.Execute(null); else shell.CloseBackstage(); }
-        else if (shell.PhoneMenuOpen && shell.SettingsSearch.IsOpen) shell.SettingsSearch.Reset();
         else if (shell.PhoneMenuOpen && shell.SettingsSearch.IsOpen) shell.SettingsSearch.Reset();
         else if (shell.PhoneMenuOpen) shell.PhoneMenuOpen = false;
         else if (shell.Current is SettingsPage settings && settings.TryBackToMobileSections()) { }
@@ -596,7 +615,7 @@ public partial class MainView : UserControl
         menu.ShowAt(anchor);
     }
 
-    private static MaterialIcon Glyph(MaterialIconKind kind) => new() { Kind = kind, Width = 16, Height = 16 };
+    private static MaterialIcon Glyph(MaterialIconKind kind) => new() { Kind = Infrastructure.Icons.Line(kind), Width = Infrastructure.Icons.ButtonSize, Height = Infrastructure.Icons.ButtonSize };
 
     private static MaterialIconKind TabIcon(string id) => id switch
     {
@@ -604,6 +623,8 @@ public partial class MainView : UserControl
         "secretariat" => MaterialIconKind.AccountGroupOutline,
         "finances" => MaterialIconKind.CashMultiple,
         "scolarite" => MaterialIconKind.SchoolOutline,
+        "deliberation" => MaterialIconKind.Gavel,
+        "enseignant" => MaterialIconKind.AccountSchoolOutline,
         "personnel" => MaterialIconKind.BriefcaseOutline,
         "pilotage" => MaterialIconKind.ViewDashboardOutline,
         "parametres" => MaterialIconKind.CogOutline,

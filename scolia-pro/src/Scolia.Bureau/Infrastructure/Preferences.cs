@@ -32,8 +32,9 @@ public sealed class Preferences : Observable
     /// <summary>Couleurs d'accent : boutons principaux, sélection, liens. Une teinte pour le clair, une pour le sombre.</summary>
     private static readonly (string Key, string Label, string Light, string Dark)[] AccentTable =
     [
-        ("bleu", "Bleu", "#007AFF", "#78B9FF"), ("indigo", "Indigo", "#5856D6", "#B7B4FF"), ("violet", "Violet", "#8E44AD", "#D09BFF"),
-        ("vert", "Vert", "#248A3D", "#63E58A"), ("orange", "Orange", "#C25E00", "#FFB45E"), ("graphite", "Graphite", "#55555A", "#B8B8BE"),
+        // Contraste élevé : en clair, le texte blanc des boutons dépasse 5:1 sur chaque accent.
+        ("bleu", "Bleu", "#0062D1", "#78B9FF"), ("indigo", "Indigo", "#5856D6", "#B7B4FF"), ("violet", "Violet", "#8E44AD", "#D09BFF"),
+        ("vert", "Vert", "#1F7A35", "#63E58A"), ("orange", "Orange", "#A84E00", "#FFB45E"), ("graphite", "Graphite", "#55555A", "#B8B8BE"),
     ];
 
     public static readonly IReadOnlyList<ChoiceItem> Accents = AccentTable.Select(a => new ChoiceItem(a.Key, a.Label)).ToList();
@@ -45,20 +46,21 @@ public sealed class Preferences : Observable
     private const string Bundled = "avares://SCOLIA/Assets/Fonts#";
 
     /// <summary>
-    /// Polices de l'interface. Inter, Carlito, Liberation et DejaVu sont fournies avec SCOLIA : elles existent partout,
-    /// sur Windows comme sur Android. Sur Windows, la police du système est préférée quand elle est installée ;
-    /// la police fournie de même dessin la remplace sinon. Sur un téléphone, seules les polices fournies sont proposées.
+    /// Kit typographique SCOLIA : chaque famille vient des ressources embarquées.
+    /// Aucune sélection ne dépend d'une police installée sur Windows ou Android.
+    /// Les anciennes clés restent reconnues pour conserver les préférences utilisateur.
     /// </summary>
     private static readonly (string Key, string Desktop, string Mobile, string Family, bool OnPhone)[] FontTable =
     [
-        ("systeme", "Système (Segoe UI)", "", $"Segoe UI Variable Text, Segoe UI, {Bundled}Inter", false),
-        ("android", "", "Système Android (Roboto)", $"Roboto, {Bundled}Inter", true),
+        ("systeme", "SCOLIA par défaut (Inter)", "", $"{Bundled}Inter", false),
+        ("android", "", "Roboto (SCOLIA)", $"{Bundled}Roboto", true),
+        ("roboto", "Roboto", "", $"{Bundled}Roboto", false),
         ("inter", "Inter", "Inter", $"{Bundled}Inter", true),
-        ("calibri", "Calibri", "Carlito (comme Calibri)", $"Calibri, {Bundled}Carlito", true),
-        ("arial", "Arial", "Liberation Sans (comme Arial)", $"Arial, {Bundled}Liberation Sans", true),
-        ("verdana", "Verdana (très lisible)", "DejaVu Sans (très lisible)", $"Verdana, {Bundled}DejaVu Sans", true),
-        ("tahoma", "Tahoma", "", $"Tahoma, {Bundled}DejaVu Sans", false),
-        ("serif", "Times New Roman (à empattements)", "Liberation Serif (à empattements)", $"Times New Roman, {Bundled}Liberation Serif", true),
+        ("calibri", "Carlito (style Calibri)", "Carlito (style Calibri)", $"{Bundled}Carlito", true),
+        ("arial", "Liberation Sans (style Arial)", "Liberation Sans (style Arial)", $"{Bundled}Liberation Sans", true),
+        ("verdana", "DejaVu Sans (lecture confortable)", "DejaVu Sans (lecture confortable)", $"{Bundled}DejaVu Sans", true),
+        ("tahoma", "DejaVu Sans (style Tahoma)", "", $"{Bundled}DejaVu Sans", false),
+        ("serif", "Liberation Serif (style Times New Roman)", "Liberation Serif (style Times New Roman)", $"{Bundled}Liberation Serif", true),
     ];
 
     /// <summary>Polices proposées sur cet appareil.</summary>
@@ -72,12 +74,12 @@ public sealed class Preferences : Observable
     /// <summary>Famille de caractères d'une police, pour l'appliquer ou la montrer dans un aperçu.</summary>
     public static FontFamily FamilyOf(string key) => new(FontTable.FirstOrDefault(f => f.Key == key).Family ?? $"{Bundled}Inter");
 
-    /// <summary>Police native de l'appareil par défaut, sans dépendance au réseau.</summary>
+    /// <summary>Police par défaut embarquée dans SCOLIA, sans dépendance au système.</summary>
     private static string DefaultFont => Platform.IsMobile ? "android" : "systeme";
 
     public static readonly IReadOnlyList<ChoiceItem> StartupModes =
     [
-        new("normale", "Fenêtre normale"), new("agrandie", "Agrandie"), new("pleinecran", "Plein écran"),
+        new("normale", "Comme à la dernière fermeture"), new("agrandie", "Agrandie"), new("pleinecran", "Plein écran"),
     ];
 
     /// <summary>Vitesse des transitions : facteur appliqué à leur durée.</summary>
@@ -156,6 +158,9 @@ public sealed class Preferences : Observable
 
     public string Font { get => font; set => Set(ref font, Fonts.Any(f => f.Value == value) ? value : DefaultFont); }
     /// <summary>Taille de la fenêtre au lancement, une fois connecté.</summary>
+    /// <summary>Taille, position et état de la fenêtre Windows à la dernière fermeture (rien avant la première).</summary>
+    public WindowPlacement? Window { get; set; }
+
     public string Startup { get => startup; set => Set(ref startup, value is "agrandie" or "pleinecran" ? value : "normale"); }
     public string Speed { get => speed; set { if (Set(ref speed, value is "rapide" or "douce" ? value : "normale")) Raise(nameof(SpeedFactor)); } }
     public double SpeedFactor => speed switch { "rapide" => 0.6, "douce" => 1.5, _ => 1.0 };
@@ -331,9 +336,11 @@ public sealed class Preferences : Observable
         r["UiFont"] = FamilyOf(font);
         var k = Factor;
         GridPriority.SetTextFactor(k);
-        r["FsBase"] = 13.5 * k;
-        r["FsSmall"] = 12.0 * k;
-        r["FsCaption"] = 11.0 * k;
+        // Téléphone : un demi-point de plus, la lecture à bout de bras reste confortable.
+        var phoneText = MobileLayout ? 0.5 : 0.0;
+        r["FsBase"] = (13.5 + 2 * phoneText) * k;
+        r["FsSmall"] = (12.0 + phoneText) * k;
+        r["FsCaption"] = (11.0 + phoneText) * k;
         r["FsHeading"] = 15.0 * k;
         r["FsTitle"] = 22.0 * k;
         r["FsDisplay"] = 28.0 * k;
@@ -405,6 +412,7 @@ public sealed class Preferences : Observable
         public bool AlertBackups { get; set; } = true;
         public bool AlertReports { get; set; } = true;
         public List<string>? RecentSearches { get; set; }
+        public WindowPlacement? Window { get; set; }
 
         public static Stored From(Preferences p) => new()
         {
@@ -414,6 +422,7 @@ public sealed class Preferences : Observable
             Sounds = p.sounds, SoundVolume = p.soundVolume, SoundStyle = p.soundStyle, SoundSuccess = p.soundSuccess,
             SoundError = p.soundError, SoundNotify = p.soundNotify, SoundOpening = p.soundOpening,
             Alerts = p.alerts, LockMinutes = p.lockMinutes, AlertPayments = p.alertPayments, AlertBackups = p.alertBackups, AlertReports = p.alertReports, RecentSearches = [.. p.recentSearches],
+            Window = p.Window,
         };
 
         public void ApplyTo(Preferences p)
@@ -430,6 +439,7 @@ public sealed class Preferences : Observable
             p.Sidebar = Sidebar;
             p.Font = Font ?? DefaultFont;
             p.Startup = Startup ?? "normale";
+            p.Window = Window is { Width: >= 200 and <= 20000, Height: >= 200 and <= 20000 } ? Window : null;
             p.Speed = Speed ?? "normale";
             p.OpeningSeconds = OpeningSeconds;
             p.PageTransitions = PageTransitions;
@@ -449,3 +459,6 @@ public sealed class Preferences : Observable
         }
     }
 }
+
+/// <summary>Position et taille de la fenêtre « normale » (non agrandie), en pixels logiques, et son état.</summary>
+public sealed record WindowPlacement(int X, int Y, double Width, double Height, bool Maximized);

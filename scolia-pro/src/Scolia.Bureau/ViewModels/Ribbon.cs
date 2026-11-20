@@ -29,7 +29,7 @@ public sealed class RibbonCommandVm(string label, MaterialIconKind icon, string 
     public ICommand Command { get; } = command;
     public bool Large { get; } = large;
     public bool IsToggle { get; } = toggle;
-    public IBrush Brush { get; } = Infrastructure.ThemeBrush.Get(tone);
+    public IBrush Brush { get; } = Infrastructure.IconPalette.Get(tone);
 
     /// <summary>Bouton à deux états : enfoncé quand l'option est active.</summary>
     public bool IsOn { get => isOn; set => Set(ref isOn, value); }

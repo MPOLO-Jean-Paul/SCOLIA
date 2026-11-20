@@ -20,7 +20,7 @@
       <DataGrid.Columns>
         <DataGridTextColumn Header="Décidé le" Binding="{Binding Date}" Width="Auto" MinWidth="122" infra:GridPriority.Level="1" />
         <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" infra:GridPriority.Level="1" />
-        <DataGridTextColumn Header="Apprenant" Binding="{Binding Name}" Width="2*" MinWidth="240" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="{infra:Terms 'Apprenant'}" Binding="{Binding Name}" Width="2*" MinWidth="240" infra:GridPriority.Level="1" />
         <DataGridTextColumn Header="Mesure" Binding="{Binding Measure}" Width="Auto" MinWidth="140" infra:GridPriority.Level="1" />
         <DataGridTextColumn Header="Motif" Binding="{Binding Reason}" Width="3*" MinWidth="220" infra:GridPriority.Level="1" />
         <DataGridTextColumn Header="Période ou rendez-vous" Binding="{Binding Period}" Width="Auto" MinWidth="240" infra:GridPriority.Level="2" />

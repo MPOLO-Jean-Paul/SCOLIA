@@ -24,7 +24,8 @@ public static class RelayApplication
         var app = builder.Build();
         var hosts = new ConcurrentDictionary<string, Host>(StringComparer.Ordinal);
         app.UseRateLimiter();
-        app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(20) });
+        // KeepAliveTimeout : une connexion coupée sans fermeture (réseau mobile, coupure de courant) est détectée en 30 s.
+        app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(15), KeepAliveTimeout = TimeSpan.FromSeconds(30) });
         app.MapGet("/health", () => Results.Ok(new { service = "SCOLIA relais", protocol = 1 }));
 
         app.MapGet("/v1/host/{room}", async (HttpContext http, string room) =>
@@ -37,10 +38,12 @@ public static class RelayApplication
             if (!http.WebSockets.IsWebSocketRequest || room.Length != 64 || token.Length != 64 ||
                 RemoteLink.Hash(token) != room || pair.Length != 64 || !pair.All(Uri.IsHexDigit) || epoch.Length != 32)
             { http.Response.StatusCode = 403; return; }
-            if (hosts.Count >= 128) { http.Response.StatusCode = 503; return; }
+            if (hosts.Count >= 128 && !hosts.ContainsKey(room)) { http.Response.StatusCode = 503; return; }
             using var socket = await http.WebSockets.AcceptWebSocketAsync();
             using var host = new Host(socket, pair, epoch);
-            if (!hosts.TryAdd(room, host)) { socket.Abort(); return; }
+            // L'hôte est authentifié par son jeton (l'empreinte est la salle) : une nouvelle session remplace
+            // l'ancienne, même si celle-ci paraît encore ouverte après une coupure réseau ou un renouvellement.
+            hosts.AddOrUpdate(room, host, (_, previous) => { previous.Dispose(); return host; });
             try
             {
                 await socket.SendAsync(epoch.AsMemory(), WebSocketMessageType.Binary, true, http.RequestAborted);
@@ -60,7 +63,7 @@ public static class RelayApplication
                 }
             }
             catch (Exception ex) when (ex is WebSocketException or IOException or OperationCanceledException) { }
-            finally { hosts.TryRemove(room, out _); }
+            finally { hosts.TryRemove(new KeyValuePair<string, Host>(room, host)); }
         });
 
         app.MapGet("/v1/client/{room}", async (HttpContext http, string room) =>

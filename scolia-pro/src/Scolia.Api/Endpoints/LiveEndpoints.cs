@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json;
 using Scolia.Api.Security;
+using Scolia.Domain.Security;
 using Scolia.Infrastructure.Live;
 
 namespace Scolia.Api.Endpoints;
@@ -20,30 +21,65 @@ public static class LiveEndpoints
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan Heartbeat = TimeSpan.FromSeconds(15);
 
+    /// <summary>Sujets de la délibération qu'un compte enseignant reçoit en clair : ouverture de l'encodage, remise et renvoi.</summary>
+    public static readonly IReadOnlyList<string> TeacherTopics = ["ReglagesDeliberation", "RemiseCotes"];
+
+    /// <summary>
+    /// Compte enseignant (sans accès aux dossiers) : il ne doit lire ni les encaissements, ni les codes anonymes rattachés
+    /// aux matricules, ni l'activité des autres postes. Il reçoit les annonces de la délibération et, pour le reste,
+    /// un simple signal de rafraîchissement sans résumé.
+    /// </summary>
+    public static bool Restricted(ClaimsPrincipal user) =>
+        !user.HasClaim(ScoliaClaims.Permission, Permissions.StudentsRead) && !user.HasClaim(ScoliaClaims.Permission, Permissions.AcademicsRead)
+        && (user.HasClaim(ScoliaClaims.Permission, Permissions.MarksEncode) || user.HasClaim(ScoliaClaims.Permission, Permissions.JuryEncode));
+
+    public static LiveEvent? ForRestricted(LiveEvent live) => live.Kind switch
+    {
+        "donnees" when live.Topics.Any(t => TeacherTopics.Contains(t)) => live with { DeviceId = null, Device = null },
+        "donnees" => live with { DeviceId = null, Device = null, User = null, Summary = null, Topics = [] },
+        _ => null,
+    };
+
     public static void MapLiveEndpoints(this IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/api/direct").RequireAuthorization();
 
-        g.MapGet("", async (HttpContext http, LiveHub hub, CancellationToken ct) =>
+        g.MapGet("", async (HttpContext http, LiveHub hub, DevicePairingRegistry devices, CancellationToken ct) =>
         {
             http.Response.Headers.ContentType = "text/event-stream";
             http.Response.Headers.CacheControl = "no-cache";
             http.Response.Headers["X-Accel-Buffering"] = "no";
             var (id, reader) = hub.Subscribe();
+            var restricted = Restricted(http.User);
+            var remote = http.Request.Headers["X-Scolia-Relay-Connection"] == "1";
+            var deviceId = LiveHeaders.DeviceId(http);
+            var grantValid = Guid.TryParseExact(http.Request.Headers["X-Scolia-Grant"].ToString(),
+                "N", out var grantId);
+            // Une session SSE peut durer après le retrait de son appareil.
+            // Contrôler la révocation sur chaque événement et chaque battement.
+            bool StillAllowed() => !remote ||
+                (grantValid && devices.HasGrant(grantId, deviceId));
             try
             {
-                await Write(http, "etat", hub.Snapshot(), ct);
+                var snapshot = hub.Snapshot();
+                await Write(http, "etat", restricted ? snapshot with { Presence = [], Locks = [] } : snapshot, ct);
                 while (!ct.IsCancellationRequested)
                 {
+                    if (!StillAllowed()) { if (deviceId is not null) hub.Leave(deviceId); break; }
                     using var wait = CancellationTokenSource.CreateLinkedTokenSource(ct);
                     wait.CancelAfter(Heartbeat);
                     try
                     {
                         var live = await reader.ReadAsync(wait.Token);
-                        await Write(http, live.Kind, live, ct);
+                        if (!StillAllowed()) { if (deviceId is not null) hub.Leave(deviceId); break; }
+                        if (!restricted) await Write(http, live.Kind, live, ct);
+                        // Son propre enregistrement revient tel quel : le poste le reconnaît et ne l'annonce pas comme venu d'ailleurs.
+                        else if (live.Kind == "donnees" && deviceId is not null && live.DeviceId == deviceId) await Write(http, live.Kind, live, ct);
+                        else if (ForRestricted(live) is { } visible) await Write(http, visible.Kind, visible, ct);
                     }
                     catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                     {
+                        if (!StillAllowed()) { if (deviceId is not null) hub.Leave(deviceId); break; }
                         await http.Response.WriteAsync(": en ligne\n\n", ct);
                         await http.Response.Body.FlushAsync(ct);
                     }
@@ -54,12 +90,20 @@ public static class LiveEndpoints
             finally { hub.Unsubscribe(id); }
         });
 
-        g.MapGet("/etat", (LiveHub hub) => Results.Ok(hub.Snapshot()));
+        g.MapGet("/etat", (HttpContext http, LiveHub hub) =>
+        {
+            var snapshot = hub.Snapshot();
+            return Results.Ok(Restricted(http.User) ? snapshot with { Presence = [], Locks = [] } : snapshot);
+        });
 
-        g.MapPost("/presence", (PresenceInput input, HttpContext http, LiveHub hub) =>
+        g.MapPost("/presence", (PresenceInput input, HttpContext http, LiveHub hub,
+            SchoolLicenseService license) =>
         {
             if (!Identify(http, out var deviceId, out var device, out var user)) return Results.BadRequest(new { title = "Poste non identifié." });
-            return Results.Ok(hub.Touch(deviceId, device, user, Clip(input.Page), Clip(input.Activity), input.Locks ?? []));
+            // Un poste en lecture seule reste visible dans le direct, mais
+            // ne peut publier de verrous d'édition pouvant bloquer les autres.
+            List<string> locks = license.Current.ReadOnly ? [] : input.Locks ?? [];
+            return Results.Ok(hub.Touch(deviceId, device, user, Clip(input.Page), Clip(input.Activity), locks));
         });
 
         g.MapDelete("/presence", (HttpContext http, LiveHub hub) =>

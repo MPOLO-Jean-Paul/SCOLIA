@@ -113,12 +113,13 @@
         <StackPanel Spacing="8">
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="Prises en charge" Classes="heading" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="ghost" Content="Terminer la sélection" Command="{Binding EndSponsorship}" />
+            <Button infra:Icons.Lead="CheckAll" Grid.Column="1" Classes="ghost" Content="Terminer la sélection" Command="{Binding EndSponsorship}" />
           </Grid>
           <DataGrid ItemsSource="{Binding Sponsorships}" SelectedItem="{Binding SelectedSponsorship}"
                     AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="220">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Garant ou organisme" Binding="{Binding Sponsor}" Width="*" MinWidth="198" />
+              <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto" MinWidth="110" />
               <DataGridTextColumn Header="Motif" Binding="{Binding Reason}" Width="*" MinWidth="140" />
               <DataGridTextColumn Header="Effet" Binding="{Binding Since}" Width="Auto" MinWidth="110" />
               <DataGridTextColumn Header="Couvert" Binding="{Binding Covered}" Width="Auto" MinWidth="130" />

@@ -156,4 +156,21 @@ public sealed class TeachingApiTests : IDisposable
         var (status, _) = await admin.Put($"{Cours}/{courseId}/attribution", new { teacherId = future, confirmReplace = false }).Fail();
         Assert.Equal(HttpStatusCode.BadRequest, status);
     }
+
+    [Fact]
+    public async Task Weight_and_maxima_are_distinct_and_bounded()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotionId = await PromotionAsync(admin);
+        // Maxima de 1 à 2000 points (ITMCD) ; pondération à deux décimales au plus (22,5 admis).
+        foreach (var (coefficient, maxScore) in new[] { (2m, 2001m), (2m, 0.5m), (1.234m, 20m), (0m, 20m) })
+        {
+            var (status, _) = await admin.Post(Cours, new { promotionId, number = 1, name = "Anatomie", coefficient, hours = 30m, maxScore }).Fail();
+            Assert.Equal(HttpStatusCode.BadRequest, status);
+        }
+        var course = await admin.Post(Cours, new { promotionId, number = 1, name = "Épreuve d'intégration", coefficient = 22.5m, hours = 1m, maxScore = 225m, semester = "JuryEpreuve" }).Ok();
+        Assert.Equal(22.5m, course.GetProperty("coefficient").GetDecimal());
+        Assert.Equal(225m, course.GetProperty("maxScore").GetDecimal());
+        Assert.Equal("JuryEpreuve", course.GetProperty("semester").GetString());
+    }
 }

@@ -1,0 +1,35 @@
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.StudentAccountsView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="280" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+      </WrapPanel>
+    </Border>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Dto.Matricule}" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn Header="Étudiant" Binding="{Binding Dto.FullName}" Width="2*" MinWidth="220" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Promotion" Binding="{Binding Dto.PromotionName}" Width="*" MinWidth="160" />
+        <DataGridTemplateColumn Header="Accès" Width="Auto" MinWidth="220">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding AccessBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Access}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Dernière connexion" Binding="{Binding LastLogin}" Width="Auto" MinWidth="150" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="1" Icon="AccountKeyOutline" Title="Aucun étudiant inscrit" Hint="Les accès se créent pour les étudiants inscrits cette année." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

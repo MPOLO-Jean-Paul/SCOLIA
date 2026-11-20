@@ -31,6 +31,26 @@ public sealed class OfflineDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void Discard_ne_supprime_que_les_conflits_et_preserve_les_paiements_en_attente()
+    {
+        var store = Store();
+        var pending = new OutboxItem { Key = "operation-en-attente", Path = "api/paiements", Body = "{}" };
+        var refused = new OutboxItem { Key = "operation-refusee", Path = "api/paiements", Body = "{}" };
+        store.Enqueue(pending);
+        store.Enqueue(refused);
+        store.Refused(refused.Id, "Ce mois est déjà réglé");
+
+        // Une action d'abandon ne doit jamais effacer une opération en cours d'envoi.
+        store.Discard(pending.Id);
+        Assert.Equal(pending.Id, Assert.Single(store.Outbox()).Id);
+        Assert.Equal(refused.Id, Assert.Single(store.Conflicts()).Id);
+
+        store.Discard(refused.Id);
+        Assert.Empty(store.Conflicts());
+        Assert.Equal(pending.Id, Assert.Single(store.Outbox()).Id);
+    }
+
+    [Fact]
     public async Task Concurrent_instances_do_not_overwrite_each_others_operations()
     {
         var one = Store();
@@ -73,6 +93,78 @@ public sealed class OfflineDatabaseTests : IDisposable
         Assert.Null(Store("comptabilite").ReadPage("api/apprenants"));
         foreach (var file in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
             Assert.DoesNotContain("PRIVE-APPRENANT-928", Encoding.UTF8.GetString(File.ReadAllBytes(file)), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Registre_local_recherche_sans_serveur_et_signale_si_la_liste_est_incomplete()
+    {
+        var school = Store();
+        var records = new[]
+        {
+            new Scolia.Bureau.Api.StudentListItem(Guid.NewGuid(), null, "INF001", "MPOLO", "LONO",
+                "Jean", "M", "INF1", "Actif", "0977000001", 15000m, 0m),
+            new Scolia.Bureau.Api.StudentListItem(Guid.NewGuid(), null, "INF002", "KABUYA", "LUNGU",
+                "Alice", "F", "INF1", "Actif", "0977000002", 25000m, 5000m),
+            new Scolia.Bureau.Api.StudentListItem(Guid.NewGuid(), null, "ACC003", "BANDA", "KASI",
+                "Ruth", "F", "ACC1", "Sorti", "0977000003", 0m, 0m)
+        };
+        var page = new Scolia.Bureau.Api.PagedResult<Scolia.Bureau.Api.StudentListItem>(records, 4, 1, 50, null);
+        school.SavePage("api/apprenants?page=1&taille=50",
+            JsonSerializer.Serialize(page, Scolia.Bureau.Api.Json.Options));
+
+        var result = OfflineStudentSearch.Search(school, "mPoLo", "INF1", "Actif", 1);
+        Assert.NotNull(result);
+        Assert.Equal("INF001", Assert.Single(result.Page.Items).Matricule);
+        Assert.Equal(1, result.Page.Total);
+        Assert.Equal(3, result.Loaded);
+        Assert.Equal(4, result.Registered);
+        Assert.False(result.Complete);
+
+        var byPhone = OfflineStudentSearch.Search(school, "0977000002", null, null, 20);
+        Assert.NotNull(byPhone);
+        Assert.Equal("INF002", Assert.Single(byPhone.Page.Items).Matricule);
+        Assert.Equal(1, byPhone.Page.Page); // la pagination reste utilisable même hors ligne
+
+        // Les autres comptes n'ont pas accès à l'index de l'utilisateur.
+        Assert.Null(OfflineStudentSearch.Search(Store("comptabilite"), "MPOLO", null, null, 1));
+    }
+
+    [Fact]
+    public void Accuse_de_reception_d_un_ancien_compte_ne_supprime_pas_les_operations_d_un_autre()
+    {
+        var store = Store("secretariat");
+        var a = new OutboxItem { Key = "secretariat-operation", User = "secretariat", Path = "api/paiements" };
+        store.Enqueue(a);
+        store.User = "comptabilite";
+        var b = new OutboxItem { Key = "comptabilite-operation", User = "comptabilite", Path = "api/paiements" };
+        store.Enqueue(b);
+        store.SentFor("secretariat", a.Id);
+
+        Assert.Equal(b.Id, Assert.Single(store.Outbox()).Id);
+        store.User = "secretariat";
+        Assert.Empty(store.Outbox());
+        store.User = "comptabilite";
+        store.RefusedFor("secretariat", b.Id, "Ne doit pas modifier ce compte");
+        Assert.Single(store.Outbox());
+        Assert.Empty(store.Conflicts());
+    }
+
+    [Fact]
+    public void Reponse_en_retard_est_enregistree_uniquement_pour_le_compte_a_l_origine()
+    {
+        var store = Store("secretariat");
+        const string path = "api/rapports/tableau-de-bord";
+        store.User = "comptabilite"; // Un autre compte ouvre sa session avant la fin de la requête.
+        store.SavePageFor("secretariat", path, """{"nombre":131}""");
+
+        Assert.Null(store.ReadPage(path));
+        store.User = "secretariat";
+        Assert.Contains("131", store.ReadPage(path)?.Json);
+        store.User = "comptabilite";
+        store.SavePage(path, """{"nombre":42}""");
+        Assert.Contains("42", store.ReadPage(path)?.Json);
+        store.User = "secretariat";
+        Assert.Contains("131", store.ReadPage(path)?.Json);
     }
 
     [Fact]

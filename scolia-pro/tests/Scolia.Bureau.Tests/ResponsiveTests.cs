@@ -11,6 +11,18 @@ public class ResponsiveTests
     private static ShellViewModel NewShell() => new(new ScoliaClient(new Uri("http://localhost:5080/")), new Preferences());
 
     [Fact]
+    public void Le_demarrage_desktop_a_la_meme_taille_logique_que_la_connexion()
+    {
+        var shell = NewShell();
+        Assert.True(shell.ShowStartup);
+        Assert.True(shell.CompactWindow);
+        shell.ApplyInstallationStatus(configured: true);
+        Assert.False(shell.ShowStartup);
+        Assert.True(shell.ShowLogin);
+        Assert.True(shell.CompactWindow);
+    }
+
+    [Fact]
     public void Les_boutons_qui_ne_tiennent_pas_passent_dans_le_menu()
     {
         var page = new DataPage(NewShell());

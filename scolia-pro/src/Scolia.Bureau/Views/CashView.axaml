@@ -24,13 +24,13 @@
           <TextBlock Text="Mouvements de la période" Classes="heading" />
           <DataGrid ItemsSource="{Binding Movements}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="340">
             <DataGrid.Columns>
-              <DataGridTextColumn infra:GridPriority.Level="2" Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="130" />
-              <DataGridTextColumn infra:GridPriority.Level="2" Header="Type" Binding="{Binding Type}" Width="Auto" MinWidth="120" />
-              <DataGridTextColumn infra:GridPriority.Level="3" Header="Numéro" Binding="{Binding Number}" Width="Auto" MinWidth="130" />
-              <DataGridTextColumn Header="Libellé" Binding="{Binding Label}" Width="*" MinWidth="140" />
-              <DataGridTextColumn infra:GridPriority.Level="3" Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="120" />
+              <DataGridTextColumn infra:GridPriority.Level="2" Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="120" />
+              <DataGridTextColumn infra:GridPriority.Level="2" Header="Type" Binding="{Binding Type}" Width="Auto" MinWidth="110" />
+              <DataGridTextColumn infra:GridPriority.Level="3" Header="Numéro" Binding="{Binding Number}" Width="Auto" MinWidth="150" />
+              <DataGridTextColumn Header="Libellé" Binding="{Binding Label}" Width="*" MinWidth="220" />
+              <DataGridTextColumn infra:GridPriority.Level="2" Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="140" />
               <DataGridTextColumn Header="Entrée" Binding="{Binding In}" Width="Auto" MinWidth="130" />
-              <DataGridTextColumn Header="Sortie" Binding="{Binding Out}" Width="Auto" MinWidth="130" />
+              <DataGridTextColumn Header="Sortie" Binding="{Binding Out}" Width="Auto" MinWidth="120" />
             </DataGrid.Columns>
           </DataGrid>
         </StackPanel>

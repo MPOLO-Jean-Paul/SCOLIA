@@ -1,0 +1,25 @@
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.CurriculumAssignmentView">
+  <Grid>
+    <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Classe ou promotion" Binding="{Binding Dto.PromotionName}" Width="*" MinWidth="180" />
+        <DataGridTextColumn Header="Élément" Binding="{Binding Element}" Width="2*" MinWidth="260" />
+        <DataGridTemplateColumn Header="Enseignant" Width="Auto" MinWidth="220">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding TeacherBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Teacher}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Icon="AccountSchoolOutline" Title="Aucune branche ni aucun EC" Hint="Créez d'abord le programme des classes ou la maquette LMD." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

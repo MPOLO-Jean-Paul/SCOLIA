@@ -1,6 +1,7 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { P, useSession } from './lib/session';
+import { isItm } from './lib/terms';
 import { accountHome } from './lib/access';
 import { Layout } from './components/Layout';
 import { Card, Loading, PageHead } from './components/ui';
@@ -49,9 +50,23 @@ function RequirePermission({ right, children }: { right: string; children: React
   return can(right) ? <>{children}</> : <NotAvailable title="Accès limité" reason="Votre compte n'a pas l'autorisation d'ouvrir cette fonctionnalité." />;
 }
 
+/** Cours et notes du moteur ITM/IM : une école ou une université gère ses résultats dans l'application SCOLIA. */
+function RequireItm({ children }: { children: ReactNode }) {
+  const { session } = useSession();
+  return isItm(session?.institutionType) ? <>{children}</> : <NotAvailable title="Résultats et bulletins"
+    reason="Les notes, résultats, délibérations et bulletins de cet établissement se gèrent dans SCOLIA pour Windows ou Android." />;
+}
+
+/** Enseignant ou étudiant : leur espace (notes à saisir, résultats publiés) est dans l'application SCOLIA. */
+function PersonalSpace() {
+  return <NotAvailable title="Votre espace SCOLIA"
+    reason="La saisie des notes par les enseignants et la consultation des résultats par les étudiants se font dans SCOLIA pour Windows ou Android." />;
+}
+
 function Landing() {
   const { session } = useSession();
   const home = accountHome(session?.permissions ?? []);
+  if (home === '/espace') return <PersonalSpace />;
   return home === '/' ? <DashboardPage /> : <Navigate to={home} replace />;
 }
 
@@ -85,7 +100,7 @@ export function App() {
         <Route path="prises-en-charge" element={<RequirePermission right={P.paymentsRead}><SponsorshipsPage /></RequirePermission>} />
         <Route path="depenses" element={<RequirePermission right={P.paymentsRead}><ExpensesPage /></RequirePermission>} />
         <Route path="caisse" element={<RequirePermission right={P.paymentsRead}><CashPage /></RequirePermission>} />
-        <Route path="notes" element={<RequirePermission right={P.academicsRead}><GradesPage /></RequirePermission>} />
+        <Route path="notes" element={<RequirePermission right={P.academicsRead}><RequireItm><GradesPage /></RequireItm></RequirePermission>} />
         <Route path="presences" element={<RequirePermission right={P.academicsRead}><AttendancePage /></RequirePermission>} />
         <Route path="discipline" element={<RequirePermission right={P.academicsRead}><DisciplinePage /></RequirePermission>} />
         <Route path="personnel" element={<RequirePermission right={P.staffManage}><StaffPage /></RequirePermission>} />
@@ -94,6 +109,7 @@ export function App() {
         <Route path="donnees" element={<RequirePermission right={P.backupManage}><DataPage /></RequirePermission>} />
         <Route path="audit" element={<RequirePermission right={P.auditRead}><AuditPage /></RequirePermission>} />
         <Route path="profil" element={<ProfilePage />} />
+        <Route path="espace" element={<PersonalSpace />} />
         <Route path="*" element={<NotAvailable title="Page introuvable" reason="Ce lien n’existe plus ou contient une erreur." />} />
       </Route>
     </Routes>
