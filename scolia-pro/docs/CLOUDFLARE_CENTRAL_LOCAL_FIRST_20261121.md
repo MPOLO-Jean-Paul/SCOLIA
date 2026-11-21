@@ -122,6 +122,17 @@ désactiver cette destination locale sans supprimer le journal SQLite.
   version centrale ou modifier/rejouer la saisie locale avec une nouvelle
   clé d'idempotence. Aucun choix ne se produit automatiquement, et ces actions
   doivent encore être exposées dans les écrans d'administration.
+  `CentralSectionReplica.Conflicts()` permet de lire les opérations en conflit
+  du compte courant avec leur cause D1 normalisée, persistée dans SQLite.
+  Une réponse `stale_section_revision` interdit le renvoi tant que le
+  rattrapage D1 n'a pas révélé une révision centrale supérieure ; renommer
+  localement la section ne contourne pas ce contrôle. Pour les autres conflits,
+  le responsable doit choisir explicitement la correction ou l'abandon.
+  Les messages 409 inconnus ne sont jamais repris tels quels dans le cache.
+- **Destination d'écriture** : un ancien serveur central désactivé peut rester
+  jumelé pour préserver l'historique. Les **nouvelles** sections ne sont
+  mises en attente que pour l'origine HTTPS actuellement activée ; il faut
+  réactiver explicitement une origine antérieure avant d'y écrire.
 - **Tests** : appairage ECDSA, destination chiffrée par compte/appareil,
   refus d'une origine non approuvée, résistance au réseau intermittent,
   idempotence, pages de journal, isolation entre écoles, cache SQLite et
