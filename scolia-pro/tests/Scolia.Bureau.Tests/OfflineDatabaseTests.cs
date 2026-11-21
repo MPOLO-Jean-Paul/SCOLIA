@@ -258,5 +258,50 @@ public sealed class OfflineDatabaseTests : IDisposable
         Assert.NotNull(Store().OfflineLogin("SECRETARIAT", "Secretariat1"));
     }
 
+    [Fact]
+    public void Deconnexion_ciblee_revoque_cookie_et_D1_sans_effacer_fichiers_ni_autre_compte()
+    {
+        var store = Store("secretariat");
+        var secretariat = new Scolia.Bureau.Api.SessionDto(Guid.NewGuid(),
+            "secretariat", "Secrétariat", "Secretariat", "Secrétariat",
+            [], false, "Institut", null, null, "FC", "243");
+        var teacher = new Scolia.Bureau.Api.SessionDto(Guid.NewGuid(),
+            "enseignant", "Enseignant", "Enseignant", "Enseignant",
+            [], false, "Institut", null, null, "FC", "243");
+
+        store.SaveCredential("secretariat", "Secretariat1", secretariat,
+            "scolia.session=secretariat-cookie");
+        store.SetCentralBackgroundAllowedFor("secretariat", true);
+        store.Enqueue(new OutboxItem
+        {
+            User = "secretariat",
+            Key = "paiement-a-preserver",
+            Path = "api/paiements",
+        });
+        store.SaveCredential("enseignant", "Enseignant1", teacher,
+            "scolia.session=teacher-cookie");
+        store.SetCentralBackgroundAllowedFor("enseignant", true);
+        store.RememberAccount("enseignant");
+
+        // Pendant un changement de compte, User pointe déjà vers le
+        // nouveau titulaire : la révocation porte sur le compte sortant.
+        store.User = "enseignant";
+        store.SuspendBackgroundAccessFor("secretariat");
+
+        Assert.False(Store("secretariat").CanSyncCentralInBackgroundFor("secretariat"));
+        Assert.True(Store("enseignant").CanSyncCentralInBackgroundFor("enseignant"));
+        Assert.Equal("scolia.session=teacher-cookie",
+            Store("enseignant").SavedCredential?.SessionCookie);
+        Assert.Single(Store("secretariat").Outbox());
+        Assert.NotNull(Store("secretariat").OfflineLogin("secretariat", "Secretariat1"));
+        Assert.NotNull(Store("enseignant").OfflineLogin("enseignant", "Enseignant1"));
+
+        store.RememberAccount("secretariat");
+        Assert.Equal(string.Empty,
+            Store("secretariat").SavedCredential?.SessionCookie);
+        Assert.Throws<ArgumentException>(() =>
+            store.SuspendBackgroundAccessFor(" "));
+    }
+
     public void Dispose() { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
 }
