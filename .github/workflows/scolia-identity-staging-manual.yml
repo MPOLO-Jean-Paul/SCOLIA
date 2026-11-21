@@ -30,6 +30,8 @@ jobs:
       SCOLIA_STAGING_D1_ID: ${{ vars.SCOLIA_STAGING_D1_ID }}
       SCOLIA_STAGING_RL_INVITE_NS: ${{ vars.SCOLIA_STAGING_RL_INVITE_NS }}
       SCOLIA_STAGING_RL_SOURCE_NS: ${{ vars.SCOLIA_STAGING_RL_SOURCE_NS }}
+      SCOLIA_STAGING_PAIRING_AUTH_KEY: ${{ secrets.SCOLIA_STAGING_PAIRING_AUTH_KEY }}
+      SCOLIA_STAGING_AUTH_HMAC_KEY: ${{ secrets.SCOLIA_STAGING_AUTH_HMAC_KEY }}
     steps:
       - name: Cloner la branche validée
         uses: actions/checkout@v5
@@ -57,6 +59,28 @@ jobs:
             fi
           done
 
+      - name: Vérifier les clés de préproduction avant toute migration ou publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          const pair = process.env.SCOLIA_STAGING_PAIRING_AUTH_KEY || "";
+          const session = process.env.SCOLIA_STAGING_AUTH_HMAC_KEY || "";
+          if (![pair, session].every(value => /^[A-Za-z0-9_-]{43,256}$/.test(value)) ||
+              pair === session) {
+            console.error("::error::Staging requires two distinct protected base64url signing keys.");
+            process.exit(1);
+          }
+          for (const value of [pair, session]) {
+            const bytes = Buffer.from(value, "base64url");
+            if (bytes.length < 32 ||
+                bytes.toString("base64url") !== value) {
+              console.error("::error::Invalid staging signing key encoding or length.");
+              process.exit(1);
+            }
+          }
+          NODE
+
       - name: Exécuter les tests JS de sécurité et d'authentification
         working-directory: scolia-pro/deploy/cloudflare-central
         run: npm test
@@ -75,3 +99,19 @@ jobs:
       - name: Déployer seulement le Worker staging (pas de domaine de production)
         working-directory: scolia-pro/deploy/cloudflare-central
         run: npx --yes wrangler@4 deploy --config wrangler.staging.toml
+
+      - name: Installer la clé temporaire de jumelage dans le Worker staging
+        working-directory: scolia-pro/deploy/cloudflare-central
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$SCOLIA_STAGING_PAIRING_AUTH_KEY" |
+            npx --yes wrangler@4 secret put SCOLIA_PAIRING_AUTH_KEY --config wrangler.staging.toml
+
+      - name: Installer la clé de session distincte dans le Worker staging
+        working-directory: scolia-pro/deploy/cloudflare-central
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$SCOLIA_STAGING_AUTH_HMAC_KEY" |
+            npx --yes wrangler@4 secret put SCOLIA_AUTH_HMAC_KEY --config wrangler.staging.toml
