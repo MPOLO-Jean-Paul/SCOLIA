@@ -160,18 +160,14 @@ public sealed class SyncWorker : Worker
         {
             try
             {
-                using var pairing = new CentralPairingClient();
-                if (pairing.ReadActiveOrigin(backgroundAccount, DeviceIdentity.Id) is
-                    { } approvedOrigin)
-                {
-                    store.User = backgroundAccount;
-                    using var centralBudget =
-                        CancellationTokenSource.CreateLinkedTokenSource(timeout.Token);
-                    centralBudget.CancelAfter(TimeSpan.FromSeconds(35));
-                    var state = await api.SyncCentralSectionsAsync(
-                        approvedOrigin, backgroundAccount, centralBudget.Token);
+                store.User = backgroundAccount;
+                using var centralBudget =
+                    CancellationTokenSource.CreateLinkedTokenSource(timeout.Token);
+                centralBudget.CancelAfter(TimeSpan.FromSeconds(35));
+                var state = await api.SyncActiveCentralSectionsAsync(
+                    backgroundAccount, centralBudget.Token);
+                if (state is not null)
                     centralNeedsRetry = state.Offline || state.HasMorePages;
-                }
             }
             catch (CentralPairingException exception)
             {
