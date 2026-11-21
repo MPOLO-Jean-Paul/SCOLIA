@@ -499,17 +499,13 @@ public sealed class CentralSectionReplica : IDisposable
     private static async Task<string> ReadConflictCodeAsync(
         HttpResponseMessage response, CancellationToken ct)
     {
-        // Les réponses 409 ne peuvent pas injecter de longues chaînes
-        // arbitraires dans le journal des conflits.
-        if (response.Content.Headers.ContentLength is > 256)
-            return "conflict";
-        var body = await response.Content.ReadAsStringAsync(ct);
-        if (Encoding.UTF8.GetByteCount(body) > 256) return "conflict";
+        // Un serveur compromis ne doit pas forcer la lecture de plusieurs
+        // mégaoctets pour une simple erreur 409, même en Transfer-Encoding:
+        // chunked sans Content-Length.
         try
         {
-            using var doc = JsonDocument.Parse(body);
-            if (doc.RootElement.ValueKind != JsonValueKind.Object ||
-                !doc.RootElement.TryGetProperty("error", out var error) ||
+            var payload = await ReadBoundedJsonAsync(response, 256, ct);
+            if (!payload.TryGetProperty("error", out var error) ||
                 error.ValueKind != JsonValueKind.String)
                 return "conflict";
             return error.GetString() switch
@@ -520,15 +516,38 @@ public sealed class CentralSectionReplica : IDisposable
                 _ => "conflict",
             };
         }
-        catch (JsonException) { return "conflict"; }
+        catch (Exception ex) when (ex is InvalidDataException or JsonException)
+        {
+            return "conflict";
+        }
     }
 
-    private static async Task<JsonElement> ReadJsonAsync(HttpResponseMessage response, CancellationToken ct)
+    private static Task<JsonElement> ReadJsonAsync(
+        HttpResponseMessage response, CancellationToken ct) =>
+        ReadBoundedJsonAsync(response, 90_000, ct);
+
+    private static async Task<JsonElement> ReadBoundedJsonAsync(
+        HttpResponseMessage response, int byteLimit, CancellationToken ct)
     {
-        var text = await response.Content.ReadAsStringAsync(ct);
-        if (Encoding.UTF8.GetByteCount(text) > 90_000)
+        // Content-Length peut être faux ou absent. Arrêter la lecture dès
+        // qu'un seul lot dépasse la limite, AVANT toute allocation volumineuse.
+        if (response.Content.Headers.ContentLength is { } declared &&
+            declared > byteLimit)
             throw new InvalidDataException("Réponse D1 trop volumineuse.");
-        using var doc = JsonDocument.Parse(text);
+
+        await using var input = await response.Content.ReadAsStreamAsync(ct);
+        using var buffer = new MemoryStream();
+        var chunk = new byte[4096];
+        while (true)
+        {
+            var size = await input.ReadAsync(chunk.AsMemory(), ct);
+            if (size == 0) break;
+            if (buffer.Length > byteLimit - size)
+                throw new InvalidDataException("Réponse D1 trop volumineuse.");
+            buffer.Write(chunk.AsSpan(0, size));
+        }
+        using var doc = JsonDocument.Parse(
+            buffer.GetBuffer().AsMemory(0, checked((int)buffer.Length)));
         if (doc.RootElement.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("Réponse D1 invalide.");
         return doc.RootElement.Clone();
