@@ -148,6 +148,46 @@ public sealed partial class ScoliaClient
     }
 
     /// <summary>
+    /// Le moteur local doit aussi relever les issues des dépôts antérieurs
+    /// même si aucune nouvelle opération ne doit partir.
+    /// </summary>
+    public static bool HasPendingDelegatedMailboxWork(Infrastructure.OfflineStore store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+        return HasPendingDelegatedDeposits(store) ||
+            store.AccountsAwaitingCloudOutcome()
+                .Any(account => Usable(ReadAccess(store, account)));
+    }
+
+    /// <summary>
+    /// Relever l'issue de chaque dépôt déjà autorisé sans connexion au PC.
+    /// Seule la réponse métier « applied » retire l'opération de l'outbox.
+    /// Une réponse « pending » ou « refused » reste disponible pour arbitrage.
+    /// </summary>
+    public async Task<int> ReconcileDelegatedAccountsAsync(CancellationToken ct = default)
+    {
+        var store = Offline;
+        if (store is null) return 0;
+        var originalUser = store.User;
+        var confirmed = 0;
+        try
+        {
+            foreach (var account in store.AccountsAwaitingCloudOutcome())
+            {
+                ct.ThrowIfCancellationRequested();
+                if (!Usable(ReadAccess(store, account))) continue;
+                store.User = account;
+                confirmed += await ReconcileCloudAsync(ct);
+            }
+        }
+        finally
+        {
+            store.User = originalUser;
+        }
+        return confirmed;
+    }
+
+    /// <summary>
     /// Dépose, dans l'ordre, les opérations du compte pas encore en sécurité en ligne. S'arrête à la première
     /// difficulté pour ne jamais inverser l'ordre ; tout reste gardé sur l'appareil.
     /// </summary>
