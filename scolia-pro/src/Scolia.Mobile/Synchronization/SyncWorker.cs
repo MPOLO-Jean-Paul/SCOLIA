@@ -150,6 +150,54 @@ public sealed class SyncWorker : Worker
         if (store.SavedCredential is { SessionCookie.Length: > 0 } credential)
             api.RestoreSessionCookie(credential.SessionCookie);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+
+        // Le pilote des sections centrales n'a pas besoin que le PC principal
+        // soit allumé : la session ECDSA vient de l'appareil approuvé, pas du
+        // cookie HTTP de l'ancien serveur. Aucune connexion n'est tentée si
+        // l'utilisateur n'a jamais jumelé explicitement ce serveur cloud.
+        var centralNeedsRetry = false;
+        if (store.LastAccount is { Length: > 0 } backgroundAccount)
+        {
+            try
+            {
+                using var pairing = new CentralPairingClient();
+                if (pairing.ReadActiveOrigin(backgroundAccount, DeviceIdentity.Id) is
+                    { } approvedOrigin)
+                {
+                    store.User = backgroundAccount;
+                    using var centralBudget =
+                        CancellationTokenSource.CreateLinkedTokenSource(timeout.Token);
+                    centralBudget.CancelAfter(TimeSpan.FromSeconds(35));
+                    var state = await api.SyncCentralSectionsAsync(
+                        approvedOrigin, backgroundAccount, centralBudget.Token);
+                    centralNeedsRetry = state.Offline || state.HasMorePages;
+                }
+            }
+            catch (CentralPairingException exception)
+            {
+                // Une session/autorisation cloud refusée ne peut jamais être
+                // rétablie en contournant le secrétariat avec un autre compte.
+                Android.Util.Log.Warn("SCOLIA-Central",
+                    $"Autorisation centrale à renouveler ({exception.Status}).");
+            }
+            catch (Exception exception) when (exception is HttpRequestException or
+                TaskCanceledException or IOException)
+            {
+                if (IsStopped) return Result.InvokeRetry();
+                centralNeedsRetry = true;
+                Android.Util.Log.Warn("SCOLIA-Central",
+                    $"Reprise différée des sections ({exception.GetType().Name}).");
+            }
+            catch (Exception exception) when (exception is InvalidDataException or
+                System.Security.Cryptography.CryptographicException or
+                UnauthorizedAccessException)
+            {
+                // Aucune réinitialisation automatique du cache chiffré :
+                // une erreur de stockage doit rester visible et diagnostiquable.
+                Android.Util.Log.Warn("SCOLIA-Central",
+                    $"Réplique chiffrée indisponible ({exception.GetType().Name}).");
+            }
+        }
         if (!await api.IsRunningAsync(timeout.Token))
         {
             // Même lorsque le PC serveur est éteint, déposer les opérations déjà
@@ -224,6 +272,7 @@ public sealed class SyncWorker : Worker
             try { await api.GetAsync<JsonElement>(path, timeout.Token); }
             catch (ApiException ex) when (ex.Status is 400 or 403 or 404) { }
         }
-        return store.Outbox().Count > 0 ? Result.InvokeRetry() : Result.InvokeSuccess();
+        return store.Outbox().Count > 0 || centralNeedsRetry
+            ? Result.InvokeRetry() : Result.InvokeSuccess();
     }
 }
