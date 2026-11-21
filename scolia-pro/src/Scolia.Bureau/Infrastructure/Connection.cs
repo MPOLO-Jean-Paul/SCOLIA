@@ -69,6 +69,16 @@ public static class ConnectionStore
         }
     }
 
+    /// <summary>
+    /// Les clients historiques programment leur reprise en mode distant ou
+    /// Internet. En mode local (ou sans route héritée), seule une autorisation
+    /// centrale déjà vérifiée peut déclencher le travail de fond.
+    /// Un mode inconnu ne doit pas créer une nouvelle route réseau.
+    /// </summary>
+    public static bool ShouldScheduleBackgroundSync(string? mode, bool approvedCentralSession) =>
+        mode is ConnectionSettings.Remote or ConnectionSettings.Internet ||
+        (approvedCentralSession && (mode is null or ConnectionSettings.Local));
+
     /// <summary>Vrai si ce poste porte déjà la base d'un établissement : il en est le serveur.</summary>
     public static bool HasLocalData() => File.Exists(Path.Combine(PosteAdmin.DataFolder(), "scolia.db"));
 
