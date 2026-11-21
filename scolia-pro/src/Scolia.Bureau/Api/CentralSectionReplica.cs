@@ -214,6 +214,13 @@ public sealed class CentralSectionReplica : IDisposable
                     throw new InvalidOperationException(
                         "La version centrale doit être récupérée avant une nouvelle tentative.");
                 var revision = central?.Revision ?? 0;
+                // Un 409 pour version obsolète exige un vrai changement de
+                // révision centrale AVANT la nouvelle tentative. Modifier
+                // simplement le libellé ne peut pas réparer le verrou D1.
+                if (previous.ConflictCode == "stale_section_revision" &&
+                    revision <= previous.ExpectedRevision)
+                    throw new InvalidOperationException(
+                        "Récupérez la nouvelle version centrale de cette section avant de réessayer.");
                 if (revision == previous.ExpectedRevision &&
                     previous.Code == code && previous.Name == name &&
                     previous.IsActive == active)
@@ -283,6 +290,10 @@ public sealed class CentralSectionReplica : IDisposable
                     using var result = await http.SendAsync(request, ct);
                     if (result.StatusCode == HttpStatusCode.Conflict)
                     {
+                        // Le serveur ne transmet qu'un code d'erreur de
+                        // domaine connu. Un message imprévu n'est jamais
+                        // recopié dans le cache chiffré ou l'interface.
+                        var conflictCode = await ReadConflictCodeAsync(result, ct);
                         // Conserver la saisie et son identifiant pour arbitrage :
                         // ne pas rejouer un conflit à chaque reconnexion.
                         snapshot = Update(current =>
@@ -291,7 +302,11 @@ public sealed class CentralSectionReplica : IDisposable
                                 x.OperationId == operation.OperationId);
                             if (conflictIndex >= 0)
                                 current.Pending[conflictIndex] =
-                                    current.Pending[conflictIndex] with { HasConflict = true };
+                                    current.Pending[conflictIndex] with
+                                    {
+                                        HasConflict = true,
+                                        ConflictCode = conflictCode,
+                                    };
                             return current;
                         });
                         // Les sections indépendantes peuvent être validées
@@ -473,6 +488,33 @@ public sealed class CentralSectionReplica : IDisposable
             HasConflict || snapshot.Pending.Any(x => x.HasConflict), HasMorePages);
     }
 
+    private static async Task<string> ReadConflictCodeAsync(
+        HttpResponseMessage response, CancellationToken ct)
+    {
+        // Les réponses 409 ne peuvent pas injecter de longues chaînes
+        // arbitraires dans le journal des conflits.
+        if (response.Content.Headers.ContentLength is > 256)
+            return "conflict";
+        var body = await response.Content.ReadAsStringAsync(ct);
+        if (Encoding.UTF8.GetByteCount(body) > 256) return "conflict";
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.ValueKind != JsonValueKind.Object ||
+                !doc.RootElement.TryGetProperty("error", out var error) ||
+                error.ValueKind != JsonValueKind.String)
+                return "conflict";
+            return error.GetString() switch
+            {
+                "stale_section_revision" => "stale_section_revision",
+                "duplicate_section_code_or_operation" => "duplicate_section_code_or_operation",
+                "operation_id_already_used" => "operation_id_already_used",
+                _ => "conflict",
+            };
+        }
+        catch (JsonException) { return "conflict"; }
+    }
+
     private static async Task<JsonElement> ReadJsonAsync(HttpResponseMessage response, CancellationToken ct)
     {
         var text = await response.Content.ReadAsStringAsync(ct);
@@ -496,7 +538,7 @@ public sealed record CentralSectionRow(string Id, string Code, string Name,
 
 public sealed record CentralSectionPendingChange(string OperationId, string SectionId,
     string Code, string Name, bool IsActive, long ExpectedRevision,
-    bool HasConflict = false);
+    bool HasConflict = false, string? ConflictCode = null);
 
 public sealed record CentralSectionLocalState(IReadOnlyList<CentralSectionRow> Sections,
     int PendingCount, long Revision, bool Offline, bool HasConflict = false,
