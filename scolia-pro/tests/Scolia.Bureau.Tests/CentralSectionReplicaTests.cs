@@ -9,6 +9,7 @@ public sealed class CentralSectionReplicaTests
 {
     private const string Jwt = "header.payload.signature_example";
     private const string School = "school-a";
+    private static readonly Uri CentralOrigin = new("https://central.example/");
     private sealed class Handler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> reply)
         : HttpMessageHandler
     {
@@ -36,7 +37,7 @@ public sealed class CentralSectionReplicaTests
             var store = new OfflineStore(new Uri("https://school.example/"), temp)
                 { User = "SECRETARIAT" };
             string operation;
-            using (var replica = new CentralSectionReplica(store, store.User, School,
+            using (var replica = new CentralSectionReplica(store, store.User, School, CentralOrigin),
                 new Handler((_, _) => throw new HttpRequestException("connexion coupée"))))
             {
                 operation = await replica.QueueUpsertAsync(
@@ -50,7 +51,7 @@ public sealed class CentralSectionReplicaTests
                 Assert.True(response.Offline);
                 Assert.Equal(1, response.PendingCount);
             }
-            using var next = new CentralSectionReplica(store, store.User, School);
+            using var next = new CentralSectionReplica(store, store.User, School, CentralOrigin));
             var saved = next.Local();
             Assert.Equal(1, saved.PendingCount);
             Assert.Equal("Sciences infirmières", Assert.Single(saved.Sections).Name);
@@ -69,7 +70,7 @@ public sealed class CentralSectionReplicaTests
         {
             var store = new OfflineStore(new Uri("https://school.example/"), temp)
                 { User = "SECRETARIAT" };
-            using var replica = new CentralSectionReplica(store, store.User, School,
+            using var replica = new CentralSectionReplica(store, store.User, School, CentralOrigin),
                 new Handler(async (request, ct) =>
                 {
                     Assert.Equal("central.example", request.RequestUri?.Host);
@@ -121,7 +122,7 @@ public sealed class CentralSectionReplicaTests
             var store = new OfflineStore(new Uri("https://school.example/"), temp)
                 { User = "SECRETARIAT" };
             var calls = 0;
-            using (var replica = new CentralSectionReplica(store, store.User, School,
+            using (var replica = new CentralSectionReplica(store, store.User, School, CentralOrigin),
                 new Handler(async (request, ct) =>
                 {
                     calls++;
@@ -149,7 +150,7 @@ public sealed class CentralSectionReplicaTests
                 Assert.False(confirmed.IsPending);
                 Assert.Equal(2, calls);
             }
-            using var reopened = new CentralSectionReplica(store, store.User, School);
+            using var reopened = new CentralSectionReplica(store, store.User, School, CentralOrigin));
             var saved = reopened.Local();
             Assert.DoesNotContain(saved.Sections, x => x.IsPending);
             Assert.Equal(0, saved.PendingCount);
@@ -166,7 +167,7 @@ public sealed class CentralSectionReplicaTests
         {
             var store = new OfflineStore(new Uri("https://school.example/"), temp)
                 { User = "SECRETARIAT" };
-            using var replica = new CentralSectionReplica(store, store.User, School,
+            using var replica = new CentralSectionReplica(store, store.User, School, CentralOrigin),
                 new Handler((_, _) => Task.FromResult(
                     Json(HttpStatusCode.Conflict, """{"error":"stale_section_revision"}"""))));
             await replica.QueueUpsertAsync(Guid.NewGuid(), "ACC", "Accoucheuse", true);
@@ -179,7 +180,7 @@ public sealed class CentralSectionReplicaTests
             // Après redémarrage, conserver l'opération en conflit sans la
             // renvoyer indéfiniment. Seule une lecture du journal est admise.
             var posts = 0;
-            using var reopened = new CentralSectionReplica(store, store.User, School,
+            using var reopened = new CentralSectionReplica(store, store.User, School, CentralOrigin),
                 new Handler((request, _) =>
                 {
                     if (request.Method == HttpMethod.Post) posts++;
@@ -207,7 +208,7 @@ public sealed class CentralSectionReplicaTests
             var store = new OfflineStore(new Uri("https://school.example/"), temp)
                 { User = "SECRETARIAT" };
             var gets = 0;
-            using (var replica = new CentralSectionReplica(store, store.User, School,
+            using (var replica = new CentralSectionReplica(store, store.User, School, CentralOrigin),
                 new Handler(async (request, ct) =>
                 {
                     if (request.Method == HttpMethod.Post)
@@ -258,7 +259,7 @@ public sealed class CentralSectionReplicaTests
                 Assert.Equal(2, gets);
             }
 
-            using var reopened = new CentralSectionReplica(store, store.User, School);
+            using var reopened = new CentralSectionReplica(store, store.User, School, CentralOrigin));
             var saved = Assert.Single(reopened.Local().Sections);
             Assert.Equal("INF", saved.Code);
             Assert.Equal(70, saved.Revision);
@@ -278,7 +279,7 @@ public sealed class CentralSectionReplicaTests
             var store = new OfflineStore(new Uri("https://school.example/"), temp)
                 { User = "SECRETARIAT" };
             var count = 0;
-            using var replica = new CentralSectionReplica(store, store.User, School,
+            using var replica = new CentralSectionReplica(store, store.User, School, CentralOrigin),
                 new Handler((request, _) =>
                 {
                     Assert.Equal(HttpMethod.Get, request.Method);
@@ -331,7 +332,7 @@ public sealed class CentralSectionReplicaTests
             var store = new OfflineStore(new Uri("https://school.example/"), temp)
                 { User = "SECRETARIAT" };
             var calls = 0;
-            using var replica = new CentralSectionReplica(store, store.User, School,
+            using var replica = new CentralSectionReplica(store, store.User, School, CentralOrigin),
                 new Handler((request, _) =>
                 {
                     Assert.Equal(HttpMethod.Get, request.Method);
@@ -390,14 +391,14 @@ public sealed class CentralSectionReplicaTests
                 { User = "SECRETARIAT" };
             var secondStore = new OfflineStore(new Uri("https://school.example/"), temp)
                 { User = "SECRETARIAT" };
-            using var sync = new CentralSectionReplica(firstStore, firstStore.User, School,
+            using var sync = new CentralSectionReplica(firstStore, firstStore.User, School, CentralOrigin),
                 new Handler((request, _) =>
                 {
                     Assert.Equal(HttpMethod.Get, request.Method);
                     entered.TrySetResult(true);
                     return response.Task;
                 }));
-            using var editor = new CentralSectionReplica(secondStore, secondStore.User, School);
+            using var editor = new CentralSectionReplica(secondStore, secondStore.User, School, CentralOrigin));
             var ongoing = sync.SyncAsync(new Uri("https://central.example/"), Jwt);
             await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
             var id = Guid.NewGuid();
@@ -425,8 +426,8 @@ public sealed class CentralSectionReplicaTests
                 { User = "SECRETARIAT" };
             var secondStore = new OfflineStore(new Uri("https://school.example/"), temp)
                 { User = "SECRETARIAT" };
-            using var first = new CentralSectionReplica(firstStore, firstStore.User, School);
-            using var second = new CentralSectionReplica(secondStore, secondStore.User, School);
+            using var first = new CentralSectionReplica(firstStore, firstStore.User, School, CentralOrigin));
+            using var second = new CentralSectionReplica(secondStore, secondStore.User, School, CentralOrigin));
             var section = Guid.NewGuid();
             async Task<bool> TryQueue(CentralSectionReplica replica)
             {
@@ -456,7 +457,7 @@ public sealed class CentralSectionReplicaTests
         {
             var store = new OfflineStore(new Uri("https://school.example/"), temp)
                 { User = "SECRETARIAT" };
-            using var replica = new CentralSectionReplica(store, store.User, School,
+            using var replica = new CentralSectionReplica(store, store.User, School, CentralOrigin),
                 new Handler((_, _) => Task.FromResult(Json(HttpStatusCode.OK,
                     """{"events":[],"next":0,"has_more":true}"""))));
             await Assert.ThrowsAsync<InvalidDataException>(() =>
@@ -482,7 +483,7 @@ public sealed class CentralSectionReplicaTests
                 TaskCreationOptions.RunContinuationsAsynchronously);
             var response = new TaskCompletionSource<HttpResponseMessage>(
                 TaskCreationOptions.RunContinuationsAsynchronously);
-            using var replica = new CentralSectionReplica(store, store.User, School,
+            using var replica = new CentralSectionReplica(store, store.User, School, CentralOrigin),
                 new Handler((_, _) =>
                 {
                     started.TrySetResult(true);
@@ -503,6 +504,49 @@ public sealed class CentralSectionReplicaTests
     }
 
     [Fact]
+    public async Task Preproduction_et_production_ne_partagent_pas_une_file_d_attente()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-section-origin-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            var stagingOrigin = new Uri("https://staging.example/");
+            var productionOrigin = new Uri("https://production.example/");
+            using var staging = new CentralSectionReplica(store, store.User, School, stagingOrigin);
+            using var production = new CentralSectionReplica(store, store.User, School, productionOrigin);
+            var id = Guid.NewGuid();
+
+            await staging.QueueUpsertAsync(id, "INF", "En attente sur staging", true);
+            Assert.Equal(1, staging.Local().PendingCount);
+            Assert.Empty(production.Local().Sections);
+            Assert.Equal(0, production.Local().PendingCount);
+
+            await production.QueueUpsertAsync(id, "INF", "Production distincte", true);
+            Assert.Equal("En attente sur staging", Assert.Single(staging.Local().Sections).Name);
+            Assert.Equal("Production distincte", Assert.Single(production.Local().Sections).Name);
+            Assert.Equal(1, staging.Local().PendingCount);
+            Assert.Equal(1, production.Local().PendingCount);
+
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                staging.SyncAsync(productionOrigin, Jwt));
+            Assert.Equal(1, staging.Local().PendingCount);
+            Assert.Equal(1, production.Local().PendingCount);
+
+            using var reopenedStaging = new CentralSectionReplica(
+                store, store.User, School, stagingOrigin);
+            using var reopenedProduction = new CentralSectionReplica(
+                store, store.User, School, productionOrigin);
+            Assert.Equal("En attente sur staging",
+                Assert.Single(reopenedStaging.Local().Sections).Name);
+            Assert.Equal("Production distincte",
+                Assert.Single(reopenedProduction.Local().Sections).Name);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
     public async Task Changement_de_compte_et_origine_Http_ne_livrent_ni_jeton_ni_cache()
     {
         var temp = Path.Combine(Path.GetTempPath(), "scolia-section-account-" + Guid.NewGuid().ToString("N"));
@@ -510,7 +554,7 @@ public sealed class CentralSectionReplicaTests
         {
             var store = new OfflineStore(new Uri("https://school.example/"), temp)
                 { User = "SECRETARIAT" };
-            using var replica = new CentralSectionReplica(store, store.User, School);
+            using var replica = new CentralSectionReplica(store, store.User, School, CentralOrigin));
             store.User = "ENSEIGNANT";
             Assert.Throws<InvalidOperationException>(() => replica.Local());
             await Assert.ThrowsAsync<ArgumentException>(() => replica.SyncAsync(
