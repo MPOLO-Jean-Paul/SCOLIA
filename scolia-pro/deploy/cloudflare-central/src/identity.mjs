@@ -13,7 +13,11 @@ const dummySalt = new Uint8Array([
 const MAX_REQUEST = 1024;
 const MAX_PASSWORD_BYTES = 512;
 const PBKDF2_MIN_ITERATIONS = 100_000;
-const PBKDF2_MAX_ITERATIONS = 600_000;
+// workerd limite actuellement PBKDF2 à 100 000 itérations. La version
+// .NET 1.2.86 utilisée par SCOLIA emploie précisément cette valeur.
+// Les empreintes de versions ultérieures devront passer par une migration
+// d'identité approuvée si leur coût de dérivation augmente.
+const PBKDF2_MAX_ITERATIONS = 100_000;
 
 const response = (data, status = 200) => new Response(JSON.stringify(data), {
   status,
