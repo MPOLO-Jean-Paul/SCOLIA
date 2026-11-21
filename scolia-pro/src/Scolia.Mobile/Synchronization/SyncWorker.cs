@@ -186,7 +186,7 @@ public sealed class SyncWorker : Worker
             }
             catch (Exception exception) when (exception is InvalidDataException or
                 System.Security.Cryptography.CryptographicException or
-                UnauthorizedAccessException)
+                UnauthorizedAccessException or JsonException or ArgumentException)
             {
                 // Aucune réinitialisation automatique du cache chiffré :
                 // une erreur de stockage doit rester visible et diagnostiquable.
