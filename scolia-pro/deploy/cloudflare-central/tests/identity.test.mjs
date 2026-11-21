@@ -185,6 +185,22 @@ test("cinq échecs bloquent même si l'on recommence avec un autre QR du compte"
   assert.ok(calls.some(x => x.sql.includes("cloud_auth_attempts")));
 });
 
+test("un Worker interrompu après la cinquième réservation restaure un verrou de 2 minutes", async () => {
+  const { env, calls, state } = fakeDb(await fixture());
+  // État abandonné : 5 réservations, mais l'écriture lockout_until a été
+  // interrompue avant d'être validée. Ne jamais revérifier le mot de passe.
+  state.failures = 5;
+  state.locked = false;
+  const result = await request(env);
+  assert.equal(result.status, 429);
+  assert.deepEqual(await result.json(), { error: "too_many_attempts" });
+  assert.equal(state.failures, 5);
+  assert.equal(state.locked, true);
+  assert.ok(calls.some(x => x.sql.includes("INSERT INTO cloud_auth_attempts")));
+  assert.ok(calls.some(x => x.sql.includes("UPDATE cloud_auth_attempts") &&
+    x.sql.includes("lockout_until = unixepoch() + 120")));
+});
+
 test("les comptes inexistants, désactivés et les QR périmés refusent toute preuve", async () => {
   for (const account of [
     null, await fixture({ enabled: 0 }), await fixture({ consumed_at: 1000 }),
