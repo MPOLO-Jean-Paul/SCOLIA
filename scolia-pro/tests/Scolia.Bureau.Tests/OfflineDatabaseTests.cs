@@ -168,6 +168,35 @@ public sealed class OfflineDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void Ancien_journal_central_v1_empeche_le_retrait_du_compte()
+    {
+        var store = Store("secretariat");
+        store.RememberAccount("secretariat");
+        const string oldPath = "central:sections:v1:school-a";
+        store.SavePage(oldPath,
+            """{"Revision":0,"Sections":[],"Pending":[{"OperationId":"op-v1"}]}""");
+        Assert.False(store.ForgetKnownAccount("secretariat"));
+        store.SavePage(oldPath,
+            """{"Revision":0,"Sections":[],"Pending":[]}""");
+        Assert.True(store.ForgetKnownAccount("secretariat"));
+    }
+
+    [Fact]
+    public void Retrait_de_compte_verifie_aussi_les_operations_avec_casse_differente()
+    {
+        var store = Store("secretariat");
+        store.RememberAccount("secretariat");
+        store.Enqueue(new OutboxItem
+        {
+            Key = "secretariat-important",
+            User = "secretariat",
+            Path = "api/paiements",
+        });
+        Assert.False(store.ForgetKnownAccount("SECRETARIAT"));
+        Assert.Single(Store("secretariat").Outbox());
+    }
+
+    [Fact]
     public void Reprise_centrale_est_interdite_sans_session_puis_suspendue_a_la_deconnexion()
     {
         var store = Store("secretariat");
