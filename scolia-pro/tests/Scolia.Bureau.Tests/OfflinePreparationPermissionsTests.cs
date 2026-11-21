@@ -37,7 +37,7 @@ public sealed class OfflinePreparationPermissionsTests
     {
         Assert.Equal(OfflinePreparationKind.AnonymousTeacherSheets,
             OfflinePreparation.KindForPermissions(["COTES.ENCODER"]));
-        Assert.Equal(OfflinePreparationKind.StudentRecords,
+        Assert.Equal(OfflinePreparationKind.StudentRecords | OfflinePreparationKind.AnonymousTeacherSheets,
             OfflinePreparation.KindForPermissions([Perm.StudentsRead, Perm.MarksEncode]));
     }
 }
