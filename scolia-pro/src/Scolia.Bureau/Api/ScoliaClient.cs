@@ -483,7 +483,12 @@ public sealed partial class ScoliaClient : IDisposable
                     sent++;
                     continue;
                 }
-                if ((int)response.StatusCode >= 500) break;
+                // Un refus temporaire du cloud (429/408/425), une redirection Access (3xx)
+                // ou une panne serveur (5xx) ne constituent jamais un rejet métier.
+                // Garder l'opération et sa clé d'idempotence dans SQLite : la reprise
+                // automatique renverra exactement la même écriture, sans la perdre.
+                var status = (int)response.StatusCode;
+                if (status is >= 300 and < 400 or 408 or 425 or 429 or >= 500) break;
                 var error = await ToException(response);
                 // Session expirée : l'opération attend la reconnexion, elle n'est pas en conflit.
                 if (error.Status is 401 or 423) break; // Licence bloquée : garder les anciennes écritures intactes.
