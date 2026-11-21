@@ -8,6 +8,7 @@ MIGRATION = (
     / "deploy/cloudflare-central/migrations/0001_core.sql"
 )
 INVITATIONS_MIGRATION = MIGRATION.with_name("0002_invitations.sql")
+IDENTITY_MIGRATION = MIGRATION.with_name("0003_password_identity.sql")
 HASH = "a" * 64
 
 
@@ -16,6 +17,7 @@ class CloudflareCentralSchemaTests(unittest.TestCase):
         self.db = sqlite3.connect(":memory:")
         self.db.executescript(MIGRATION.read_text(encoding="utf-8"))
         self.db.executescript(INVITATIONS_MIGRATION.read_text(encoding="utf-8"))
+        self.db.executescript(IDENTITY_MIGRATION.read_text(encoding="utf-8"))
         self.db.execute("INSERT INTO cloud_schools(id,display_name) VALUES('a','École A')")
         self.db.execute("INSERT INTO cloud_schools(id,display_name) VALUES('b','École B')")
         for school in ("a", "b"):
@@ -258,6 +260,78 @@ class CloudflareCentralSchemaTests(unittest.TestCase):
         ).fetchone()
         self.assertEqual(values, (None, None, None))
 
+
+    def test_password_hash_and_attempts_are_scoped_to_the_real_account(self):
+        # Jamais d'identifiants ou de mots de passe en clair dans ce test.
+        self.db.execute(
+            "UPDATE cloud_users SET password_hash=?, must_change_password=0 "
+            "WHERE school_id='a' AND id='teacher'",
+            ("A" * 84,),
+        )
+        self.assertEqual(("A" * 84, 0), self.db.execute(
+            "SELECT password_hash,must_change_password FROM cloud_users "
+            "WHERE school_id='a' AND id='teacher'"
+        ).fetchone())
+        self.assertEqual((None, 1), self.db.execute(
+            "SELECT password_hash,must_change_password FROM cloud_users "
+            "WHERE school_id='b' AND id='teacher'"
+        ).fetchone())
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.db.execute(
+                "INSERT INTO cloud_auth_attempts(school_id,user_id) VALUES('a','unknown')"
+            )
+
+    def test_five_attempts_lock_one_account_across_all_its_qr_invitations(self):
+        reserve = (
+            "INSERT INTO cloud_auth_attempts "
+            "(school_id,user_id,failed_count,lockout_until,updated_at) "
+            "VALUES (?, ?, 1, 0, unixepoch()) "
+            "ON CONFLICT(school_id,user_id) DO UPDATE SET "
+            "failed_count = CASE WHEN cloud_auth_attempts.lockout_until > 0 "
+            "AND cloud_auth_attempts.lockout_until <= unixepoch() THEN 1 "
+            "ELSE cloud_auth_attempts.failed_count + 1 END, "
+            "lockout_until = 0, updated_at = unixepoch() "
+            "WHERE (cloud_auth_attempts.lockout_until = 0 "
+            "AND cloud_auth_attempts.failed_count < 5) "
+            "OR (cloud_auth_attempts.lockout_until > 0 "
+            "AND cloud_auth_attempts.lockout_until <= unixepoch())"
+        )
+        for _ in range(5):
+            self.assertEqual(1, self.db.execute(reserve, ("a", "teacher")).rowcount)
+        self.db.execute(
+            "UPDATE cloud_auth_attempts SET lockout_until=unixepoch()+120 "
+            "WHERE school_id='a' AND user_id='teacher' AND failed_count>=5 "
+            "AND lockout_until=0"
+        )
+        self.assertEqual(0, self.db.execute(reserve, ("a", "teacher")).rowcount)
+        self.assertEqual((5, True), self.db.execute(
+            "SELECT failed_count,lockout_until>unixepoch() FROM cloud_auth_attempts "
+            "WHERE school_id='a' AND user_id='teacher'"
+        ).fetchone())
+        # Une autre école et un autre compte conservent leur propre compteur.
+        self.assertEqual(1, self.db.execute(reserve, ("b", "teacher")).rowcount)
+        self.assertEqual(1, self.db.execute(reserve, ("a", "secretary")).rowcount)
+
+    def test_successful_login_clears_only_its_own_failure_counter(self):
+        self.db.execute(
+            "INSERT INTO cloud_auth_attempts(school_id,user_id,failed_count) "
+            "VALUES('a','teacher',4)"
+        )
+        self.db.execute(
+            "INSERT INTO cloud_auth_attempts(school_id,user_id,failed_count) "
+            "VALUES('b','teacher',5)"
+        )
+        self.db.execute(
+            "DELETE FROM cloud_auth_attempts WHERE school_id='a' AND user_id='teacher'"
+        )
+        self.assertIsNone(self.db.execute(
+            "SELECT failed_count FROM cloud_auth_attempts "
+            "WHERE school_id='a' AND user_id='teacher'"
+        ).fetchone())
+        self.assertEqual((5,), self.db.execute(
+            "SELECT failed_count FROM cloud_auth_attempts "
+            "WHERE school_id='b' AND user_id='teacher'"
+        ).fetchone())
 
     def test_reapplying_migration_is_additive_and_safe(self):
         self.add_operation("a", "survives")
