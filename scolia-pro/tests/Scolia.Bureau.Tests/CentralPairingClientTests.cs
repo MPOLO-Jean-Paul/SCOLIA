@@ -94,6 +94,18 @@ public sealed class CentralPairingClientTests
             Assert.Equal("school-a", paired.SchoolId);
             Assert.False(paired.SessionIssued);
             Assert.Equal(2, seen);
+            Assert.Equal(new Uri("https://staging.example/"),
+                gateway.ReadActiveOrigin(user, device));
+            Assert.Null(gateway.ReadActiveOrigin("AUTRE_COMPTE", device));
+            Assert.Throws<InvalidOperationException>(() =>
+                gateway.SelectApprovedOrigin(new Uri("https://production.example/"), user, device));
+            Assert.Equal(new Uri("https://staging.example/"),
+                gateway.ReadActiveOrigin(user, device));
+            Assert.Single(Directory.GetFiles(temp, "*.enc"));
+            var encryptedOrigin = File.ReadAllBytes(
+                Directory.GetFiles(temp, "*.enc")[0]);
+            Assert.DoesNotContain("staging.example",
+                Convert.ToBase64String(encryptedOrigin), StringComparison.Ordinal);
             Assert.Single(Directory.GetFiles(temp, "*.key"));
             var encrypted = File.ReadAllBytes(Directory.GetFiles(temp, "*.key")[0]);
             Assert.False(Encoding.UTF8.GetString(encrypted).Contains(password, StringComparison.Ordinal));
@@ -206,6 +218,15 @@ public sealed class CentralPairingClientTests
             Assert.Equal("school-a", session.SchoolId);
             Assert.Equal(device, session.DeviceId);
             Assert.Equal(3, calls);
+            Assert.Equal(new Uri("https://staging.example/"),
+                gateway.ReadActiveOrigin(user, device));
+            gateway.DisableActiveOrigin(user, device);
+            Assert.Null(gateway.ReadActiveOrigin(user, device));
+            // Désactiver la synchronisation ne détruit pas le jumelage.
+            Assert.Equal("school-a", gateway.ReadSavedSchoolId(
+                new Uri("https://staging.example/"), user, device));
+            gateway.SelectApprovedOrigin(new Uri("https://staging.example/"), user, device);
+            Assert.NotNull(gateway.ReadActiveOrigin(user, device));
             Assert.Single(Directory.GetFiles(temp, "*.key"));
             Assert.Single(Directory.GetFiles(temp, "*.meta"));
             var encryptedMeta = File.ReadAllBytes(Directory.GetFiles(temp, "*.meta")[0]);
