@@ -167,6 +167,24 @@ public sealed class OfflineDatabaseTests : IDisposable
         Assert.Contains("131", store.ReadPage(path)?.Json);
     }
 
+    [Theory]
+    [InlineData(null, false, false)]
+    [InlineData(null, true, true)]
+    [InlineData(ConnectionSettings.Local, false, false)]
+    [InlineData(ConnectionSettings.Local, true, true)]
+    [InlineData(ConnectionSettings.Remote, false, true)]
+    [InlineData(ConnectionSettings.Remote, true, true)]
+    [InlineData(ConnectionSettings.Internet, false, true)]
+    [InlineData(ConnectionSettings.Internet, true, true)]
+    [InlineData("inconnu", false, false)]
+    [InlineData("inconnu", true, false)]
+    public void La_reprise_cloud_locale_exige_un_jumelage_et_un_compte_autorise(
+        string? mode, bool approved, bool expected)
+    {
+        Assert.Equal(expected,
+            ConnectionStore.ShouldScheduleBackgroundSync(mode, approved));
+    }
+
     [Fact]
     public void Ancien_journal_central_v1_empeche_le_retrait_du_compte()
     {
