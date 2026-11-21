@@ -102,6 +102,52 @@
   gestion ni au WorkManager Android** ; elle ne prouve ni autonomie complète
   face à l'ordinateur principal, ni équivalence de toutes les permissions.
 
+## Reprise automatique du pilote central (Windows et Android)
+
+Le jumelage sécurisé `CentralPairingClient.PairAsync` enregistre désormais
+l'origine HTTPS approuvée dans un fichier local protégé (portée : compte et
+appareil). Les autres origines, même en HTTPS, ne deviennent pas des
+destinations de synchronisation par simple lecture d'un QR. Le titulaire peut
+désactiver cette destination locale sans supprimer le journal SQLite.
+
+- **Android client** : WorkManager reprend le catalogue des sections lorsque
+  la connexion revient, même si le PC principal est éteint. L'exécution
+  reste soumise à Doze, à la batterie et aux règles d'Android ; ce n'est pas un
+  service instantané garanti.
+- **Windows / application ouverte** : la minuterie de la fenêtre déclenche
+  discrètement la reprise toutes les deux minutes environ. Une session centrale
+  non autorisée entraîne un délai de 30 minutes avant une nouvelle tentative.
+  Ce n'est pas encore un service Windows autonome lorsque l'application est fermée.
+- **Conflits** : deux décisions explicites existent côté moteur : garder la
+  version centrale ou modifier/rejouer la saisie locale avec une nouvelle
+  clé d'idempotence. Aucun choix ne se produit automatiquement, et ces actions
+  doivent encore être exposées dans les écrans d'administration.
+- **Tests** : appairage ECDSA, destination chiffrée par compte/appareil,
+  refus d'une origine non approuvée, résistance au réseau intermittent,
+  idempotence, pages de journal, isolation entre écoles, cache SQLite et
+  résolution explicite des conflits. Une compilation GitHub Actions ne remplace
+  pas les essais sur plusieurs appareils réels.
+- **Limite déterminante** : cette synchronisation automatique ne concerne que
+  le **pilote des sections scolaires**. Les comptes réellement utilisés dans
+  les autres menus, les apprenants, leurs présences, les notes, les finances,
+  les documents, les sauvegardes et les permissions complètes ne sont pas
+  encore migrés vers le moteur métier D1. Ne pas activer sur une vraie école
+  en prétendant que le PC principal n'est plus nécessaire.
+
+### Validation avant une livraison officielle
+
+1. Déployer manuellement le Worker sur un environnement **staging isolé**
+   avec sa propre base D1, deux secrets distincts et des comptes factices.
+2. Tester le jumelage, l'ouverture/expiration/révocation des sessions,
+   les conflits et les pertes de réseau sur Android/Windows réels.
+3. Concevoir et migrer les domaines scolaires non couverts ; tester les
+   paiements idempotents et les reçus définitifs **uniquement après**
+   validation de la transaction centrale.
+4. Vérifier sauvegarde et restauration chiffrées, migration dry-run de
+   l'ancienne SQLite, séparation stricte des établissements et retour arrière.
+5. Publier une nouvelle version uniquement avec tous les contrôles CI,
+   la signature de publication et les essais de bout en bout validés.
+
 ## Restriction actuelle
 
 Les correctifs de ce chantier améliorent la conservation des écritures de l'architecture **actuelle**. Ils ne remplacent pas encore la source métier par D1 et ne doivent pas être présentés comme une synchronisation cloud centrale déjà disponible.
