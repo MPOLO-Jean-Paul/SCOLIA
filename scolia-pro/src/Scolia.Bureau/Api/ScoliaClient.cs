@@ -464,6 +464,17 @@ public sealed partial class ScoliaClient : IDisposable
         try
         {
             var response = await SendRawAsync(method, path, body, ct, key);
+            // HTTP 202 signifie « accepté pour traitement » et non « appliqué ».
+            // Ne pas confirmer un paiement, une inscription ou une note si le
+            // serveur a seulement placé la demande en attente.
+            if (response.StatusCode == HttpStatusCode.Accepted && durable is not null)
+            {
+                response.Dispose();
+                Queued?.Invoke(durable);
+                DepositSoon();
+                throw new OfflineQueuedException(
+                    $"{durable.Label} : reçu par le serveur, validation définitive en attente.");
+            }
             if (durable is not null && sourceStore is not null)
                 await Task.Run(() => sourceStore.SentFor(sourceUser, durable.Id), ct);
             return response;
@@ -530,6 +541,8 @@ public sealed partial class ScoliaClient : IDisposable
                 };
                 request.Headers.Add("Idempotency-Key", item.Key);
                 using var response = await http.SendAsync(request, ct);
+                if (response.StatusCode == HttpStatusCode.Accepted)
+                    break; // Reçu mais pas encore confirmé par le moteur métier.
                 if (response.IsSuccessStatusCode)
                 {
                     flushingStore.SentFor(flushingUser, item.Id);
