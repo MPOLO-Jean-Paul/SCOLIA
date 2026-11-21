@@ -83,7 +83,8 @@ public sealed class CentralSectionReplica : IDisposable
                 item.Code, item.Name, item.IsActive, item.ExpectedRevision, IsPending: true);
         return new CentralSectionLocalState(
             visible.Values.OrderBy(x => x.Code, StringComparer.Ordinal).ToArray(),
-            snapshot.Pending.Count, snapshot.Revision, Offline: true);
+            snapshot.Pending.Count, snapshot.Revision, Offline: true,
+            HasConflict: snapshot.Pending.Any(x => x.HasConflict));
     }
 
     /// <summary>
@@ -96,7 +97,7 @@ public sealed class CentralSectionReplica : IDisposable
         CancellationToken ct = default)
     {
         if (sectionId == Guid.Empty || code.Length is < 2 or > 16 ||
-            code.Any(c => !(char.IsAsciiUpper(c) || char.IsAsciiDigit(c) || c is '_' or '-')) ||
+            code.Any(c => !(char.IsAsciiLetterUpper(c) || char.IsAsciiDigit(c) || c is '_' or '-')) ||
             string.IsNullOrWhiteSpace(name) || name.Length > 120 ||
             name != name.Trim() || name.Any(char.IsControl))
             throw new ArgumentException("Code ou libellé de section invalide.");
@@ -142,7 +143,7 @@ public sealed class CentralSectionReplica : IDisposable
             var snapshot = Read();
             try
             {
-                foreach (var operation in snapshot.Pending.ToArray())
+                foreach (var operation in snapshot.Pending.Where(x => !x.HasConflict).ToArray())
                 {
                     ct.ThrowIfCancellationRequested();
                     using var request = new HttpRequestMessage(HttpMethod.Post,
@@ -161,7 +162,16 @@ public sealed class CentralSectionReplica : IDisposable
                         new AuthenticationHeaderValue("Bearer", centralSessionJwt);
                     using var result = await http.SendAsync(request, ct);
                     if (result.StatusCode == HttpStatusCode.Conflict)
+                    {
+                        // Conserver la saisie et son identifiant pour arbitrage :
+                        // ne pas rejouer un conflit à chaque reconnexion.
+                        var index = snapshot.Pending.FindIndex(x =>
+                            x.OperationId == operation.OperationId);
+                        if (index >= 0)
+                            snapshot.Pending[index] = operation with { HasConflict = true };
+                        Save(snapshot);
                         return Status(snapshot, Offline: false, HasConflict: true);
+                    }
                     if (result.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized)
                         throw new CentralPairingException((int)result.StatusCode,
                             "La session centrale a été retirée ou a expiré.");
@@ -234,7 +244,8 @@ public sealed class CentralSectionReplica : IDisposable
                     Save(snapshot); // Données et curseur : UNE SEULE écriture SQLite.
                     if (!more.GetBoolean()) break;
                 }
-                return Status(snapshot, Offline: false, HasConflict: false);
+                return Status(snapshot, Offline: false,
+                    HasConflict: snapshot.Pending.Any(x => x.HasConflict));
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
             {
@@ -281,7 +292,8 @@ public sealed record CentralSectionRow(string Id, string Code, string Name,
     bool IsActive, long Revision, bool IsPending = false);
 
 public sealed record CentralSectionPendingChange(string OperationId, string SectionId,
-    string Code, string Name, bool IsActive, long ExpectedRevision);
+    string Code, string Name, bool IsActive, long ExpectedRevision,
+    bool HasConflict = false);
 
 public sealed record CentralSectionLocalState(IReadOnlyList<CentralSectionRow> Sections,
     int PendingCount, long Revision, bool Offline, bool HasConflict = false);
