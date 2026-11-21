@@ -115,6 +115,12 @@ async function request(env, overrides = {}) {
   }), env);
 }
 
+test("vecteur de compatibilité connu vérifié dans les tests ASP.NET Identity du dépôt", async () => {
+  const known = "AQAAAAIAAYagAAAAEAARIjNEVWZ3iJmqu8zd7v9PEBB4MUdff3xFpDXan7LAz4OPm6EQ8dZ4q73OiYwzLQ==";
+  assert.equal(await verifyAspNetIdentityV3("Scolia-Interop-Fictional-Test-2026!", known), true);
+  assert.equal(await verifyAspNetIdentityV3("Incorrect!", known), false);
+});
+
 test("le format réel ASP.NET Identity V3 HMAC-SHA512 100000 vérifie le mot de passe", async () => {
   const hash = await aspNetIdentityV3Hash(password);
   assert.equal(await verifyAspNetIdentityV3(password, hash), true);
