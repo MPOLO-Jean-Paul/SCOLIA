@@ -343,6 +343,16 @@ public sealed partial class ScoliaClient : IDisposable
             if (text is null)
                 throw new OfflineException("Ordinateur principal injoignable : cette rubrique n'a pas encore été chargée sur cet appareil.");
         }
+        catch (ApiException ex) when (IsTemporarySyncStatus(ex.Status))
+        {
+            // Si Access redirige vers la connexion ou que Cloudflare limite
+            // provisoirement les requêtes, restituer le dernier cliché autorisé.
+            // Une réponse 403/404 continue à invalider ce cache (cas distinct).
+            var cached = canCache ? sourceStore?.ReadPage(path)?.Json : null;
+            text = sourceStore is null ? null! : Infrastructure.OfflineReplica.Project(path, cached, sourceStore)!;
+            if (text is null)
+                throw new OfflineException("Ces données ne sont pas encore disponibles sur cet appareil. Elles seront récupérées à la prochaine synchronisation.");
+        }
         catch (ApiException ex) when (ex.Status is 403 or 404)
         {
             // Les accès retirés et dossiers supprimés ne doivent pas être conservés
