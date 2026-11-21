@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Scolia.Bureau.Infrastructure;
@@ -18,6 +19,7 @@ public sealed class CentralSectionReplica : IDisposable
     private readonly OfflineStore store;
     private readonly string user;
     private readonly string schoolId;
+    private readonly Uri centralOrigin;
     private readonly string cacheKey;
     private readonly SemaphoreSlim gate = new(1, 1);
 
@@ -29,14 +31,21 @@ public sealed class CentralSectionReplica : IDisposable
     }
 
     public CentralSectionReplica(OfflineStore store, string user, string schoolId,
-        HttpMessageHandler? handler = null)
+        Uri trustedCentralOrigin, HttpMessageHandler? handler = null)
     {
         this.store = store ?? throw new ArgumentNullException(nameof(store));
         if (string.IsNullOrWhiteSpace(user) || !ValidId(schoolId))
             throw new ArgumentException("Compte et établissement obligatoires.");
         this.user = user;
         this.schoolId = schoolId;
-        cacheKey = "central:sections:v1:" + schoolId;
+        centralOrigin = CentralPairingClient.RequireTrustedHttps(trustedCentralOrigin);
+        // Une école peut avoir le même identifiant en préproduction et en
+        // production. Ne jamais partager la file et les sections des deux
+        // origines. La nouvelle clé v2 conserve le vieux cache v1 sur disque
+        // pour examen sans l'expédier vers une autre origine.
+        var fingerprint = Convert.ToHexString(SHA256.HashData(
+            Encoding.UTF8.GetBytes(centralOrigin.AbsoluteUri)));
+        cacheKey = "central:sections:v2:" + schoolId + ":" + fingerprint;
         http = new HttpClient(handler ?? new SocketsHttpHandler
         {
             UseCookies = false, AllowAutoRedirect = false,
@@ -161,6 +170,11 @@ public sealed class CentralSectionReplica : IDisposable
         Uri trustedCentralOrigin, string centralSessionJwt, CancellationToken ct = default)
     {
         var origin = CentralPairingClient.RequireTrustedHttps(trustedCentralOrigin);
+        if (!string.Equals(origin.AbsoluteUri, centralOrigin.AbsoluteUri,
+            StringComparison.Ordinal))
+            throw new ArgumentException(
+                "Cette réplique locale est associée à une autre origine Cloudflare.",
+                nameof(trustedCentralOrigin));
         if (string.IsNullOrWhiteSpace(centralSessionJwt) ||
             centralSessionJwt.Length > 4096 ||
             centralSessionJwt.Count(ch => ch == '.') != 2 ||
