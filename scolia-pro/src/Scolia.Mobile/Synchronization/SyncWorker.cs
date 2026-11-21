@@ -15,12 +15,40 @@ public sealed class SyncWorker : Worker
     private static readonly object ResumeGate = new();
     private static DateTime lastResumeUtc;
 
+    // La reprise Cloudflare ne requiert aucun serveur SCOLIA historique.
+    // Pour un appareil configuré "local", ne programmer un accès réseau que
+    // si une session locale et une origine centrale approuvée existent.
+    private static bool HasLocalCentralSession(ConnectionSettings? connection)
+    {
+        if (connection is not null && connection.Mode != ConnectionSettings.Local)
+            return false;
+        try
+        {
+            var store = new OfflineStore(
+                ConnectionStore.CacheAddress(ConnectionStore.LocalAddress));
+            if (store.LastAccount is not { Length: > 0 } account ||
+                !store.CanSyncCentralInBackgroundFor(account))
+                return false;
+            using var pairing = new CentralPairingClient();
+            return pairing.ReadActiveOrigin(account, DeviceIdentity.Id) is not null;
+        }
+        catch (Exception exception) when (exception is IOException or
+            UnauthorizedAccessException or System.Security.Cryptography.CryptographicException
+            or JsonException or ArgumentException)
+        {
+            Android.Util.Log.Warn("SCOLIA-Central",
+                $"Autorisation locale illisible ({exception.GetType().Name}).");
+            return false;
+        }
+    }
+
     /// <summary>Reprise opportuniste à l'ouverture de SCOLIA Client.
     /// WorkManager reste soumis aux règles d'Android : pas de temps réel garanti.</summary>
     public static void ScheduleOnResume(Context context)
     {
         var saved = ConnectionStore.Load();
-        if (saved?.Mode is not (ConnectionSettings.Remote or ConnectionSettings.Internet)) return;
+        if (saved?.Mode is not (ConnectionSettings.Remote or ConnectionSettings.Internet) &&
+            !HasLocalCentralSession(saved)) return;
         lock (ResumeGate)
         {
             var now = DateTime.UtcNow;
@@ -43,7 +71,8 @@ public sealed class SyncWorker : Worker
     public static void SchedulePending(Context context)
     {
         var saved = ConnectionStore.Load();
-        if (saved?.Mode is not (ConnectionSettings.Remote or ConnectionSettings.Internet)) return;
+        if (saved?.Mode is not (ConnectionSettings.Remote or ConnectionSettings.Internet) &&
+            !HasLocalCentralSession(saved)) return;
         var constraints = new Constraints.Builder()
             .SetRequiredNetworkType(NetworkType.Connected)!.Build();
         var once = new OneTimeWorkRequest.Builder(typeof(SyncWorker))
@@ -93,6 +122,21 @@ public sealed class SyncWorker : Worker
         // WorkManager reste différé (~15 min minimum) : jamais une promesse de temps réel
         // quand Android a arrêté l'application cliente.
         var connection = ConnectionStore.Load();
+        // Un téléphone dont l'établissement a basculé sur Cloudflare peut
+        // être configuré comme "local" sans PC principal. Dans ce cas, ne
+        // pas retourner avant la synchronisation des sections D1.
+        if (connection is null || connection.Mode == ConnectionSettings.Local)
+        {
+            if (!HasLocalCentralSession(connection)) return Result.InvokeSuccess();
+            using var cloudApi = new ScoliaClient(ConnectionStore.LocalAddress);
+            var cloudStore = new OfflineStore(
+                ConnectionStore.CacheAddress(cloudApi.Server));
+            cloudApi.Offline = cloudStore;
+            using var cloudTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(50));
+            var needsRetry = await SyncCentralSectionsInBackgroundAsync(
+                cloudApi, cloudStore, cloudTimeout.Token);
+            return needsRetry ? Result.InvokeRetry() : Result.InvokeSuccess();
+        }
         Uri? server = null;
         Scolia.Transport.RemoteLink? relay = null;
         if (connection is { Mode: ConnectionSettings.Remote, Url: { Length: > 0 } url }
@@ -151,50 +195,10 @@ public sealed class SyncWorker : Worker
             api.RestoreSessionCookie(credential.SessionCookie);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
 
-        // Le pilote des sections centrales n'a pas besoin que le PC principal
-        // soit allumé : la session ECDSA vient de l'appareil approuvé, pas du
-        // cookie HTTP de l'ancien serveur. Aucune connexion n'est tentée si
-        // l'utilisateur n'a jamais jumelé explicitement ce serveur cloud.
-        var centralNeedsRetry = false;
-        if (store.LastAccount is { Length: > 0 } backgroundAccount &&
-            store.CanSyncCentralInBackgroundFor(backgroundAccount))
-        {
-            try
-            {
-                store.User = backgroundAccount;
-                using var centralBudget =
-                    CancellationTokenSource.CreateLinkedTokenSource(timeout.Token);
-                centralBudget.CancelAfter(TimeSpan.FromSeconds(35));
-                var state = await api.SyncActiveCentralSectionsAsync(
-                    backgroundAccount, centralBudget.Token);
-                if (state is not null)
-                    centralNeedsRetry = state.Offline || state.HasMorePages;
-            }
-            catch (CentralPairingException exception)
-            {
-                // Une session/autorisation cloud refusée ne peut jamais être
-                // rétablie en contournant le secrétariat avec un autre compte.
-                Android.Util.Log.Warn("SCOLIA-Central",
-                    $"Autorisation centrale à renouveler ({exception.Status}).");
-            }
-            catch (Exception exception) when (exception is HttpRequestException or
-                TaskCanceledException or IOException)
-            {
-                if (IsStopped) return Result.InvokeRetry();
-                centralNeedsRetry = true;
-                Android.Util.Log.Warn("SCOLIA-Central",
-                    $"Reprise différée des sections ({exception.GetType().Name}).");
-            }
-            catch (Exception exception) when (exception is InvalidDataException or
-                System.Security.Cryptography.CryptographicException or
-                UnauthorizedAccessException or JsonException or ArgumentException)
-            {
-                // Aucune réinitialisation automatique du cache chiffré :
-                // une erreur de stockage doit rester visible et diagnostiquable.
-                Android.Util.Log.Warn("SCOLIA-Central",
-                    $"Réplique chiffrée indisponible ({exception.GetType().Name}).");
-            }
-        }
+        // Cloudflare et le serveur historique sont indépendants : ce premier
+        // passage conserve les opérations D1 si le PC est injoignable.
+        var centralNeedsRetry = await SyncCentralSectionsInBackgroundAsync(
+            api, store, timeout.Token);
         if (!await api.IsRunningAsync(timeout.Token))
         {
             // Même lorsque le PC serveur est éteint, déposer les opérations déjà
@@ -271,5 +275,48 @@ public sealed class SyncWorker : Worker
         }
         return store.Outbox().Count > 0 || centralNeedsRetry
             ? Result.InvokeRetry() : Result.InvokeSuccess();
+    }
+
+    /// <summary>
+    /// Reprendre le pilote D1 avec la seule origine HTTPS approuvée, jamais
+    /// avec le cookie du PC principal. Aucun JWT n'est conservé sur disque.
+    /// Les erreurs temporaires conservent SQLite et déclenchent le backoff.
+    /// </summary>
+    private async Task<bool> SyncCentralSectionsInBackgroundAsync(
+        ScoliaClient api, OfflineStore store, CancellationToken ct)
+    {
+        if (store.LastAccount is not { Length: > 0 } account ||
+            !store.CanSyncCentralInBackgroundFor(account))
+            return false;
+        try
+        {
+            store.User = account;
+            using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            budget.CancelAfter(TimeSpan.FromSeconds(35));
+            var state = await api.SyncActiveCentralSectionsAsync(account, budget.Token);
+            return state is { Offline: true } or { HasMorePages: true };
+        }
+        catch (CentralPairingException exception)
+        {
+            Android.Util.Log.Warn("SCOLIA-Central",
+                $"Autorisation centrale à renouveler ({exception.Status}).");
+            return false;
+        }
+        catch (Exception exception) when (exception is HttpRequestException or
+            TaskCanceledException or IOException)
+        {
+            Android.Util.Log.Warn("SCOLIA-Central",
+                $"Reprise différée des sections ({exception.GetType().Name}).");
+            return true;
+        }
+        catch (Exception exception) when (exception is
+            System.Security.Cryptography.CryptographicException or
+            UnauthorizedAccessException or JsonException or ArgumentException)
+        {
+            // N'effacer aucune file SQLite en cas de problème de chiffrement.
+            Android.Util.Log.Warn("SCOLIA-Central",
+                $"Réplique chiffrée indisponible ({exception.GetType().Name}).");
+            return false;
+        }
     }
 }
