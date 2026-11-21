@@ -88,7 +88,7 @@ public sealed class CentralPairingClient : IDisposable
                 device_key_thumbprint = thumbprint,
             }),
         };
-        using var proofResponse = await http.SendAsync(proofRequest, ct);
+        using var proofResponse = await http.SendAsync(proofRequest, HttpCompletionOption.ResponseHeadersRead, ct);
         if (proofResponse.StatusCode != HttpStatusCode.OK)
             throw new CentralPairingException((int)proofResponse.StatusCode,
                 "La vérification du compte a été refusée ou différée.");
@@ -116,7 +116,7 @@ public sealed class CentralPairingClient : IDisposable
             }),
         };
         acceptRequest.Headers.TryAddWithoutValidation("X-Scolia-Account-Proof", "Bearer " + jwt);
-        using var accepted = await http.SendAsync(acceptRequest, ct);
+        using var accepted = await http.SendAsync(acceptRequest, HttpCompletionOption.ResponseHeadersRead, ct);
         if (accepted.StatusCode != HttpStatusCode.Created)
             throw new CentralPairingException((int)accepted.StatusCode,
                 "Le jumelage de l'appareil a été refusé ou différé.");
@@ -179,7 +179,7 @@ public sealed class CentralPairingClient : IDisposable
                 signature,
             }),
         };
-        using var response = await http.SendAsync(request, ct);
+        using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
         if (response.StatusCode != HttpStatusCode.OK)
             throw new CentralPairingException((int)response.StatusCode,
                 "Session centrale refusée : vérifiez l'appareil et l'autorisation du secrétariat.");
