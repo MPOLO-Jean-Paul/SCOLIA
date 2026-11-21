@@ -33,6 +33,7 @@ public sealed class SyncWorker : Worker
             return pairing.ReadActiveOrigin(account, DeviceIdentity.Id) is not null;
         }
         catch (Exception exception) when (exception is IOException or
+            InvalidDataException or InvalidOperationException or
             UnauthorizedAccessException or System.Security.Cryptography.CryptographicException
             or JsonException or ArgumentException)
         {
