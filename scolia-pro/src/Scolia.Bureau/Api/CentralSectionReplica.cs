@@ -25,7 +25,7 @@ public sealed class CentralSectionReplica : IDisposable
     {
         public long Revision { get; set; }
         public List<CentralSectionRow> Sections { get; set; } = [];
-        public List<CentralSectionChange> Pending { get; set; } = [];
+        public List<CentralSectionPendingChange> Pending { get; set; } = [];
     }
 
     public CentralSectionReplica(OfflineStore store, string user, string schoolId,
@@ -113,7 +113,7 @@ public sealed class CentralSectionReplica : IDisposable
             var previous = snapshot.Sections.FirstOrDefault(x =>
                 string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
             var op = Guid.NewGuid().ToString("D");
-            snapshot.Pending.Add(new CentralSectionChange(op, id, code, name,
+            snapshot.Pending.Add(new CentralSectionPendingChange(op, id, code, name,
                 active, previous?.Revision ?? 0));
             Save(snapshot);
             return op;
@@ -280,7 +280,7 @@ public sealed class CentralSectionReplica : IDisposable
 public sealed record CentralSectionRow(string Id, string Code, string Name,
     bool IsActive, long Revision, bool IsPending = false);
 
-public sealed record CentralSectionChange(string OperationId, string SectionId,
+public sealed record CentralSectionPendingChange(string OperationId, string SectionId,
     string Code, string Name, bool IsActive, long ExpectedRevision);
 
 public sealed record CentralSectionLocalState(IReadOnlyList<CentralSectionRow> Sections,
