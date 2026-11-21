@@ -123,6 +123,33 @@ class CloudflareCentralSchemaTests(unittest.TestCase):
                 "VALUES('a','new-phone',-1)"
             )
 
+    def test_revocation_is_attributed_to_authorized_user_of_same_school(self):
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.db.execute(
+                "UPDATE cloud_devices SET revoked_at = unixepoch() "
+                "WHERE school_id='a' AND id='phone'"
+            )
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.db.execute(
+                "UPDATE cloud_devices SET revoked_at = unixepoch(), revoked_by = 'nonexistent' "
+                "WHERE school_id='a' AND id='phone'"
+            )
+        self.db.execute(
+            "UPDATE cloud_devices SET revoked_at = unixepoch(), revoked_by = 'secretary' "
+            "WHERE school_id='a' AND id='phone'"
+        )
+        revoked = self.db.execute(
+            "SELECT revoked_at,revoked_by FROM cloud_devices "
+            "WHERE school_id='a' AND id='phone'"
+        ).fetchone()
+        self.assertIsNotNone(revoked[0])
+        self.assertEqual("secretary", revoked[1])
+        # L'appareil de l'école B reste approuvé : la requête est scindée par école.
+        unaffected = self.db.execute(
+            "SELECT revoked_at FROM cloud_devices WHERE school_id='b' AND id='phone'"
+        ).fetchone()
+        self.assertIsNone(unaffected[0])
+
     def test_reapplying_migration_is_additive_and_safe(self):
         self.add_operation("a", "survives")
         self.db.executescript(MIGRATION.read_text(encoding="utf-8"))
