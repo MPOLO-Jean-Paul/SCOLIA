@@ -49,7 +49,8 @@
 - [x] Conserver les écritures sur HTTP 202 et retester sans doubler un encaissement.
 - [x] Retenter au plus une fois les lectures GET interrompues par le relais WSS, dans le délai global, sans rejouer les opérations POST/PUT.
 - [x] Préparer en arrière-plan les feuilles anonymes des enseignants, avec curseur distinct des dossiers apprenants et du cache financier.
-- [ ] Obtenir la compilation et l'exécution des tests .NET dans GitHub Actions, puis valider sur Windows et Android réels.
+- [x] Obtenir la compilation et l'exécution des tests .NET dans GitHub Actions (commit a5e9864 validé).
+- [ ] Valider les flux hors ligne et la résilience sur des téléphones Android et PC Windows réels.
 
 ### Phase B — backend Cloudflare central (fondation prototype uniquement)
 
@@ -60,7 +61,7 @@
 - [ ] Compléter l'API authentifiée : émission/renouvellement des jetons, délégation du secrétariat, contrôles métier, publication de changements et accès R2 privé. Le prototype actuel ne suffit pas.
 - [ ] Définir et tester les transactions/quotas Cloudflare sur les paiements et les inscriptions.
 
-### Phase C — clients Local-First cloud (non commencé)
+### Phase C — clients Local-First cloud (pilote des sections seulement)
 
 - [ ] Connecter les clients Windows et Android à `https://api.jp-services.org` sans dépendance à un PC central.
 - [ ] Gérer premier appairage/préchargement, outbox, push, pull, curseur, retry avec backoff, verrou multi-compte et révocation.
@@ -72,6 +73,34 @@
 - [ ] Sauvegarde vérifiée de SQLite historique, migration dry-run, comparaison des données, période de double lecture.
 - [ ] Mise en production progressive par établissement, suivi des erreurs et procédure de retour arrière.
 - [ ] Publication d'installateurs et APK après signature officielle et validation humaine.
+
+## Pilote central de sections — sécurité de reprise et séparation des origines
+
+- Le pilote D1 comprend la création / modification versionnée des sections par
+  un compte autorisé, la lecture des événements et les clés d'idempotence.
+  Aucun dossier apprenant, note ni paiement n'est synchronisé sur cette route.
+- Sur Windows/Android, la réplique des sections est chiffrée localement dans
+  SQLite ; confirmation D1, retrait de l'opération et curseur sont conservés
+  par transactions SQLite. Les synchronisations concurrentes ne doivent pas
+  effacer les saisies locales arrivées entre deux requêtes HTTP.
+- Les rattrapages de journal sont paginés, bornés et reprennent à partir du
+  curseur durable. Les conflits HTTP 409 sont conservés pour arbitrage, sans
+  forcer automatiquement la version de l'utilisateur.
+- Le cache `central:sections:v2` est isolé par compte SQLite, établissement
+  et empreinte de **l'origine HTTPS approuvée** (staging et production séparés).
+  Une requête visant une autre origine est rejetée avant toute connexion.
+- L'ancien cache pilote `central:sections:v1` n'est **pas supprimé**. Sa
+  provenance Cloudflare n'étant pas enregistrée, il n'est pas migré ou envoyé
+  automatiquement vers une origine potentiellement différente. Avant tout
+  changement d'environnement d'un pilote ayant des opérations v1 en attente,
+  vérifier manuellement l'origine et traiter ces opérations dans leur
+  environnement d'origine ; ne pas effacer le stockage chiffré.
+- L'API centrale refuse les identifiants non conformes à un UUID canonique :
+  un faux identifiant dans les événements pourrait interrompre la lecture
+  des lots sur les clients .NET.
+- **Cette intégration n'est pas encore reliée automatiquement aux écrans de
+  gestion ni au WorkManager Android** ; elle ne prouve ni autonomie complète
+  face à l'ordinateur principal, ni équivalence de toutes les permissions.
 
 ## Restriction actuelle
 
