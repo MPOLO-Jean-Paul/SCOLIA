@@ -128,14 +128,7 @@ public sealed class SyncWorker : Worker
         if (connection is null || connection.Mode == ConnectionSettings.Local)
         {
             if (!HasLocalCentralSession(connection)) return Result.InvokeSuccess();
-            using var cloudApi = new ScoliaClient(ConnectionStore.LocalAddress);
-            var cloudStore = new OfflineStore(
-                ConnectionStore.CacheAddress(cloudApi.Server));
-            cloudApi.Offline = cloudStore;
-            using var cloudTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(50));
-            var needsRetry = await SyncCentralSectionsInBackgroundAsync(
-                cloudApi, cloudStore, cloudTimeout.Token);
-            return needsRetry ? Result.InvokeRetry() : Result.InvokeSuccess();
+            return await RunCloudOnlyAsync(ConnectionStore.LocalAddress);
         }
         Uri? server = null;
         Scolia.Transport.RemoteLink? relay = null;
@@ -174,17 +167,33 @@ public sealed class SyncWorker : Worker
         else if (connection?.Mode == ConnectionSettings.Internet)
         {
             var saved = RemoteConnection.Load();
-            if (saved is null || saved.Host || !saved.Enabled || saved.Link.ExpiresUtc <= DateTime.UtcNow)
+            if (saved is null || saved.Host)
                 return Result.InvokeSuccess();
+            if (!saved.Enabled || saved.Link.ExpiresUtc <= DateTime.UtcNow)
+                return await RunCloudOnlyAsync(saved.Link.VirtualServer);
             relay = saved.Link;
             server = relay.VirtualServer;
         }
-        if (server is null) return Result.InvokeSuccess();
+        if (server is null)
+        {
+            // Un ancien relais sans adresse valide n'empêche pas la
+            // synchronisation D1, si son cache reste identifiable.
+            if (connection.Mode == ConnectionSettings.Remote &&
+                connection.CacheUrl is { Length: > 0 } cached &&
+                Uri.TryCreate(cached, UriKind.Absolute, out var original))
+                return await RunCloudOnlyAsync(original);
+            return Result.InvokeSuccess();
+        }
         // Même hors interface, ne jamais envoyer les cookies de session à un
         // nom MagicDNS qui pointerait désormais hors de l'espace privé Tailscale.
         if (TailscaleEndpoint.IsTailnetAddress(server)
             && !await TailscaleEndpoint.ResolvesPrivatelyAsync(server))
+        {
+            // Bloquer la liaison privée devenue non fiable, mais continuer
+            // exclusivement vers l'origine HTTPS Cloudflare déjà approuvée.
+            _ = await RunCloudOnlyAsync(server);
             return Result.InvokeRetry();
+        }
         using var api = new ScoliaClient(server);
         if (relay is not null) api.UseRemote(relay);
         var store = new OfflineStore(ConnectionStore.CacheAddress(api.Server));
@@ -278,6 +287,21 @@ public sealed class SyncWorker : Worker
     }
 
     /// <summary>
+    /// N'effectue aucun appel vers l'ancien serveur. L'URI sert uniquement
+    /// à retrouver la base SQLite chiffrée de l'école déjà jumelée.
+    /// Même après l'expiration d'un relais Render, D1 peut être joignable.
+    /// </summary>
+    private async Task<Result> RunCloudOnlyAsync(Uri cachedServer)
+    {
+        using var cloudApi = new ScoliaClient(cachedServer);
+        var cache = new OfflineStore(ConnectionStore.CacheAddress(cachedServer));
+        cloudApi.Offline = cache;
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(50));
+        return await SyncCentralSectionsInBackgroundAsync(cloudApi, cache, timeout.Token)
+            ? Result.InvokeRetry() : Result.InvokeSuccess();
+    }
+
+    /// <summary>
     /// Reprendre le pilote D1 avec la seule origine HTTPS approuvée, jamais
     /// avec le cookie du PC principal. Aucun JWT n'est conservé sur disque.
     /// Les erreurs temporaires conservent SQLite et déclenchent le backoff.
@@ -311,7 +335,8 @@ public sealed class SyncWorker : Worker
         }
         catch (Exception exception) when (exception is
             System.Security.Cryptography.CryptographicException or
-            UnauthorizedAccessException or JsonException or ArgumentException)
+            UnauthorizedAccessException or JsonException or ArgumentException or
+            InvalidOperationException)
         {
             // N'effacer aucune file SQLite en cas de problème de chiffrement.
             Android.Util.Log.Warn("SCOLIA-Central",
