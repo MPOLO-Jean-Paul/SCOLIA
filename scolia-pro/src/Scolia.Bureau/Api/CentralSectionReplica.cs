@@ -133,11 +133,7 @@ public sealed class CentralSectionReplica : IDisposable
         Guid sectionId, string code, string name, bool active,
         CancellationToken ct = default)
     {
-        if (sectionId == Guid.Empty || code.Length is < 2 or > 16 ||
-            code.Any(c => !(char.IsAsciiLetterUpper(c) || char.IsAsciiDigit(c) || c is '_' or '-')) ||
-            string.IsNullOrWhiteSpace(name) || name.Length > 120 ||
-            name != name.Trim() || name.Any(char.IsControl))
-            throw new ArgumentException("Code ou libellé de section invalide.");
+        ValidateSection(sectionId, code, name);
 
         await gate.WaitAsync(ct);
         try
@@ -159,6 +155,86 @@ public sealed class CentralSectionReplica : IDisposable
             return op;
         }
         finally { gate.Release(); }
+    }
+
+    /// <summary>
+    /// Un responsable peut explicitement renoncer à une saisie conflictuelle
+    /// pour conserver l'état déjà reçu du serveur. Jamais de retrait implicite
+    /// sur HTTP 409 ; les autres opérations de l'école restent intactes.
+    /// </summary>
+    public async Task DiscardConflictedSectionAsync(
+        Guid sectionId, CancellationToken ct = default)
+    {
+        if (sectionId == Guid.Empty) throw new ArgumentException("Section invalide.");
+        await gate.WaitAsync(ct);
+        try
+        {
+            var id = sectionId.ToString("D");
+            Update(snapshot =>
+            {
+                var index = snapshot.Pending.FindIndex(x =>
+                    string.Equals(x.SectionId, id, StringComparison.OrdinalIgnoreCase)
+                    && x.HasConflict);
+                if (index < 0)
+                    throw new InvalidOperationException(
+                        "Aucun conflit de section à résoudre.");
+                snapshot.Pending.RemoveAt(index);
+                return snapshot;
+            });
+        }
+        finally { gate.Release(); }
+    }
+
+    /// <summary>
+    /// Nouvelle tentative uniquement sur décision explicite du responsable,
+    /// avec une nouvelle clé d'idempotence, sans jamais modifier la première
+    /// opération refusée au serveur. Le contenu ou la version attendue doit
+    /// avoir changé, sinon la boucle de conflits continuerait sans effet.
+    /// </summary>
+    public async Task<string> RetryConflictedSectionAsync(Guid sectionId,
+        string code, string name, bool active, CancellationToken ct = default)
+    {
+        ValidateSection(sectionId, code, name);
+        await gate.WaitAsync(ct);
+        try
+        {
+            var id = sectionId.ToString("D");
+            var nextOperation = Guid.NewGuid().ToString("D");
+            Update(snapshot =>
+            {
+                var index = snapshot.Pending.FindIndex(x =>
+                    string.Equals(x.SectionId, id, StringComparison.OrdinalIgnoreCase)
+                    && x.HasConflict);
+                if (index < 0)
+                    throw new InvalidOperationException("Aucune section en conflit.");
+                var previous = snapshot.Pending[index];
+                var central = snapshot.Sections.FirstOrDefault(x =>
+                    string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
+                if (previous.ExpectedRevision > 0 && central is null)
+                    throw new InvalidOperationException(
+                        "La version centrale doit être récupérée avant une nouvelle tentative.");
+                var revision = central?.Revision ?? 0;
+                if (revision == previous.ExpectedRevision &&
+                    previous.Code == code && previous.Name == name &&
+                    previous.IsActive == active)
+                    throw new InvalidOperationException(
+                        "Modifiez la saisie ou récupérez la nouvelle version centrale.");
+                snapshot.Pending[index] = new CentralSectionPendingChange(
+                    nextOperation, id, code, name, active, revision);
+                return snapshot;
+            });
+            return nextOperation;
+        }
+        finally { gate.Release(); }
+    }
+
+    private static void ValidateSection(Guid sectionId, string? code, string? name)
+    {
+        if (sectionId == Guid.Empty || code is null || code.Length is < 2 or > 16 ||
+            code.Any(c => !(char.IsAsciiLetterUpper(c) || char.IsAsciiDigit(c) || c is '_' or '-')) ||
+            string.IsNullOrWhiteSpace(name) || name.Length > 120 ||
+            name != name.Trim() || name.Any(char.IsControl))
+            throw new ArgumentException("Code ou libellé de section invalide.");
     }
 
     /// <summary>
