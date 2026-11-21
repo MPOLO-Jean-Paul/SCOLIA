@@ -165,12 +165,19 @@ export async function handleRequest(request, env) {
         b => b.toString(16).padStart(2, "0")).join("");
       const invitationId = crypto.randomUUID();
       const expiresAt = Math.floor(Date.now() / 1000) + 600;
+      // Limite de trois invitations actives par compte. Une unique instruction
+      // INSERT ... SELECT garde le contrôle et l'écriture atomiques dans D1.
       const inserted = await env.DB.prepare(
         "INSERT INTO cloud_device_invitations " +
         "(id, school_id, target_user_id, issued_by, token_sha256, expires_at) " +
-        "VALUES (?, ?, ?, ?, ?, ?)"
+        "SELECT ?, ?, ?, ?, ?, ? WHERE " +
+        "(SELECT COUNT(*) FROM cloud_device_invitations " +
+        "WHERE school_id = ? AND target_user_id = ? " +
+        "AND consumed_at IS NULL AND expires_at > unixepoch()) < 3"
       ).bind(invitationId, user.school_id, body.target_user_id,
-        user.sub, digest, expiresAt).run();
+        user.sub, digest, expiresAt, user.school_id, body.target_user_id).run();
+      if (inserted.meta?.changes === 0)
+        return error(429, "too_many_active_invitations");
       if (inserted.meta?.changes !== 1)
         return error(503, "temporarily_unavailable");
       return json({
