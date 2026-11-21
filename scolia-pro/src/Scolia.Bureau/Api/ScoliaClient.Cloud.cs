@@ -88,7 +88,17 @@ public sealed partial class ScoliaClient
             return store.ReadCloudAccessFor(user) is { Length: > 0 } text
                 ? JsonSerializer.Deserialize<CloudDepositAccess>(text, Json.Options) : null;
         }
-        catch (JsonException) { return null; }
+        // Ne jamais déclencher de dépôt si la délégation chiffrée est
+        // illisible ou altérée. L'outbox est conservée pour une reconnexion
+        // personnelle et une nouvelle autorisation de l'établissement.
+        catch (Exception ex) when (ex is JsonException or InvalidDataException
+            or IOException or UnauthorizedAccessException or
+            System.Security.Cryptography.CryptographicException)
+        {
+            System.Diagnostics.Trace.WriteLine(
+                $"SCOLIA cloud : délégation illisible ({ex.GetType().Name}).");
+            return null;
+        }
     }
 
     private static bool Usable(CloudDepositAccess? access) =>
