@@ -153,7 +153,7 @@ public sealed class CentralSectionClient : IDisposable
 
     internal static bool ValidCode(string? code) =>
         code is { Length: >= 2 and <= 16 } &&
-        code.All(c => char.IsAsciiUpper(c) || char.IsAsciiDigit(c) || c is '-' or '_');
+        code.All(c => char.IsAsciiLetterUpper(c) || char.IsAsciiDigit(c) || c is '-' or '_');
 
     internal static bool ValidName(string? name) =>
         name is { Length: >= 1 and <= 120 } &&
