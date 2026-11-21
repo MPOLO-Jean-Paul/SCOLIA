@@ -1,0 +1,73 @@
+name: SCOLIA Cloudflare - inspecter ou reparer les builds du relais (manuel)
+
+# Place sur la branche par defaut 'main' pour etre visible dans Actions.
+# Le correcteur execute vient exclusivement de la branche release validee.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'inspect : aucun changement ; apply : corriger branche, root et commandes'
+        required: true
+        type: choice
+        default: inspect
+        options:
+          - inspect
+          - apply
+      confirmation:
+        description: 'Taper REPARER_RELAIS pour autoriser cette operation ciblee'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scolia-cloudflare-relay-builds-configuration
+  cancel-in-progress: false
+
+jobs:
+  builds-settings:
+    name: Inspecter ou reparer uniquement scolia-pro-relay
+    if: ${{ inputs.confirmation == 'REPARER_RELAIS' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment: scolia-relay-builds
+    env:
+      CLOUDFLARE_BUILD_SETTINGS_TOKEN: ${{ secrets.CLOUDFLARE_BUILD_SETTINGS_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SCOLIA_REPAIR_CONFIRMATION: ${{ inputs.confirmation }}
+      SCOLIA_REPAIR_MODE: ${{ inputs.mode }}
+    steps:
+      - name: Extraire le correcteur valide depuis la branche release
+        uses: actions/checkout@v4
+        with:
+          ref: release/direct-apk-scolia-pro-20261103
+          persist-credentials: false
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tester les garde-fous du correcteur
+        working-directory: scolia-pro/deploy/cloudflare
+        run: node --test tests/repair-build-settings.test.js
+      - name: Verifier que les secrets Cloudflare sont configures
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_BUILD_SETTINGS_TOKEN:-}" || -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+            echo '::error::Renseigner CLOUDFLARE_BUILD_SETTINGS_TOKEN et CLOUDFLARE_ACCOUNT_ID dans les secrets de l environnement scolia-relay-builds.'
+            exit 1
+          fi
+      - name: Inspecter puis corriger si explicitement demande
+        working-directory: scolia-pro/deploy/cloudflare
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${SCOLIA_REPAIR_MODE}" == 'apply' ]]; then
+            node scripts/repair-build-settings.mjs --apply
+          else
+            node scripts/repair-build-settings.mjs --inspect
+          fi
+      - name: Ne pas confondre configuration et deploiement
+        run: |
+          echo '::notice::Aucun deploy ni migration effectue. Relancer ensuite le build sur Cloudflare et lire ses logs.'
