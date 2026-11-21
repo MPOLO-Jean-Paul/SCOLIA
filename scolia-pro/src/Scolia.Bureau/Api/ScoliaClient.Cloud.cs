@@ -248,4 +248,50 @@ public sealed partial class ScoliaClient
         return await central.OpenSavedSessionAsync(trustedCentralOrigin, userName,
             Infrastructure.DeviceIdentity.Id, ct);
     }
+
+    /// <summary>Enregistre une modification de section dans SQLite, sans
+    /// aucune attente du réseau. La clé d'idempotence est créée une seule fois
+    /// et reste persistante jusqu'à confirmation métier D1.</summary>
+    public async Task<string> QueueCentralSectionAsync(
+        Uri trustedCentralOrigin, string userName, Guid sectionId, string code,
+        string name, bool active, CancellationToken ct = default)
+    {
+        if (Offline is not { } store || store.User != userName)
+            throw new InvalidOperationException("Le cache du compte connecté n'est pas disponible.");
+        using var central = new CentralPairingClient();
+        var schoolId = central.ReadSavedSchoolId(trustedCentralOrigin,
+            userName, Infrastructure.DeviceIdentity.Id) ??
+            throw new InvalidOperationException("Cet appareil n'est pas jumelé à l'école centrale.");
+        using var replica = new CentralSectionReplica(store, userName, schoolId);
+        return await replica.QueueUpsertAsync(sectionId, code, name, active, ct);
+    }
+
+    /// <summary>
+    /// Reprend les sections mises en attente puis leur journal, sans mot de
+    /// passe ni clé stockée dans D1. Une coupure réseau conserve SQLite.
+    /// Seules les sections/option sont couvertes : les autres fonctionnalités
+    /// scolaires et financières conservent leur circuit serveur existant.
+    /// </summary>
+    public async Task<CentralSectionLocalState> SyncCentralSectionsAsync(
+        Uri trustedCentralOrigin, string userName, CancellationToken ct = default)
+    {
+        if (Offline is not { } store || store.User != userName)
+            throw new InvalidOperationException("Le cache du compte connecté n'est pas disponible.");
+        using var central = new CentralPairingClient();
+        var schoolId = central.ReadSavedSchoolId(trustedCentralOrigin,
+            userName, Infrastructure.DeviceIdentity.Id) ??
+            throw new InvalidOperationException("Cet appareil n'est pas jumelé à l'école centrale.");
+        using var replica = new CentralSectionReplica(store, userName, schoolId);
+        try
+        {
+            var session = await central.OpenSavedSessionAsync(
+                trustedCentralOrigin, userName, Infrastructure.DeviceIdentity.Id, ct);
+            return await replica.SyncAsync(trustedCentralOrigin, session.AccessToken, ct);
+        }
+        catch (Exception ex) when (!ct.IsCancellationRequested &&
+            ex is HttpRequestException or IOException or TaskCanceledException)
+        {
+            return replica.Local(); // réseau absent : état SQLite inchangé.
+        }
+    }
 }
