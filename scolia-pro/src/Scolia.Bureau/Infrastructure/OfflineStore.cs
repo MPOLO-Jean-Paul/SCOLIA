@@ -544,6 +544,36 @@ public sealed class OfflineStore
         });
     }
 
+    /// <summary>
+    /// Fin de session explicite : désactive la reprise D1 et retire les
+    /// cookies HTTP persistants du compte dans UNE transaction SQLite.
+    /// Le compte hors ligne, les mots de passe dérivés et l'outbox demeurent.
+    /// Ne dépend jamais de User, qui peut déjà viser le compte suivant au
+    /// moment d'un changement rapide de session.
+    /// </summary>
+    public void SuspendBackgroundAccessFor(string account)
+    {
+        if (string.IsNullOrWhiteSpace(account))
+            throw new ArgumentException("Compte de déconnexion requis.", nameof(account));
+        var normalized = account.Trim();
+        var flag = CentralBackgroundKeyFor(normalized);
+        var keys = new[] { flag, CredentialFile, CredentialKeyFor(normalized) };
+        database.Update(keys, values =>
+        {
+            values[flag] = "0";
+            foreach (var key in keys.Skip(1))
+            {
+                var credential = DecodeCredential(values[key]);
+                if (credential is null ||
+                    !string.Equals(credential.UserName, normalized,
+                        StringComparison.OrdinalIgnoreCase))
+                    continue;
+                credential.SessionCookie = string.Empty;
+                values[key] = JsonSerializer.Serialize(credential, Json);
+            }
+        });
+    }
+
     /// <summary>Le dernier identifiant utilisé, pas un jeton ni un mot de passe.</summary>
     public string? LastAccount => database.Read(LastAccountKey) is { Length: > 0 } user
         ? user : DecodeCredential(database.Read(CredentialFile))?.UserName;
