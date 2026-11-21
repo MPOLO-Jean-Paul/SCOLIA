@@ -15,6 +15,7 @@ namespace Scolia.Bureau.Tests;
 public sealed class OfflineTransientSyncTests
 {
     [Theory]
+    [InlineData(202)] // Simple dépôt côté serveur, pas une validation financière.
     [InlineData(302)] // Redirection Cloudflare Access / changement de route.
     [InlineData(408)] // Délai de requête dépassé.
     [InlineData(425)] // Too Early.
@@ -66,6 +67,7 @@ public sealed class OfflineTransientSyncTests
     }
 
     [Theory]
+    [InlineData(202)]
     [InlineData(302)]
     [InlineData(408)]
     [InlineData(425)]
