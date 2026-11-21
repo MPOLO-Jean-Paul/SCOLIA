@@ -270,6 +270,9 @@ public sealed class CentralSectionReplicaTests
                             }));
                     }
                     Assert.Equal(HttpMethod.Get, request.Method);
+                    if (postCount == 1)
+                        return Json(HttpStatusCode.OK,
+                            """{"events":[],"next":0,"has_more":false}""");
                     return Json(HttpStatusCode.OK,
                         System.Text.Json.JsonSerializer.Serialize(new
                         {
@@ -309,6 +312,74 @@ public sealed class CentralSectionReplicaTests
             Assert.Equal(9, synced.Revision);
             Assert.Equal("ACC2", Assert.Single(synced.Sections).Code);
             Assert.Equal(2, postCount);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
+    public async Task Conflit_sur_une_section_n_empeche_pas_les_autres_et_le_pull_d1()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-conflict-independent-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            var disputed = Guid.NewGuid();
+            var accepted = Guid.NewGuid();
+            var posts = 0;
+            var gets = 0;
+            using var replica = new CentralSectionReplica(store, store.User, School,
+                CentralOrigin, new Handler(async (request, ct) =>
+                {
+                    if (request.Method == HttpMethod.Post)
+                    {
+                        posts++;
+                        using var body = System.Text.Json.JsonDocument.Parse(
+                            await request.Content!.ReadAsStringAsync(ct));
+                        var id = body.RootElement.GetProperty("section_id").GetString();
+                        if (id == disputed.ToString("D"))
+                            return Json(HttpStatusCode.Conflict,
+                                """{"error":"stale_section_revision"}""");
+                        Assert.Equal(accepted.ToString("D"), id);
+                        return Json(HttpStatusCode.Created,
+                            System.Text.Json.JsonSerializer.Serialize(new
+                            {
+                                operation_id = body.RootElement.GetProperty("operation_id").GetString(),
+                                section_id = id, status = "applied", revision = 3,
+                            }));
+                    }
+                    Assert.Equal(HttpMethod.Get, request.Method);
+                    gets++;
+                    return Json(HttpStatusCode.OK,
+                        System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            events = new[]
+                            {
+                                new
+                                {
+                                    revision = 3,
+                                    section_id = accepted.ToString("D"),
+                                    code = "ACC", name = "Accoucheuse", is_active = 1,
+                                },
+                            },
+                            next = 3, has_more = false,
+                        }));
+                }));
+            await replica.QueueUpsertAsync(disputed, "INF", "Infirmière", true);
+            await replica.QueueUpsertAsync(accepted, "ACC", "Accoucheuse", true);
+
+            var outcome = await replica.SyncAsync(CentralOrigin, Jwt);
+            Assert.False(outcome.Offline);
+            Assert.True(outcome.HasConflict);
+            Assert.Equal(1, outcome.PendingCount);
+            Assert.Equal(3, outcome.Revision);
+            Assert.Equal(2, posts);
+            Assert.Equal(1, gets);
+            Assert.True(Assert.Single(outcome.Sections, x => x.Id == disputed.ToString("D")).IsPending);
+            Assert.False(Assert.Single(outcome.Sections, x => x.Id == accepted.ToString("D")).IsPending);
+            Assert.Equal(1, replica.Local().PendingCount);
+            Assert.True(replica.Local().HasConflict);
         }
         finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
     }
