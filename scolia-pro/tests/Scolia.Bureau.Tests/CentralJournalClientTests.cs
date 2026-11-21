@@ -22,6 +22,17 @@ public sealed class CentralJournalClientTests
     {
         Content = new StringContent(text, Encoding.UTF8, "application/json"),
     };
+    private sealed class NoLengthStream(byte[] data) : MemoryStream(data)
+    {
+        public override bool CanSeek => false;
+    }
+
+    private static HttpResponseMessage Chunked(HttpStatusCode status, string text) =>
+        new(status)
+        {
+            Content = new StreamContent(new NoLengthStream(Encoding.UTF8.GetBytes(text))),
+        };
+
     private const string Jwt = "sessionheader.sessionpayload.sessionsignaturetest";
     private const string Hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
@@ -68,6 +79,16 @@ public sealed class CentralJournalClientTests
             await Assert.ThrowsAsync<InvalidDataException>(() =>
                 client.ReadMetadataAsync(new Uri("https://central-staging.example/"), Jwt, 4));
         }
+    }
+
+    [Fact]
+    public async Task Journal_chunked_sans_taille_est_borne_a_80_000_octets()
+    {
+        using var client = new CentralJournalClient(new Handler(_ =>
+            Chunked(HttpStatusCode.OK,
+                "{\"events\":[\"" + new string('a', 90_000) + "\"]}")));
+        await Assert.ThrowsAsync<InvalidDataException>(() =>
+            client.ReadMetadataAsync(new Uri("https://central-staging.example/"), Jwt));
     }
 
     [Fact]
