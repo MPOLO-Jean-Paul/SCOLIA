@@ -85,12 +85,13 @@ public sealed class CentralPairingClientTests
                     HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
 
                 return Json(HttpStatusCode.Created,
-                    "{\"device_id\":\"" + device + "\",\"approved\":true,\"session_issued\":false}");
+                    "{\"device_id\":\"" + device + "\",\"school_id\":\"school-a\",\"approved\":true,\"session_issued\":false}");
             }), temp);
 
             var paired = await gateway.PairAsync(new Uri("https://staging.example/"),
                 invitation, token, user, password, device);
             Assert.True(paired.Approved);
+            Assert.Equal("school-a", paired.SchoolId);
             Assert.False(paired.SessionIssued);
             Assert.Equal(2, seen);
             Assert.Single(Directory.GetFiles(temp, "*.key"));
