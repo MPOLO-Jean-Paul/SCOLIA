@@ -155,9 +155,9 @@ public sealed class OfflineTransientSyncTests
         using var reader = new StreamReader(stream, Encoding.ASCII, false, 1024, leaveOpen: true);
         while (await reader.ReadLineAsync(cancellationToken) is { Length: > 0 }) { }
 
-        var location = status == 302 ? "Location: /access/login\\r\\n" : string.Empty;
+        var location = status == 302 ? "Location: /access/login\r\n" : string.Empty;
         var response = Encoding.ASCII.GetBytes(
-            $"HTTP/1.1 {status} Test\\r\\n{location}Content-Length: 0\\r\\nConnection: close\\r\\n\\r\\n");
+            $"HTTP/1.1 {status} Test\r\n{location}Content-Length: 0\r\nConnection: close\r\n\r\n");
         await stream.WriteAsync(response, cancellationToken);
     }
 }
