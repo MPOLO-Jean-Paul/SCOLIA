@@ -286,6 +286,33 @@ public sealed class CentralSectionReplica : IDisposable
         finally { gate.Release(); }
     }
 
+    /// <summary>
+    /// Termine automatiquement plusieurs pages de rattrapage, sans boucle
+    /// infinie ni remise à zéro du curseur. Une passe lit au plus huit lots
+    /// de cinquante événements ; un appel est borné à quatre passes par
+    /// défaut. Si la limite est atteinte, HasMorePages reste vrai pour une
+    /// reprise ultérieure.
+    /// </summary>
+    public async Task<CentralSectionLocalState> CatchUpAsync(
+        Uri trustedCentralOrigin, string centralSessionJwt,
+        int maxPasses = 4, CancellationToken ct = default)
+    {
+        if (maxPasses is < 1 or > 16)
+            throw new ArgumentOutOfRangeException(nameof(maxPasses));
+        CentralSectionLocalState state;
+        for (var pass = 0; pass < maxPasses; pass++)
+        {
+            ct.ThrowIfCancellationRequested();
+            state = await SyncAsync(trustedCentralOrigin, centralSessionJwt, ct);
+            if (state.Offline || !state.HasMorePages)
+                return state;
+        }
+        // Relecture locale seulement, sans répéter une requête réseau.
+        // Signaler les pages restantes pour la prochaine synchronisation.
+        var local = Local();
+        return local with { Offline = false, HasMorePages = true };
+    }
+
     private static CentralSectionLocalState Status(Snapshot snapshot, bool Offline,
         bool HasConflict, bool HasMorePages = false)
     {
