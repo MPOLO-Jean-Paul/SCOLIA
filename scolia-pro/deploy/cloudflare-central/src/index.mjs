@@ -1,4 +1,5 @@
 // Prévisualisation du service central SCOLIA, non déployée.
+import { acceptPairing } from "./pairing.mjs";
 // Aucune route d'émission des jetons ni de mutation scolaire n'est exposée.
 const textEncoder = new TextEncoder();
 const privilegedRoles = new Set(["secretariat", "administrateur", "direction"]);
@@ -90,6 +91,11 @@ export async function handleRequest(request, env) {
   const isDeviceList = url.pathname === "/v1/admin/devices" && request.method === "GET";
   const isDeviceRevoke = url.pathname === "/v1/admin/devices/revoke" && request.method === "POST";
   const isDeviceInvite = url.pathname === "/v1/admin/devices/invite" && request.method === "POST";
+  const isPairingAcceptance = url.pathname === "/v1/pair/accept" && request.method === "POST";
+  // Le nouvel appareil n'a pas encore de session. Son contrôle se fait avec
+  // une preuve de connexion au compte CIBLE (autre clé), puis une signature
+  // de sa clé privée et une invitation du secrétariat non réutilisée.
+  if (isPairingAcceptance) return acceptPairing(request, env);
   if (!isEvents && !isAck && !isDeviceList && !isDeviceRevoke &&
       !isDeviceInvite && !isOperationStatus)
     return error(404, "not_found");
