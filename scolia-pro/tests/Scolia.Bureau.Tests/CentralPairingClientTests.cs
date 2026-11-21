@@ -131,6 +131,113 @@ public sealed class CentralPairingClientTests
     }
 
     [Fact]
+    public async Task Appareil_appaire_ouvre_une_session_centrale_sans_renvoyer_le_mot_de_passe()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-central-session-" + Guid.NewGuid().ToString("N"));
+        var device = Guid.NewGuid().ToString("N");
+        var invitation = Guid.NewGuid();
+        const string jwt = "header-central.payload-central.signature-central-123456";
+        const string user = "ENSEIGNANT";
+        const string secret = "mot-de-passe-uniquement-pendant-jumelage";
+        string? jwkJson = null;
+        var calls = 0;
+
+        static byte[] From64(string input) => Convert.FromBase64String(
+            input.Replace('-', '+').Replace('_', '/') + new string('=', (4 - input.Length % 4) % 4));
+
+        try
+        {
+            using var gateway = new CentralPairingClient(new Handler(async (request, ct) =>
+            {
+                calls++;
+                var text = await request.Content!.ReadAsStringAsync(ct);
+                using var parsed = JsonDocument.Parse(text);
+                if (request.RequestUri!.AbsolutePath == "/v1/identity/pairing-proof")
+                {
+                    Assert.Equal(secret, parsed.RootElement.GetProperty("password").GetString());
+                    return Json(HttpStatusCode.OK,
+                        """{"pairing_proof":"header.payload.signature-long-enough","session_issued":false}""");
+                }
+                if (request.RequestUri.AbsolutePath == "/v1/pair/accept")
+                {
+                    jwkJson = parsed.RootElement.GetProperty("public_key_jwk").GetRawText();
+                    return Json(HttpStatusCode.Created,
+                        "{\\"device_id\\":\\"" + device + "\\",\\"school_id\\":\\"school-a\\"," +
+                        "\\"approved\\":true,\\"session_issued\\":false}");
+                }
+
+                Assert.Equal("/v1/identity/session", request.RequestUri.AbsolutePath);
+                Assert.NotNull(jwkJson);
+                Assert.DoesNotContain(secret, text, StringComparison.Ordinal);
+                var body = parsed.RootElement;
+                Assert.Equal("school-a", body.GetProperty("school_id").GetString());
+                Assert.Equal(device, body.GetProperty("device_id").GetString());
+                var nonce = body.GetProperty("nonce").GetString()!;
+                var issuedAt = body.GetProperty("issued_at").GetInt64();
+                using var keyDoc = JsonDocument.Parse(jwkJson!);
+                var publicPart = keyDoc.RootElement;
+                using var publicKey = ECDsa.Create(new ECParameters
+                {
+                    Curve = ECCurve.NamedCurves.nistP256,
+                    Q = new ECPoint
+                    {
+                        X = From64(publicPart.GetProperty("x").GetString()!),
+                        Y = From64(publicPart.GetProperty("y").GetString()!),
+                    },
+                });
+                var challenge = Encoding.UTF8.GetBytes(
+                    $"SCOLIA-SESSION-V1\\nschool-a\\n{device}\\n{nonce}\\n{issuedAt}");
+                Assert.True(publicKey.VerifyData(challenge,
+                    From64(body.GetProperty("signature").GetString()!),
+                    HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
+                return Json(HttpStatusCode.OK,
+                    "{\\"access_token\\":\\"" + jwt + "\\",\\"expires_in\\":900," +
+                    "\\"school_id\\":\\"school-a\\",\\"device_id\\":\\"" + device + "\\"}");
+            }), temp);
+
+            var paired = await gateway.PairAsync(new Uri("https://staging.example/"),
+                invitation, new string('A', 43), user, secret, device);
+            Assert.Equal("school-a", paired.SchoolId);
+            var session = await gateway.OpenSessionAsync(new Uri("https://staging.example/"),
+                paired.SchoolId!, user, device);
+            Assert.Equal(jwt, session.AccessToken);
+            Assert.Equal("school-a", session.SchoolId);
+            Assert.Equal(device, session.DeviceId);
+            Assert.Equal(3, calls);
+            Assert.Single(Directory.GetFiles(temp, "*.key"));
+            Assert.DoesNotContain(jwt, File.ReadAllText(Directory.GetFiles(temp, "*.key")[0]),
+                StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (Directory.Exists(temp)) Directory.Delete(temp, true);
+        }
+    }
+
+    [Fact]
+    public async Task Cle_non_jumelee_ne_peut_demander_une_session()
+    {
+        var calls = 0;
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-central-unpaired-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            using var gateway = new CentralPairingClient(new Handler((_, _) =>
+            {
+                calls++;
+                throw new InvalidOperationException("Aucun appel réseau attendu.");
+            }), temp);
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                gateway.OpenSessionAsync(new Uri("https://staging.example/"), "school-a",
+                    "ENSEIGNANT", "phone-a"));
+            Assert.Equal(0, calls);
+        }
+        finally
+        {
+            if (Directory.Exists(temp)) Directory.Delete(temp, true);
+        }
+    }
+
+    [Fact]
     public async Task Destinations_non_HTTPS_et_routes_dangereuses_sont_refusees_avant_la_requete()
     {
         var sent = 0;
