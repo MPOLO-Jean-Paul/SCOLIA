@@ -20,6 +20,8 @@ public sealed class ShellViewModel : Observable
     private readonly List<(string Label, Func<PageViewModel> Open)> recents = [];
     private long knownRevision = -1;
     private DateTime nextLicenseCheckUtc = DateTime.MinValue;
+    private DateTime nextCentralSyncUtc = DateTime.MinValue;
+    private int centralSyncBusy;
     private SessionDto? session;
     private PageViewModel? current;
     private object? dialog;
@@ -1298,7 +1300,17 @@ public sealed class ShellViewModel : Observable
 
     private async Task CheckRevisionAsync()
     {
-        if (!IsLoggedIn || checkingRevision) return;
+        if (!IsLoggedIn) return;
+        // Le cycle Cloudflare est distinct de la sonde du PC principal :
+        // il fonctionne même quand api/revision est inaccessible. Le service
+        // reste totalement inactif tant qu'aucune origine n'a été approuvée.
+        if (DateTime.UtcNow >= nextCentralSyncUtc &&
+            Interlocked.CompareExchange(ref centralSyncBusy, 1, 0) == 0)
+        {
+            nextCentralSyncUtc = DateTime.UtcNow.AddMinutes(2);
+            _ = SyncCentralQuietlyAsync(session!.UserName);
+        }
+        if (checkingRevision) return;
         if (DateTime.UtcNow >= nextLicenseCheckUtc)
         {
             nextLicenseCheckUtc = DateTime.UtcNow.AddMinutes(5);
@@ -1321,6 +1333,39 @@ public sealed class ShellViewModel : Observable
             else await RefreshQuietlyAsync();
         }
         finally { checkingRevision = false; }
+    }
+
+    /// <summary>
+    /// Synchronisation des sections du pilote sur le bureau ET au premier plan
+    /// Android. Ni bannière réseau ni blocage des formulaires. Le cache et
+    /// l'outbox restent gérés par SQLite ; HTTP n'est jamais une condition
+    /// préalable à une saisie locale.
+    /// </summary>
+    private async Task SyncCentralQuietlyAsync(string account)
+    {
+        try
+        {
+            using var budget = new CancellationTokenSource(TimeSpan.FromSeconds(35));
+            var state = await api.SyncActiveCentralSectionsAsync(account, budget.Token);
+            if (state is { HasMorePages: true })
+                nextCentralSyncUtc = DateTime.UtcNow.AddSeconds(15);
+        }
+        catch (CentralPairingException exception)
+        {
+            // Appareil révoqué ou jeton refusé : ne pas saturer le service.
+            nextCentralSyncUtc = DateTime.UtcNow.AddMinutes(30);
+            System.Diagnostics.Trace.WriteLine(
+                $"SCOLIA central : autorisation à renouveler ({exception.Status}).");
+        }
+        catch (Exception exception) when (exception is HttpRequestException or
+            TaskCanceledException or IOException or InvalidDataException or
+            System.Security.Cryptography.CryptographicException or
+            UnauthorizedAccessException or InvalidOperationException)
+        {
+            System.Diagnostics.Trace.WriteLine(
+                $"SCOLIA central : reprise différée ({exception.GetType().Name}).");
+        }
+        finally { Interlocked.Exchange(ref centralSyncBusy, 0); }
     }
 
     private async Task<long?> ReadRevisionAsync()
