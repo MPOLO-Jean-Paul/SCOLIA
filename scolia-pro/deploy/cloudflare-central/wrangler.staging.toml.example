@@ -5,7 +5,9 @@
 name = "scolia-identity-staging"
 main = "src/index.mjs"
 compatibility_date = "2026-11-21"
-workers_dev = false
+# Expose uniquement le sous-domaine workers.dev du Worker de test après
+# validation de l'environnement staging, sans route du domaine de production.
+workers_dev = true
 
 [[d1_databases]]
 binding = "DB"
