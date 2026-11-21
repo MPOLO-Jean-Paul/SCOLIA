@@ -185,6 +185,65 @@ public sealed class OfflineDatabaseTests : IDisposable
             ConnectionStore.ShouldScheduleBackgroundSync(mode, approved));
     }
 
+    [Theory]
+    [InlineData(null, true, true)]
+    [InlineData(ConnectionSettings.Local, true, true)]
+    [InlineData(ConnectionSettings.Local, false, false)]
+    [InlineData("inconnu", true, false)]
+    [InlineData(ConnectionSettings.Remote, false, true)]
+    [InlineData(ConnectionSettings.Internet, false, true)]
+    public void La_reprise_d_un_depot_delegue_fonctionne_sans_PC_mais_pas_en_mode_inconnu(
+        string? mode, bool pendingDelegated, bool expected)
+    {
+        Assert.Equal(expected, ConnectionStore.ShouldScheduleBackgroundSync(
+            mode, approvedCentralSession: false,
+            delegatedUploadPending: pendingDelegated));
+    }
+
+    [Fact]
+    public void Le_depot_chiffre_differe_exige_une_delegation_active_et_une_operation_en_attente()
+    {
+        var store = Store("secretariat");
+        store.Enqueue(new OutboxItem
+        {
+            User = "secretariat", Key = "frais-scolaires-a-valider",
+            Path = "api/paiements", Body = "{}",
+        });
+        store.Enqueue(new OutboxItem
+        {
+            User = "enseignant", Key = "autre-compte-expire",
+            Path = "api/notes", Body = "{}",
+        });
+        Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+
+        var valid = new Scolia.Domain.Cloud.CloudDepositAccess(
+            true, "https://mailbox.example/", "jeton-delegue",
+            Convert.ToBase64String(new byte[32]), "preuve-deleguee",
+            DateTime.UtcNow.AddDays(3));
+        var expired = valid with { ExpiresUtc = DateTime.UtcNow.AddMinutes(-2) };
+        store.SaveCloudAccessFor("secretariat",
+            JsonSerializer.Serialize(valid, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+        store.SaveCloudAccessFor("enseignant",
+            JsonSerializer.Serialize(expired, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+
+        Assert.True(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+        var pending = Assert.Single(store.Outbox());
+        // Un dépôt cloud n'est pas un encaissement validé :
+        // le paiement reste dans la file après l'accusé de stockage.
+        store.MarkDepositedFor("secretariat", pending.Id);
+        Assert.Equal(pending.Id, Assert.Single(store.Outbox()).Id);
+        Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+        Assert.Single(Store("enseignant").Outbox());
+
+        store.SaveCloudAccessFor("enseignant",
+            JsonSerializer.Serialize(valid with
+            {
+                Enabled = false,
+                ExpiresUtc = DateTime.UtcNow.AddDays(3)
+            }, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+        Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+    }
+
     [Fact]
     public void Ancien_journal_central_v1_empeche_le_retrait_du_compte()
     {
