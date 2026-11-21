@@ -430,12 +430,14 @@ class CloudflareCentralSchemaTests(unittest.TestCase):
         ).fetchone())
 
         self.db.execute(
-            "INSERT INTO cloud_auth_attempts(school_id,user_id,failed_count) "
-            "VALUES('a','teacher',1)"
-        )
-        self.db.execute(
             "UPDATE cloud_users SET role='secretariat' "
             "WHERE school_id='a' AND id='teacher'"
+        )
+        # Changer un rôle efface l'ancien compteur ; en créer un nouveau
+        # vérifie que la preuve fondée sur la révision précédente reste rejetée.
+        self.db.execute(
+            "INSERT INTO cloud_auth_attempts(school_id,user_id,failed_count) "
+            "VALUES('a','teacher',1)"
         )
         self.assertEqual(0, try_finalize("A" * 84, revision))
         self.assertEqual(1, self.db.execute(
@@ -447,7 +449,8 @@ class CloudflareCentralSchemaTests(unittest.TestCase):
             "WHERE school_id='a' AND id='teacher'"
         ).fetchone()[0]
         self.db.execute(
-            "UPDATE cloud_device_invitations SET expires_at=unixepoch()-1 "
+            "UPDATE cloud_device_invitations "
+            "SET created_at=unixepoch()-500, expires_at=unixepoch()-200 "
             "WHERE id='inv-123'"
         )
         self.assertEqual(0, try_finalize("A" * 84, new_revision))
