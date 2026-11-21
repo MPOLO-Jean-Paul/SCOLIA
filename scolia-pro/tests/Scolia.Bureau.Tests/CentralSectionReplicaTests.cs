@@ -268,6 +268,78 @@ public sealed class CentralSectionReplicaTests
     }
 
     [Fact]
+    public async Task Plus_de_huit_lots_signale_la_reprise_et_conserve_le_curseur()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-section-pages-" +
+            Guid.NewGuid().ToString("N"));
+        var id = Guid.NewGuid();
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            var count = 0;
+            using var replica = new CentralSectionReplica(store, store.User, School,
+                new Handler((request, _) =>
+                {
+                    Assert.Equal(HttpMethod.Get, request.Method);
+                    Assert.Contains("after=" + count, request.RequestUri?.Query);
+                    count++;
+                    return Task.FromResult(Json(HttpStatusCode.OK,
+                        System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            events = new[]
+                            {
+                                new
+                                {
+                                    revision = count,
+                                    section_id = id.ToString("D"),
+                                    code = "INF",
+                                    name = "Sciences infirmières",
+                                    is_active = 1,
+                                },
+                            },
+                            next = count,
+                            has_more = count < 9,
+                        })));
+                }));
+
+            var first = await replica.SyncAsync(new Uri("https://central.example/"), Jwt);
+            Assert.False(first.Offline);
+            Assert.True(first.HasMorePages);
+            Assert.Equal(8, first.Revision);
+            Assert.Equal(8, count);
+            Assert.Equal(8, replica.Local().Revision);
+
+            var second = await replica.SyncAsync(new Uri("https://central.example/"), Jwt);
+            Assert.False(second.Offline);
+            Assert.False(second.HasMorePages);
+            Assert.Equal(9, second.Revision);
+            Assert.Equal(9, count);
+            Assert.Equal(9, Assert.Single(second.Sections).Revision);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
+    public async Task Pagination_sans_progression_est_refusee_sans_avancer_le_curseur()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-section-empty-page-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            using var replica = new CentralSectionReplica(store, store.User, School,
+                new Handler((_, _) => Task.FromResult(Json(HttpStatusCode.OK,
+                    """{"events":[],"next":0,"has_more":true}"""))));
+            await Assert.ThrowsAsync<InvalidDataException>(() =>
+                replica.SyncAsync(new Uri("https://central.example/"), Jwt));
+            Assert.Equal(0, replica.Local().Revision);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
     public async Task Changement_de_compte_et_origine_Http_ne_livrent_ni_jeton_ni_cache()
     {
         var temp = Path.Combine(Path.GetTempPath(), "scolia-section-account-" + Guid.NewGuid().ToString("N"));
