@@ -270,6 +270,41 @@ public sealed class OfflineStore
             System.Threading.Interlocked.Increment(ref searchRevision);
     }
 
+    /// <summary>
+    /// Lecture-modification-écriture atomique d'une page JSON chiffrée.
+    /// SQLite sérialise les transactions même si deux instances du client
+    /// utilisent le même fichier hors-ligne.db. Une relève réseau ne peut
+    /// donc pas écraser une opération ajoutée pendant une attente HTTP.
+    /// Le callback doit rester synchrone et ne doit pas effectuer de réseau.
+    /// </summary>
+    public string UpdatePageFor(string user, string path, Func<string?, string> change)
+    {
+        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(path))
+            throw new ArgumentException("Compte et chemin de cache obligatoires.");
+        ArgumentNullException.ThrowIfNull(change);
+        var key = PageKeyFor(user, path);
+        string? updated = null;
+        database.Update([key], values =>
+        {
+            string? previous = null;
+            if (values[key] is { Length: > 0 } stored)
+            {
+                var page = JsonSerializer.Deserialize<SavedPage>(stored, Json)
+                    ?? throw new InvalidDataException("Cache local invalide.");
+                previous = page.Json;
+            }
+            updated = change(previous)
+                ?? throw new InvalidDataException("Mise à jour du cache invalide.");
+            values[key] = JsonSerializer.Serialize(
+                new SavedPage(updated, DateTime.Now, path), Json);
+        });
+        if (string.Equals(user, User, StringComparison.Ordinal) &&
+            (path.StartsWith("api/apprenants", StringComparison.Ordinal) ||
+             path == "api/etablissement/promotions"))
+            System.Threading.Interlocked.Increment(ref searchRevision);
+        return updated ?? throw new InvalidDataException("Cache local non enregistré.");
+    }
+
     public (string Json, DateTime SavedAt)? ReadPage(string path)
     {
         if (User.Length == 0) return null;
