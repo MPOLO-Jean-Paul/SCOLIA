@@ -388,7 +388,8 @@ public sealed class CentralSectionReplica : IDisposable
                 pending.ExpectedRevision, IsPending: true);
         return new CentralSectionLocalState(
             view.Values.OrderBy(x => x.Code, StringComparer.Ordinal).ToArray(),
-            snapshot.Pending.Count, snapshot.Revision, Offline, HasConflict, HasMorePages);
+            snapshot.Pending.Count, snapshot.Revision, Offline,
+            HasConflict || snapshot.Pending.Any(x => x.HasConflict), HasMorePages);
     }
 
     private static async Task<JsonElement> ReadJsonAsync(HttpResponseMessage response, CancellationToken ct)
