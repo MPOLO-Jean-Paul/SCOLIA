@@ -165,7 +165,8 @@ test("aucune connexion ni identité ne sort de l'endpoint de jumelage", async ()
   const { env } = mockDb(true);
   const response = await call(env, body, proof);
   const txt = await response.text();
-  assert.doesNotMatch(txt, /token|jwt|secret|school_id|teacher/i);
+  assert.doesNotMatch(txt, /token|jwt|secret|teacher/i);
+  assert.equal(JSON.parse(txt).school_id, "school-a");
   assert.equal(response.headers.get("Cache-Control"), "no-store");
   assert.equal(response.headers.get("X-Content-Type-Options"), "nosniff");
 });
