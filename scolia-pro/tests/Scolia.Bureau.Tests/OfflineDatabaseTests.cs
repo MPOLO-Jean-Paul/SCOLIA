@@ -168,6 +168,36 @@ public sealed class OfflineDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void Reprise_centrale_est_interdite_sans_session_puis_suspendue_a_la_deconnexion()
+    {
+        var store = Store("secretariat");
+        var item = new OutboxItem
+        {
+            Key = "operation-a-conserver",
+            Path = "api/apprenants",
+            User = "secretariat",
+        };
+        store.Enqueue(item);
+        Assert.False(store.CanSyncCentralInBackgroundFor("secretariat"));
+        Assert.False(Store("enseignant").CanSyncCentralInBackgroundFor("enseignant"));
+
+        store.SetCentralBackgroundAllowedFor("secretariat", true);
+        Assert.True(Store("secretariat").CanSyncCentralInBackgroundFor("SECRETARIAT"));
+        Assert.False(Store("enseignant").CanSyncCentralInBackgroundFor("enseignant"));
+
+        store.SetCentralBackgroundAllowedFor("secretariat", false);
+        Assert.False(Store("secretariat").CanSyncCentralInBackgroundFor("secretariat"));
+        Assert.Equal(item.Key, Assert.Single(Store("secretariat").Outbox()).Key);
+
+        // La récupération des identifiants révoque également la permission
+        // de reprise, sans effacer les opérations en cours.
+        store.SetCentralBackgroundAllowedFor("secretariat", true);
+        store.ForgetCredential("secretariat");
+        Assert.False(Store("secretariat").CanSyncCentralInBackgroundFor("secretariat"));
+        Assert.Equal(item.Key, Assert.Single(Store("secretariat").Outbox()).Key);
+    }
+
+    [Fact]
     public void Logging_out_clears_background_session_but_preserves_pending_operations()
     {
         var store = Store();
