@@ -1008,6 +1008,10 @@ public sealed class ShellViewModel : Observable
         api.Offline ??= new OfflineStore(ConnectionStore.CacheAddress(api.Server));
         api.Offline.User = s.UserName;
         api.Offline.RememberAccount(s.UserName);
+        // Autoriser la reprise centrale uniquement après ouverture effective
+        // de la session locale. Une déconnexion la désactive par compte.
+        api.Offline.SetCentralBackgroundAllowedFor(
+            s.UserName, !s.MustChangePassword);
         api.LicenseReadOnly = api.Offline.IsLicenseReadOnlyFor(s.UserName);
         Login.RememberAccount(s.UserName);
         // Un étudiant ne lit que ses résultats : ni données gardées des autres, ni direct, ni licence.
@@ -2170,6 +2174,18 @@ public sealed class ShellViewModel : Observable
         Raise(nameof(SwitchingAccount));
         Sync.Stop();
         Sync.Forget();
+        // La fermeture de session stoppe les nouvelles lectures centralisées
+        // sur Android/Windows, sans supprimer les données ou l'outbox SQLite.
+        try
+        {
+            if (session is { } leaving && api.Offline is { } store)
+                store.SetCentralBackgroundAllowedFor(leaving.UserName, false);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            System.Diagnostics.Trace.WriteLine(
+                $"SCOLIA central : arrêt de fond non persisté ({exception.GetType().Name}).");
+        }
         session = null;
         IsLocked = false;
         if (HasDialog) CloseDialog();
