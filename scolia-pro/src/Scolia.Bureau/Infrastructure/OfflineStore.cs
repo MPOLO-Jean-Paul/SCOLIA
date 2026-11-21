@@ -103,6 +103,24 @@ public sealed class OfflineStore
     private const string ForgottenAccountsKey = "comptes-retires:v1";
     private static string CredentialKeyFor(string account) =>
         "session:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(account.Trim().ToUpperInvariant())));
+    // Autorisation de reprise du pilote central liée à la session LOCALE.
+    // Une fermeture volontaire la désactive sans effacer le jumelage ECDSA
+    // ni les opérations en attente. L'absence de clé vaut toujours false.
+    private static string CentralBackgroundKeyFor(string account) =>
+        "central:background:authorized:" + Convert.ToHexString(
+            SHA256.HashData(Encoding.UTF8.GetBytes(account.Trim().ToUpperInvariant())));
+
+    public bool CanSyncCentralInBackgroundFor(string account) =>
+        !string.IsNullOrWhiteSpace(account) &&
+        database.Read(CentralBackgroundKeyFor(account)) == "1";
+
+    public void SetCentralBackgroundAllowedFor(string account, bool allowed)
+    {
+        if (string.IsNullOrWhiteSpace(account))
+            throw new ArgumentException("Compte de synchronisation requis.", nameof(account));
+        database.Write(CentralBackgroundKeyFor(account), allowed ? "1" : "0");
+    }
+
 
     private sealed record SavedPage(string Json, DateTime SavedAt, string? Path = null);
 
@@ -617,8 +635,11 @@ public sealed class OfflineStore
         var account = string.IsNullOrWhiteSpace(userName) ? (User.Length > 0 ? User : LastAccount) : userName.Trim();
         if (string.IsNullOrWhiteSpace(account)) return;
         var scopedKey = CredentialKeyFor(account);
-        database.Update([CredentialFile, scopedKey], values =>
+        // Réinitialiser un compte retire aussi son droit de travailler en
+        // arrière-plan jusqu'à une nouvelle authentification réussie.
+        database.Update([CredentialFile, scopedKey, CentralBackgroundKeyFor(account)], values =>
         {
+            values[CentralBackgroundKeyFor(account)] = "0";
             values[scopedKey] = string.Empty;
             var previous = DecodeCredential(values[CredentialFile]);
             if (previous is not null && string.Equals(previous.UserName, account, StringComparison.OrdinalIgnoreCase))
