@@ -75,9 +75,17 @@ public static class ConnectionStore
     /// centrale déjà vérifiée peut déclencher le travail de fond.
     /// Un mode inconnu ne doit pas créer une nouvelle route réseau.
     /// </summary>
-    public static bool ShouldScheduleBackgroundSync(string? mode, bool approvedCentralSession) =>
+    /// <summary>
+    /// Une tâche locale peut être programmée sans PC principal lorsque
+    /// l'appareil possède soit une session D1 approuvée, soit des opérations
+    /// chiffrées et une délégation de dépôt cloud encore utilisable.
+    /// Une configuration inconnue ne déclenche jamais de trafic réseau.
+    /// </summary>
+    public static bool ShouldScheduleBackgroundSync(string? mode,
+        bool approvedCentralSession, bool delegatedMailboxPending = false) =>
         mode is ConnectionSettings.Remote or ConnectionSettings.Internet ||
-        (approvedCentralSession && (mode is null or ConnectionSettings.Local));
+        ((approvedCentralSession || delegatedMailboxPending) &&
+         (mode is null or ConnectionSettings.Local));
 
     /// <summary>Vrai si ce poste porte déjà la base d'un établissement : il en est le serveur.</summary>
     public static bool HasLocalData() => File.Exists(Path.Combine(PosteAdmin.DataFolder(), "scolia.db"));

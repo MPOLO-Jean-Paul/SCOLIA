@@ -6,6 +6,8 @@ namespace Scolia.Bureau.Tests;
 
 public sealed class OfflineDatabaseTests : IDisposable
 {
+    private static readonly JsonSerializerOptions MailboxJsonOptions =
+        new(JsonSerializerDefaults.Web);
     private readonly string folder = Path.Combine(Path.GetTempPath(), "scolia-journal", Guid.NewGuid().ToString("N"));
     private readonly Uri server = new("http://journal-test:5080/");
     private OfflineStore Store(string user = "secretariat") => new(server, folder) { User = user };
@@ -183,6 +185,83 @@ public sealed class OfflineDatabaseTests : IDisposable
     {
         Assert.Equal(expected,
             ConnectionStore.ShouldScheduleBackgroundSync(mode, approved));
+    }
+
+    [Theory]
+    [InlineData(null, true, true)]
+    [InlineData(ConnectionSettings.Local, true, true)]
+    [InlineData(ConnectionSettings.Local, false, false)]
+    [InlineData("inconnu", true, false)]
+    [InlineData(ConnectionSettings.Remote, false, true)]
+    [InlineData(ConnectionSettings.Internet, false, true)]
+    public void La_reprise_d_un_depot_delegue_fonctionne_sans_PC_mais_pas_en_mode_inconnu(
+        string? mode, bool pendingDelegated, bool expected)
+    {
+        Assert.Equal(expected, ConnectionStore.ShouldScheduleBackgroundSync(
+            mode, approvedCentralSession: false,
+            delegatedMailboxPending: pendingDelegated));
+    }
+
+    [Fact]
+    public void Le_depot_chiffre_differe_exige_une_delegation_active_et_une_operation_en_attente()
+    {
+        var store = Store("secretariat");
+        store.Enqueue(new OutboxItem
+        {
+            User = "secretariat", Key = "frais-scolaires-a-valider",
+            Path = "api/paiements", Body = "{}",
+        });
+        store.Enqueue(new OutboxItem
+        {
+            User = "enseignant", Key = "autre-compte-expire",
+            Path = "api/notes", Body = "{}",
+        });
+        Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+
+        var valid = new Scolia.Domain.Cloud.CloudDepositAccess(
+            true, "https://mailbox.example/", "jeton-delegue",
+            Convert.ToBase64String(new byte[32]), "preuve-deleguee",
+            DateTime.UtcNow.AddDays(3));
+        var expired = valid with { ExpiresUtc = DateTime.UtcNow.AddMinutes(-2) };
+        store.SaveCloudAccessFor("secretariat",
+            JsonSerializer.Serialize(valid, MailboxJsonOptions));
+        store.SaveCloudAccessFor("enseignant",
+            JsonSerializer.Serialize(expired, MailboxJsonOptions));
+
+        Assert.True(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+        var pending = Assert.Single(store.Outbox());
+        // Un dépôt cloud n'est pas un encaissement validé :
+        // le paiement reste dans la file après l'accusé de stockage.
+        store.MarkDepositedFor("secretariat", pending.Id);
+        Assert.Equal(pending.Id, Assert.Single(store.Outbox()).Id);
+        Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+        Assert.Equal("secretariat",
+            Assert.Single(Store("secretariat").AccountsAwaitingCloudOutcome()));
+        // Au retour du téléphone, même sans nouvelle saisie, la boîte peut
+        // annoncer l'issue de l'ancienne opération, sans connecter le PC.
+        Assert.True(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedMailboxWork(store));
+        Assert.Single(Store("enseignant").Outbox());
+
+        store.SaveCloudAccessFor("enseignant",
+            JsonSerializer.Serialize(valid with
+            {
+                Enabled = false,
+                ExpiresUtc = DateTime.UtcNow.AddDays(3)
+            }, MailboxJsonOptions));
+        Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+        // Une délégation illisible ne peut pas autoriser de réseau, mais
+        // les opérations chiffrées locales continuent d'exister.
+        store.SaveCloudAccessFor("enseignant", "{jeton-invalide");
+        Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+        Assert.Single(Store("enseignant").Outbox());
+
+        store.SaveCloudAccessFor("secretariat",
+            JsonSerializer.Serialize(expired,
+                MailboxJsonOptions));
+        Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedMailboxWork(store));
+        // La suppression d'une délégation ne fait pas disparaître un reçu
+        // provisoire ni les opérations de paiement non validées.
+        Assert.Single(Store("secretariat").Outbox());
     }
 
     [Fact]

@@ -15,7 +15,7 @@
 1. Se connecter à <https://dash.cloudflare.com/>.
 2. Ouvrir **Workers & Pages → Create application → Import a repository / GitHub** (l'intitulé peut varier).
 3. Autoriser Cloudflare à accéder au dépôt GitHub **MPOLO-Jean-Paul/SCOLIA**. Ne pas lui donner un accès illimité à tous les dépôts si ce n'est pas nécessaire.
-4. Sélectionner le dépôt **SCOLIA**, la branche de préparation **feature/scolia-cloudflare-relay-20261107** (puis `main` une fois la branche fusionnée) et le **Root directory** : `scolia-pro/deploy/cloudflare`.
+4. Sélectionner le dépôt **SCOLIA**, la branche de préparation **release/direct-apk-scolia-pro-20261103** (puis `main` une fois la branche fusionnée) et le **Root directory** : `scolia-pro/deploy/cloudflare`.
 5. Nom du Worker : **scolia-pro-relay** (doit correspondre au champ `name` du fichier `wrangler.jsonc`).
 6. Build command : `npm run test && npm run typecheck`. Deploy command : `npx wrangler deploy`. Aucun conteneur Docker, base Postgres ou serveur Render supplémentaire n'est nécessaire.
 7. Choisir **Workers Free** et confirmer le déploiement. Le fichier Wrangler crée un Durable Object **SQLite-backed** avec la migration `v1` ; cela respecte le plan gratuit. Si Cloudflare indique qu'un plan payant est requis, ne pas souscrire et relever le message.
@@ -24,7 +24,7 @@
 Si le tableau de bord ne permet pas de choisir la branche ou le répertoire, utiliser GitHub Integration > Settings > Builds pour préciser le répertoire et la branche avant déploiement. Alternative depuis un PC disposant de Git et Node.js :
 
 ```bash
-git clone -b feature/scolia-cloudflare-relay-20261107 https://github.com/MPOLO-Jean-Paul/SCOLIA.git
+git clone -b release/direct-apk-scolia-pro-20261103 https://github.com/MPOLO-Jean-Paul/SCOLIA.git
 cd SCOLIA/scolia-pro/deploy/cloudflare
 npm ci
 npm run check
@@ -71,8 +71,61 @@ Documentation officielle :
 
 Cette erreur survient avant l'installation npm. Vérifier sur la carte du **nouveau** build Cloudflare :
 - **Git repository :** `MPOLO-Jean-Paul/SCOLIA`.
-- **Branch :** `feature/scolia-cloudflare-relay-20261107` (et surtout pas `main`).
+- **Branch :** `release/direct-apk-scolia-pro-20261103` (et surtout pas `main`).
 - **Root directory :** `scolia-pro/deploy/cloudflare`, sans barre oblique initiale.
 - Enregistrer le formulaire Settings → Builds, puis vérifier les réglages après rechargement.
 - Un bouton « Retry build » sur un ancien build `main` peut continuer à utiliser l'ancien commit. Un **nouveau commit** sur la branche de production déclenche un nouveau build via l'intégration GitHub.
 - Ne pas modifier les jetons API, ne pas supprimer le Worker et ne pas déplacer la base SQLite.
+
+
+## Échec du contrôle `Workers Builds: scolia-pro-relay` sur GitHub
+
+Ce contrôle **provient de l'intégration GitHub gérée dans le tableau de bord Cloudflare**,
+pas du workflow GitHub Actions `SCOLIA Cloudflare relais - tests sans deploiement`.
+Un test GitHub vert ne prouve donc pas que le Worker a été déployé. Si le contrôle
+externe est rouge, ouvrir sa page de build Cloudflare pour relever l'**étape** et
+le **message exact** ; ne pas déduire automatiquement une erreur de code ou de quota.
+
+Pour vérifier la configuration actuelle dans **Cloudflare → Workers & Pages →
+scolia-pro-relay → Settings → Builds** :
+
+| Paramètre | Valeur attendue |
+| --- | --- |
+| Dépôt GitHub | `MPOLO-Jean-Paul/SCOLIA` |
+| Branche de production | `release/direct-apk-scolia-pro-20261103` |
+| Root directory | `scolia-pro/deploy/cloudflare` (sans `/` initial) |
+| Build command | `npm ci --no-audit --no-fund && npm run check` |
+| Deploy command | `npx wrangler deploy` |
+| Worker name | `scolia-pro-relay` |
+
+Le nom est défini dans `wrangler.jsonc` ; il **doit correspondre** au nom
+du Worker relié au dépôt. Enregistrer les paramètres Cloudflare, puis relancer
+un **nouveau** build sur la bonne branche. Si l'interface n'affiche pas les
+paramètres de build, vérifier la connexion du dépôt au Worker existant,
+sans révoquer l'accès de tous les autres projets GitHub.
+
+**Aucune modification de ce fichier README ne change automatiquement les
+paramètres d'un compte Cloudflare.** Le présent dépôt n'a ni les secrets
+Cloudflare ni accès au tableau de bord. La migration D1 et les comptes réels
+ne doivent pas être touchés par une tentative de réparation du relais WebSocket.
+
+Source officielle : <https://developers.cloudflare.com/workers/ci-cd/builds/configuration/>
+et <https://developers.cloudflare.com/workers/ci-cd/builds/troubleshoot/>.
+
+## Continuité locale en cas d'expiration de l'ancien relais
+
+Le relais WebSocket transporte les accès au PC serveur ; il ne constitue
+**pas** le serveur métier des paiements. Si ce relais expire, Android tente
+désormais la synchronisation des sections D1 déjà approuvées **et** le dépôt
+des opérations chiffrées pour lesquelles le serveur scolaire a préalablement
+délivré une délégation encore valide.
+
+- Toutes les saisies restent dans SQLite et dans l'outbox pendant une coupure.
+- L'accusé de **dépôt** cloud n'est jamais un reçu de paiement validé.
+- Si la délégation est expirée/révoquée, l'envoi est suspendu sans perdre
+  l'opération : un compte autorisé devra renouveler son accès.
+- Les règles Android (batterie, Doze, arrêt forcé et disponibilité du réseau)
+  ne permettent pas de garantir un délai de synchronisation instantané.
+- L'autonomie **métier complète** sans PC principal nécessitera encore la
+  migration validée des inscriptions, notes et paiements vers le serveur central
+  D1, ainsi qu'un déploiement de préproduction isolé et des essais réels.

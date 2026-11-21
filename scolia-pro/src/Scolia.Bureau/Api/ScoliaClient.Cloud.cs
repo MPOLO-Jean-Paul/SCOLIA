@@ -88,13 +88,104 @@ public sealed partial class ScoliaClient
             return store.ReadCloudAccessFor(user) is { Length: > 0 } text
                 ? JsonSerializer.Deserialize<CloudDepositAccess>(text, Json.Options) : null;
         }
-        catch (JsonException) { return null; }
+        // Ne jamais déclencher de dépôt si la délégation chiffrée est
+        // illisible ou altérée. L'outbox est conservée pour une reconnexion
+        // personnelle et une nouvelle autorisation de l'établissement.
+        catch (Exception ex) when (ex is JsonException or InvalidDataException
+            or IOException or UnauthorizedAccessException or
+            System.Security.Cryptography.CryptographicException)
+        {
+            System.Diagnostics.Trace.WriteLine(
+                $"SCOLIA cloud : délégation illisible ({ex.GetType().Name}).");
+            return null;
+        }
     }
 
     private static bool Usable(CloudDepositAccess? access) =>
         access is { Enabled: true, ServiceUrl.Length: > 0, DepositToken.Length: > 0, DepositKey.Length: > 0, Delegation.Length: > 0 }
         && (access.ExpiresUtc is null || access.ExpiresUtc > DateTime.UtcNow)
         && Uri.TryCreate(access.ServiceUrl, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps;
+
+    /// <summary>
+    /// Indique si au moins une opération non déposée dispose d'une délégation
+    /// cloud encore valable. Ne dépend pas d'une connexion au PC principal.
+    /// Aucun accès n'est accordé par la simple présence d'une opération.
+    /// </summary>
+    public static bool HasPendingDelegatedDeposits(Infrastructure.OfflineStore store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+        return store.AccountsAwaitingCloudDeposit()
+            .Any(account => Usable(ReadAccess(store, account)));
+    }
+
+    /// <summary>
+    /// Reprendre les dépôts chiffrés, dans chaque compte ayant déjà reçu sa
+    /// délégation signée. Cette méthode ne valide JAMAIS les paiements :
+    /// l'accusé de dépôt conserve l'outbox jusqu'à validation métier.
+    /// </summary>
+    public async Task<bool> DepositDelegatedAccountsAsync(CancellationToken ct = default)
+    {
+        var store = Offline;
+        if (store is null) return false;
+        var originalUser = store.User;
+        try
+        {
+            foreach (var account in store.AccountsAwaitingCloudDeposit())
+            {
+                ct.ThrowIfCancellationRequested();
+                if (!Usable(ReadAccess(store, account))) continue;
+                store.User = account;
+                await DepositPendingAsync(ct);
+            }
+        }
+        finally
+        {
+            // Évite de faire passer la prochaine opération d'un utilisateur
+            // pour celle d'un autre si le même ScoliaClient reste vivant.
+            store.User = originalUser;
+        }
+        return HasPendingDelegatedDeposits(store);
+    }
+
+    /// <summary>
+    /// Le moteur local doit aussi relever les issues des dépôts antérieurs
+    /// même si aucune nouvelle opération ne doit partir.
+    /// </summary>
+    public static bool HasPendingDelegatedMailboxWork(Infrastructure.OfflineStore store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+        return HasPendingDelegatedDeposits(store) ||
+            store.AccountsAwaitingCloudOutcome()
+                .Any(account => Usable(ReadAccess(store, account)));
+    }
+
+    /// <summary>
+    /// Relever l'issue de chaque dépôt déjà autorisé sans connexion au PC.
+    /// Seule la réponse métier « applied » retire l'opération de l'outbox.
+    /// Une réponse « pending » ou « refused » reste disponible pour arbitrage.
+    /// </summary>
+    public async Task<int> ReconcileDelegatedAccountsAsync(CancellationToken ct = default)
+    {
+        var store = Offline;
+        if (store is null) return 0;
+        var originalUser = store.User;
+        var confirmed = 0;
+        try
+        {
+            foreach (var account in store.AccountsAwaitingCloudOutcome())
+            {
+                ct.ThrowIfCancellationRequested();
+                if (!Usable(ReadAccess(store, account))) continue;
+                store.User = account;
+                confirmed += await ReconcileCloudAsync(ct);
+            }
+        }
+        finally
+        {
+            store.User = originalUser;
+        }
+        return confirmed;
+    }
 
     /// <summary>
     /// Dépose, dans l'ordre, les opérations du compte pas encore en sécurité en ligne. S'arrête à la première
@@ -127,11 +218,15 @@ public sealed partial class ScoliaClient
                     }),
                 };
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", access.DepositToken);
-                using var response = await CloudHttp.SendAsync(request, ct);
+                using var response = await CloudHttp.SendAsync(
+                    request, HttpCompletionOption.ResponseHeadersRead, ct);
                 if (!response.IsSuccessStatusCode) break;
-                var body = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
-                // Déjà appliquée par le serveur (dépôt précédent) : elle quitte la file.
-                if (body.TryGetProperty("outcome", out var outcome) && outcome.GetString() == "applied")
+                // Refuser un HTTP 2xx sans vraie confirmation de stockage :
+                // ne jamais solder un paiement pour une réponse vide/illisible.
+                var body = await CentralBoundedJson.ReadAsync(response, 16_384, ct);
+                var receipt = CloudMailboxReceiptPolicy.Parse(body);
+                if (receipt == CloudMailboxReceipt.Refused) break;
+                if (receipt == CloudMailboxReceipt.Applied)
                     await Task.Run(() => store.SentFor(user, item.Id), ct);
                 else
                     await Task.Run(() => store.MarkDepositedFor(user, item.Id), ct);
@@ -140,7 +235,8 @@ public sealed partial class ScoliaClient
             return deposited;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or FormatException
-            or System.Security.Cryptography.CryptographicException or PlatformNotSupportedException or InvalidDataException) { return 0; }
+            or InvalidOperationException or System.Security.Cryptography.CryptographicException
+            or PlatformNotSupportedException or InvalidDataException) { return 0; }
         finally { depositGate.Release(); }
     }
 
@@ -164,13 +260,17 @@ public sealed partial class ScoliaClient
                 Content = JsonContent.Create(new { op_ids = deposited.Select(i => i.Key).Distinct().ToArray() }),
             };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", access.DepositToken);
-            using var response = await CloudHttp.SendAsync(request, ct);
+            using var response = await CloudHttp.SendAsync(
+                request, HttpCompletionOption.ResponseHeadersRead, ct);
             if (response.StatusCode != HttpStatusCode.OK) return 0;
-            var body = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
-            var outcomes = body.GetProperty("outcomes");
+            var body = await CentralBoundedJson.ReadAsync(response, 96_000, ct);
+            // Un seul champ inconnu ou invalide doit être détecté AVANT tout
+            // effacement d'opération : aucune confirmation partielle implicite.
+            var applied = CloudMailboxReceiptPolicy.AppliedOutcomes(
+                body, deposited.Select(item => item.Key));
             var done = 0;
             foreach (var item in deposited)
-                if (outcomes.TryGetProperty(item.Key, out var value) && value.GetString() == "applied")
+                if (applied.Contains(item.Key))
                 {
                     await Task.Run(() => store.SentFor(user, item.Id), ct);
                     done++;

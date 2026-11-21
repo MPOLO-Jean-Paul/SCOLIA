@@ -381,6 +381,19 @@ public sealed class OfflineStore
             .ToArray();
     }
 
+    /// <summary>
+    /// Comptes dont la boîte cloud contient des opérations DÉJÀ déposées,
+    /// dont on peut lire l'issue indépendamment de l'ancien PC. Le filtre de
+    /// délégation valide est appliqué ensuite par ScoliaClient.
+    /// </summary>
+    public IReadOnlyList<string> AccountsAwaitingCloudOutcome() =>
+        Load(OutboxFile)
+            .Where(item => item.Deposited && !string.IsNullOrWhiteSpace(item.User))
+            .Select(item => item.User)
+            .Distinct(StringComparer.Ordinal)
+            .Where(account => !string.IsNullOrWhiteSpace(ReadCloudAccessFor(account)))
+            .ToArray();
+
     /// <summary>L'opération est en sécurité en ligne : elle reste dans la file jusqu'à son issue.</summary>
     public void MarkDepositedFor(string user, string id) => Change((pending, _) =>
     {

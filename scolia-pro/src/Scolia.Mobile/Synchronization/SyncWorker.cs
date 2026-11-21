@@ -16,21 +16,26 @@ public sealed class SyncWorker : Worker
     private static DateTime lastResumeUtc;
 
     // La reprise Cloudflare ne requiert aucun serveur SCOLIA historique.
-    // Pour un appareil configuré "local", ne programmer un accès réseau que
-    // si une session locale et une origine centrale approuvée existent.
-    private static bool HasLocalCentralSession(ConnectionSettings? connection)
+    // Le journal D1 et le dépôt chiffré existant disposent de preuves
+    // distinctes : une autorisation D1 n'est jamais créée par le dépôt.
+    private static (bool Central, bool Mailbox) LocalBackgroundSources(
+        ConnectionSettings? connection)
     {
         if (connection is not null && connection.Mode != ConnectionSettings.Local)
-            return false;
+            return (false, false);
         try
         {
             var store = new OfflineStore(
                 ConnectionStore.CacheAddress(ConnectionStore.LocalAddress));
-            if (store.LastAccount is not { Length: > 0 } account ||
-                !store.CanSyncCentralInBackgroundFor(account))
-                return false;
-            using var pairing = new CentralPairingClient();
-            return pairing.ReadActiveOrigin(account, DeviceIdentity.Id) is not null;
+            var mailbox = ScoliaClient.HasPendingDelegatedMailboxWork(store);
+            var central = false;
+            if (store.LastAccount is { Length: > 0 } account &&
+                store.CanSyncCentralInBackgroundFor(account))
+            {
+                using var pairing = new CentralPairingClient();
+                central = pairing.ReadActiveOrigin(account, DeviceIdentity.Id) is not null;
+            }
+            return (central, mailbox);
         }
         catch (Exception exception) when (exception is IOException or
             InvalidDataException or InvalidOperationException or
@@ -39,7 +44,7 @@ public sealed class SyncWorker : Worker
         {
             Android.Util.Log.Warn("SCOLIA-Central",
                 $"Autorisation locale illisible ({exception.GetType().Name}).");
-            return false;
+            return (false, false);
         }
     }
 
@@ -48,8 +53,9 @@ public sealed class SyncWorker : Worker
     public static void ScheduleOnResume(Context context)
     {
         var saved = ConnectionStore.Load();
+        var sources = LocalBackgroundSources(saved);
         if (!ConnectionStore.ShouldScheduleBackgroundSync(
-                saved?.Mode, HasLocalCentralSession(saved))) return;
+                saved?.Mode, sources.Central, sources.Mailbox)) return;
         lock (ResumeGate)
         {
             var now = DateTime.UtcNow;
@@ -72,8 +78,9 @@ public sealed class SyncWorker : Worker
     public static void SchedulePending(Context context)
     {
         var saved = ConnectionStore.Load();
+        var sources = LocalBackgroundSources(saved);
         if (!ConnectionStore.ShouldScheduleBackgroundSync(
-                saved?.Mode, HasLocalCentralSession(saved))) return;
+                saved?.Mode, sources.Central, sources.Mailbox)) return;
         var constraints = new Constraints.Builder()
             .SetRequiredNetworkType(NetworkType.Connected)!.Build();
         var once = new OneTimeWorkRequest.Builder(typeof(SyncWorker))
@@ -128,7 +135,8 @@ public sealed class SyncWorker : Worker
         // pas retourner avant la synchronisation des sections D1.
         if (connection is null || connection.Mode == ConnectionSettings.Local)
         {
-            if (!HasLocalCentralSession(connection)) return Result.InvokeSuccess();
+            var sources = LocalBackgroundSources(connection);
+            if (!sources.Central && !sources.Mailbox) return Result.InvokeSuccess();
             return await RunCloudOnlyAsync(ConnectionStore.LocalAddress);
         }
         Uri? server = null;
@@ -218,11 +226,10 @@ public sealed class SyncWorker : Worker
             // Même lorsque le PC serveur est éteint, déposer les opérations déjà
             // autorisées auprès de la console HTTPS. L'outbox locale n'est jamais
             // soldée sur simple accusé de stockage ; seul le serveur la valide.
-            foreach (var account in store.AccountsAwaitingCloudDeposit())
+            if (!IsStopped && !timeout.IsCancellationRequested)
             {
-                if (IsStopped || timeout.IsCancellationRequested) break;
-                store.User = account;
-                await api.DepositPendingAsync(timeout.Token);
+                await api.DepositDelegatedAccountsAsync(timeout.Token);
+                await api.ReconcileDelegatedAccountsAsync(timeout.Token);
             }
             return Result.InvokeRetry();
         }
@@ -302,7 +309,17 @@ public sealed class SyncWorker : Worker
         var cache = new OfflineStore(ConnectionStore.CacheAddress(cachedServer));
         cloudApi.Offline = cache;
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(50));
-        return await SyncCentralSectionsInBackgroundAsync(cloudApi, cache, timeout.Token)
+        var centralNeedsRetry = await SyncCentralSectionsInBackgroundAsync(
+            cloudApi, cache, timeout.Token);
+        // Même si l'ancien relais a expiré, les paiements et dossiers déjà
+        // autorisés sont déposés chiffrés. Ils restent EN ATTENTE : le Worker
+        // ne les valide pas et ne produit aucun reçu définitif.
+        var mailboxNeedsRetry = await cloudApi.DepositDelegatedAccountsAsync(
+            timeout.Token);
+        // Relever aussi les issues des dépôts précédents, même sans
+        // nouvelle écriture ni accès au serveur historique.
+        await cloudApi.ReconcileDelegatedAccountsAsync(timeout.Token);
+        return centralNeedsRetry || mailboxNeedsRetry
             ? Result.InvokeRetry() : Result.InvokeSuccess();
     }
 
