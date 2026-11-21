@@ -179,13 +179,15 @@ public sealed class SyncWorker : Worker
         // depuis la première fiche. Le curseur est chiffré et propre au compte.
         // Aucun droit scolaire n'est inventé : seuls les droits de la session
         // réellement rétablie sont utilisés par ce travail différé.
-        if (active.Permissions.Contains(Perm.StudentsRead, StringComparer.OrdinalIgnoreCase))
+        var preparationKind = OfflinePreparation.KindForPermissions(active.Permissions);
+        if (preparationKind != OfflinePreparationKind.None)
         {
             try
             {
                 var prepared = await OfflinePreparation.RunAsync(api,
-                    includeFinancialAccounts: active.Permissions.Contains(
-                        Perm.PaymentsRead, StringComparer.OrdinalIgnoreCase),
+                    includeFinancialAccounts: preparationKind == OfflinePreparationKind.StudentRecords &&
+                        active.Permissions.Contains(Perm.PaymentsRead, StringComparer.OrdinalIgnoreCase),
+                    includeTeacherSheets: preparationKind == OfflinePreparationKind.AnonymousTeacherSheets,
                     ct: timeout.Token);
                 if (!prepared.Complete && prepared.Expected <= OfflinePreparation.MaximumStudents)
                     return Result.InvokeRetry();
