@@ -28,6 +28,9 @@ CREATE TABLE IF NOT EXISTS cloud_devices (
     id TEXT NOT NULL,
     user_id TEXT NOT NULL,
     approved_by TEXT NOT NULL,
+    -- Clé publique de l'appareil, jamais une clé privée.
+    -- Les anciens postes n'ont pas de clé tant que leur migration n'est pas faite.
+    public_key_jwk TEXT CHECK (public_key_jwk IS NULL OR length(public_key_jwk) BETWEEN 100 AND 512),
     approved_at INTEGER NOT NULL DEFAULT (unixepoch()),
     revoked_at INTEGER,
     revoked_by TEXT,
