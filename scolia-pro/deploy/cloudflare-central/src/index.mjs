@@ -1,5 +1,6 @@
 // Prévisualisation du service central SCOLIA, non déployée.
 import { acceptPairing } from "./pairing.mjs";
+import { issuePairingIdentityProof } from "./identity.mjs";
 // Aucune route d'émission des jetons ni de mutation scolaire n'est exposée.
 const textEncoder = new TextEncoder();
 const privilegedRoles = new Set(["secretariat", "administrateur", "direction"]);
@@ -92,6 +93,11 @@ export async function handleRequest(request, env) {
   const isDeviceRevoke = url.pathname === "/v1/admin/devices/revoke" && request.method === "POST";
   const isDeviceInvite = url.pathname === "/v1/admin/devices/invite" && request.method === "POST";
   const isPairingAcceptance = url.pathname === "/v1/pair/accept" && request.method === "POST";
+  const isPairingPasswordCheck = url.pathname === "/v1/identity/pairing-proof" &&
+    request.method === "POST";
+  // Vérification du mot de passe d'un compte PRÉEXISTANT. Cette route
+  // n'émet pas de session : seulement une preuve de 2 minutes pour le QR.
+  if (isPairingPasswordCheck) return issuePairingIdentityProof(request, env);
   // Le nouvel appareil n'a pas encore de session. Son contrôle se fait avec
   // une preuve de connexion au compte CIBLE (autre clé), puis une signature
   // de sa clé privée et une invitation du secrétariat non réutilisée.
