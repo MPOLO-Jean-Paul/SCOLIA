@@ -23,7 +23,7 @@ async function token(claims = standard, signingKey = secret) {
 }
 
 function fakeEnvironment(options = {}) {
-  const calls = [], cursorWrites = [];
+  const calls = [], cursorWrites = [], revokedWrites = [];
   const env = {
     SCOLIA_AUTH_HMAC_KEY: secret,
     DB: {
@@ -39,9 +39,12 @@ function fakeEnvironment(options = {}) {
                   return { role: options.role ?? "Secretariat" };
                 }
                 if (sql.includes("MAX(revision)")) return { latest: options.latest ?? 20 };
+                if (sql.includes("FROM cloud_devices"))
+                  return options.alreadyRevoked ? { revoked_at: now - 60 } : null;
                 throw Error("unexpected first");
               },
               async all() {
+                if (sql.includes("FROM cloud_devices")) return { results: options.devices ?? [] };
                 if (!sql.includes("FROM cloud_change_log")) throw Error("unexpected all");
                 return { results: options.events ?? [
                   { revision: 11, entity_kind: "test", entity_id: "object-1",
@@ -49,6 +52,10 @@ function fakeEnvironment(options = {}) {
                 ] };
               },
               async run() {
+                if (sql.includes("UPDATE cloud_devices")) {
+                  revokedWrites.push(params);
+                  return { success: true, meta: { changes: options.changeCount ?? 1 } };
+                }
                 if (!sql.includes("INSERT INTO cloud_sync_cursors")) throw Error("unexpected run");
                 cursorWrites.push(params);
                 return { success: true };
@@ -59,7 +66,7 @@ function fakeEnvironment(options = {}) {
       },
     },
   };
-  return { env, calls, cursorWrites };
+  return { env, calls, cursorWrites, revokedWrites };
 }
 
 async function call(path, { method = "GET", body, claims, env = fakeEnvironment().env, authorization } = {}) {
@@ -142,4 +149,72 @@ test("le compte non privilégié ne peut pas confirmer un curseur", async () => 
   const reply = await call("/v1/sync/ack", { method: "POST", body: { revision: 1 }, env });
   assert.equal(reply.status, 403);
   assert.equal(cursorWrites.length, 0);
+});
+
+test("le secrétariat liste uniquement les appareils de son établissement sans secrets", async () => {
+  const { env, calls } = fakeEnvironment({ devices: [
+    { device_id: "pc-1", user_id: "secretary", approved_by: "admin",
+      approved_at: 100, revoked_at: null, revoked_by: null },
+  ] });
+  const response = await call("/v1/admin/devices?school_id=another-school", { env });
+  assert.equal(response.status, 200);
+  const data = await response.json();
+  assert.equal(data.devices[0].device_id, "pc-1");
+  assert.equal(JSON.stringify(data).includes("secret_key"), false);
+  assert.deepEqual(calls[1].params, ["school-a"]);
+  assert.match(calls[1].sql, /WHERE school_id = \?/);
+});
+
+test("le secrétariat révoque un autre appareil et conserve son identité dans D1", async () => {
+  const { env, calls, revokedWrites } = fakeEnvironment();
+  const response = await call("/v1/admin/devices/revoke", {
+    method: "POST", body: { device_id: "phone-7" }, env,
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(),
+    { device_id: "phone-7", revoked: true, already_revoked: false });
+  assert.deepEqual(revokedWrites, [["secretary", "school-a", "phone-7"]]);
+  assert.match(calls[1].sql, /revoked_by = \?/);
+  assert.match(calls[1].sql, /WHERE school_id = \?/);
+});
+
+test("une révocation répétée reste idempotente et un appareil d'une autre école est invisible", async () => {
+  const existing = fakeEnvironment({ changeCount: 0, alreadyRevoked: true });
+  const again = await call("/v1/admin/devices/revoke", {
+    method: "POST", body: { device_id: "phone-old" }, env: existing.env,
+  });
+  assert.equal(again.status, 200);
+  assert.equal((await again.json()).already_revoked, true);
+  assert.deepEqual(existing.calls[2].params, ["school-a", "phone-old"]);
+
+  const foreign = fakeEnvironment({ changeCount: 0 });
+  const missing = await call("/v1/admin/devices/revoke", {
+    method: "POST", body: { device_id: "school-b-phone" }, env: foreign.env,
+  });
+  assert.equal(missing.status, 404);
+  assert.deepEqual(foreign.calls[2].params, ["school-a", "school-b-phone"]);
+});
+
+test("le secrétariat ne peut révoquer sa propre connexion active ni injecter une école", async () => {
+  const { env, revokedWrites } = fakeEnvironment();
+  for (const body of [
+    { device_id: "pc-1" },
+    { device_id: "phone-7", school_id: "school-b" },
+    { device_id: "" }, { device_id: "x".repeat(129) },
+    { device_id: "../secret" }, { device_id: 123 },
+  ]) {
+    const response = await call("/v1/admin/devices/revoke", { method: "POST", body, env });
+    assert.equal(response.status, body.device_id === "pc-1" ? 409 : 400);
+  }
+  assert.deepEqual(revokedWrites, []);
+});
+
+test("enseignant et promoteur ne voient ni ne révoquent les appareils", async () => {
+  for (const role of ["Enseignant", "Promoteur", "Comptabilite"]) {
+    const { env, revokedWrites } = fakeEnvironment({ role });
+    assert.equal((await call("/v1/admin/devices", { env })).status, 403);
+    assert.equal((await call("/v1/admin/devices/revoke",
+      { method: "POST", body: { device_id: "phone-7" }, env })).status, 403);
+    assert.deepEqual(revokedWrites, []);
+  }
 });
