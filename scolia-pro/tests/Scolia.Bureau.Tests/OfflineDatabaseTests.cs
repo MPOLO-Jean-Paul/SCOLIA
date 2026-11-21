@@ -197,7 +197,7 @@ public sealed class OfflineDatabaseTests : IDisposable
     {
         Assert.Equal(expected, ConnectionStore.ShouldScheduleBackgroundSync(
             mode, approvedCentralSession: false,
-            delegatedUploadPending: pendingDelegated));
+            delegatedMailboxPending: pendingDelegated));
     }
 
     [Fact]
@@ -233,6 +233,11 @@ public sealed class OfflineDatabaseTests : IDisposable
         store.MarkDepositedFor("secretariat", pending.Id);
         Assert.Equal(pending.Id, Assert.Single(store.Outbox()).Id);
         Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+        Assert.Equal("secretariat",
+            Assert.Single(Store("secretariat").AccountsAwaitingCloudOutcome()));
+        // Au retour du téléphone, même sans nouvelle saisie, la boîte peut
+        // annoncer l'issue de l'ancienne opération, sans connecter le PC.
+        Assert.True(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedMailboxWork(store));
         Assert.Single(Store("enseignant").Outbox());
 
         store.SaveCloudAccessFor("enseignant",
@@ -247,6 +252,14 @@ public sealed class OfflineDatabaseTests : IDisposable
         store.SaveCloudAccessFor("enseignant", "{jeton-invalide");
         Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
         Assert.Single(Store("enseignant").Outbox());
+
+        store.SaveCloudAccessFor("secretariat",
+            JsonSerializer.Serialize(expired,
+                new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+        Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedMailboxWork(store));
+        // La suppression d'une délégation ne fait pas disparaître un reçu
+        // provisoire ni les opérations de paiement non validées.
+        Assert.Single(Store("secretariat").Outbox());
     }
 
     [Fact]
