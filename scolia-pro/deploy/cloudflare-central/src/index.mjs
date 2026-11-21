@@ -83,7 +83,10 @@ export async function handleRequest(request, env) {
     return json({ service: "SCOLIA central preview", status: "ready" });
   const isEvents = url.pathname === "/v1/sync/events" && request.method === "GET";
   const isAck = url.pathname === "/v1/sync/ack" && request.method === "POST";
-  if (!isEvents && !isAck) return error(404, "not_found");
+  const isDeviceList = url.pathname === "/v1/admin/devices" && request.method === "GET";
+  const isDeviceRevoke = url.pathname === "/v1/admin/devices/revoke" && request.method === "POST";
+  if (!isEvents && !isAck && !isDeviceList && !isDeviceRevoke)
+    return error(404, "not_found");
   if (!env?.DB || !env?.SCOLIA_AUTH_HMAC_KEY) return error(503, "not_configured");
   try {
     const user = await authorize(request, env);
@@ -91,6 +94,55 @@ export async function handleRequest(request, env) {
     // Le journal ne dispose pas encore de filtres fins par cours / apprenant :
     // seuls les rôles avec accès global peuvent consulter les métadonnées.
     if (!privilegedRoles.has(user.role)) return error(403, "forbidden");
+
+    if (isDeviceList) {
+      // Énumérer exclusivement les appareils de l'établissement de la session
+      // vérifiée. Aucun jeton, mot de passe ou secret d'appareil ne sort de D1.
+      const result = await env.DB.prepare(
+        "SELECT id AS device_id, user_id, approved_by, approved_at, revoked_at, revoked_by " +
+        "FROM cloud_devices WHERE school_id = ? ORDER BY approved_at DESC, id LIMIT 100"
+      ).bind(user.school_id).all();
+      return json({ devices: result.results ?? [] });
+    }
+
+    if (isDeviceRevoke) {
+      if ((Number(request.headers.get("Content-Length")) || 0) > 512)
+        return error(413, "too_large");
+      let body;
+      try {
+        const raw = await request.text();
+        if (textEncoder.encode(raw).length > 512) return error(413, "too_large");
+        body = JSON.parse(raw);
+      } catch {
+        return error(400, "invalid_json");
+      }
+      if (!body || Array.isArray(body) || typeof body !== "object" ||
+          Object.keys(body).length !== 1 ||
+          typeof body.device_id !== "string" ||
+          !/^[A-Za-z0-9._:-]{1,128}$/.test(body.device_id))
+        return error(400, "invalid_device_id");
+      if (body.device_id === user.device_id)
+        return error(409, "cannot_revoke_current_device");
+
+      // Enregistrer auteur + révocation dans une seule écriture atomique.
+      // L'identité de l'école est toujours dérivée du jeton validé.
+      const updated = await env.DB.prepare(
+        "UPDATE cloud_devices SET revoked_at = unixepoch(), revoked_by = ? " +
+        "WHERE school_id = ? AND id = ? AND revoked_at IS NULL"
+      ).bind(user.sub, user.school_id, body.device_id).run();
+      if (updated.meta?.changes === 1)
+        return json({ device_id: body.device_id, revoked: true, already_revoked: false });
+      if (updated.meta?.changes !== 0)
+        return error(503, "temporarily_unavailable");
+      const existing = await env.DB.prepare(
+        "SELECT revoked_at FROM cloud_devices WHERE school_id = ? AND id = ? LIMIT 1"
+      ).bind(user.school_id, body.device_id).first();
+      if (!existing) return error(404, "not_found");
+      if (existing.revoked_at != null)
+        return json({ device_id: body.device_id, revoked: true, already_revoked: true });
+      return error(503, "temporarily_unavailable");
+    }
+
     if (isEvents) {
       const rawAfter = url.searchParams.get("after") ?? "0";
       const rawLimit = url.searchParams.get("limit") ?? "50";
