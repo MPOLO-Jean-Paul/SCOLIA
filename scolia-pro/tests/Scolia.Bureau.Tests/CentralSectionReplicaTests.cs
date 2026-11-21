@@ -212,6 +212,108 @@ public sealed class CentralSectionReplicaTests
     }
 
     [Fact]
+    public async Task Abandon_manuel_du_conflit_n_efface_pas_un_autre_journal()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-conflict-discard-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            using var replica = new CentralSectionReplica(store, store.User, School,
+                CentralOrigin, new Handler((_, _) => Task.FromResult(Json(
+                    HttpStatusCode.Conflict, """{"error":"stale_section_revision"}"""))));
+            var section = Guid.NewGuid();
+            await replica.QueueUpsertAsync(section, "INF", "Infirmière", true);
+            var conflicted = await replica.SyncAsync(CentralOrigin, Jwt);
+            Assert.True(conflicted.HasConflict);
+            await replica.DiscardConflictedSectionAsync(section);
+            Assert.Equal(0, replica.Local().PendingCount);
+            Assert.False(replica.Local().HasConflict);
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => replica.DiscardConflictedSectionAsync(section));
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
+    public async Task Reprise_manuelle_du_conflit_genere_une_nouvelle_cle_et_un_accord_d1()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-conflict-retry-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            var section = Guid.NewGuid();
+            var postCount = 0;
+            using var replica = new CentralSectionReplica(store, store.User, School,
+                CentralOrigin, new Handler(async (request, ct) =>
+                {
+                    if (request.Method == HttpMethod.Post)
+                    {
+                        postCount++;
+                        using var body = System.Text.Json.JsonDocument.Parse(
+                            await request.Content!.ReadAsStringAsync(ct));
+                        if (postCount == 1)
+                            return Json(HttpStatusCode.Conflict,
+                                """{"error":"duplicate_section_code_or_operation"}""");
+                        Assert.Equal("ACC2", body.RootElement.GetProperty("code").GetString());
+                        Assert.Equal(0, body.RootElement.GetProperty("expected_revision").GetInt64());
+                        return Json(HttpStatusCode.Created,
+                            System.Text.Json.JsonSerializer.Serialize(new
+                            {
+                                operation_id = body.RootElement.GetProperty("operation_id").GetString(),
+                                section_id = section.ToString("D"),
+                                status = "applied",
+                                revision = 9,
+                            }));
+                    }
+                    Assert.Equal(HttpMethod.Get, request.Method);
+                    return Json(HttpStatusCode.OK,
+                        System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            events = new[]
+                            {
+                                new
+                                {
+                                    revision = 9,
+                                    section_id = section.ToString("D"),
+                                    code = "ACC2",
+                                    name = "Accoucheuse 2",
+                                    is_active = 1,
+                                },
+                            },
+                            next = 9,
+                            has_more = false,
+                        }));
+                }));
+            var original = await replica.QueueUpsertAsync(
+                section, "ACC", "Accoucheuse", true);
+            Assert.True((await replica.SyncAsync(CentralOrigin, Jwt)).HasConflict);
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                replica.RetryConflictedSectionAsync(
+                    section, "ACC", "Accoucheuse", true));
+
+            var retried = await replica.RetryConflictedSectionAsync(
+                section, "ACC2", "Accoucheuse 2", true);
+            Assert.NotEqual(original, retried);
+            Assert.Equal(1, replica.Local().PendingCount);
+            Assert.False(replica.Local().HasConflict);
+            Assert.Equal("ACC2", Assert.Single(replica.Local().Sections).Code);
+
+            var synced = await replica.SyncAsync(CentralOrigin, Jwt);
+            Assert.False(synced.Offline);
+            Assert.False(synced.HasConflict);
+            Assert.Equal(0, synced.PendingCount);
+            Assert.Equal(9, synced.Revision);
+            Assert.Equal("ACC2", Assert.Single(synced.Sections).Code);
+            Assert.Equal(2, postCount);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
     public async Task Historique_plus_ancien_ne_remplace_pas_une_section_deja_confirmee_apres_coupure()
     {
         var temp = Path.Combine(Path.GetTempPath(), "scolia-section-history-" +
