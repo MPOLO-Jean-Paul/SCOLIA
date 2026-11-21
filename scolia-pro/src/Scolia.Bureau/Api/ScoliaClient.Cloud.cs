@@ -198,4 +198,18 @@ public sealed partial class ScoliaClient
         return await central.PairAsync(trustedCentralOrigin, invitationId,
             token, userName, password, Infrastructure.DeviceIdentity.Id, ct);
     }
+
+    /// <summary>
+    /// Consulte les métadonnées D1 depuis Windows ou Android. Cette route ne
+    /// contient pas encore les données scolaires et n'avance aucun checkpoint.
+    /// Le JWT fourni doit être une session centrale et NON le JWT de jumelage.
+    /// </summary>
+    public async Task<CentralJournalPage> ReadCentralJournalPreviewAsync(
+        Uri trustedCentralOrigin, string centralSessionJwt,
+        long afterRevision = 0, CancellationToken ct = default)
+    {
+        using var journal = new CentralJournalClient();
+        return await journal.ReadMetadataAsync(trustedCentralOrigin,
+            centralSessionJwt, afterRevision, ct: ct);
+    }
 }
