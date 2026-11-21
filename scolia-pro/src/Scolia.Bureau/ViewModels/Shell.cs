@@ -22,6 +22,7 @@ public sealed class ShellViewModel : Observable
     private DateTime nextLicenseCheckUtc = DateTime.MinValue;
     private DateTime nextCentralSyncUtc = DateTime.MinValue;
     private int centralSyncBusy;
+    private CancellationTokenSource? centralSyncCancellation;
     private SessionDto? session;
     private PageViewModel? current;
     private object? dialog;
@@ -1012,6 +1013,7 @@ public sealed class ShellViewModel : Observable
         // de la session locale. Une déconnexion la désactive par compte.
         api.Offline.SetCentralBackgroundAllowedFor(
             s.UserName, !s.MustChangePassword);
+        nextCentralSyncUtc = DateTime.MinValue;
         api.LicenseReadOnly = api.Offline.IsLicenseReadOnlyFor(s.UserName);
         Login.RememberAccount(s.UserName);
         // Un étudiant ne lit que ses résultats : ni données gardées des autres, ni direct, ni licence.
@@ -1349,7 +1351,12 @@ public sealed class ShellViewModel : Observable
     {
         try
         {
+            // Même si une minuterie a déjà démarré, une déconnexion
+            // invalide immédiatement sa tentative de synchronisation.
+            if (api.Offline?.CanSyncCentralInBackgroundFor(account) != true)
+                return;
             using var budget = new CancellationTokenSource(TimeSpan.FromSeconds(35));
+            centralSyncCancellation = budget;
             var state = await api.SyncActiveCentralSectionsAsync(account, budget.Token);
             if (state is { HasMorePages: true })
                 nextCentralSyncUtc = DateTime.UtcNow.AddSeconds(15);
@@ -1370,7 +1377,11 @@ public sealed class ShellViewModel : Observable
             System.Diagnostics.Trace.WriteLine(
                 $"SCOLIA central : reprise différée ({exception.GetType().Name}).");
         }
-        finally { Interlocked.Exchange(ref centralSyncBusy, 0); }
+        finally
+        {
+            centralSyncCancellation = null;
+            Interlocked.Exchange(ref centralSyncBusy, 0);
+        }
     }
 
     private async Task<long?> ReadRevisionAsync()
@@ -2174,6 +2185,8 @@ public sealed class ShellViewModel : Observable
         Raise(nameof(SwitchingAccount));
         Sync.Stop();
         Sync.Forget();
+        try { centralSyncCancellation?.Cancel(); }
+        catch (ObjectDisposedException) { }
         // La fermeture de session stoppe les nouvelles lectures centralisées
         // sur Android/Windows, sans supprimer les données ou l'outbox SQLite.
         try
