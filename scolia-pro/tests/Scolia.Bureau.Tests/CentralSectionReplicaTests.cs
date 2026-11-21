@@ -394,6 +394,42 @@ public sealed class CentralSectionReplicaTests
         finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Changement_de_compte_pendant_attente_reseau_ne_retourne_pas_ancien_cache(
+        bool connexionInterrompue)
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-section-user-switch-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            var started = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            var response = new TaskCompletionSource<HttpResponseMessage>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            using var replica = new CentralSectionReplica(store, store.User, School,
+                new Handler((_, _) =>
+                {
+                    started.TrySetResult(true);
+                    return response.Task;
+                }));
+            var operation = replica.SyncAsync(new Uri("https://central.example/"), Jwt);
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            store.User = "ENSEIGNANT";
+            if (connexionInterrompue)
+                response.SetException(new HttpRequestException("Réseau absent"));
+            else
+                response.SetResult(Json(HttpStatusCode.ServiceUnavailable,
+                    """{"error":"unavailable"}"""));
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await operation);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
     [Fact]
     public async Task Changement_de_compte_et_origine_Http_ne_livrent_ni_jeton_ni_cache()
     {
