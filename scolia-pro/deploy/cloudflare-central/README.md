@@ -7,10 +7,11 @@
 
 Le test `/health` du Worker a déjà confirmé des connexions à D1 et R2, **mais il ne valide ni connexion de compte, ni paiement, ni synchronisation scolaire**.
 
-Le script `migrations/0001_core.sql` prépare la **structure centrale minimale** nécessaire à un futur service métier :
+Les migrations `0001_core.sql` et `0002_invitations.sql` préparent la **structure centrale minimale** nécessaire à un futur service métier :
 - écoles séparées ;
 - utilisateurs et rôles liés à leur école ;
 - appareils liés au compte utilisateur autorisé par un responsable, avec auteur de révocation tracé ;
+- invitations de 10 minutes liées au compte cible, dont seul le SHA-256 du code QR est conservé ;
 - opérations identifiées de façon stable avec contrainte d'idempotence ;
 - journal chronologique de changements validés et curseurs par appareil.
 
@@ -49,8 +50,10 @@ Fonctionnement protégé :
 - Le Worker vérifie également dans D1 que l'établissement est actif, que le compte est habilité et que l'appareil n'a pas été révoqué.
 - `GET /v1/admin/devices?after=...&limit=50` : liste paginée (1 à 100 éléments par page, curseur stable par identifiant) des appareils du **seul établissement authentifié**, avec métadonnées d'approbation/révocation et aucun secret. La réponse contient `devices`, `next`, `has_more`.
 - `POST /v1/admin/devices/revoke` : corps `{"device_id":"identifiant"}`, réservé au secrétariat/direction. Marque l'appareil comme révoqué et conserve `revoked_by` dans le même UPDATE D1. Une deuxième révocation retourne `already_revoked:true`; une tentative sur l'appareil de la session active est bloquée afin d'éviter un verrouillage accidentel du poste administratif.
+- `POST /v1/admin/devices/invite` avec `{"target_user_id":"identifiant"}` : génère 256 bits aléatoires valables 10 minutes pour un compte actif du même établissement, et ne conserve que leur empreinte SHA-256 dans D1. Le code en clair est retourné **une seule fois**, dans une réponse HTTPS `no-store`.
+- `GET /v1/sync/operations/{operation_id}` : retourne pour le seul compte et appareil émetteurs le statut `pending`, `applied` ou `rejected` ; aucun montant, nom d'apprenant ni détail financier.
 - Une révocation est appliquée à la **prochaine requête réseau** du téléphone : elle n'est pas instantanée si le téléphone est hors ligne. La politique locale de durée de validité reste à définir et à tester.
-- Ces routes **ne créent pas d'appareil** : l'appairage QR sécurisé et la délivrance initiale des comptes restent à implémenter avant toute utilisation réelle.
+- L'invitation de jumelage n'active **aucun appareil** : il reste indispensable de vérifier indépendamment les identifiants du compte cible, puis de consommer le QR une seule fois de manière atomique. Le prototype n'expose volontairement aucune route de consommation du token. Les sessions réelles et le renouvellement restent à implémenter.
 - Les routes de lecture actuelles ne sont accessibles qu'aux rôles de direction et secrétariat. Les autorisations spécifiques des enseignants, de la comptabilité et des étudiants seront construites avant l'accès aux contenus correspondants.
 - Le secret `SCOLIA_AUTH_HMAC_KEY` (clé aléatoire base64url de 32 octets minimum) doit être défini exclusivement dans les paramètres protégés du Worker **après** création d'un service d'identité approuvé. Jamais dans le dépôt, une APK ou les fichiers de configuration Android.
 - **Aucun service d'émission ou de renouvellement des jetons n'existe encore**. Le prototype ne peut pas authentifier les utilisateurs réels à ce stade.
@@ -68,7 +71,7 @@ Le workflow `SCOLIA Cloudflare Central Preview - securite API` vérifie ces rout
 ## Portes de validation avant activation de l'API
 
 1. Inventorier **toutes** les données métier réelles du modèle EF Core 1.2.86 et définir une migration complète vers D1.
-2. Concevoir les sessions natives, les jetons de renouvellement et l'approbation QR des appareils, sans placer de secret central dans un APK. Le prototype permet déjà liste/révocation des appareils, **mais pas l'activation initiale ou la création des comptes**.
+2. Concevoir les sessions natives et leur renouvellement, l'approbation QR des appareils avec une **preuve distincte de connexion du compte cible**, sans placer de secret central dans une APK. Le prototype permet maintenant liste/révocation et **émission d'invitations**, mais pas leur consommation, l'activation initiale ni la création de comptes.
 3. Implémenter la gestion des comptes du secrétariat avec droits vérifiés côté cloud ; propagation des révocations.
 4. Développer les API métier des inscriptions, notes, présences et surtout des paiements (atomiques, idempotents, conformes aux règles SCOLIA existantes).
 5. Implémenter `push/pull` des changements validés, pagination par révision, tombstones et traitement des conflits.
