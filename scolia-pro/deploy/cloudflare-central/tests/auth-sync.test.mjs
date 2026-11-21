@@ -61,7 +61,7 @@ function fakeEnvironment(options = {}) {
                 }
                 if (sql.includes("INSERT INTO cloud_device_invitations")) {
                   invitationWrites.push(params);
-                  return { success: true, meta: { changes: 1 } };
+                  return { success: true, meta: { changes: options.invitationChangeCount ?? 1 } };
                 }
                 if (!sql.includes("INSERT INTO cloud_sync_cursors")) throw Error("unexpected run");
                 cursorWrites.push(params);
@@ -308,6 +308,8 @@ test("invitation secrétariat : code non stocké et expiration courte", async ()
   assert.equal(record[2], "teacher");
   assert.equal(record[3], "secretary");
   assert.equal(record[5], data.expires_at);
+  assert.equal(record[6], "school-a");
+  assert.equal(record[7], "teacher");
   assert.equal(record[4].length, 64);
   const digest = await crypto.subtle.digest("SHA-256", Buffer.from(data.token, "base64url"));
   assert.equal(record[4], Buffer.from(digest).toString("hex"));
@@ -344,4 +346,18 @@ test("enseignant et comptabilité ne peuvent inviter, le QR seul n'ouvre aucun c
     method: "POST", body: { target_user_id: "../bad" },
     env: fakeEnvironment({ targetEnabled: true }).env,
   })).status, 400);
+});
+
+test("au-delà de trois QR actifs pour un compte, l'invitation est refusée", async () => {
+  const { env, invitationWrites } = fakeEnvironment({
+    targetEnabled: true, invitationChangeCount: 0,
+  });
+  const response = await call("/v1/admin/devices/invite", {
+    method: "POST", body: { target_user_id: "teacher" }, env,
+  });
+  assert.equal(response.status, 429);
+  assert.deepEqual(await response.json(), { error: "too_many_active_invitations" });
+  assert.equal(invitationWrites.length, 1);
+  assert.equal(invitationWrites[0][6], "school-a");
+  assert.equal(invitationWrites[0][7], "teacher");
 });
