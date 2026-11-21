@@ -51,7 +51,7 @@ public sealed class CentralSectionReplicaTests
                 Assert.True(response.Offline);
                 Assert.Equal(1, response.PendingCount);
             }
-            using var next = new CentralSectionReplica(store, store.User, School, CentralOrigin));
+            using var next = new CentralSectionReplica(store, store.User, School, CentralOrigin);
             var saved = next.Local();
             Assert.Equal(1, saved.PendingCount);
             Assert.Equal("Sciences infirmières", Assert.Single(saved.Sections).Name);
@@ -150,7 +150,7 @@ public sealed class CentralSectionReplicaTests
                 Assert.False(confirmed.IsPending);
                 Assert.Equal(2, calls);
             }
-            using var reopened = new CentralSectionReplica(store, store.User, School, CentralOrigin));
+            using var reopened = new CentralSectionReplica(store, store.User, School, CentralOrigin);
             var saved = reopened.Local();
             Assert.DoesNotContain(saved.Sections, x => x.IsPending);
             Assert.Equal(0, saved.PendingCount);
@@ -273,7 +273,7 @@ public sealed class CentralSectionReplicaTests
                 Assert.Equal(2, gets);
             }
 
-            using var reopened = new CentralSectionReplica(store, store.User, School, CentralOrigin));
+            using var reopened = new CentralSectionReplica(store, store.User, School, CentralOrigin);
             var saved = Assert.Single(reopened.Local().Sections);
             Assert.Equal("INF", saved.Code);
             Assert.Equal(70, saved.Revision);
@@ -412,7 +412,7 @@ public sealed class CentralSectionReplicaTests
                     entered.TrySetResult(true);
                     return response.Task;
                 }));
-            using var editor = new CentralSectionReplica(secondStore, secondStore.User, School, CentralOrigin));
+            using var editor = new CentralSectionReplica(secondStore, secondStore.User, School, CentralOrigin);
             var ongoing = sync.SyncAsync(new Uri("https://central.example/"), Jwt);
             await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
             var id = Guid.NewGuid();
@@ -440,8 +440,8 @@ public sealed class CentralSectionReplicaTests
                 { User = "SECRETARIAT" };
             var secondStore = new OfflineStore(new Uri("https://school.example/"), temp)
                 { User = "SECRETARIAT" };
-            using var first = new CentralSectionReplica(firstStore, firstStore.User, School, CentralOrigin));
-            using var second = new CentralSectionReplica(secondStore, secondStore.User, School, CentralOrigin));
+            using var first = new CentralSectionReplica(firstStore, firstStore.User, School, CentralOrigin);
+            using var second = new CentralSectionReplica(secondStore, secondStore.User, School, CentralOrigin);
             var section = Guid.NewGuid();
             async Task<bool> TryQueue(CentralSectionReplica replica)
             {
@@ -568,7 +568,7 @@ public sealed class CentralSectionReplicaTests
         {
             var store = new OfflineStore(new Uri("https://school.example/"), temp)
                 { User = "SECRETARIAT" };
-            using var replica = new CentralSectionReplica(store, store.User, School, CentralOrigin));
+            using var replica = new CentralSectionReplica(store, store.User, School, CentralOrigin);
             store.User = "ENSEIGNANT";
             Assert.Throws<InvalidOperationException>(() => replica.Local());
             await Assert.ThrowsAsync<ArgumentException>(() => replica.SyncAsync(
