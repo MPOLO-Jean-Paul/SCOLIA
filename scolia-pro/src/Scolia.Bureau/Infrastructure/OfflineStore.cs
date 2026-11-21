@@ -207,7 +207,10 @@ public sealed class OfflineStore
         database.Write(PageKeyFor(user, path),
             JsonSerializer.Serialize(new SavedPage(json, DateTime.Now, path), Json));
     }
-    private string PagePrefix => "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(User.ToUpperInvariant()))) + ":";
+    private static string PagePrefixFor(string account) =>
+        "page:" + Convert.ToHexString(SHA256.HashData(
+            Encoding.UTF8.GetBytes(account.Trim().ToUpperInvariant()))) + ":";
+    private string PagePrefix => PagePrefixFor(User);
     private string PageKey(string path) => PageKeyFor(User, path);
     private static string PageKeyFor(string user, string path) =>
         "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(user.ToUpperInvariant()))) +
@@ -598,6 +601,42 @@ public sealed class OfflineStore
             .Contains(userName.Trim(), StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
+    /// Inclut les opérations du nouveau pilote D1 dans la vérification de
+    /// retrait d'un compte. Le chemin de chaque page est dans son enveloppe
+    /// SQLite chiffrée : il faut donc les déchiffrer uniquement à la demande,
+    /// jamais dans un index public. Les anciennes répliques v1 restent prises
+    /// en compte pour ne pas orpheliner une saisie non migrée.
+    /// </summary>
+    private bool HasPendingCentralSectionsFor(string account)
+    {
+        const int scanLimit = 4096;
+        var pages = database.ReadPrefix(PagePrefixFor(account), scanLimit);
+        // Si le compte dépasse cette borne, refuser le retrait plutôt que
+        // supposer à tort que la suite du cache n'a pas de modifications.
+        if (pages.Count == scanLimit) return true;
+        foreach (var stored in pages)
+        {
+            SavedPage? page;
+            try { page = JsonSerializer.Deserialize<SavedPage>(stored, Json); }
+            catch (JsonException) { return true; } // Cache illisible : refuser le retrait.
+            if (page is null) return true;
+            if (page.Path?.StartsWith("central:sections:v", StringComparison.Ordinal) != true)
+                continue;
+            try
+            {
+                using var doc = JsonDocument.Parse(page.Json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object ||
+                    !doc.RootElement.TryGetProperty("Pending", out var pending) ||
+                    pending.ValueKind != JsonValueKind.Array)
+                    return true;
+                if (pending.GetArrayLength() > 0) return true;
+            }
+            catch (JsonException) { return true; }
+        }
+        return false;
+    }
+
+    /// <summary>
     /// Oublie un compte sur cet appareil, et seulement lui : plus de suggestion ni de
     /// connexion avec son ancienne preuve hors ligne. Les écritures en attente
     /// interdisent ce retrait pour éviter de perdre leur auteur et leur reprise.
@@ -607,8 +646,11 @@ public sealed class OfflineStore
     {
         if (string.IsNullOrWhiteSpace(userName)) return false;
         var account = userName.Trim();
-        if (OutboxFor(account).Count != 0 ||
-            Load(ConflictFile).Any(item => string.Equals(item.User, account, StringComparison.OrdinalIgnoreCase)))
+        if (Load(OutboxFile).Any(item =>
+                string.Equals(item.User, account, StringComparison.OrdinalIgnoreCase)) ||
+            Load(ConflictFile).Any(item =>
+                string.Equals(item.User, account, StringComparison.OrdinalIgnoreCase)) ||
+            HasPendingCentralSectionsFor(account))
             return false;
         ForgetCredential(account);
         database.Update([LastAccountKey, KnownAccountsKey, ForgottenAccountsKey], values =>
