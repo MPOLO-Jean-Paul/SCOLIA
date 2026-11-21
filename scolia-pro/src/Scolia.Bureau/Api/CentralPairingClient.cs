@@ -131,6 +131,12 @@ public sealed class CentralPairingClient : IDisposable
             school.GetString() is not { Length: > 0 and <= 128 } schoolId ||
             !ValidIdentifier(schoolId))
             throw new InvalidDataException("L'établissement n'est pas identifié dans la confirmation.");
+        // L'école approuvée est conservée sous une enveloppe locale protégée.
+        // Le mot de passe et les JWT temporaires ne sont jamais sauvegardés.
+        var registration = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(
+            new { school_id = schoolId }));
+        try { SecretStore.Save(DevicePath(origin, deviceId, userName, keyFolder, ".meta"), registration); }
+        finally { CryptographicOperations.ZeroMemory(registration); }
         return new CentralPairingResult(deviceId, Approved: true, SessionIssued: false, schoolId);
     }
 
@@ -190,6 +196,38 @@ public sealed class CentralPairingClient : IDisposable
         return new CentralSession(jwt, DateTimeOffset.UtcNow.AddSeconds(seconds), schoolId, deviceId);
     }
 
+    /// <summary>
+    /// Restaurer l'école approuvée depuis le stockage chiffré Android/Windows,
+    /// sans accepter une adresse cloud fournie par un QR arbitraire.
+    /// </summary>
+    public string? ReadSavedSchoolId(Uri trustedOrigin, string userName, string deviceId)
+    {
+        var origin = RequireTrustedHttps(trustedOrigin);
+        if (!ValidIdentifier(deviceId) || string.IsNullOrWhiteSpace(userName))
+            throw new ArgumentException("Appareil ou compte invalide.");
+        var path = DevicePath(origin, deviceId, userName, keyFolder, ".meta");
+        if (!File.Exists(path)) return null;
+        var clear = SecretStore.Unprotect(File.ReadAllBytes(path));
+        try
+        {
+            using var doc = JsonDocument.Parse(clear);
+            if (!doc.RootElement.TryGetProperty("school_id", out var item) ||
+                item.GetString() is not { Length: > 0 and <= 128 } schoolId ||
+                !ValidIdentifier(schoolId))
+                throw new InvalidDataException("L'inscription centrale locale est invalide.");
+            return schoolId;
+        }
+        finally { CryptographicOperations.ZeroMemory(clear); }
+    }
+
+    public Task<CentralSession> OpenSavedSessionAsync(
+        Uri trustedOrigin, string userName, string deviceId, CancellationToken ct = default)
+    {
+        var schoolId = ReadSavedSchoolId(trustedOrigin, userName, deviceId) ??
+            throw new InvalidOperationException("Aucun jumelage central confirmé sur cet appareil.");
+        return OpenSessionAsync(trustedOrigin, schoolId, userName, deviceId, ct);
+    }
+
     private static bool ValidIdentifier(string value) =>
         value.Length is > 0 and <= 128 &&
         value.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or ':' or '-');
@@ -212,14 +250,20 @@ public sealed class CentralPairingClient : IDisposable
     private static string Base64Url(ReadOnlySpan<byte> bytes) =>
         Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 
+    private static string DevicePath(Uri origin, string deviceId, string userName,
+        string folder, string extension)
+    {
+        var name = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+            origin.AbsoluteUri + "|" + deviceId + "|" + userName.ToUpperInvariant())));
+        return Path.Combine(folder, name + extension);
+    }
+
     private static ECDsa LoadOrCreateDeviceKey(Uri origin, string deviceId, string userName, string folder,
         bool requireExisting = false)
     {
         // Le nom du fichier est anonyme, unique à l'origine, l'appareil et le
         // compte. Le contenu est protégé par DPAPI Windows / Keystore Android.
-        var keyName = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
-            origin.AbsoluteUri + "|" + deviceId + "|" + userName.ToUpperInvariant())));
-        var path = Path.Combine(folder, keyName + ".key");
+        var path = DevicePath(origin, deviceId, userName, folder, ".key");
         var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         try
         {
