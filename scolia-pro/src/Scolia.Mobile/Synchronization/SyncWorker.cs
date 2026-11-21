@@ -167,9 +167,13 @@ public sealed class SyncWorker : Worker
         else if (connection?.Mode == ConnectionSettings.Internet)
         {
             var saved = RemoteConnection.Load();
-            if (saved is null || saved.Host)
+            // Désactivation volontaire de la liaison Internet : ne pas la
+            // contourner en lançant un transfert D1 en arrière-plan.
+            if (saved is null || saved.Host || !saved.Enabled)
                 return Result.InvokeSuccess();
-            if (!saved.Enabled || saved.Link.ExpiresUtc <= DateTime.UtcNow)
+            // Une liaison active mais périmée ne bloque pas D1 : la clé de
+            // l'école, le compte et l'origine centrale restent vérifiés.
+            if (saved.Link.ExpiresUtc <= DateTime.UtcNow)
                 return await RunCloudOnlyAsync(saved.Link.VirtualServer);
             relay = saved.Link;
             server = relay.VirtualServer;
