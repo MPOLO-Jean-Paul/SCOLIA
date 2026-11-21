@@ -295,7 +295,7 @@ public sealed class CentralSectionReplica : IDisposable
                     };
                     request.Headers.Authorization =
                         new AuthenticationHeaderValue("Bearer", centralSessionJwt);
-                    using var result = await http.SendAsync(request, ct);
+                    using var result = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
                     if (result.StatusCode == HttpStatusCode.Conflict)
                     {
                         // Le serveur ne transmet qu'un code d'erreur de
@@ -370,7 +370,7 @@ public sealed class CentralSectionReplica : IDisposable
                             "&limit=50"));
                     request.Headers.Authorization =
                         new AuthenticationHeaderValue("Bearer", centralSessionJwt);
-                    using var result = await http.SendAsync(request, ct);
+                    using var result = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
                     if (result.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized)
                         throw new CentralPairingException((int)result.StatusCode,
                             "La lecture centrale de cette école n'est plus autorisée.");
