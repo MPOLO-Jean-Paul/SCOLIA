@@ -3,7 +3,12 @@
 // Les droits et l'école sont TOUJOURS issus d'une session JWT revérifiée en D1.
 const encoder = new TextEncoder();
 const adminRoles = new Set(["secretariat", "administrateur", "direction"]);
-const validId = /^[0-9a-fA-F-]{36}$/;
+// Aligné sur Guid.TryParse côté Windows/Android : un faux UUID pourrait
+// empoisonner la lecture des événements et bloquer toutes les répliques.
+const validId = /^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$/;
+const isNonEmptyUuid = value =>
+  typeof value === "string" && validId.test(value) &&
+  value.toLowerCase() !== "00000000-0000-0000-0000-000000000000";
 const validCode = /^[A-Z0-9_-]{2,16}$/;
 
 function respond(value, status = 200) {
@@ -22,7 +27,7 @@ function normalized(input) {
   if (!input || typeof input !== "object" || Array.isArray(input) ||
       Object.keys(input).sort().join(",") !==
       "code,expected_revision,is_active,name,operation_id,section_id" ||
-      !validId.test(input.section_id) || !validId.test(input.operation_id) ||
+      !isNonEmptyUuid(input.section_id) || !isNonEmptyUuid(input.operation_id) ||
       typeof input.code !== "string" ||
       !validCode.test(input.code) ||
       typeof input.name !== "string" ||
