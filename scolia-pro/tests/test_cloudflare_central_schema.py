@@ -333,6 +333,52 @@ class CloudflareCentralSchemaTests(unittest.TestCase):
             "WHERE school_id='b' AND user_id='teacher'"
         ).fetchone())
 
+    def test_password_or_role_change_invalidates_old_tokens(self):
+        self.db.execute(
+            "INSERT INTO cloud_auth_attempts(school_id,user_id,failed_count) "
+            "VALUES('a','teacher',4)"
+        )
+        before = self.db.execute(
+            "SELECT permission_revision FROM cloud_users "
+            "WHERE school_id='a' AND id='teacher'"
+        ).fetchone()[0]
+        self.db.execute(
+            "UPDATE cloud_users SET password_hash=?, must_change_password=0 "
+            "WHERE school_id='a' AND id='teacher'",
+            ("A" * 84,),
+        )
+        after = self.db.execute(
+            "SELECT permission_revision FROM cloud_users "
+            "WHERE school_id='a' AND id='teacher'"
+        ).fetchone()[0]
+        self.assertGreater(after, before)
+        self.assertIsNone(self.db.execute(
+            "SELECT failed_count FROM cloud_auth_attempts "
+            "WHERE school_id='a' AND user_id='teacher'"
+        ).fetchone())
+        self.assertEqual(1, self.db.execute(
+            "SELECT permission_revision FROM cloud_users "
+            "WHERE school_id='b' AND id='teacher'"
+        ).fetchone()[0])
+        self.db.execute(
+            "UPDATE cloud_users SET role='secretariat' "
+            "WHERE school_id='a' AND id='teacher'"
+        )
+        role_revision = self.db.execute(
+            "SELECT permission_revision FROM cloud_users "
+            "WHERE school_id='a' AND id='teacher'"
+        ).fetchone()[0]
+        self.assertGreater(role_revision, after)
+        # Une modification sans changement effectif du rôle ne révoque rien.
+        self.db.execute(
+            "UPDATE cloud_users SET role='secretariat' "
+            "WHERE school_id='a' AND id='teacher'"
+        )
+        self.assertEqual(role_revision, self.db.execute(
+            "SELECT permission_revision FROM cloud_users "
+            "WHERE school_id='a' AND id='teacher'"
+        ).fetchone()[0])
+
     def test_reapplying_migration_is_additive_and_safe(self):
         self.add_operation("a", "survives")
         self.db.executescript(MIGRATION.read_text(encoding="utf-8"))
