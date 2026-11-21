@@ -212,4 +212,30 @@ public sealed partial class ScoliaClient
         return await journal.ReadMetadataAsync(trustedCentralOrigin,
             centralSessionJwt, afterRevision, ct: ct);
     }
+
+    /// <summary>Session de 15 minutes obtenue par la clé de l'appareil déjà
+    /// appairé, sans stocker de JWT ni réenvoyer un mot de passe.</summary>
+    public async Task<CentralSession> OpenCentralSessionAsync(
+        Uri trustedCentralOrigin, string schoolId, string userName,
+        CancellationToken ct = default)
+    {
+        using var central = new CentralPairingClient();
+        return await central.OpenSessionAsync(trustedCentralOrigin, schoolId,
+            userName, Infrastructure.DeviceIdentity.Id, ct);
+    }
+
+    /// <summary>
+    /// Parcours complet d'identité native : ouvrir une session par ECDSA,
+    /// puis lire UNIQUEMENT le journal informatif D1. Aucun accusé de
+    /// réception ni écriture scolaire n'est exécuté.
+    /// </summary>
+    public async Task<CentralJournalPage> CheckCentralJournalAsync(
+        Uri trustedCentralOrigin, string schoolId, string userName,
+        long afterRevision = 0, CancellationToken ct = default)
+    {
+        var session = await OpenCentralSessionAsync(
+            trustedCentralOrigin, schoolId, userName, ct);
+        return await ReadCentralJournalPreviewAsync(
+            trustedCentralOrigin, session.AccessToken, afterRevision, ct);
+    }
 }
