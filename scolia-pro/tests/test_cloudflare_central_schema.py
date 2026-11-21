@@ -10,6 +10,7 @@ MIGRATION = (
 )
 INVITATIONS_MIGRATION = MIGRATION.with_name("0002_invitations.sql")
 IDENTITY_MIGRATION = MIGRATION.with_name("0003_password_identity.sql")
+SESSION_MIGRATION = MIGRATION.with_name("0004_device_sessions.sql")
 HASH = "a" * 64
 
 
@@ -19,6 +20,7 @@ class CloudflareCentralSchemaTests(unittest.TestCase):
         self.db.executescript(MIGRATION.read_text(encoding="utf-8"))
         self.db.executescript(INVITATIONS_MIGRATION.read_text(encoding="utf-8"))
         self.db.executescript(IDENTITY_MIGRATION.read_text(encoding="utf-8"))
+        self.db.executescript(SESSION_MIGRATION.read_text(encoding="utf-8"))
         self.db.execute("INSERT INTO cloud_schools(id,display_name) VALUES('a','École A')")
         self.db.execute("INSERT INTO cloud_schools(id,display_name) VALUES('b','École B')")
         for school in ("a", "b"):
@@ -454,6 +456,39 @@ class CloudflareCentralSchemaTests(unittest.TestCase):
             "WHERE id='inv-123'"
         )
         self.assertEqual(0, try_finalize("A" * 84, new_revision))
+
+    def test_session_nonce_is_unique_per_device_and_school(self):
+        nonce = "d" * 64
+        self.db.execute(
+            """INSERT INTO cloud_session_nonces(school_id,device_id,nonce_sha256)
+               VALUES('a','phone',?)""", (nonce,)
+        )
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.db.execute(
+                """INSERT INTO cloud_session_nonces(school_id,device_id,nonce_sha256)
+                   VALUES('a','phone',?)""", (nonce,)
+            )
+        # Les établissements ont des espaces de nonces indépendants.
+        self.db.execute(
+            """INSERT INTO cloud_session_nonces(school_id,device_id,nonce_sha256)
+               VALUES('b','phone',?)""", (nonce,)
+        )
+        self.assertEqual(2, self.db.execute(
+            "SELECT COUNT(*) FROM cloud_session_nonces"
+        ).fetchone()[0])
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.db.execute(
+                """INSERT INTO cloud_session_nonces(school_id,device_id,nonce_sha256)
+                   VALUES('a','unknown-phone',?)""", ("b" * 64,)
+            )
+
+    def test_session_nonce_rejects_malformed_hashes(self):
+        for malformed in ["", "a" * 63, "b" * 65]:
+            with self.assertRaises(sqlite3.IntegrityError):
+                self.db.execute(
+                    """INSERT INTO cloud_session_nonces(school_id,device_id,nonce_sha256)
+                       VALUES('a','phone',?)""", (malformed,)
+                )
 
     def test_reapplying_migration_is_additive_and_safe(self):
         self.add_operation("a", "survives")
