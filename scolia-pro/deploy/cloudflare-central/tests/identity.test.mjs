@@ -83,6 +83,18 @@ function fakeDb(account) {
       },
     },
     SCOLIA_PAIRING_AUTH_KEY: signingKey,
+    SCOLIA_LOGIN_RATE_LIMITER: {
+      async limit({ key }) {
+        state.lastInviteLimitKey = key;
+        return { success: !state.blockedInvite };
+      },
+    },
+    SCOLIA_LOGIN_SOURCE_LIMITER: {
+      async limit({ key }) {
+        state.lastSourceLimitKey = key;
+        return { success: !state.blockedSource };
+      },
+    },
   };
   return { env, calls, state };
 }
@@ -189,4 +201,29 @@ test("la vérification n'expose jamais le mot de passe ni une session réelle", 
   assert.equal(result.status, 401);
   assert.doesNotMatch(payload, /mot-de-passe-faux|password_hash|teacher-01|school-a/);
   assert.equal(result.headers.get("X-Content-Type-Options"), "nosniff");
+});
+
+test("les limiteurs de tentative Cloudflare sont obligatoires", async () => {
+  const acc = await fixture();
+  const { env } = fakeDb(acc);
+  assert.equal((await request({ ...env, SCOLIA_LOGIN_RATE_LIMITER: undefined })).status, 503);
+  assert.equal((await request({ ...env, SCOLIA_LOGIN_SOURCE_LIMITER: undefined })).status, 503);
+});
+
+test("limiteur QR : aucun hash ni accès D1 lorsqu'un quota est dépassé", async () => {
+  const { env, state, calls } = fakeDb(await fixture());
+  state.blockedInvite = true;
+  const response = await request(env);
+  assert.equal(response.status, 429);
+  assert.equal(state.lastInviteLimitKey, "pair:" + inviteId);
+  assert.equal(calls.length, 0);
+});
+
+test("limiteur de provenance : limite également les QR inconnus", async () => {
+  const { env, state, calls } = fakeDb(null);
+  state.blockedSource = true;
+  const response = await request(env, { invitation_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" });
+  assert.equal(response.status, 429);
+  assert.equal(calls.length, 0);
+  assert.match(state.lastSourceLimitKey, /^[A-Za-z0-9_-]{43}$/);
 });
