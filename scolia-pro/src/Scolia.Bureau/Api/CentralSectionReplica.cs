@@ -70,7 +70,19 @@ public sealed class CentralSectionReplica : IDisposable
     private void Save(Snapshot doc)
     {
         CheckUser();
-        store.SavePageFor(user, cacheKey, JsonSerializer.Serialize(doc));
+        try
+        {
+            store.SavePageFor(user, cacheKey, JsonSerializer.Serialize(doc));
+        }
+        catch (IOException exception)
+        {
+            // Une erreur du disque n'est pas une coupure Internet. Ne jamais
+            // l'avaler dans la reprise HTTP : une écriture D1 confirmée ne
+            // doit pas sembler durable si SQLite n'a pas été mis à jour.
+            throw new InvalidDataException(
+                "Impossible de conserver la réplique des sections sur cet appareil.",
+                exception);
+        }
     }
 
     public CentralSectionLocalState Local()
