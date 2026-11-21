@@ -20,6 +20,17 @@ public sealed class CentralPairingClientTests
         Content = new StringContent(content, Encoding.UTF8, "application/json"),
     };
 
+    private sealed class NoLengthStream(byte[] data) : MemoryStream(data)
+    {
+        public override bool CanSeek => false;
+    }
+
+    private static HttpResponseMessage Chunked(HttpStatusCode status, string json) =>
+        new(status)
+        {
+            Content = new StreamContent(new NoLengthStream(Encoding.UTF8.GetBytes(json))),
+        };
+
     [Fact]
     public async Task Jumelage_natif_demande_mot_de_passe_signe_avec_ECDSA_et_ne_cree_pas_de_session()
     {
@@ -109,6 +120,35 @@ public sealed class CentralPairingClientTests
             Assert.Single(Directory.GetFiles(temp, "*.key"));
             var encrypted = File.ReadAllBytes(Directory.GetFiles(temp, "*.key")[0]);
             Assert.False(Encoding.UTF8.GetString(encrypted).Contains(password, StringComparison.Ordinal));
+        }
+        finally
+        {
+            if (Directory.Exists(temp)) Directory.Delete(temp, true);
+        }
+    }
+
+    [Fact]
+    public async Task Preuve_d_identite_chunked_excessive_ne_laisse_pas_fuiter_le_QR()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-pair-limited-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var sent = 0;
+            using var gateway = new CentralPairingClient(new Handler((request, _) =>
+            {
+                sent++;
+                Assert.Equal("/v1/identity/pairing-proof", request.RequestUri!.AbsolutePath);
+                return Task.FromResult(Chunked(HttpStatusCode.OK,
+                    "{\"pairing_proof\":\"" + new string('A', 10000) + "\"}"));
+            }), temp);
+            await Assert.ThrowsAsync<InvalidDataException>(() => gateway.PairAsync(
+                new Uri("https://staging.example/"), Guid.NewGuid(),
+                new string('A', 43), "ENSEIGNANT", "mot-de-passe",
+                "android-01"));
+            Assert.Equal(1, sent);
+            Assert.Empty(Directory.GetFiles(temp, "*.meta"));
+            Assert.Empty(Directory.GetFiles(temp, "*.enc"));
         }
         finally
         {
