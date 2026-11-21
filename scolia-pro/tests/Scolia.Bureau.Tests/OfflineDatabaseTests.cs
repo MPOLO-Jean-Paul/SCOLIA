@@ -6,6 +6,8 @@ namespace Scolia.Bureau.Tests;
 
 public sealed class OfflineDatabaseTests : IDisposable
 {
+    private static readonly JsonSerializerOptions MailboxJsonOptions =
+        new(JsonSerializerDefaults.Web);
     private readonly string folder = Path.Combine(Path.GetTempPath(), "scolia-journal", Guid.NewGuid().ToString("N"));
     private readonly Uri server = new("http://journal-test:5080/");
     private OfflineStore Store(string user = "secretariat") => new(server, folder) { User = user };
@@ -222,9 +224,9 @@ public sealed class OfflineDatabaseTests : IDisposable
             DateTime.UtcNow.AddDays(3));
         var expired = valid with { ExpiresUtc = DateTime.UtcNow.AddMinutes(-2) };
         store.SaveCloudAccessFor("secretariat",
-            JsonSerializer.Serialize(valid, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+            JsonSerializer.Serialize(valid, MailboxJsonOptions));
         store.SaveCloudAccessFor("enseignant",
-            JsonSerializer.Serialize(expired, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+            JsonSerializer.Serialize(expired, MailboxJsonOptions));
 
         Assert.True(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
         var pending = Assert.Single(store.Outbox());
@@ -245,7 +247,7 @@ public sealed class OfflineDatabaseTests : IDisposable
             {
                 Enabled = false,
                 ExpiresUtc = DateTime.UtcNow.AddDays(3)
-            }, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+            }, MailboxJsonOptions));
         Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
         // Une délégation illisible ne peut pas autoriser de réseau, mais
         // les opérations chiffrées locales continuent d'exister.
@@ -255,7 +257,7 @@ public sealed class OfflineDatabaseTests : IDisposable
 
         store.SaveCloudAccessFor("secretariat",
             JsonSerializer.Serialize(expired,
-                new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+                MailboxJsonOptions));
         Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedMailboxWork(store));
         // La suppression d'une délégation ne fait pas disparaître un reçu
         // provisoire ni les opérations de paiement non validées.
