@@ -197,6 +197,77 @@ public sealed class CentralSectionReplicaTests
     }
 
     [Fact]
+    public async Task Historique_plus_ancien_ne_remplace_pas_une_section_deja_confirmee_apres_coupure()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-section-history-" +
+            Guid.NewGuid().ToString("N"));
+        var id = Guid.NewGuid();
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            var gets = 0;
+            using (var replica = new CentralSectionReplica(store, store.User, School,
+                new Handler(async (request, ct) =>
+                {
+                    if (request.Method == HttpMethod.Post)
+                    {
+                        using var body = System.Text.Json.JsonDocument.Parse(
+                            await request.Content!.ReadAsStringAsync(ct));
+                        return Json(HttpStatusCode.Created,
+                            System.Text.Json.JsonSerializer.Serialize(new
+                            {
+                                operation_id = body.RootElement.GetProperty("operation_id").GetString(),
+                                section_id = id.ToString("D"),
+                                status = "applied",
+                                revision = 70,
+                            }));
+                    }
+                    gets++;
+                    if (gets == 1)
+                        return Json(HttpStatusCode.OK,
+                            System.Text.Json.JsonSerializer.Serialize(new
+                            {
+                                events = new[]
+                                {
+                                    new
+                                    {
+                                        revision = 15,
+                                        section_id = id.ToString("D"),
+                                        code = "OLD",
+                                        name = "Ancien libellé",
+                                        is_active = 1,
+                                        created_at = 1000,
+                                    },
+                                },
+                                next = 15,
+                                has_more = true,
+                            }));
+                    throw new HttpRequestException("Coupure avant lecture des révisions récentes");
+                })))
+            {
+                await replica.QueueUpsertAsync(id, "INF", "Nouvelle section", true);
+                var result = await replica.SyncAsync(new Uri("https://central.example/"), Jwt);
+                Assert.True(result.Offline);
+                Assert.Equal(0, result.PendingCount);
+                Assert.Equal(15, result.Revision);
+                var current = Assert.Single(result.Sections);
+                Assert.Equal("INF", current.Code);
+                Assert.Equal("Nouvelle section", current.Name);
+                Assert.Equal(70, current.Revision);
+                Assert.Equal(2, gets);
+            }
+
+            using var reopened = new CentralSectionReplica(store, store.User, School);
+            var saved = Assert.Single(reopened.Local().Sections);
+            Assert.Equal("INF", saved.Code);
+            Assert.Equal(70, saved.Revision);
+            Assert.False(saved.IsPending);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
     public async Task Changement_de_compte_et_origine_Http_ne_livrent_ni_jeton_ni_cache()
     {
         var temp = Path.Combine(Path.GetTempPath(), "scolia-section-account-" + Guid.NewGuid().ToString("N"));
