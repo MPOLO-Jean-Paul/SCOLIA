@@ -111,7 +111,8 @@ export async function issueCentralSession(request, env) {
       "FROM cloud_devices d JOIN cloud_users u ON u.school_id = d.school_id " +
       "AND u.id = d.user_id JOIN cloud_schools s ON s.id = d.school_id " +
       "WHERE d.school_id = ? AND d.id = ? AND d.revoked_at IS NULL " +
-      "AND d.public_key_jwk IS NOT NULL AND u.enabled = 1 AND s.status = 'active' LIMIT 1"
+      "AND d.public_key_jwk IS NOT NULL AND u.enabled = 1 " +
+      "AND u.must_change_password = 0 AND s.status = 'active' LIMIT 1"
     ).bind(body.school_id, body.device_id).first();
     const jwk = publicKey(device?.public_key_jwk);
     if (!device || !jwk || !await ownsDeviceKey(jwk, body))
@@ -129,7 +130,8 @@ export async function issueCentralSession(request, env) {
       "JOIN cloud_users u ON u.school_id = d.school_id AND u.id = d.user_id " +
       "JOIN cloud_schools s ON s.id = d.school_id " +
       "WHERE d.school_id = ? AND d.id = ? AND d.revoked_at IS NULL " +
-      "AND d.public_key_jwk = ? AND u.enabled = 1 AND s.status = 'active' " +
+      "AND d.public_key_jwk = ? AND u.enabled = 1 AND u.must_change_password = 0 " +
+      "AND s.status = 'active' " +
       "AND u.permission_revision = ? AND u.id = ?)"
     ).bind(body.school_id, body.device_id, Array.from(digest,
       x => x.toString(16).padStart(2, "0")).join(""),
