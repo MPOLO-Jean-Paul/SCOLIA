@@ -108,6 +108,71 @@ public sealed class OfflineTransientSyncTests
     }
 
     [Theory]
+    [InlineData(302)]
+    [InlineData(408)]
+    [InlineData(429)]
+    public async Task Lecture_temporairement_limitee_utilise_une_copie_locale(int status)
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var server = new Uri($"http://127.0.0.1:{port}/");
+        var root = Path.Combine(Path.GetTempPath(), "scolia-retry", Guid.NewGuid().ToString("N"));
+        const string path = "api/rapports/tableau-de-bord";
+
+        try
+        {
+            var store = new OfflineStore(server, root) { User = "secretariat" };
+            store.SavePage(path, """{"count":131}""");
+            using var api = new ScoliaClient(server) { Offline = store };
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var serverTask = RespondOnceAsync(listener, status, timeout.Token);
+
+            var page = await api.GetAsync<System.Text.Json.JsonElement>(path, timeout.Token);
+            await serverTask;
+            Assert.Equal(131, page.GetProperty("count").GetInt32());
+            Assert.NotNull(store.ReadPage(path));
+            Assert.Empty(store.Conflicts());
+        }
+        finally
+        {
+            listener.Stop();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Interdiction_expresse_ne_doit_pas_restituer_le_cache_perime()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var server = new Uri($"http://127.0.0.1:{port}/");
+        var root = Path.Combine(Path.GetTempPath(), "scolia-retry", Guid.NewGuid().ToString("N"));
+        const string path = "api/rapports/tableau-de-bord";
+
+        try
+        {
+            var store = new OfflineStore(server, root) { User = "secretariat" };
+            store.SavePage(path, """{"count":131}""");
+            using var api = new ScoliaClient(server) { Offline = store };
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var serverTask = RespondOnceAsync(listener, 403, timeout.Token);
+
+            await Assert.ThrowsAsync<ApiException>(() =>
+                api.GetAsync<System.Text.Json.JsonElement>(path, timeout.Token));
+            await serverTask;
+
+            Assert.Null(store.ReadPage(path));
+        }
+        finally
+        {
+            listener.Stop();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
     [InlineData(200, 1, 0)]
     [InlineData(422, 0, 1)]
     public async Task Accuse_valide_supprime_la_file_et_refus_metier_devient_conflit(
