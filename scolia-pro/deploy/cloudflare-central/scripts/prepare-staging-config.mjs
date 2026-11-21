@@ -32,9 +32,11 @@ export function renderStagingSettings(templateContent, settings) {
     ["REPLACE_WITH_UNIQUE_NUMERIC_NAMESPACE_2", settings.second],
   ];
   let content = templateContent;
-  if (!content.includes('name = "scolia-identity-staging"') ||
-      !content.includes('database_name = "scolia-identity-staging"') ||
-      /api\.jp-services\.org|scolia-test|scolia-api/.test(content))
+  const declarations = content.split("\n")
+    .filter(line => !line.trimStart().startsWith("#")).join("\n");
+  if (!declarations.includes('name = "scolia-identity-staging"') ||
+      !declarations.includes('database_name = "scolia-identity-staging"') ||
+      /api\.jp-services\.org|scolia-test|scolia-api/.test(declarations))
     throw Error("not an isolated staging configuration");
   for (const [oldValue, actual] of fields) {
     if (content.split(oldValue).length !== 2)
