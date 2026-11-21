@@ -173,8 +173,8 @@ export async function acceptPairing(request, env) {
 
     // L'appareil est approuvé, mais aucun jeton de session n'est délivré.
     // Le système d'identité doit le connecter séparément, après validation.
-    return respond({ device_id: body.device_id, approved: true,
-      session_issued: false }, 201);
+    return respond({ device_id: body.device_id, school_id: proof.school_id,
+      approved: true, session_issued: false }, 201);
   } catch {
     // Le trigger et l'UPDATE forment une même transaction SQLite.
     // Toute erreur d'insertion annule l'utilisation du code.
