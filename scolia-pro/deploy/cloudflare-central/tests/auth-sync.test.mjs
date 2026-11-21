@@ -71,13 +71,13 @@ async function call(path, { method = "GET", body, claims, env = fakeEnvironment(
 }
 
 test("JWT exige signature HMAC, courte durée, audience et révision valides", async () => {
-  assert.deepEqual((await verifyToken("Bearer " + await token()))?.school_id, "school-a");
+  assert.deepEqual((await verifyToken("Bearer " + await token(), secret))?.school_id, "school-a");
   assert.equal(await verifyToken("Bearer " + await token(), Buffer.alloc(32, 8).toString("base64url")), null);
-  assert.equal(await verifyToken("Bearer " + await token({ ...standard, exp: now - 1 })), null);
-  assert.equal(await verifyToken("Bearer " + await token({ ...standard, aud: "other-api" })), null);
-  assert.equal(await verifyToken("Bearer " + await token({ ...standard, permission_revision: 0 })), null);
-  assert.equal(await verifyToken("Bearer " + await token({ ...standard, exp: now + 3000 })), null);
-  assert.equal(await verifyToken("Bearer garbage"), null);
+  assert.equal(await verifyToken("Bearer " + await token({ ...standard, exp: now - 1 }), secret), null);
+  assert.equal(await verifyToken("Bearer " + await token({ ...standard, aud: "other-api" }), secret), null);
+  assert.equal(await verifyToken("Bearer " + await token({ ...standard, permission_revision: 0 }), secret), null);
+  assert.equal(await verifyToken("Bearer " + await token({ ...standard, exp: now + 3000 }), secret), null);
+  assert.equal(await verifyToken("Bearer garbage", secret), null);
 });
 
 test("aucune route sensible accessible sans compte et appareil autorisés", async () => {
