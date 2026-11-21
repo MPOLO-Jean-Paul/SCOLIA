@@ -325,7 +325,7 @@ test("une invitation ne cible pas un compte extérieur ou désactivé", async ()
     method: "POST", body: { target_user_id: "foreign-user" }, env,
   });
   assert.equal(unknown.status, 404);
-  assert.deepEqual(calls[1].params, ["school-a", "foreign-user"]);
+  assert.deepEqual(calls[2].params, ["school-a", "foreign-user"]);
   assert.deepEqual(invitationWrites, []);
 });
 
