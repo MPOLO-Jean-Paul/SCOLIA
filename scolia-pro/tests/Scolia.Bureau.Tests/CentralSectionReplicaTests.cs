@@ -317,6 +317,31 @@ public sealed class CentralSectionReplicaTests
     }
 
     [Fact]
+    public async Task Erreur_de_conflit_inconnue_ne_devient_pas_un_message_non_fiable()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-conflict-sanitize-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            using var replica = new CentralSectionReplica(store, store.User, School,
+                CentralOrigin, new Handler((request, _) => Task.FromResult(
+                    request.Method == HttpMethod.Post
+                        ? Json(HttpStatusCode.Conflict,
+                            """{"error":"injection_non_fiable_du_serveur"}""")
+                        : Json(HttpStatusCode.OK,
+                            """{"events":[],"next":0,"has_more":false}"""))));
+            await replica.QueueUpsertAsync(Guid.NewGuid(), "INF", "Infirmière", true);
+            var result = await replica.SyncAsync(CentralOrigin, Jwt);
+            Assert.True(result.HasConflict);
+            Assert.Equal("conflict", Assert.Single(replica.Conflicts()).ConflictCode);
+            Assert.Equal(1, replica.Local().PendingCount);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
     public async Task Version_obsolete_exige_un_rattrapage_central_avant_nouvelle_tentative()
     {
         var temp = Path.Combine(Path.GetTempPath(), "scolia-stale-revision-" +
