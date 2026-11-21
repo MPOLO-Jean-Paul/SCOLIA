@@ -96,13 +96,27 @@ export async function handleRequest(request, env) {
     if (!privilegedRoles.has(user.role)) return error(403, "forbidden");
 
     if (isDeviceList) {
-      // Énumérer exclusivement les appareils de l'établissement de la session
-      // vérifiée. Aucun jeton, mot de passe ou secret d'appareil ne sort de D1.
+      // Pagination stable par ID, même quand l'établissement dépasse 100 postes.
+      // Le school_id est TOUJOURS celui du jeton, jamais un paramètre utilisateur.
+      const after = url.searchParams.get("after") ?? "";
+      const rawLimit = url.searchParams.get("limit") ?? "50";
+      if ((after && !/^[A-Za-z0-9._:-]{1,128}$/.test(after)) ||
+          !/^[1-9]\d*$/.test(rawLimit))
+        return error(400, "invalid_cursor");
+      const limit = Number(rawLimit);
+      if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_EVENTS)
+        return error(400, "invalid_cursor");
+      // Ne retourner aucun secret d'appareil, mot de passe ou jeton.
       const result = await env.DB.prepare(
         "SELECT id AS device_id, user_id, approved_by, approved_at, revoked_at, revoked_by " +
-        "FROM cloud_devices WHERE school_id = ? ORDER BY approved_at DESC, id LIMIT 100"
-      ).bind(user.school_id).all();
-      return json({ devices: result.results ?? [] });
+        "FROM cloud_devices WHERE school_id = ? AND id > ? ORDER BY id ASC LIMIT ?"
+      ).bind(user.school_id, after, limit).all();
+      const devices = result.results ?? [];
+      return json({
+        devices,
+        next: devices.length ? devices[devices.length - 1].device_id : after,
+        has_more: devices.length === limit,
+      });
     }
 
     if (isDeviceRevoke) {
