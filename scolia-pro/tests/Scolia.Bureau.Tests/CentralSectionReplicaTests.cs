@@ -336,7 +336,7 @@ public sealed class CentralSectionReplicaTests
     [InlineData("upper", "INF", "Infirmière")]
     [InlineData("valid", "inf", "Infirmière")]
     [InlineData("valid", "INF", " Infirmière ")]
-    [InlineData("valid", "INF", "Infirmière\\nInterdite")]
+    [InlineData("valid", "INF", "Infirmière\nInterdite")]
     public async Task Evenements_D1_invalides_ne_contaminent_jamais_SQLite(
         string idKind, string code, string name)
     {
