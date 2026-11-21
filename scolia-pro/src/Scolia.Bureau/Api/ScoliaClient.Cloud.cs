@@ -286,7 +286,7 @@ public sealed partial class ScoliaClient
         {
             var session = await central.OpenSavedSessionAsync(
                 trustedCentralOrigin, userName, Infrastructure.DeviceIdentity.Id, ct);
-            return await replica.SyncAsync(trustedCentralOrigin, session.AccessToken, ct);
+            return await replica.CatchUpAsync(trustedCentralOrigin, session.AccessToken, ct: ct);
         }
         catch (Exception ex) when (!ct.IsCancellationRequested &&
             ex is HttpRequestException or IOException or TaskCanceledException)
