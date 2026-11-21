@@ -156,7 +156,8 @@ public sealed class SyncWorker : Worker
         // cookie HTTP de l'ancien serveur. Aucune connexion n'est tentée si
         // l'utilisateur n'a jamais jumelé explicitement ce serveur cloud.
         var centralNeedsRetry = false;
-        if (store.LastAccount is { Length: > 0 } backgroundAccount)
+        if (store.LastAccount is { Length: > 0 } backgroundAccount &&
+            store.CanSyncCentralInBackgroundFor(backgroundAccount))
         {
             try
             {
