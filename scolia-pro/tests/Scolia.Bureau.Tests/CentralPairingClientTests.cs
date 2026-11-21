@@ -198,13 +198,19 @@ public sealed class CentralPairingClientTests
             var paired = await gateway.PairAsync(new Uri("https://staging.example/"),
                 invitation, new string('A', 43), user, secret, device);
             Assert.Equal("school-a", paired.SchoolId);
-            var session = await gateway.OpenSessionAsync(new Uri("https://staging.example/"),
-                paired.SchoolId!, user, device);
+            Assert.Equal("school-a", gateway.ReadSavedSchoolId(
+                new Uri("https://staging.example/"), user, device));
+            var session = await gateway.OpenSavedSessionAsync(
+                new Uri("https://staging.example/"), user, device);
             Assert.Equal(jwt, session.AccessToken);
             Assert.Equal("school-a", session.SchoolId);
             Assert.Equal(device, session.DeviceId);
             Assert.Equal(3, calls);
             Assert.Single(Directory.GetFiles(temp, "*.key"));
+            Assert.Single(Directory.GetFiles(temp, "*.meta"));
+            var encryptedMeta = File.ReadAllBytes(Directory.GetFiles(temp, "*.meta")[0]);
+            Assert.DoesNotContain("school-a", Convert.ToBase64String(encryptedMeta),
+                StringComparison.Ordinal);
             Assert.DoesNotContain(jwt, File.ReadAllText(Directory.GetFiles(temp, "*.key")[0]),
                 StringComparison.Ordinal);
         }
