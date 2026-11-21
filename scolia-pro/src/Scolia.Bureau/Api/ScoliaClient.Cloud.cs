@@ -259,10 +259,21 @@ public sealed partial class ScoliaClient
         if (Offline is not { } store || store.User != userName)
             throw new InvalidOperationException("Le cache du compte connecté n'est pas disponible.");
         using var central = new CentralPairingClient();
-        var schoolId = central.ReadSavedSchoolId(trustedCentralOrigin,
+        var origin = CentralPairingClient.RequireTrustedHttps(trustedCentralOrigin);
+        var activeOrigin = central.ReadActiveOrigin(
+            userName, Infrastructure.DeviceIdentity.Id);
+        // Une ancienne préproduction peut rester jumelée. Ne pas créer de
+        // nouvelles opérations pour une destination désactivée qui ne sera
+        // jamais reprise par WorkManager ni par la minuterie Windows.
+        if (activeOrigin is null ||
+            !string.Equals(activeOrigin.AbsoluteUri, origin.AbsoluteUri,
+                StringComparison.Ordinal))
+            throw new InvalidOperationException(
+                "Cette origine Cloudflare n'est pas le serveur central actif de ce compte.");
+        var schoolId = central.ReadSavedSchoolId(origin,
             userName, Infrastructure.DeviceIdentity.Id) ??
             throw new InvalidOperationException("Cet appareil n'est pas jumelé à l'école centrale.");
-        using var replica = new CentralSectionReplica(store, userName, schoolId, trustedCentralOrigin);
+        using var replica = new CentralSectionReplica(store, userName, schoolId, origin);
         var operation = await replica.QueueUpsertAsync(sectionId, code, name, active, ct);
         // Une écriture locale est terminée avant tout déclenchement réseau.
         // Sur Android, WorkManager reprend la file lorsque le réseau revient.
