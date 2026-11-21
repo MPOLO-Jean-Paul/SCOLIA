@@ -91,7 +91,8 @@ test("une preuve valide, le QR ET la clé privée du téléphone sont nécessair
   const response = await call(env, body, proof);
   assert.equal(response.status, 201);
   assert.deepEqual(await response.json(), {
-    device_id: "phone-a23", approved: true, session_issued: false,
+    device_id: "phone-a23", school_id: "school-a",
+    approved: true, session_issued: false,
   });
   assert.equal(queries.length, 1);
   const params = queries[0];
