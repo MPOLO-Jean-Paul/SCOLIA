@@ -123,7 +123,7 @@ public sealed partial class ScoliaClient : IDisposable
     {
         // Délai de connexion court : un ordinateur principal éteint est détecté en quelques secondes, pas en vingt.
         HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies, () => LinkedAccess(link))
-            : new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, ConnectTimeout = TimeSpan.FromMilliseconds(2500) };
+            : new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, AllowAutoRedirect = false, ConnectTimeout = TimeSpan.FromMilliseconds(2500) };
         var client = new HttpClient(handler) { BaseAddress = server, Timeout = TimeSpan.FromSeconds(60) };
         client.DefaultRequestHeaders.Add("X-Scolia", "1");
         client.DefaultRequestHeaders.Add("X-Scolia-Poste", Infrastructure.DeviceIdentity.Id);
@@ -135,7 +135,7 @@ public sealed partial class ScoliaClient : IDisposable
     public HttpClient CreateStreamClient()
     {
         HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies, () => LinkedAccess(link))
-            : new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, ConnectTimeout = TimeSpan.FromSeconds(4) };
+            : new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, AllowAutoRedirect = false, ConnectTimeout = TimeSpan.FromSeconds(4) };
         var client = new HttpClient(handler) { BaseAddress = Server, Timeout = Timeout.InfiniteTimeSpan };
         client.DefaultRequestHeaders.Add("X-Scolia", "1");
         client.DefaultRequestHeaders.Add("X-Scolia-Poste", Infrastructure.DeviceIdentity.Id);
@@ -357,6 +357,15 @@ public sealed partial class ScoliaClient : IDisposable
             if (text is null)
                 throw new OfflineException("Ordinateur principal injoignable : cette rubrique n'a pas encore été chargée sur cet appareil.");
         }
+        catch (ApiException ex) when (IsTemporarySyncStatus(ex.Status))
+        {
+            // Réponse temporaire du cloud : conserver les copies locales déjà
+            // autorisées ; aucune modification du cache sur ce simple incident.
+            var cached = canCache ? sourceStore?.ReadPage(path)?.Json : null;
+            text = sourceStore is null ? null! : Infrastructure.OfflineReplica.Project(path, cached, sourceStore)!;
+            if (text is null)
+                throw new OfflineException("Ces données ne sont pas encore disponibles sur cet appareil. Elles seront récupérées à la prochaine synchronisation.");
+        }
         catch (ApiException ex) when (ex.Status is 403 or 404)
         {
             // Les accès retirés et dossiers supprimés ne doivent pas être conservés
@@ -446,6 +455,15 @@ public sealed partial class ScoliaClient : IDisposable
             DepositSoon();
             throw new OfflineQueuedException($"{durable.Label} : enregistré sur cet appareil. Envoi automatique au retour de l'appareil principal.");
         }
+        catch (ApiException ex) when (durable is not null && IsTemporarySyncStatus(ex.Status))
+        {
+            // Réponse temporaire, opération déjà écrite durablement en SQLite.
+            // Réutiliser l'ID d'opération lors de la reprise sans créer de conflit.
+            Queued?.Invoke(durable);
+            DepositSoon();
+            throw new OfflineQueuedException(
+                $"{durable.Label} : enregistré localement, synchronisation et validation en attente.");
+        }
         catch (ApiException ex)
         {
             if (durable is not null && sourceStore is not null)
@@ -497,7 +515,9 @@ public sealed partial class ScoliaClient : IDisposable
                     sent++;
                     continue;
                 }
-                if ((int)response.StatusCode >= 500) break;
+                // 3xx (page Access), timeout/quota ou incident cloud : conserver
+                // intégralement la file et la clé d'idempotence, puis réessayer.
+                if (IsTemporarySyncStatus((int)response.StatusCode)) break;
                 var error = await ToException(response);
                 // Session expirée : l'opération attend la reconnexion, elle n'est pas en conflit.
                 if (error.Status is 401 or 423) break; // Licence bloquée : garder les anciennes écritures intactes.
@@ -518,6 +538,10 @@ public sealed partial class ScoliaClient : IDisposable
         }
         finally { flushGate.Release(); }
     }
+
+    /// <summary>Réponses HTTP non définitives qui exigent une reprise sans perte.</summary>
+    private static bool IsTemporarySyncStatus(int status) =>
+        status is >= 300 and < 400 or 408 or 425 or 429 or >= 500;
 
     /// <summary>Coupure de l'ordinateur principal ou du Wi-Fi, par opposition à un refus du serveur.</summary>
     private static bool IsDisconnected(Exception ex, CancellationToken ct) => ex switch
