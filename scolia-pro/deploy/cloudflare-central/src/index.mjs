@@ -89,7 +89,9 @@ export async function handleRequest(request, env) {
     request.method === "GET";
   const isDeviceList = url.pathname === "/v1/admin/devices" && request.method === "GET";
   const isDeviceRevoke = url.pathname === "/v1/admin/devices/revoke" && request.method === "POST";
-  if (!isEvents && !isAck && !isDeviceList && !isDeviceRevoke && !isOperationStatus)
+  const isDeviceInvite = url.pathname === "/v1/admin/devices/invite" && request.method === "POST";
+  if (!isEvents && !isAck && !isDeviceList && !isDeviceRevoke &&
+      !isDeviceInvite && !isOperationStatus)
     return error(404, "not_found");
   if (!env?.DB || !env?.SCOLIA_AUTH_HMAC_KEY) return error(503, "not_configured");
   try {
@@ -121,6 +123,58 @@ export async function handleRequest(request, env) {
     // Le journal ne dispose pas encore de filtres fins par cours / apprenant :
     // seuls les rôles avec accès global peuvent consulter les métadonnées.
     if (!privilegedRoles.has(user.role)) return error(403, "forbidden");
+
+    if (isDeviceInvite) {
+      // L'invitation n'est qu'une autorisation temporaire de DÉMARRER le
+      // jumelage. Elle n'accorde aucun accès tant qu'une authentification
+      // indépendante du compte cible n'a pas été vérifiée.
+      if ((Number(request.headers.get("Content-Length")) || 0) > 512)
+        return error(413, "too_large");
+      let body;
+      try {
+        const raw = await request.text();
+        if (textEncoder.encode(raw).length > 512) return error(413, "too_large");
+        body = JSON.parse(raw);
+      } catch {
+        return error(400, "invalid_json");
+      }
+      if (!body || Array.isArray(body) || typeof body !== "object" ||
+          Object.keys(body).length !== 1 ||
+          typeof body.target_user_id !== "string" ||
+          !/^[A-Za-z0-9._:-]{1,128}$/.test(body.target_user_id))
+        return error(400, "invalid_target_user");
+
+      const target = await env.DB.prepare(
+        "SELECT id FROM cloud_users WHERE school_id = ? AND id = ? " +
+        "AND enabled = 1 LIMIT 1"
+      ).bind(user.school_id, body.target_user_id).first();
+      if (!target) return error(404, "not_found");
+
+      // 256 bits aléatoires ; D1 conserve seulement l'empreinte du secret.
+      const bytes = crypto.getRandomValues(new Uint8Array(32));
+      const secret = btoa(String.fromCharCode(...bytes))
+        .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+      const hashBytes = await crypto.subtle.digest("SHA-256", bytes);
+      const digest = Array.from(new Uint8Array(hashBytes),
+        b => b.toString(16).padStart(2, "0")).join("");
+      const invitationId = crypto.randomUUID();
+      const expiresAt = Math.floor(Date.now() / 1000) + 600;
+      const inserted = await env.DB.prepare(
+        "INSERT INTO cloud_device_invitations " +
+        "(id, school_id, target_user_id, issued_by, token_sha256, expires_at) " +
+        "VALUES (?, ?, ?, ?, ?, ?)"
+      ).bind(invitationId, user.school_id, body.target_user_id,
+        user.sub, digest, expiresAt).run();
+      if (inserted.meta?.changes !== 1)
+        return error(503, "temporarily_unavailable");
+      return json({
+        invitation_id: invitationId,
+        token: secret,
+        target_user_id: body.target_user_id,
+        expires_at: expiresAt,
+        activation: "requires_authenticated_claim",
+      }, 201);
+    }
 
     if (isDeviceList) {
       // Pagination stable par ID, même quand l'établissement dépasse 100 postes.
