@@ -389,11 +389,15 @@ public sealed class CentralSectionReplica : IDisposable
                         if (!item.GetProperty("revision").TryGetInt64(out var revision) ||
                             revision <= after ||
                             item.GetProperty("section_id").GetString() is not { } id ||
-                            !Guid.TryParse(id, out _) ||
+                            !Guid.TryParseExact(id, "D", out var parsedId) ||
+                            parsedId == Guid.Empty || id != parsedId.ToString("D") ||
                             item.GetProperty("code").GetString() is not { } code ||
                             code.Length is < 2 or > 16 ||
+                            code.Any(c => !(char.IsAsciiLetterUpper(c) ||
+                                char.IsAsciiDigit(c) || c is '_' or '-')) ||
                             item.GetProperty("name").GetString() is not { } name ||
                             string.IsNullOrWhiteSpace(name) || name.Length > 120 ||
+                            name != name.Trim() || name.Any(char.IsControl) ||
                             !item.GetProperty("is_active").TryGetInt32(out var active) ||
                             active is not (0 or 1))
                             throw new InvalidDataException("Événement de section non valide.");
