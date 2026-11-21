@@ -161,8 +161,24 @@ test("le secrétariat liste uniquement les appareils de son établissement sans 
   const data = await response.json();
   assert.equal(data.devices[0].device_id, "pc-1");
   assert.equal(JSON.stringify(data).includes("secret_key"), false);
-  assert.deepEqual(calls[1].params, ["school-a"]);
+  assert.deepEqual(calls[1].params, ["school-a", "", 50]);
   assert.match(calls[1].sql, /WHERE school_id = \?/);
+});
+
+test("la pagination des appareils ignore toute autre école et rejette un curseur invalide", async () => {
+  const { env, calls } = fakeEnvironment({ devices: [
+    { device_id: "phone-08", user_id: "teacher", approved_by: "secretary",
+      approved_at: 100, revoked_at: null, revoked_by: null },
+  ] });
+  const ok = await call("/v1/admin/devices?school_id=school-b&after=phone-07&limit=1", { env });
+  assert.equal(ok.status, 200);
+  assert.deepEqual(calls[1].params, ["school-a", "phone-07", 1]);
+  const page = await ok.json();
+  assert.equal(page.next, "phone-08");
+  assert.equal(page.has_more, true);
+  assert.equal((await call("/v1/admin/devices?after=../../other", { env })).status, 400);
+  assert.equal((await call("/v1/admin/devices?limit=101", { env })).status, 400);
+  assert.equal((await call("/v1/admin/devices?limit=abc", { env })).status, 400);
 });
 
 test("le secrétariat révoque un autre appareil et conserve son identité dans D1", async () => {
