@@ -263,7 +263,32 @@ public sealed partial class ScoliaClient
             userName, Infrastructure.DeviceIdentity.Id) ??
             throw new InvalidOperationException("Cet appareil n'est pas jumelé à l'école centrale.");
         using var replica = new CentralSectionReplica(store, userName, schoolId, trustedCentralOrigin);
-        return await replica.QueueUpsertAsync(sectionId, code, name, active, ct);
+        var operation = await replica.QueueUpsertAsync(sectionId, code, name, active, ct);
+        // Une écriture locale est terminée avant tout déclenchement réseau.
+        // Sur Android, WorkManager reprend la file lorsque le réseau revient.
+        try { Infrastructure.Platform.RequestBackgroundSync?.Invoke(); }
+        catch (Exception ex) when (ex is InvalidOperationException or
+            PlatformNotSupportedException )
+        { System.Diagnostics.Trace.WriteLine("Déclenchement différé indisponible."); }
+        return operation;
+    }
+
+    /// <summary>
+    /// Synchronisation facultative de l'origine réellement approuvée par le
+    /// titulaire et ce poste. Fonctionne avec D1 même si l'ancien serveur PC
+    /// ne répond plus ; ne synchronise que les sections du pilote.
+    /// Null signifie qu'aucun jumelage central n'a été activé.
+    /// </summary>
+    public async Task<CentralSectionLocalState?> SyncActiveCentralSectionsAsync(
+        string userName, CancellationToken ct = default)
+    {
+        if (Offline is not { } store ||
+            !string.Equals(store.User, userName, StringComparison.Ordinal))
+            throw new InvalidOperationException("Session locale différente du compte demandé.");
+        using var central = new CentralPairingClient();
+        var origin = central.ReadActiveOrigin(userName, Infrastructure.DeviceIdentity.Id);
+        if (origin is null) return null;
+        return await SyncCentralSectionsAsync(origin, userName, ct);
     }
 
     /// <summary>
