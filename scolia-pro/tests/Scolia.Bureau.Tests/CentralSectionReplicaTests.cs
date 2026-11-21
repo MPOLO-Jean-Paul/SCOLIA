@@ -321,6 +321,61 @@ public sealed class CentralSectionReplicaTests
     }
 
     [Fact]
+    public async Task Rattrapage_automatique_charge_les_pages_suivantes_sans_repartir_de_zero()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-section-catchup-" +
+            Guid.NewGuid().ToString("N"));
+        var id = Guid.NewGuid();
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            var calls = 0;
+            using var replica = new CentralSectionReplica(store, store.User, School,
+                new Handler((request, _) =>
+                {
+                    Assert.Equal(HttpMethod.Get, request.Method);
+                    Assert.Equal("?after=" + calls + "&limit=50",
+                        request.RequestUri?.Query);
+                    calls++;
+                    return Task.FromResult(Json(HttpStatusCode.OK,
+                        System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            events = new[]
+                            {
+                                new
+                                {
+                                    revision = calls,
+                                    section_id = id.ToString("D"),
+                                    code = "INF",
+                                    name = "Sciences infirmières",
+                                    is_active = 1,
+                                },
+                            },
+                            next = calls,
+                            has_more = calls < 10,
+                        })));
+                }));
+
+            var limited = await replica.CatchUpAsync(
+                new Uri("https://central.example/"), Jwt, maxPasses: 1);
+            Assert.True(limited.HasMorePages);
+            Assert.False(limited.Offline);
+            Assert.Equal(8, limited.Revision);
+            Assert.Equal(8, calls);
+
+            var completed = await replica.CatchUpAsync(
+                new Uri("https://central.example/"), Jwt);
+            Assert.False(completed.HasMorePages);
+            Assert.False(completed.Offline);
+            Assert.Equal(10, completed.Revision);
+            Assert.Equal(10, calls);
+            Assert.Equal(10, Assert.Single(replica.Local().Sections).Revision);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
     public async Task Pagination_sans_progression_est_refusee_sans_avancer_le_curseur()
     {
         var temp = Path.Combine(Path.GetTempPath(), "scolia-section-empty-page-" +
