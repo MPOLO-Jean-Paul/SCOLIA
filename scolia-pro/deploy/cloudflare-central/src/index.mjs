@@ -1,7 +1,8 @@
 // Prévisualisation du service central SCOLIA, non déployée.
 import { acceptPairing } from "./pairing.mjs";
 import { issuePairingIdentityProof } from "./identity.mjs";
-// Aucune route d'émission des jetons ni de mutation scolaire n'est exposée.
+import { issueCentralSession } from "./session.mjs";
+// Aucune route de mutation scolaire n'est exposée dans ce prototype.
 const textEncoder = new TextEncoder();
 const privilegedRoles = new Set(["secretariat", "administrateur", "direction"]);
 const MAX_EVENTS = 100;
@@ -95,6 +96,11 @@ export async function handleRequest(request, env) {
   const isPairingAcceptance = url.pathname === "/v1/pair/accept" && request.method === "POST";
   const isPairingPasswordCheck = url.pathname === "/v1/identity/pairing-proof" &&
     request.method === "POST";
+  const isCentralSession = url.pathname === "/v1/identity/session" &&
+    request.method === "POST";
+  // Session 15 minutes, uniquement si l'appareil existant prouve sa clé
+  // non exportée par l'application et si le nonce est inédit en D1.
+  if (isCentralSession) return issueCentralSession(request, env);
   // Vérification du mot de passe d'un compte PRÉEXISTANT. Cette route
   // n'émet pas de session : seulement une preuve de 2 minutes pour le QR.
   if (isPairingPasswordCheck) return issuePairingIdentityProof(request, env);
