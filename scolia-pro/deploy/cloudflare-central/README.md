@@ -170,14 +170,19 @@ Les deux plateformes partagent désormais les nouvelles classes
    : valide le mot de passe sur `/v1/identity/pairing-proof`, signe la
    demande de jumelage avec une clé EC P-256 protégée par le système
    (Android Keystore/Windows DPAPI) et confirme via `/v1/pair/accept`.
-   Retourne l'identifiant de l'établissement. L'URL doit être une origine
-   HTTPS de confiance **déjà configurée**, jamais une adresse copiée d'un QR.
+   Retourne l'identifiant de l'établissement et conserve cet identifiant
+   dans une enveloppe locale protégée par Windows DPAPI ou Android Keystore.
+   L'URL doit être une origine HTTPS de confiance **déjà configurée**, jamais
+   une adresse copiée d'un QR. Le mot de passe n'est pas conservé.
 2. `ScoliaClient.OpenCentralSessionAsync(origin, schoolId, userName)`
    : réutilise la clé existante (sans la recréer) et demande un JWT de
    **15 minutes** sur `POST /v1/identity/session`. Le challenge signé
    comprend école, appareil, nonce aléatoire et heure de création.
    D1 enregistre son empreinte pour bloquer les relectures.
    AUCUN mot de passe n'est renvoyé. Le JWT est conservé **en mémoire**.
+   `ScoliaClient.OpenSavedCentralSessionAsync(origin, userName)` retrouve
+   le même établissement localement chiffré, sans saisie du mot de passe,
+   puis signe un nouveau nonce avec la clé déjà enregistrée.
 3. `ScoliaClient.CheckCentralJournalAsync(origin, schoolId, userName, afterRevision)`
    : ouvre une session native, puis récupère uniquement les **métadonnées**
    ordonnées du journal D1 avec pagination et contrôle d'intégrité.
