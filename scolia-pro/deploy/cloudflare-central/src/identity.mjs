@@ -126,7 +126,14 @@ async function reserveAttempt(db, account) {
     "OR (cloud_auth_attempts.lockout_until > 0 " +
     "AND cloud_auth_attempts.lockout_until <= unixepoch())"
   ).bind(account.school_id, account.id).run();
-  return reservation.meta?.changes === 1;
+  if (reservation.meta?.changes === 1) return true;
+
+  // Si le Worker s'est interrompu après la cinquième réservation mais
+  // avant failedAttempt(), failed_count vaut déjà 5 avec lockout_until=0.
+  // Réparer ce verrou incomplet avant de refuser la nouvelle tentative :
+  // sans cela le compte resterait bloqué indéfiniment.
+  await failedAttempt(db, account);
+  return false;
 }
 
 async function failedAttempt(db, account) {
