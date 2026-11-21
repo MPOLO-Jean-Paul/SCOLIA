@@ -127,8 +127,76 @@ public sealed class CentralPairingClient : IDisposable
             sessionIssued.ValueKind != JsonValueKind.False)
             throw new InvalidDataException("La confirmation de l'appareil est invalide.");
 
-        return new CentralPairingResult(deviceId, Approved: true, SessionIssued: false);
+        if (!outcome.TryGetProperty("school_id", out var school) ||
+            school.GetString() is not { Length: > 0 and <= 128 } schoolId ||
+            !ValidIdentifier(schoolId))
+            throw new InvalidDataException("L'établissement n'est pas identifié dans la confirmation.");
+        return new CentralPairingResult(deviceId, Approved: true, SessionIssued: false, schoolId);
     }
+
+    /// <summary>
+    /// Authentification de l'appareil déjà jumelé. La clé privée ne quitte
+    /// jamais le stockage protégé, le mot de passe n'est pas renvoyé. Les JWT
+    /// restent seulement en mémoire pour une durée maximale de 15 minutes.
+    /// </summary>
+    public async Task<CentralSession> OpenSessionAsync(
+        Uri trustedCentralOrigin, string schoolId, string userName,
+        string deviceId, CancellationToken ct = default)
+    {
+        var origin = RequireTrustedHttps(trustedCentralOrigin);
+        if (!ValidIdentifier(schoolId) || !ValidIdentifier(deviceId) ||
+            string.IsNullOrWhiteSpace(userName))
+            throw new ArgumentException("L'établissement, le compte ou l'appareil est invalide.");
+
+        // Ne surtout pas créer une nouvelle clé en silence : un appareil dont
+        // la clé a disparu doit être réautorisé par le secrétariat.
+        using var key = LoadOrCreateDeviceKey(origin, deviceId, userName, keyFolder,
+            requireExisting: true);
+        var nonce = Base64Url(RandomNumberGenerator.GetBytes(32));
+        var issuedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var message = Encoding.UTF8.GetBytes(
+            $"SCOLIA-SESSION-V1\n{schoolId}\n{deviceId}\n{nonce}\n{issuedAt}");
+        var signature = Base64Url(key.SignData(message, HashAlgorithmName.SHA256,
+            DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
+        using var request = new HttpRequestMessage(HttpMethod.Post,
+            new Uri(origin, "v1/identity/session"))
+        {
+            Content = JsonContent.Create(new
+            {
+                school_id = schoolId,
+                device_id = deviceId,
+                nonce,
+                issued_at = issuedAt,
+                signature,
+            }),
+        };
+        using var response = await http.SendAsync(request, ct);
+        if (response.StatusCode != HttpStatusCode.OK)
+            throw new CentralPairingException((int)response.StatusCode,
+                "Session centrale refusée : vérifiez l'appareil et l'autorisation du secrétariat.");
+
+        var result = await ReadSmallJsonAsync(response, ct);
+        if (!result.TryGetProperty("access_token", out var token) ||
+            token.GetString() is not { Length: > 30 and <= 4096 } jwt ||
+            !ValidJwt(jwt) ||
+            !result.TryGetProperty("expires_in", out var time) ||
+            !time.TryGetInt32(out var seconds) || seconds is < 1 or > 900 ||
+            !result.TryGetProperty("school_id", out var school) ||
+            school.GetString() != schoolId ||
+            !result.TryGetProperty("device_id", out var device) ||
+            device.GetString() != deviceId)
+            throw new InvalidDataException("La session centrale retournée est incohérente.");
+
+        return new CentralSession(jwt, DateTimeOffset.UtcNow.AddSeconds(seconds), schoolId, deviceId);
+    }
+
+    private static bool ValidIdentifier(string value) =>
+        value.Length is > 0 and <= 128 &&
+        value.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or ':' or '-');
+
+    private static bool ValidJwt(string token) =>
+        token.Count(c => c == '.') == 2 &&
+        token.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '-');
 
     private static async Task<JsonElement> ReadSmallJsonAsync(HttpResponseMessage response, CancellationToken ct)
     {
@@ -144,7 +212,8 @@ public sealed class CentralPairingClient : IDisposable
     private static string Base64Url(ReadOnlySpan<byte> bytes) =>
         Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 
-    private static ECDsa LoadOrCreateDeviceKey(Uri origin, string deviceId, string userName, string folder)
+    private static ECDsa LoadOrCreateDeviceKey(Uri origin, string deviceId, string userName, string folder,
+        bool requireExisting = false)
     {
         // Le nom du fichier est anonyme, unique à l'origine, l'appareil et le
         // compte. Le contenu est protégé par DPAPI Windows / Keystore Android.
@@ -163,6 +232,8 @@ public sealed class CentralPairingClient : IDisposable
             }
             else
             {
+                if (requireExisting)
+                    throw new InvalidOperationException("Cet appareil doit être jumelé par le secrétariat.");
                 var raw = key.ExportPkcs8PrivateKey();
                 try { SecretStore.Save(path, raw); }
                 finally { CryptographicOperations.ZeroMemory(raw); }
@@ -179,7 +250,12 @@ public sealed class CentralPairingClient : IDisposable
     public void Dispose() => http.Dispose();
 }
 
-public sealed record CentralPairingResult(string DeviceId, bool Approved, bool SessionIssued);
+public sealed record CentralPairingResult(string DeviceId, bool Approved, bool SessionIssued,
+    string? SchoolId = null);
+
+/// <summary>Jeton de courte durée en mémoire ; jamais inscrit dans SQLite.</summary>
+public sealed record CentralSession(string AccessToken, DateTimeOffset ExpiresAt,
+    string SchoolId, string DeviceId);
 
 public sealed class CentralPairingException(int status, string message) : Exception(message)
 {
