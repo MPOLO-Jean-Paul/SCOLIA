@@ -125,6 +125,14 @@ public sealed class CentralSectionReplica : IDisposable
     }
 
     /// <summary>
+    /// Liste en lecture seule des conflits persistés, avec leur cause métier
+    /// normalisée. L'administration pourra proposer l'arbitrage sans dévoiler
+    /// les opérations d'un autre compte ni modifier les saisies.
+    /// </summary>
+    public IReadOnlyList<CentralSectionPendingChange> Conflicts() =>
+        Read().Pending.Where(change => change.HasConflict).ToArray();
+
+    /// <summary>
     /// Écriture 100 % locale dans SQLite, même sans connexion Internet.
     /// Une seule opération en attente par section : éviter un dernier-écrivain
     /// arbitraire en cas de changements concurrents de classe.
