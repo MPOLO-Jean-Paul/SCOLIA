@@ -47,7 +47,7 @@ public sealed class CentralJournalClient : IDisposable
         using var request = new HttpRequestMessage(HttpMethod.Get,
             new Uri(origin, $"v1/sync/events?after={afterRevision}&limit={pageSize}"));
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", centralSessionJwt);
-        using var response = await http.SendAsync(request, ct);
+        using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
         if (response.StatusCode == HttpStatusCode.Unauthorized ||
             response.StatusCode == HttpStatusCode.Forbidden)
             throw new CentralPairingException((int)response.StatusCode,
