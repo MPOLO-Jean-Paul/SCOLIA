@@ -1,0 +1,164 @@
+# SCOLIA Pro — serveur Cloudflare central et expérience Local-First (21/11/2026)
+
+## Point de départ vérifié
+
+- Source applicative officielle de ce chantier : `release/direct-apk-scolia-pro-20261103` à `9c26bfeb0bc899956ea91a9a63667c11fac2646e` (SCOLIA **1.2.86**, publiée le 20/11/2026).
+- Point d'accès déjà testé manuellement : `https://api.jp-services.org/health`.
+- Ressources de test créées dans Cloudflare : Worker `scolia-api`, D1 `scolia-test` (binding `DB`), R2 privé `scolia-files` (binding `FILES`).
+- Le Worker `/health` vérifie seulement `SELECT 1` et `R2.list()` : **il ne constitue pas une API scolaire opérationnelle**.
+- Même sur la version 1.2.86, les implémentations historiques utilisent encore un serveur SQLite sur le poste de l'établissement et des dépôts/sauvegardes cloud. Le pilote de la branche `feature/cloudflare-sqlite-d1-automatic-sync-20261109` n'implémente **pas** D1 comme serveur métier central. Ne pas confondre sauvegarde R2 et synchronisation bi-directionnelle complète.
+
+## Contrat utilisateur attendu
+
+1. Après un premier appairage et préchargement **en ligne**, un compte autorisé lit ses données localement sans attendre une connexion.
+2. Les écritures autorisées sont enregistrées **durablement** dans SQLite avec leur outbox dans la même transaction logique, et sont visibles localement (projection « read-your-writes »).
+3. Un déclencheur dès l'écriture et le retour du réseau démarre un envoi différé, sans blocage des écrans. Android WorkManager peut reporter les tâches si Android applique Doze/économie d'énergie.
+4. La réception s'effectue par curseur, par établissement et par compte, sans télécharger toute la base à chaque ouverture.
+5. Le poste du secrétariat administre les comptes et autorisations mais **n'héberge plus le serveur partagé**. Cloudflare applique les règles d'accès après validation centrale.
+6. Les comptes et droits préalablement validés restent utilisables localement pendant une coupure, selon une politique explicite de durée de validité et de révocation ; la révocation distante ne peut pas être instantanée sur un appareil hors ligne.
+7. L'interface ne bloque pas l'utilisateur avec un bandeau réseau. Elle signale discrètement le nombre d'opérations en attente et affiche clairement les rares opérations nécessitant validation centrale, notamment les paiements.
+
+## Cohérence des données
+
+- Séparer par `school_id` **toutes** les données et requêtes côté serveur, filtrées sur l'identité authentifiée, jamais sur un identifiant scolaire librement envoyé par le client.
+- `operation_id` / clé d'idempotence stable, contrainte UNIQUE sur le serveur et réponse stable en cas de nouvelle tentative.
+- Ordre des changements par révision/curseur serveur monotone. Faire la distinction entre copie locale, opération en attente, opération appliquée et conflit.
+- Pour les reçus et encaissements : numéro et validation définitifs **uniquement après réponse métier serveur**. Une prévisualisation locale est explicitement provisoire. Ne pas résoudre les conflits financiers par « last write wins ». **HTTP 202** signifie dépôt/acceptation en attente, pas validation financière : conserver l'outbox, la clé d'idempotence et le reçu provisoire jusqu'au résultat métier définitif.
+- Conserver les suppressions (tombstones) jusqu'à ce que les clients aient obtenu leur révision, avec mécanisme de re-synchronisation complète si l'historique a expiré.
+- Persister le curseur de réception uniquement **après** application locale atomique des changements.
+- Un changement de compte ne doit pas solder les opérations d'un autre compte ; ne jamais supprimer l'outbox pour « réparer » une erreur réseau.
+
+## Sécurité avant tout essai réel
+
+- Le Worker peut être accessible en HTTPS, **sans données publiques**. Déployer une authentification native (jeton court, renouvellement sécurisé, appareil autorisé), plutôt que demander une page Cloudflare Access aux clients Windows/Android.
+- Vérification des permissions et des règles métier à chaque écriture dans le Worker / backend cloud ; la seule copie locale d'un rôle secrétaire ne confère aucun pouvoir au serveur.
+- D1 comme base métier centrale après migration contrôlée ; R2 bucket **privé** pour fichiers et sauvegardes chiffrées ; aucune clé R2 ou secret admin intégrée dans une APK.
+- Chiffrer et protéger le cache sensible local, les journaux, les sauvegardes et les jetons de session.
+- Ne pas charger les données réelles dans `scolia-test`. Préparer un environnement de production distinct, sa stratégie de migration et des restaurations vérifiées.
+- Tester l'accès non autorisé, les comptes d'établissements différents, la saturation 429 et la réplication des révocations.
+
+## Plan de livraison — portes de validation
+
+### Phase A — durabilité du client (ce chantier)
+
+- [x] Préserver l'outbox SQLite sur réponses transitoires 3xx/408/425/429/5xx au cours du rejeu.
+- [x] Préserver également l'outbox lorsqu'une écriture immédiate reçoit un rejet temporaire.
+- [x] Servir les pages locales déjà autorisées lors d'une redirection/limitation temporaire, sans contourner une révocation explicite 403.
+- [x] Désactiver le suivi silencieux des redirections HTTP du client natif afin d'éviter qu'une page Access 200 soit prise pour un accusé métier.
+- [x] Ajouter les tests de non-régression HTTP loopback correspondants.
+- [x] Conserver les écritures sur HTTP 202 et retester sans doubler un encaissement.
+- [x] Retenter au plus une fois les lectures GET interrompues par le relais WSS, dans le délai global, sans rejouer les opérations POST/PUT.
+- [x] Préparer en arrière-plan les feuilles anonymes des enseignants, avec curseur distinct des dossiers apprenants et du cache financier.
+- [x] Obtenir la compilation et l'exécution des tests .NET dans GitHub Actions (commit a5e9864 validé).
+- [ ] Valider les flux hors ligne et la résilience sur des téléphones Android et PC Windows réels.
+
+### Phase B — backend Cloudflare central (fondation prototype uniquement)
+
+- [ ] Terminer l'inventaire des tables, contraintes, permissions et opérations de SCOLIA 1.2.86.
+- [x] Ajouter le schéma D1 prototype des écoles, appareils, opérations idempotentes et curseurs, avec tests d'isolation SQLite.
+- [x] Ajouter un aperçu d'API à jeton court avec lecture du journal et accusé de curseur, sans routes métier et **sans déploiement sur Cloudflare**.
+- [ ] Migrer le modèle métier réellement utilisé vers D1, sans importer de données scolaires dans la base de test.
+- [ ] Compléter l'API authentifiée : émission/renouvellement des jetons, délégation du secrétariat, contrôles métier, publication de changements et accès R2 privé. Le prototype actuel ne suffit pas.
+- [ ] Définir et tester les transactions/quotas Cloudflare sur les paiements et les inscriptions.
+
+### Phase C — clients Local-First cloud (pilote des sections seulement)
+
+- [ ] Connecter les clients Windows et Android à `https://api.jp-services.org` sans dépendance à un PC central.
+- [ ] Gérer premier appairage/préchargement, outbox, push, pull, curseur, retry avec backoff, verrou multi-compte et révocation.
+- [ ] Assurer le travail hors ligne sur les écrans préchargés et la projection des écritures en attente.
+- [ ] Tests de coupure 4G/Wi-Fi, redémarrage, fermeture Android, changement de compte et conflits réels.
+
+### Phase D — transition en production (non commencé)
+
+- [ ] Sauvegarde vérifiée de SQLite historique, migration dry-run, comparaison des données, période de double lecture.
+- [ ] Mise en production progressive par établissement, suivi des erreurs et procédure de retour arrière.
+- [ ] Publication d'installateurs et APK après signature officielle et validation humaine.
+
+## Pilote central de sections — sécurité de reprise et séparation des origines
+
+- Le pilote D1 comprend la création / modification versionnée des sections par
+  un compte autorisé, la lecture des événements et les clés d'idempotence.
+  Aucun dossier apprenant, note ni paiement n'est synchronisé sur cette route.
+- Sur Windows/Android, la réplique des sections est chiffrée localement dans
+  SQLite ; confirmation D1, retrait de l'opération et curseur sont conservés
+  par transactions SQLite. Les synchronisations concurrentes ne doivent pas
+  effacer les saisies locales arrivées entre deux requêtes HTTP.
+- Les rattrapages de journal sont paginés, bornés et reprennent à partir du
+  curseur durable. Les conflits HTTP 409 sont conservés pour arbitrage, sans
+  forcer automatiquement la version de l'utilisateur.
+- Le cache `central:sections:v2` est isolé par compte SQLite, établissement
+  et empreinte de **l'origine HTTPS approuvée** (staging et production séparés).
+  Une requête visant une autre origine est rejetée avant toute connexion.
+- L'ancien cache pilote `central:sections:v1` n'est **pas supprimé**. Sa
+  provenance Cloudflare n'étant pas enregistrée, il n'est pas migré ou envoyé
+  automatiquement vers une origine potentiellement différente. Avant tout
+  changement d'environnement d'un pilote ayant des opérations v1 en attente,
+  vérifier manuellement l'origine et traiter ces opérations dans leur
+  environnement d'origine ; ne pas effacer le stockage chiffré.
+- L'API centrale refuse les identifiants non conformes à un UUID canonique :
+  un faux identifiant dans les événements pourrait interrompre la lecture
+  des lots sur les clients .NET.
+- **Cette intégration n'est pas encore reliée automatiquement aux écrans de
+  gestion ni au WorkManager Android** ; elle ne prouve ni autonomie complète
+  face à l'ordinateur principal, ni équivalence de toutes les permissions.
+
+## Reprise automatique du pilote central (Windows et Android)
+
+Le jumelage sécurisé `CentralPairingClient.PairAsync` enregistre désormais
+l'origine HTTPS approuvée dans un fichier local protégé (portée : compte et
+appareil). Les autres origines, même en HTTPS, ne deviennent pas des
+destinations de synchronisation par simple lecture d'un QR. Le titulaire peut
+désactiver cette destination locale sans supprimer le journal SQLite.
+
+- **Android client** : WorkManager reprend le catalogue des sections lorsque
+  la connexion revient, même si le PC principal est éteint. L'exécution
+  reste soumise à Doze, à la batterie et aux règles d'Android ; ce n'est pas un
+  service instantané garanti.
+- **Windows / application ouverte** : la minuterie de la fenêtre déclenche
+  discrètement la reprise toutes les deux minutes environ. Une session centrale
+  non autorisée entraîne un délai de 30 minutes avant une nouvelle tentative.
+  Ce n'est pas encore un service Windows autonome lorsque l'application est fermée.
+- **Conflits** : deux décisions explicites existent côté moteur : garder la
+  version centrale ou modifier/rejouer la saisie locale avec une nouvelle
+  clé d'idempotence. Aucun choix ne se produit automatiquement, et ces actions
+  doivent encore être exposées dans les écrans d'administration.
+  `CentralSectionReplica.Conflicts()` permet de lire les opérations en conflit
+  du compte courant avec leur cause D1 normalisée, persistée dans SQLite.
+  Une réponse `stale_section_revision` interdit le renvoi tant que le
+  rattrapage D1 n'a pas révélé une révision centrale supérieure ; renommer
+  localement la section ne contourne pas ce contrôle. Pour les autres conflits,
+  le responsable doit choisir explicitement la correction ou l'abandon.
+  Les messages 409 inconnus ne sont jamais repris tels quels dans le cache.
+- **Destination d'écriture** : un ancien serveur central désactivé peut rester
+  jumelé pour préserver l'historique. Les **nouvelles** sections ne sont
+  mises en attente que pour l'origine HTTPS actuellement activée ; il faut
+  réactiver explicitement une origine antérieure avant d'y écrire.
+- **Tests** : appairage ECDSA, destination chiffrée par compte/appareil,
+  refus d'une origine non approuvée, résistance au réseau intermittent,
+  idempotence, pages de journal, isolation entre écoles, cache SQLite et
+  résolution explicite des conflits. Une compilation GitHub Actions ne remplace
+  pas les essais sur plusieurs appareils réels.
+- **Limite déterminante** : cette synchronisation automatique ne concerne que
+  le **pilote des sections scolaires**. Les comptes réellement utilisés dans
+  les autres menus, les apprenants, leurs présences, les notes, les finances,
+  les documents, les sauvegardes et les permissions complètes ne sont pas
+  encore migrés vers le moteur métier D1. Ne pas activer sur une vraie école
+  en prétendant que le PC principal n'est plus nécessaire.
+
+### Validation avant une livraison officielle
+
+1. Déployer manuellement le Worker sur un environnement **staging isolé**
+   avec sa propre base D1, deux secrets distincts et des comptes factices.
+2. Tester le jumelage, l'ouverture/expiration/révocation des sessions,
+   les conflits et les pertes de réseau sur Android/Windows réels.
+3. Concevoir et migrer les domaines scolaires non couverts ; tester les
+   paiements idempotents et les reçus définitifs **uniquement après**
+   validation de la transaction centrale.
+4. Vérifier sauvegarde et restauration chiffrées, migration dry-run de
+   l'ancienne SQLite, séparation stricte des établissements et retour arrière.
+5. Publier une nouvelle version uniquement avec tous les contrôles CI,
+   la signature de publication et les essais de bout en bout validés.
+
+## Restriction actuelle
+
+Les correctifs de ce chantier améliorent la conservation des écritures de l'architecture **actuelle**. Ils ne remplacent pas encore la source métier par D1 et ne doivent pas être présentés comme une synchronisation cloud centrale déjà disponible.

@@ -6,6 +6,44 @@ namespace Scolia.Bureau.Tests;
 public sealed class ResumableOfflinePreparationTests
 {
     [Fact]
+    public void Modes_dossiers_et_feuilles_enseignant_gardent_des_progressions_independantes()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "scolia-scopes-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var server = new Uri("https://school.example:5080/");
+            var store = new OfflineStore(server, folder) { User = "enseignant-administrateur" };
+            const string studentPath = "api/apprenants?page=1&taille=50";
+            const string sheetPath = "api/deliberation/mes-cours";
+            const string studentsRevision = "epoch:21|dossiers";
+            const string teacherRevision = "epoch:21|enseignant";
+
+            store.SavePage(studentPath, """{"items":[]}""");
+            store.SavePage(sheetPath, "[]");
+            store.BeginPreparationFor(store.User, studentsRevision);
+            store.MarkPreparedFor(store.User, studentsRevision, studentPath);
+            store.BeginPreparationFor(store.User, teacherRevision);
+            store.MarkPreparedFor(store.User, teacherRevision, sheetPath);
+
+            var reopened = new OfflineStore(server, folder) { User = store.User };
+            Assert.True(reopened.WasPreparedFor(reopened.User, studentsRevision, studentPath));
+            Assert.True(reopened.WasPreparedFor(reopened.User, teacherRevision, sheetPath));
+            Assert.False(reopened.WasPreparedFor(reopened.User, teacherRevision, studentPath));
+
+            reopened.BeginPreparationFor(reopened.User, "epoch:22|enseignant");
+            Assert.False(reopened.WasPreparedFor(reopened.User, "epoch:22|enseignant", sheetPath));
+            Assert.True(reopened.WasPreparedFor(reopened.User, studentsRevision, studentPath));
+            Assert.NotNull(reopened.ReadPage(sheetPath));
+            Assert.NotNull(reopened.ReadPage(studentPath));
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            if (Directory.Exists(folder)) Directory.Delete(folder, true);
+        }
+    }
+
+    [Fact]
     public void Progression_reste_sur_disque_apres_fermeture_et_redemarrage()
     {
         var folder = Path.Combine(Path.GetTempPath(), "scolia-resume-" + Guid.NewGuid().ToString("N"));

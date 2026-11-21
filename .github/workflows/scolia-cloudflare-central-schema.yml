@@ -1,0 +1,30 @@
+name: SCOLIA Cloudflare D1 - contraintes de securite
+on:
+  push:
+    paths:
+      - 'scolia-pro/deploy/cloudflare-central/**'
+      - 'scolia-pro/tests/test_cloudflare_central_schema.py'
+      - 'scolia-pro/tests/test_cloudflare_sections_schema.py'
+      - '.github/workflows/scolia-cloudflare-central-schema.yml'
+  pull_request:
+    paths:
+      - 'scolia-pro/deploy/cloudflare-central/**'
+      - 'scolia-pro/tests/test_cloudflare_central_schema.py'
+      - 'scolia-pro/tests/test_cloudflare_sections_schema.py'
+      - '.github/workflows/scolia-cloudflare-central-schema.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verifier-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Vérifier isolation des établissements, FKs et idempotence
+        run: python -m unittest discover -s scolia-pro/tests -p 'test_cloudflare_*schema.py' -v
