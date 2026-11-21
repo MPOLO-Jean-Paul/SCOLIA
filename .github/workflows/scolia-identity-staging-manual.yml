@@ -62,7 +62,7 @@ jobs:
         run: npm test
 
       - name: Tester schéma et intégrité des contraintes D1
-        run: python -m unittest discover -s scolia-pro/tests -p 'test_cloudflare_central_schema.py' -v
+        run: python -m unittest discover -s scolia-pro/tests -p 'test_cloudflare_*schema.py' -v
 
       - name: Générer la configuration staging (sans secrets ni domaine production)
         working-directory: scolia-pro/deploy/cloudflare-central
