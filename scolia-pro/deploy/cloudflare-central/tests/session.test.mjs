@@ -122,6 +122,7 @@ test("session: clé P-256 approuvée, preuve fraîche, JWT 15 min", async () => 
   assert.equal(nonceWrite.params[2].length, 64);
   assert.match(nonceWrite.sql, /d.revoked_at IS NULL/);
   assert.match(nonceWrite.sql, /u.permission_revision = \?/);
+  assert.match(nonceWrite.sql, /u.must_change_password = 0/);
   assert.ok(!JSON.stringify(nonceWrite.params).includes(item.body.nonce));
 });
 
