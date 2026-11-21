@@ -238,4 +238,14 @@ public sealed partial class ScoliaClient
         return await ReadCentralJournalPreviewAsync(
             trustedCentralOrigin, session.AccessToken, afterRevision, ct);
     }
+
+    /// <summary>Restaurer la session centrale à partir de l'école mémorisée
+    /// sous une enveloppe protégée par le système, sans mot de passe.</summary>
+    public async Task<CentralSession> OpenSavedCentralSessionAsync(
+        Uri trustedCentralOrigin, string userName, CancellationToken ct = default)
+    {
+        using var central = new CentralPairingClient();
+        return await central.OpenSavedSessionAsync(trustedCentralOrigin, userName,
+            Infrastructure.DeviceIdentity.Id, ct);
+    }
 }
