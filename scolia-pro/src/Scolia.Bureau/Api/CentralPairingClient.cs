@@ -137,6 +137,9 @@ public sealed class CentralPairingClient : IDisposable
             new { school_id = schoolId }));
         try { SecretStore.Save(DevicePath(origin, deviceId, userName, keyFolder, ".meta"), registration); }
         finally { CryptographicOperations.ZeroMemory(registration); }
+        // Le prochain travail de fond retrouve uniquement l'origine réellement
+        // approuvée par le secrétariat, sans la déduire d'un QR non vérifié.
+        SelectApprovedOrigin(origin, userName, deviceId);
         return new CentralPairingResult(deviceId, Approved: true, SessionIssued: false, schoolId);
     }
 
@@ -218,6 +221,69 @@ public sealed class CentralPairingClient : IDisposable
             return schoolId;
         }
         finally { CryptographicOperations.ZeroMemory(clear); }
+    }
+
+    private static string ActiveOriginPath(string userName, string deviceId, string folder)
+    {
+        var fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+            userName.ToUpperInvariant() + "|" + deviceId)));
+        return Path.Combine(folder, "active-origin-" + fingerprint + ".enc");
+    }
+
+    /// <summary>
+    /// Choisir explicitement une origine centrale déjà approuvée sur CET
+    /// appareil pour CE compte. Une origine inconnue ne peut pas devenir la
+    /// destination des écritures de fond, même si son HTTPS est valide.
+    /// </summary>
+    public void SelectApprovedOrigin(Uri trustedOrigin, string userName, string deviceId)
+    {
+        var origin = RequireTrustedHttps(trustedOrigin);
+        if (string.IsNullOrWhiteSpace(userName) || !ValidIdentifier(deviceId) ||
+            ReadSavedSchoolId(origin, userName, deviceId) is null)
+            throw new InvalidOperationException(
+                "Seul un serveur central déjà jumelé et approuvé peut être activé.");
+        var registration = Encoding.UTF8.GetBytes(
+            JsonSerializer.Serialize(new { origin = origin.AbsoluteUri }));
+        try { SecretStore.Save(ActiveOriginPath(userName, deviceId, keyFolder), registration); }
+        finally { CryptographicOperations.ZeroMemory(registration); }
+    }
+
+    /// <summary>
+    /// Origine centrale active, mémorisée par utilisateur/appareil sous une
+    /// enveloppe chiffrée. Aucun mot de passe ni JWT n'est stocké. L'ancienne
+    /// métadonnée approuvée doit encore exister, sinon aucun envoi n'est permis.
+    /// </summary>
+    public Uri? ReadActiveOrigin(string userName, string deviceId)
+    {
+        if (string.IsNullOrWhiteSpace(userName) || !ValidIdentifier(deviceId))
+            throw new ArgumentException("Compte ou appareil invalide.");
+        var path = ActiveOriginPath(userName, deviceId, keyFolder);
+        if (!File.Exists(path)) return null;
+        var clear = SecretStore.Unprotect(File.ReadAllBytes(path));
+        try
+        {
+            using var doc = JsonDocument.Parse(clear);
+            if (!doc.RootElement.TryGetProperty("origin", out var value) ||
+                value.ValueKind != JsonValueKind.String ||
+                !Uri.TryCreate(value.GetString(), UriKind.Absolute, out var address))
+                throw new InvalidDataException("Origine centrale mémorisée invalide.");
+            var origin = RequireTrustedHttps(address);
+            if (ReadSavedSchoolId(origin, userName, deviceId) is null)
+                throw new InvalidDataException(
+                    "L'origine centrale active n'a plus d'autorisation locale.");
+            return origin;
+        }
+        finally { CryptographicOperations.ZeroMemory(clear); }
+    }
+
+    /// <summary>Retire la destination des synchronisations futures, sans
+    /// effacer les opérations SQLite ni les clés de jumelage existantes.</summary>
+    public void DisableActiveOrigin(string userName, string deviceId)
+    {
+        if (string.IsNullOrWhiteSpace(userName) || !ValidIdentifier(deviceId))
+            throw new ArgumentException("Compte ou appareil invalide.");
+        var path = ActiveOriginPath(userName, deviceId, keyFolder);
+        if (File.Exists(path)) File.Delete(path);
     }
 
     public Task<CentralSession> OpenSavedSessionAsync(
