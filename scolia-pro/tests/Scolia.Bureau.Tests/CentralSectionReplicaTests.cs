@@ -151,7 +151,7 @@ public sealed class CentralSectionReplicaTests
             }
             using var reopened = new CentralSectionReplica(store, store.User, School);
             var saved = reopened.Local();
-            Assert.Empty(saved.Sections.Where(x => x.IsPending));
+            Assert.DoesNotContain(saved.Sections, x => x.IsPending);
             Assert.Equal(0, saved.PendingCount);
             Assert.Equal(15, Assert.Single(saved.Sections).Revision);
         }
