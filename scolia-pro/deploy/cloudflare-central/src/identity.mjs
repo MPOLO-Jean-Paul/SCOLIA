@@ -144,7 +144,11 @@ async function clearAttempts(db, account) {
 }
 
 export async function issuePairingIdentityProof(request, env) {
-  if (!env?.DB || !env?.SCOLIA_PAIRING_AUTH_KEY)
+  // Le service refuse de vérifier des mots de passe si ses deux garde-fous
+  // anti-abus ne sont pas configurés sur Cloudflare. Pas de mode dégradé.
+  if (!env?.DB || !env?.SCOLIA_PAIRING_AUTH_KEY ||
+      typeof env.SCOLIA_LOGIN_RATE_LIMITER?.limit !== "function" ||
+      typeof env.SCOLIA_LOGIN_SOURCE_LIMITER?.limit !== "function")
     return fail(503, "not_configured");
   const contentLength = Number(request.headers.get("Content-Length") ?? 0);
   if (contentLength > MAX_REQUEST) return fail(413, "too_large");
@@ -169,6 +173,22 @@ export async function issuePairingIdentityProof(request, env) {
     return fail(400, "invalid_request");
 
   try {
+    // Une limite par QR + une limite plus généreuse par provenance : une
+    // suite de QR inexistants ne doit pas déclencher PBKDF2 sans restriction.
+    // Les quotas Cloudflare sont approximatifs par emplacement : le verrou
+    // D1 par compte reste le second garde-fou, et une WAF reste conseillée.
+    const origin = request.headers.get("CF-Connecting-IP") || "unknown";
+    const originDigest = new Uint8Array(await crypto.subtle.digest(
+      "SHA-256", encode.encode(origin)));
+    const sourceResult = await env.SCOLIA_LOGIN_SOURCE_LIMITER.limit({
+      key: b64url(originDigest),
+    });
+    if (!sourceResult.success) return fail(429, "too_many_attempts");
+    const inviteResult = await env.SCOLIA_LOGIN_RATE_LIMITER.limit({
+      key: "pair:" + body.invitation_id.toLowerCase(),
+    });
+    if (!inviteResult.success) return fail(429, "too_many_attempts");
+
     const account = await env.DB.prepare(
       "SELECT u.id, u.school_id, u.login_normalized, u.password_hash, " +
       "u.permission_revision, u.enabled, u.must_change_password, " +
