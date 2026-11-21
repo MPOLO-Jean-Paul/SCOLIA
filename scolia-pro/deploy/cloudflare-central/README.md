@@ -110,3 +110,53 @@ Le PC du secrétariat restera **poste d'administration et cache local** ; l'obje
 - Ne pas activer de route générique non authentifiée exposant des tables scolaires.
 - Ne pas rendre public le bucket R2.
 - Aucun utilisateur ne doit obtenir un reçu définitif pendant une coupure sans acquittement du serveur central.
+
+## Déploiement staging manuel et protégé (préparé, NON exécuté)
+
+Ce dépôt ne fournit pas de droits Cloudflare. Il ne faut **pas** réutiliser le
+Worker `scolia-api`, la D1 `scolia-test`, le domaine
+`api.jp-services.org` ni un bucket de production pour ces essais.
+
+1. Dans Cloudflare, créer **une nouvelle base D1** appelée
+   `scolia-identity-staging`. Copier son UUID, sans importer d'apprenants,
+   d'enseignants ou de vrais mots de passe.
+2. Choisir deux identifiants numériques **positifs et distincts** de
+   Rate Limiting Workers pour le compte Cloudflare. Ils ne doivent pas
+   partager le même état de limite entre les deux bindings.
+3. Dans GitHub, préparer un environnement de dépôt nommé
+   `scolia-staging` avec validation manuelle recommandée, et y enregistrer
+   comme **variables** `SCOLIA_STAGING_D1_ID`,
+   `SCOLIA_STAGING_RL_INVITE_NS` et
+   `SCOLIA_STAGING_RL_SOURCE_NS`. En **secrets d'environnement** :
+   `CLOUDFLARE_ACCOUNT_ID` et `CLOUDFLARE_API_TOKEN` (token limité
+   à l'édition du Worker staging et de cette D1 uniquement).
+4. Le workflow manuel
+   `.github/workflows/scolia-identity-staging-manual.yml` exige une
+   confirmation exacte `STAGING_ONLY`. Il exécute les tests JS/Python,
+   valide l'UUID et les deux IDs distincts, écrit un
+   `wrangler.staging.toml` **ignoré par Git**, puis applique les
+   migrations à la D1 staging et déploie uniquement le Worker
+   `scolia-identity-staging` sur son sous-domaine `workers.dev`.
+   **Il ne faut pas lancer ce workflow avant la revue des variables et
+   des permissions Cloudflare.**
+5. Configurer dans les secrets du Worker staging deux clés
+   aléatoires indépendantes de 32 octets minimum sous la forme base64url :
+   `SCOLIA_PAIRING_AUTH_KEY` et `SCOLIA_AUTH_HMAC_KEY`.
+   Ne jamais les transmettre dans le chat, les mettre dans GitHub,
+   les entrer dans un fichier `wrangler.toml` ou les intégrer aux APK.
+6. N'utiliser que des comptes et codes de test fictifs. Vérifier en staging
+   le temps CPU réel du PBKDF2, la réponse HTTP 429, les cinq tentatives,
+   le blocage D1 de deux minutes, les QR à usage unique, le changement de
+   mot de passe et la révocation. **Ne pas basculer de vrais comptes**
+   si le quota CPU ou le parcours métier n'est pas validé.
+
+Le modèle de configuration `wrangler.staging.toml.example` contient
+intentionnellement des espaces réservés invalides : il **ne peut pas**
+être déployé tel quel. Le générateur exige des valeurs reçues de
+l'environnement GitHub. Le script ne reçoit ni ne stocke les clés de
+signature JWT.
+
+Même après un déploiement staging, l'API scolaire centrale ne fonctionne
+pas encore : aucun import de données réelles, aucune émission de session
+scolaire définitive, aucune synchronisation cloud métier des paiements
+ou des notes n'est prête.
