@@ -267,9 +267,13 @@ public sealed partial class ScoliaClient
         // Une écriture locale est terminée avant tout déclenchement réseau.
         // Sur Android, WorkManager reprend la file lorsque le réseau revient.
         try { Infrastructure.Platform.RequestBackgroundSync?.Invoke(); }
-        catch (Exception ex) when (ex is InvalidOperationException or
-            PlatformNotSupportedException )
-        { System.Diagnostics.Trace.WriteLine("Déclenchement différé indisponible."); }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // Une erreur de WorkManager ne doit jamais faire croire que la
+            // saisie n'a pas été enregistrée, ni provoquer un second envoi.
+            System.Diagnostics.Trace.WriteLine(
+                $"SCOLIA central : planification différée ({ex.GetType().Name}).");
+        }
         return operation;
     }
 
