@@ -185,8 +185,20 @@ public sealed class CentralSectionReplica : IDisposable
                         version <= 0)
                         throw new InvalidDataException("Accusé D1 incomplet ou non définitif.");
 
+                    // Confirmation D1 reçue : conserver immédiatement l'état
+                    // validé dans le cache local AVANT de retirer l'outbox.
+                    // Si le réseau tombe avant la lecture du journal, l'école
+                    // et ses sections restent consultables hors connexion.
+                    var index = snapshot.Sections.FindIndex(x =>
+                        string.Equals(x.Id, operation.SectionId,
+                            StringComparison.OrdinalIgnoreCase));
+                    var accepted = new CentralSectionRow(operation.SectionId,
+                        operation.Code, operation.Name, operation.IsActive,
+                        version, IsPending: false);
+                    if (index >= 0) snapshot.Sections[index] = accepted;
+                    else snapshot.Sections.Add(accepted);
                     snapshot.Pending.RemoveAll(x => x.OperationId == operation.OperationId);
-                    Save(snapshot); // Transaction locale avant d'oublier l'opération.
+                    Save(snapshot); // État local + retrait outbox : un seul commit.
                 }
 
                 for (var batch = 0; batch < 8; batch++)
