@@ -242,6 +242,11 @@ public sealed class OfflineDatabaseTests : IDisposable
                 ExpiresUtc = DateTime.UtcNow.AddDays(3)
             }, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
         Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+        // Une délégation illisible ne peut pas autoriser de réseau, mais
+        // les opérations chiffrées locales continuent d'exister.
+        store.SaveCloudAccessFor("enseignant", "{jeton-invalide");
+        Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+        Assert.Single(Store("enseignant").Outbox());
     }
 
     [Fact]
