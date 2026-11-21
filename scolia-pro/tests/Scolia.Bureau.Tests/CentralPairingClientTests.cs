@@ -1,0 +1,153 @@
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using Scolia.Bureau.Api;
+
+namespace Scolia.Bureau.Tests;
+
+public sealed class CentralPairingClientTests
+{
+    private sealed class Handler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send)
+        : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+            => send(request, ct);
+    }
+
+    private static HttpResponseMessage Json(HttpStatusCode status, string content) => new(status)
+    {
+        Content = new StringContent(content, Encoding.UTF8, "application/json"),
+    };
+
+    [Fact]
+    public async Task Jumelage_natif_demande_mot_de_passe_signe_avec_ECDSA_et_ne_cree_pas_de_session()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-pair-native-" + Guid.NewGuid().ToString("N"));
+        var invitation = Guid.NewGuid();
+        var device = Guid.NewGuid().ToString("N");
+        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        const string user = "ENSEIGNANT";
+        const string password = "MotDePasse-Valide-2026";
+        string? proofThumbprint = null;
+        var seen = 0;
+
+        try
+        {
+            using var gateway = new CentralPairingClient(new Handler(async (request, ct) =>
+            {
+                seen++;
+                Assert.Equal("staging.example", request.RequestUri!.Host);
+                Assert.Equal(Uri.UriSchemeHttps, request.RequestUri!.Scheme);
+                var body = await request.Content!.ReadAsStringAsync(ct);
+                using var parsed = JsonDocument.Parse(body);
+                if (request.RequestUri.AbsolutePath == "/v1/identity/pairing-proof")
+                {
+                    Assert.Equal(1, seen);
+                    Assert.Equal(user, parsed.RootElement.GetProperty("user_name").GetString());
+                    Assert.Equal(password, parsed.RootElement.GetProperty("password").GetString());
+                    Assert.Equal(invitation.ToString("D"), parsed.RootElement.GetProperty("invitation_id").GetString());
+                    proofThumbprint = parsed.RootElement.GetProperty("device_key_thumbprint").GetString();
+                    return Json(HttpStatusCode.OK,
+                        """{"pairing_proof":"header.payload.signature-long-enough","session_issued":false}""");
+                }
+                Assert.Equal("/v1/pair/accept", request.RequestUri.AbsolutePath);
+                Assert.Equal(2, seen);
+                Assert.Equal("Bearer header.payload.signature-long-enough",
+                    request.Headers.GetValues("X-Scolia-Account-Proof").Single());
+                Assert.False(body.Contains(password, StringComparison.Ordinal));
+                var root = parsed.RootElement;
+                Assert.Equal(token, root.GetProperty("token").GetString());
+                Assert.Equal(device, root.GetProperty("device_id").GetString());
+                var pub = root.GetProperty("public_key_jwk");
+                var crv = pub.GetProperty("crv").GetString();
+                var kty = pub.GetProperty("kty").GetString();
+                var x = pub.GetProperty("x").GetString()!;
+                var y = pub.GetProperty("y").GetString()!;
+                Assert.Equal("P-256", crv);
+                Assert.Equal("EC", kty);
+                var canonical = JsonSerializer.Serialize(new { crv, kty, x, y });
+                var fingerprint = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)))
+                    .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+                Assert.Equal(proofThumbprint, fingerprint);
+
+                static byte[] Decode(string text) => Convert.FromBase64String(
+                    text.Replace('-', '+').Replace('_', '/') + new string('=', (4 - text.Length % 4) % 4));
+                using var pubKey = ECDsa.Create(new ECParameters
+                {
+                    Curve = ECCurve.NamedCurves.nistP256,
+                    Q = new ECPoint { X = Decode(x), Y = Decode(y) },
+                });
+                var challenge = Encoding.UTF8.GetBytes(
+                    $"SCOLIA-PAIR-V1\n{invitation:D}\n{device}\n{token}");
+                Assert.True(pubKey.VerifyData(challenge, Decode(root.GetProperty("device_signature").GetString()!),
+                    HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
+
+                return Json(HttpStatusCode.Created,
+                    "{\"device_id\":\"" + device + "\",\"approved\":true,\"session_issued\":false}");
+            }), temp);
+
+            var paired = await gateway.PairAsync(new Uri("https://staging.example/"),
+                invitation, token, user, password, device);
+            Assert.True(paired.Approved);
+            Assert.False(paired.SessionIssued);
+            Assert.Equal(2, seen);
+            Assert.Single(Directory.GetFiles(temp, "*.key"));
+            var encrypted = File.ReadAllBytes(Directory.GetFiles(temp, "*.key")[0]);
+            Assert.False(Encoding.UTF8.GetString(encrypted).Contains(password, StringComparison.Ordinal));
+        }
+        finally
+        {
+            if (Directory.Exists(temp)) Directory.Delete(temp, true);
+        }
+    }
+
+    [Fact]
+    public async Task Refus_identite_ne_transmet_pas_le_QR_au_second_endpoint()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-pair-reject-" + Guid.NewGuid().ToString("N"));
+        var sent = 0;
+        try
+        {
+            using var gateway = new CentralPairingClient(new Handler((request, _) =>
+            {
+                sent++;
+                Assert.Equal("/v1/identity/pairing-proof", request.RequestUri!.AbsolutePath);
+                return Task.FromResult(Json(HttpStatusCode.Unauthorized,
+                    """{"error":"invalid_credentials_or_invitation"}"""));
+            }), temp);
+            var ex = await Assert.ThrowsAsync<CentralPairingException>(() => gateway.PairAsync(
+                new Uri("https://staging.example/"), Guid.NewGuid(), new string('A', 43),
+                "enseignant", "incorrect", "android-01"));
+            Assert.Equal(401, ex.Status);
+            Assert.Equal(1, sent);
+        }
+        finally
+        {
+            if (Directory.Exists(temp)) Directory.Delete(temp, true);
+        }
+    }
+
+    [Fact]
+    public async Task Destinations_non_HTTPS_et_routes_dangereuses_sont_refusees_avant_la_requete()
+    {
+        var sent = 0;
+        using var gateway = new CentralPairingClient(new Handler((_, _) =>
+        {
+            sent++;
+            throw new InvalidOperationException("Le secret ne doit jamais partir sur ce domaine.");
+        }));
+        foreach (var url in new[]
+        {
+            "http://staging.example/", "https://user:pass@staging.example/",
+            "https://staging.example/other", "https://staging.example/?redirect=https://other.example",
+        })
+        {
+            await Assert.ThrowsAsync<ArgumentException>(() => gateway.PairAsync(
+                new Uri(url), Guid.NewGuid(), new string('A', 43),
+                "enseignant", "secret", "android-01"));
+        }
+        Assert.Equal(0, sent);
+    }
+}
