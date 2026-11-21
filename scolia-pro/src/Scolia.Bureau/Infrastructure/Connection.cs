@@ -82,9 +82,9 @@ public static class ConnectionStore
     /// Une configuration inconnue ne déclenche jamais de trafic réseau.
     /// </summary>
     public static bool ShouldScheduleBackgroundSync(string? mode,
-        bool approvedCentralSession, bool delegatedUploadPending = false) =>
+        bool approvedCentralSession, bool delegatedMailboxPending = false) =>
         mode is ConnectionSettings.Remote or ConnectionSettings.Internet ||
-        ((approvedCentralSession || delegatedUploadPending) &&
+        ((approvedCentralSession || delegatedMailboxPending) &&
          (mode is null or ConnectionSettings.Local));
 
     /// <summary>Vrai si ce poste porte déjà la base d'un établissement : il en est le serveur.</summary>
