@@ -7,6 +7,7 @@ MIGRATION = (
     Path(__file__).resolve().parents[1]
     / "deploy/cloudflare-central/migrations/0001_core.sql"
 )
+INVITATIONS_MIGRATION = MIGRATION.with_name("0002_invitations.sql")
 HASH = "a" * 64
 
 
@@ -14,6 +15,7 @@ class CloudflareCentralSchemaTests(unittest.TestCase):
     def setUp(self):
         self.db = sqlite3.connect(":memory:")
         self.db.executescript(MIGRATION.read_text(encoding="utf-8"))
+        self.db.executescript(INVITATIONS_MIGRATION.read_text(encoding="utf-8"))
         self.db.execute("INSERT INTO cloud_schools(id,display_name) VALUES('a','École A')")
         self.db.execute("INSERT INTO cloud_schools(id,display_name) VALUES('b','École B')")
         for school in ("a", "b"):
@@ -150,9 +152,76 @@ class CloudflareCentralSchemaTests(unittest.TestCase):
         ).fetchone()
         self.assertIsNone(unaffected[0])
 
+    def test_invitation_is_school_scoped_and_never_stores_the_raw_token(self):
+        self.db.execute(
+            """INSERT INTO cloud_device_invitations(
+                   id,school_id,target_user_id,issued_by,token_sha256,expires_at)
+               VALUES('inv-a','a','teacher','secretary',?,unixepoch()+300)""",
+            (HASH,),
+        )
+        row = self.db.execute(
+            "SELECT school_id,target_user_id,issued_by,token_sha256 "
+            "FROM cloud_device_invitations WHERE id='inv-a'"
+        ).fetchone()
+        self.assertEqual(("a", "teacher", "secretary", HASH), row)
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.db.execute(
+                """INSERT INTO cloud_device_invitations(
+                       id,school_id,target_user_id,issued_by,token_sha256,expires_at)
+                   VALUES('inv-b','b','teacher','secretary',?,unixepoch()+300)""",
+                (HASH,),
+            )
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.db.execute(
+                """INSERT INTO cloud_device_invitations(
+                       id,school_id,target_user_id,issued_by,token_sha256,expires_at)
+                   VALUES('other-school','a','unknown','secretary',?,unixepoch()+300)""",
+                ("b" * 64,),
+            )
+
+    def test_invitation_expiration_is_bounded_and_consumption_is_atomic(self):
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.db.execute(
+                """INSERT INTO cloud_device_invitations(
+                       id,school_id,target_user_id,issued_by,token_sha256,expires_at)
+                   VALUES('expired','a','teacher','secretary',?,unixepoch()-1)""",
+                ("b" * 64,),
+            )
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.db.execute(
+                """INSERT INTO cloud_device_invitations(
+                       id,school_id,target_user_id,issued_by,token_sha256,expires_at)
+                   VALUES('too-long','a','teacher','secretary',?,unixepoch()+700)""",
+                ("c" * 64,),
+            )
+        self.db.execute(
+            """INSERT INTO cloud_device_invitations(
+                   id,school_id,target_user_id,issued_by,token_sha256,expires_at)
+               VALUES('valid','a','teacher','secretary',?,unixepoch()+300)""",
+            ("d" * 64,),
+        )
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.db.execute(
+                """UPDATE cloud_device_invitations
+                   SET consumed_at=unixepoch()
+                   WHERE id='valid'"""
+            )
+        self.db.execute(
+            """UPDATE cloud_device_invitations
+               SET consumed_at=unixepoch(), consumed_device_id='new-phone'
+               WHERE id='valid'"""
+        )
+        used = self.db.execute(
+            "SELECT consumed_at,consumed_device_id "
+            "FROM cloud_device_invitations WHERE id='valid'"
+        ).fetchone()
+        self.assertIsNotNone(used[0])
+        self.assertEqual(used[1], "new-phone")
+
     def test_reapplying_migration_is_additive_and_safe(self):
         self.add_operation("a", "survives")
         self.db.executescript(MIGRATION.read_text(encoding="utf-8"))
+        self.db.executescript(INVITATIONS_MIGRATION.read_text(encoding="utf-8"))
         self.assertEqual(
             1, self.db.execute(
                 "SELECT COUNT(*) FROM cloud_operations WHERE operation_id='survives'"
