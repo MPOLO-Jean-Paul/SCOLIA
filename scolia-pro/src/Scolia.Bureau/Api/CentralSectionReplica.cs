@@ -201,6 +201,7 @@ public sealed class CentralSectionReplica : IDisposable
                     Save(snapshot); // État local + retrait outbox : un seul commit.
                 }
 
+                var hasMorePages = false;
                 for (var batch = 0; batch < 8; batch++)
                 {
                     ct.ThrowIfCancellationRequested();
@@ -261,12 +262,19 @@ public sealed class CentralSectionReplica : IDisposable
                     if (more.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
                         throw new InvalidDataException("Indicateur de continuation invalide.");
 
+                    hasMorePages = more.GetBoolean();
+                    if (hasMorePages && changes.GetArrayLength() == 0)
+                        throw new InvalidDataException("Pagination D1 sans progression.");
                     snapshot.Revision = after;
                     Save(snapshot); // Données et curseur : UNE SEULE écriture SQLite.
-                    if (!more.GetBoolean()) break;
+                    if (!hasMorePages) break;
                 }
+                // Huit lots au maximum par passage pour ne pas monopoliser
+                // le téléphone. Le curseur est durable ; l'appelant peut
+                // planifier une autre passe sans repartir de zéro.
                 return Status(snapshot, Offline: false,
-                    HasConflict: snapshot.Pending.Any(x => x.HasConflict));
+                    HasConflict: snapshot.Pending.Any(x => x.HasConflict),
+                    HasMorePages: hasMorePages);
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
             {
@@ -278,7 +286,8 @@ public sealed class CentralSectionReplica : IDisposable
         finally { gate.Release(); }
     }
 
-    private static CentralSectionLocalState Status(Snapshot snapshot, bool Offline, bool HasConflict)
+    private static CentralSectionLocalState Status(Snapshot snapshot, bool Offline,
+        bool HasConflict, bool HasMorePages = false)
     {
         var view = snapshot.Sections.ToDictionary(x => x.Id, x => x,
             StringComparer.OrdinalIgnoreCase);
@@ -288,7 +297,7 @@ public sealed class CentralSectionReplica : IDisposable
                 pending.ExpectedRevision, IsPending: true);
         return new CentralSectionLocalState(
             view.Values.OrderBy(x => x.Code, StringComparer.Ordinal).ToArray(),
-            snapshot.Pending.Count, snapshot.Revision, Offline, HasConflict);
+            snapshot.Pending.Count, snapshot.Revision, Offline, HasConflict, HasMorePages);
     }
 
     private static async Task<JsonElement> ReadJsonAsync(HttpResponseMessage response, CancellationToken ct)
@@ -317,4 +326,5 @@ public sealed record CentralSectionPendingChange(string OperationId, string Sect
     bool HasConflict = false);
 
 public sealed record CentralSectionLocalState(IReadOnlyList<CentralSectionRow> Sections,
-    int PendingCount, long Revision, bool Offline, bool HasConflict = false);
+    int PendingCount, long Revision, bool Offline, bool HasConflict = false,
+    bool HasMorePages = false);
