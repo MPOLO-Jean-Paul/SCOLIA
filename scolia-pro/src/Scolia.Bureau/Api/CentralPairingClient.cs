@@ -302,16 +302,9 @@ public sealed class CentralPairingClient : IDisposable
         token.Count(c => c == '.') == 2 &&
         token.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '-');
 
-    private static async Task<JsonElement> ReadSmallJsonAsync(HttpResponseMessage response, CancellationToken ct)
-    {
-        var text = await response.Content.ReadAsStringAsync(ct);
-        if (Encoding.UTF8.GetByteCount(text) > 8192)
-            throw new InvalidDataException("La réponse de jumelage dépasse la limite autorisée.");
-        using var doc = JsonDocument.Parse(text);
-        if (doc.RootElement.ValueKind != JsonValueKind.Object)
-            throw new InvalidDataException("La réponse de jumelage n'est pas un objet JSON.");
-        return doc.RootElement.Clone();
-    }
+    private static Task<JsonElement> ReadSmallJsonAsync(
+        HttpResponseMessage response, CancellationToken ct) =>
+        CentralBoundedJson.ReadAsync(response, 8192, ct);
 
     private static string Base64Url(ReadOnlySpan<byte> bytes) =>
         Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
