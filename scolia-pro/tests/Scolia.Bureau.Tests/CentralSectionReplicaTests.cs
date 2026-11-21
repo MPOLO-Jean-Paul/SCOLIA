@@ -440,7 +440,7 @@ public sealed class CentralSectionReplicaTests
             var outcomes = await Task.WhenAll(
                 Task.Run(() => TryQueue(first)),
                 Task.Run(() => TryQueue(second)));
-            Assert.Single(outcomes.Where(x => x));
+            Assert.Single(outcomes, succeeded => succeeded);
             Assert.Equal(1, first.Local().PendingCount);
             Assert.Equal(1, second.Local().PendingCount);
         }
