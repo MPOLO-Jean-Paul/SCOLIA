@@ -240,7 +240,16 @@ public sealed class CentralSectionReplica : IDisposable
                             string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
                         var next = new CentralSectionRow(id, code, name,
                             active == 1, revision, IsPending: false);
-                        if (old >= 0) snapshot.Sections[old] = next;
+                        // Le journal peut repartir d'un ancien curseur après
+                        // confirmation d'une écriture (POST applied). Ne jamais
+                        // remplacer l'état local confirmé à la révision 70 par
+                        // un événement antérieur à la révision 70. Avancer quand
+                        // même le curseur de réception pour poursuivre le pull.
+                        if (old >= 0)
+                        {
+                            if (snapshot.Sections[old].Revision <= revision)
+                                snapshot.Sections[old] = next;
+                        }
                         else snapshot.Sections.Add(next);
                         after = revision;
                     }
