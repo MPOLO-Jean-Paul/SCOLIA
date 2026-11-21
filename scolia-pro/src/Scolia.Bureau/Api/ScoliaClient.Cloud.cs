@@ -183,4 +183,19 @@ public sealed partial class ScoliaClient
             return 0;
         }
     }
+
+    /// <summary>
+    /// Point d'entrée partagé par SCOLIA Windows et Android pour la future
+    /// activation centrale. Nécessite une origine HTTPS approuvée, une
+    /// invitation délivrée par le secrétariat et le mot de passe du titulaire.
+    /// La confirmation n'est PAS une session et n'autorise PAS de données.
+    /// </summary>
+    public async Task<CentralPairingResult> PairCentralDeviceAsync(
+        Uri trustedCentralOrigin, Guid invitationId, string token,
+        string userName, string password, CancellationToken ct = default)
+    {
+        using var central = new CentralPairingClient();
+        return await central.PairAsync(trustedCentralOrigin, invitationId,
+            token, userName, password, Infrastructure.DeviceIdentity.Id, ct);
+    }
 }
