@@ -165,10 +165,10 @@ public sealed class CentralSectionReplica : IDisposable
                     {
                         // Conserver la saisie et son identifiant pour arbitrage :
                         // ne pas rejouer un conflit à chaque reconnexion.
-                        var index = snapshot.Pending.FindIndex(x =>
+                        var conflictIndex = snapshot.Pending.FindIndex(x =>
                             x.OperationId == operation.OperationId);
-                        if (index >= 0)
-                            snapshot.Pending[index] = operation with { HasConflict = true };
+                        if (conflictIndex >= 0)
+                            snapshot.Pending[conflictIndex] = operation with { HasConflict = true };
                         Save(snapshot);
                         return Status(snapshot, Offline: false, HasConflict: true);
                     }
