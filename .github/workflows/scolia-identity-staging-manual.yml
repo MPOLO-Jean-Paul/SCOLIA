@@ -1,0 +1,77 @@
+# Aucun déclenchement automatique, aucune route du domaine de production.
+# À exécuter UNIQUEMENT après création de l'environnement GitHub protégé
+# "scolia-staging" et des bindings/secrets côté Cloudflare.
+name: SCOLIA Identity - déployer en préproduction (manuel)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Taper STAGING_ONLY (aucune base scolaire réelle)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scolia-identity-staging
+  cancel-in-progress: false
+
+jobs:
+  deployment-staging:
+    if: ${{ inputs.confirmation == 'STAGING_ONLY' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: scolia-staging
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SCOLIA_STAGING_D1_ID: ${{ vars.SCOLIA_STAGING_D1_ID }}
+      SCOLIA_STAGING_RL_INVITE_NS: ${{ vars.SCOLIA_STAGING_RL_INVITE_NS }}
+      SCOLIA_STAGING_RL_SOURCE_NS: ${{ vars.SCOLIA_STAGING_RL_SOURCE_NS }}
+    steps:
+      - name: Cloner la branche validée
+        uses: actions/checkout@v5
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Installer Python pour vérifier D1
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Refuser les comptes Cloudflare et D1 non configurés
+        shell: bash
+        run: |
+          set -euo pipefail
+          for key in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID \
+            SCOLIA_STAGING_D1_ID SCOLIA_STAGING_RL_INVITE_NS \
+            SCOLIA_STAGING_RL_SOURCE_NS; do
+            if [[ -z "${!key:-}" ]]; then
+              echo "::error::Missing protected staging variable: $key"
+              exit 1
+            fi
+          done
+
+      - name: Exécuter les tests JS de sécurité et d'authentification
+        working-directory: scolia-pro/deploy/cloudflare-central
+        run: npm test
+
+      - name: Tester schéma et intégrité des contraintes D1
+        run: python -m unittest discover -s scolia-pro/tests -p 'test_cloudflare_central_schema.py' -v
+
+      - name: Générer la configuration staging (sans secrets ni domaine production)
+        working-directory: scolia-pro/deploy/cloudflare-central
+        run: node scripts/prepare-staging-config.mjs
+
+      - name: Appliquer uniquement les migrations sur D1 de préproduction
+        working-directory: scolia-pro/deploy/cloudflare-central
+        run: npx --yes wrangler@4 d1 migrations apply scolia-identity-staging --remote --config wrangler.staging.toml
+
+      - name: Déployer seulement le Worker staging (pas de domaine de production)
+        working-directory: scolia-pro/deploy/cloudflare-central
+        run: npx --yes wrangler@4 deploy --config wrangler.staging.toml
