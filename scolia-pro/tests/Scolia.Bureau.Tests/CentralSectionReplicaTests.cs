@@ -126,7 +126,25 @@ public sealed class CentralSectionReplicaTests
             var conflict = await replica.SyncAsync(new Uri("https://central.example/"), Jwt);
             Assert.True(conflict.HasConflict);
             Assert.Equal(1, conflict.PendingCount);
+            Assert.True(replica.Local().HasConflict);
             Assert.Equal(1, replica.Local().PendingCount);
+
+            // Après redémarrage, conserver l'opération en conflit sans la
+            // renvoyer indéfiniment. Seule une lecture du journal est admise.
+            var posts = 0;
+            using var reopened = new CentralSectionReplica(store, store.User, School,
+                new Handler((request, _) =>
+                {
+                    if (request.Method == HttpMethod.Post) posts++;
+                    Assert.Equal(HttpMethod.Get, request.Method);
+                    return Task.FromResult(Json(HttpStatusCode.OK,
+                        """{"events":[],"next":0,"has_more":false}"""));
+                }));
+            Assert.True(reopened.Local().HasConflict);
+            var replay = await reopened.SyncAsync(new Uri("https://central.example/"), Jwt);
+            Assert.Equal(0, posts);
+            Assert.True(replay.HasConflict);
+            Assert.Equal(1, replay.PendingCount);
         }
         finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
     }
