@@ -39,6 +39,7 @@ function fakeEnvironment(options = {}) {
                   return { role: options.role ?? "Secretariat" };
                 }
                 if (sql.includes("MAX(revision)")) return { latest: options.latest ?? 20 };
+                if (sql.includes("FROM cloud_operations")) return options.operation ?? null;
                 if (sql.includes("FROM cloud_devices"))
                   return options.alreadyRevoked ? { revoked_at: now - 60 } : null;
                 throw Error("unexpected first");
@@ -233,4 +234,51 @@ test("enseignant et promoteur ne voient ni ne révoquent les appareils", async (
       { method: "POST", body: { device_id: "phone-7" }, env })).status, 403);
     assert.deepEqual(revokedWrites, []);
   }
+});
+
+test("suivi de l'opération 202 : pending reste provisoire et applied est définitif", async () => {
+  const op = "operation_202_test";
+  const { env, calls } = fakeEnvironment({ role: "Enseignant", operation: {
+    outcome: "pending", received_at: 123, settled_at: null,
+  } });
+  const response = await call("/v1/sync/operations/" + op, { env });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    operation_id: op, status: "pending", finalized: false,
+    received_at: 123, settled_at: null,
+  });
+  assert.deepEqual(calls[1].params, ["school-a", op, "secretary", "pc-1"]);
+  assert.match(calls[1].sql, /actor_user_id = \?/);
+  assert.match(calls[1].sql, /device_id = \?/);
+  assert.doesNotMatch(calls[1].sql, /result_json/);
+});
+
+test("une écriture appliquée ou rejetée est signalée sans divulguer le contenu", async () => {
+  for (const outcome of ["applied", "rejected"]) {
+    const { env } = fakeEnvironment({ operation: {
+      outcome, received_at: 1, settled_at: 22, result_json: "{\"secret\":true}",
+    } });
+    const response = await call("/v1/sync/operations/id-01", { env });
+    assert.equal(response.status, 200);
+    const data = await response.json();
+    assert.equal(data.finalized, true);
+    assert.equal(data.status, outcome);
+    assert.equal(JSON.stringify(data).includes("secret"), false);
+    assert.equal(JSON.stringify(data).includes("result_json"), false);
+  }
+});
+
+test("l'accusé d'une autre session est invisible et les identifiants malformés sont rejetés", async () => {
+  const { env, calls } = fakeEnvironment();
+  const response = await call("/v1/sync/operations/other-user-op", { env });
+  assert.equal(response.status, 404);
+  assert.deepEqual(calls[1].params, ["school-a", "other-user-op", "secretary", "pc-1"]);
+  for (const path of [
+    "/v1/sync/operations/..%2Fother", "/v1/sync/operations/x%20y",
+    "/v1/sync/operations/" + "x".repeat(129),
+  ]) {
+    assert.equal((await call(path, { env })).status, 400, path);
+  }
+  assert.equal((await call("/v1/sync/operations/my-op",
+    { env: fakeEnvironment({ revoked: true, operation: { outcome: "applied" } }).env })).status, 401);
 });
