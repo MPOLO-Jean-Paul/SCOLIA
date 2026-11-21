@@ -208,8 +208,11 @@ class CloudflareCentralSchemaTests(unittest.TestCase):
             )
         self.db.execute(
             """UPDATE cloud_device_invitations
-               SET consumed_at=unixepoch(), consumed_device_id='new-phone'
-               WHERE id='valid'"""
+               SET consumed_at=unixepoch(), consumed_device_id='new-phone',
+                   consumed_device_public_key=?
+               WHERE id='valid'""",
+            ('{"crv":"P-256","kty":"EC","x":"' + 'a' * 43 +
+             '","y":"' + 'b' * 43 + '"}',),
         )
         used = self.db.execute(
             "SELECT consumed_at,consumed_device_id "
@@ -217,6 +220,44 @@ class CloudflareCentralSchemaTests(unittest.TestCase):
         ).fetchone()
         self.assertIsNotNone(used[0])
         self.assertEqual(used[1], "new-phone")
+        registered = self.db.execute(
+            "SELECT school_id,id,user_id,approved_by,public_key_jwk "
+            "FROM cloud_devices WHERE school_id='a' AND id='new-phone'"
+        ).fetchone()
+        self.assertEqual(registered[:4], ("a", "new-phone", "teacher", "secretary"))
+        self.assertIn('"kty":"EC"', registered[4])
+        # Une seconde consommation ne peut pas réinscrire cet appareil.
+        again = self.db.execute(
+            """UPDATE cloud_device_invitations SET consumed_at=unixepoch()
+               WHERE id='valid' AND consumed_at IS NULL"""
+        )
+        self.assertEqual(again.rowcount, 0)
+        self.assertEqual(1, self.db.execute(
+            "SELECT COUNT(*) FROM cloud_devices WHERE school_id='a' AND id='new-phone'"
+        ).fetchone()[0])
+
+    def test_trigger_rollback_if_device_registration_fails(self):
+        self.db.execute(
+            """INSERT INTO cloud_device_invitations
+               (id,school_id,target_user_id,issued_by,token_sha256,expires_at)
+               VALUES('conflict','a','teacher','secretary',?,unixepoch()+300)""",
+            ("c" * 64,),
+        )
+        pub = '{"crv":"P-256","kty":"EC","x":"' + 'a' * 43 + '","y":"' + 'b' * 43 + '"}'
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.db.execute(
+                """UPDATE cloud_device_invitations
+                   SET consumed_at=unixepoch(),consumed_device_id='phone',
+                       consumed_device_public_key=?
+                   WHERE school_id='a' AND id='conflict' AND consumed_at IS NULL""",
+                (pub,),
+            )
+        values = self.db.execute(
+            """SELECT consumed_at,consumed_device_id,consumed_device_public_key
+               FROM cloud_device_invitations WHERE id='conflict'"""
+        ).fetchone()
+        self.assertEqual(values, (None, None, None))
+
 
     def test_reapplying_migration_is_additive_and_safe(self):
         self.add_operation("a", "survives")
