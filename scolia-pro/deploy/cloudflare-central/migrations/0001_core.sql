@@ -30,11 +30,15 @@ CREATE TABLE IF NOT EXISTS cloud_devices (
     approved_by TEXT NOT NULL,
     approved_at INTEGER NOT NULL DEFAULT (unixepoch()),
     revoked_at INTEGER,
+    revoked_by TEXT,
     PRIMARY KEY (school_id, id),
     UNIQUE (school_id, id, user_id),
     FOREIGN KEY (school_id, user_id) REFERENCES cloud_users(school_id, id) ON DELETE RESTRICT,
     FOREIGN KEY (school_id, approved_by) REFERENCES cloud_users(school_id, id) ON DELETE RESTRICT,
-    CHECK (revoked_at IS NULL OR revoked_at >= approved_at)
+    FOREIGN KEY (school_id, revoked_by) REFERENCES cloud_users(school_id, id) ON DELETE RESTRICT,
+    CHECK (revoked_at IS NULL OR revoked_at >= approved_at),
+    CHECK ((revoked_at IS NULL AND revoked_by IS NULL)
+        OR (revoked_at IS NOT NULL AND revoked_by IS NOT NULL))
 );
 
 -- Une opération n'est enregistrée qu'une fois par établissement. Son empreinte
