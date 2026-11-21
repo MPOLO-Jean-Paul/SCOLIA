@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
 
 namespace Scolia.Bureau.Api;
@@ -57,11 +56,7 @@ public sealed class CentralJournalClient : IDisposable
             throw new CentralPairingException((int)response.StatusCode,
                 "Le journal central est momentanément inaccessible.");
 
-        var raw = await response.Content.ReadAsStringAsync(ct);
-        if (Encoding.UTF8.GetByteCount(raw) > 80_000)
-            throw new InvalidDataException("Réponse de journal central trop volumineuse.");
-        using var document = JsonDocument.Parse(raw);
-        var root = document.RootElement;
+        var root = await CentralBoundedJson.ReadAsync(response, 80_000, ct);
         if (root.ValueKind != JsonValueKind.Object ||
             !root.TryGetProperty("includes_payload", out var payloadFlag) ||
             payloadFlag.ValueKind != JsonValueKind.False ||
