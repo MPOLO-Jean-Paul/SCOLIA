@@ -162,8 +162,8 @@ public sealed class CentralPairingClientTests
                 {
                     jwkJson = parsed.RootElement.GetProperty("public_key_jwk").GetRawText();
                     return Json(HttpStatusCode.Created,
-                        "{\\"device_id\\":\\"" + device + "\\",\\"school_id\\":\\"school-a\\"," +
-                        "\\"approved\\":true,\\"session_issued\\":false}");
+                        "{\"device_id\":\"" + device + "\",\"school_id\":\"school-a\"," +
+                        "\"approved\":true,\"session_issued\":false}");
                 }
 
                 Assert.Equal("/v1/identity/session", request.RequestUri.AbsolutePath);
@@ -186,13 +186,13 @@ public sealed class CentralPairingClientTests
                     },
                 });
                 var challenge = Encoding.UTF8.GetBytes(
-                    $"SCOLIA-SESSION-V1\\nschool-a\\n{device}\\n{nonce}\\n{issuedAt}");
+                    $"SCOLIA-SESSION-V1\nschool-a\n{device}\n{nonce}\n{issuedAt}");
                 Assert.True(publicKey.VerifyData(challenge,
                     From64(body.GetProperty("signature").GetString()!),
                     HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
                 return Json(HttpStatusCode.OK,
-                    "{\\"access_token\\":\\"" + jwt + "\\",\\"expires_in\\":900," +
-                    "\\"school_id\\":\\"school-a\\",\\"device_id\\":\\"" + device + "\\"}");
+                    "{\"access_token\":\"" + jwt + "\",\"expires_in\":900," +
+                    "\"school_id\":\"school-a\",\"device_id\":\"" + device + "\"}");
             }), temp);
 
             var paired = await gateway.PairAsync(new Uri("https://staging.example/"),
