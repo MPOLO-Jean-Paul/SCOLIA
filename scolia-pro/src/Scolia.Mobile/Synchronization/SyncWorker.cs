@@ -15,12 +15,41 @@ public sealed class SyncWorker : Worker
     private static readonly object ResumeGate = new();
     private static DateTime lastResumeUtc;
 
+    // La reprise Cloudflare ne requiert aucun serveur SCOLIA historique.
+    // Pour un appareil configuré "local", ne programmer un accès réseau que
+    // si une session locale et une origine centrale approuvée existent.
+    private static bool HasLocalCentralSession(ConnectionSettings? connection)
+    {
+        if (connection is not null && connection.Mode != ConnectionSettings.Local)
+            return false;
+        try
+        {
+            var store = new OfflineStore(
+                ConnectionStore.CacheAddress(ConnectionStore.LocalAddress));
+            if (store.LastAccount is not { Length: > 0 } account ||
+                !store.CanSyncCentralInBackgroundFor(account))
+                return false;
+            using var pairing = new CentralPairingClient();
+            return pairing.ReadActiveOrigin(account, DeviceIdentity.Id) is not null;
+        }
+        catch (Exception exception) when (exception is IOException or
+            InvalidDataException or InvalidOperationException or
+            UnauthorizedAccessException or System.Security.Cryptography.CryptographicException
+            or JsonException or ArgumentException)
+        {
+            Android.Util.Log.Warn("SCOLIA-Central",
+                $"Autorisation locale illisible ({exception.GetType().Name}).");
+            return false;
+        }
+    }
+
     /// <summary>Reprise opportuniste à l'ouverture de SCOLIA Client.
     /// WorkManager reste soumis aux règles d'Android : pas de temps réel garanti.</summary>
     public static void ScheduleOnResume(Context context)
     {
         var saved = ConnectionStore.Load();
-        if (saved?.Mode is not (ConnectionSettings.Remote or ConnectionSettings.Internet)) return;
+        if (!ConnectionStore.ShouldScheduleBackgroundSync(
+                saved?.Mode, HasLocalCentralSession(saved))) return;
         lock (ResumeGate)
         {
             var now = DateTime.UtcNow;
@@ -43,7 +72,8 @@ public sealed class SyncWorker : Worker
     public static void SchedulePending(Context context)
     {
         var saved = ConnectionStore.Load();
-        if (saved?.Mode is not (ConnectionSettings.Remote or ConnectionSettings.Internet)) return;
+        if (!ConnectionStore.ShouldScheduleBackgroundSync(
+                saved?.Mode, HasLocalCentralSession(saved))) return;
         var constraints = new Constraints.Builder()
             .SetRequiredNetworkType(NetworkType.Connected)!.Build();
         var once = new OneTimeWorkRequest.Builder(typeof(SyncWorker))
@@ -93,6 +123,14 @@ public sealed class SyncWorker : Worker
         // WorkManager reste différé (~15 min minimum) : jamais une promesse de temps réel
         // quand Android a arrêté l'application cliente.
         var connection = ConnectionStore.Load();
+        // Un téléphone dont l'établissement a basculé sur Cloudflare peut
+        // être configuré comme "local" sans PC principal. Dans ce cas, ne
+        // pas retourner avant la synchronisation des sections D1.
+        if (connection is null || connection.Mode == ConnectionSettings.Local)
+        {
+            if (!HasLocalCentralSession(connection)) return Result.InvokeSuccess();
+            return await RunCloudOnlyAsync(ConnectionStore.LocalAddress);
+        }
         Uri? server = null;
         Scolia.Transport.RemoteLink? relay = null;
         if (connection is { Mode: ConnectionSettings.Remote, Url: { Length: > 0 } url }
@@ -130,17 +168,37 @@ public sealed class SyncWorker : Worker
         else if (connection?.Mode == ConnectionSettings.Internet)
         {
             var saved = RemoteConnection.Load();
-            if (saved is null || saved.Host || !saved.Enabled || saved.Link.ExpiresUtc <= DateTime.UtcNow)
+            // Désactivation volontaire de la liaison Internet : ne pas la
+            // contourner en lançant un transfert D1 en arrière-plan.
+            if (saved is null || saved.Host || !saved.Enabled)
                 return Result.InvokeSuccess();
+            // Une liaison active mais périmée ne bloque pas D1 : la clé de
+            // l'école, le compte et l'origine centrale restent vérifiés.
+            if (saved.Link.ExpiresUtc <= DateTime.UtcNow)
+                return await RunCloudOnlyAsync(saved.Link.VirtualServer);
             relay = saved.Link;
             server = relay.VirtualServer;
         }
-        if (server is null) return Result.InvokeSuccess();
+        if (server is null)
+        {
+            // Un ancien relais sans adresse valide n'empêche pas la
+            // synchronisation D1, si son cache reste identifiable.
+            if (connection.Mode == ConnectionSettings.Remote &&
+                connection.CacheUrl is { Length: > 0 } cached &&
+                Uri.TryCreate(cached, UriKind.Absolute, out var original))
+                return await RunCloudOnlyAsync(original);
+            return Result.InvokeSuccess();
+        }
         // Même hors interface, ne jamais envoyer les cookies de session à un
         // nom MagicDNS qui pointerait désormais hors de l'espace privé Tailscale.
         if (TailscaleEndpoint.IsTailnetAddress(server)
             && !await TailscaleEndpoint.ResolvesPrivatelyAsync(server))
+        {
+            // Bloquer la liaison privée devenue non fiable, mais continuer
+            // exclusivement vers l'origine HTTPS Cloudflare déjà approuvée.
+            _ = await RunCloudOnlyAsync(server);
             return Result.InvokeRetry();
+        }
         using var api = new ScoliaClient(server);
         if (relay is not null) api.UseRemote(relay);
         var store = new OfflineStore(ConnectionStore.CacheAddress(api.Server));
@@ -150,6 +208,11 @@ public sealed class SyncWorker : Worker
         if (store.SavedCredential is { SessionCookie.Length: > 0 } credential)
             api.RestoreSessionCookie(credential.SessionCookie);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+
+        // Cloudflare et le serveur historique sont indépendants : ce premier
+        // passage conserve les opérations D1 si le PC est injoignable.
+        var centralNeedsRetry = await SyncCentralSectionsInBackgroundAsync(
+            api, store, timeout.Token);
         if (!await api.IsRunningAsync(timeout.Token))
         {
             // Même lorsque le PC serveur est éteint, déposer les opérations déjà
@@ -179,16 +242,30 @@ public sealed class SyncWorker : Worker
         // depuis la première fiche. Le curseur est chiffré et propre au compte.
         // Aucun droit scolaire n'est inventé : seuls les droits de la session
         // réellement rétablie sont utilisés par ce travail différé.
-        if (active.Permissions.Contains(Perm.StudentsRead, StringComparer.OrdinalIgnoreCase))
+        var preparationKind = OfflinePreparation.KindForPermissions(active.Permissions);
+        if (preparationKind != OfflinePreparationKind.None)
         {
             try
             {
-                var prepared = await OfflinePreparation.RunAsync(api,
-                    includeFinancialAccounts: active.Permissions.Contains(
-                        Perm.PaymentsRead, StringComparer.OrdinalIgnoreCase),
-                    ct: timeout.Token);
-                if (!prepared.Complete && prepared.Expected <= OfflinePreparation.MaximumStudents)
-                    return Result.InvokeRetry();
+                if ((preparationKind & OfflinePreparationKind.StudentRecords) != 0)
+                {
+                    var school = await OfflinePreparation.RunAsync(api,
+                        includeFinancialAccounts: active.Permissions.Contains(
+                            Perm.PaymentsRead, StringComparer.OrdinalIgnoreCase),
+                        ct: timeout.Token);
+                    if (!school.Complete && school.Expected <= OfflinePreparation.MaximumStudents)
+                        return Result.InvokeRetry();
+                }
+
+                if ((preparationKind & OfflinePreparationKind.AnonymousTeacherSheets) != 0)
+                {
+                    // Le cache pédagogique dispose de son propre curseur chiffré.
+                    // Un même compte peut consulter les dossiers ET saisir des notes,
+                    // sans que ces deux préparations effacent la progression mutuelle.
+                    var teaching = await OfflinePreparation.RunAsync(api,
+                        includeTeacherSheets: true, ct: timeout.Token);
+                    if (!teaching.Complete) return Result.InvokeRetry();
+                }
             }
             catch (ApiException ex) when (ex.Status is 401 or 403)
             {
@@ -210,6 +287,66 @@ public sealed class SyncWorker : Worker
             try { await api.GetAsync<JsonElement>(path, timeout.Token); }
             catch (ApiException ex) when (ex.Status is 400 or 403 or 404) { }
         }
-        return store.Outbox().Count > 0 ? Result.InvokeRetry() : Result.InvokeSuccess();
+        return store.Outbox().Count > 0 || centralNeedsRetry
+            ? Result.InvokeRetry() : Result.InvokeSuccess();
+    }
+
+    /// <summary>
+    /// N'effectue aucun appel vers l'ancien serveur. L'URI sert uniquement
+    /// à retrouver la base SQLite chiffrée de l'école déjà jumelée.
+    /// Même après l'expiration d'un relais Render, D1 peut être joignable.
+    /// </summary>
+    private async Task<Result> RunCloudOnlyAsync(Uri cachedServer)
+    {
+        using var cloudApi = new ScoliaClient(cachedServer);
+        var cache = new OfflineStore(ConnectionStore.CacheAddress(cachedServer));
+        cloudApi.Offline = cache;
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(50));
+        return await SyncCentralSectionsInBackgroundAsync(cloudApi, cache, timeout.Token)
+            ? Result.InvokeRetry() : Result.InvokeSuccess();
+    }
+
+    /// <summary>
+    /// Reprendre le pilote D1 avec la seule origine HTTPS approuvée, jamais
+    /// avec le cookie du PC principal. Aucun JWT n'est conservé sur disque.
+    /// Les erreurs temporaires conservent SQLite et déclenchent le backoff.
+    /// </summary>
+    private async Task<bool> SyncCentralSectionsInBackgroundAsync(
+        ScoliaClient api, OfflineStore store, CancellationToken ct)
+    {
+        if (store.LastAccount is not { Length: > 0 } account ||
+            !store.CanSyncCentralInBackgroundFor(account))
+            return false;
+        try
+        {
+            store.User = account;
+            using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            budget.CancelAfter(TimeSpan.FromSeconds(35));
+            var state = await api.SyncActiveCentralSectionsAsync(account, budget.Token);
+            return state is { Offline: true } or { HasMorePages: true };
+        }
+        catch (CentralPairingException exception)
+        {
+            Android.Util.Log.Warn("SCOLIA-Central",
+                $"Autorisation centrale à renouveler ({exception.Status}).");
+            return false;
+        }
+        catch (Exception exception) when (exception is HttpRequestException or
+            TaskCanceledException or IOException)
+        {
+            Android.Util.Log.Warn("SCOLIA-Central",
+                $"Reprise différée des sections ({exception.GetType().Name}).");
+            return true;
+        }
+        catch (Exception exception) when (exception is
+            System.Security.Cryptography.CryptographicException or
+            UnauthorizedAccessException or JsonException or ArgumentException or
+            InvalidOperationException)
+        {
+            // N'effacer aucune file SQLite en cas de problème de chiffrement.
+            Android.Util.Log.Warn("SCOLIA-Central",
+                $"Réplique chiffrée indisponible ({exception.GetType().Name}).");
+            return false;
+        }
     }
 }

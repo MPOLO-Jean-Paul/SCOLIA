@@ -1,0 +1,553 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using Scolia.Bureau.Infrastructure;
+
+namespace Scolia.Bureau.Api;
+
+/// <summary>
+/// Réplique chiffrée SQLite des sections D1 pour un compte et une école.
+/// Les écritures locales restent consultables sans réseau et gardent toujours
+/// leur clé d'idempotence. Aucune donnée de paiement/étudiant n'est transférée.
+/// </summary>
+public sealed class CentralSectionReplica : IDisposable
+{
+    private readonly HttpClient http;
+    private readonly OfflineStore store;
+    private readonly string user;
+    private readonly string schoolId;
+    private readonly Uri centralOrigin;
+    private readonly string cacheKey;
+    private readonly SemaphoreSlim gate = new(1, 1);
+
+    private sealed class Snapshot
+    {
+        public long Revision { get; set; }
+        public List<CentralSectionRow> Sections { get; set; } = [];
+        public List<CentralSectionPendingChange> Pending { get; set; } = [];
+    }
+
+    public CentralSectionReplica(OfflineStore store, string user, string schoolId,
+        Uri trustedCentralOrigin, HttpMessageHandler? handler = null)
+    {
+        this.store = store ?? throw new ArgumentNullException(nameof(store));
+        if (string.IsNullOrWhiteSpace(user) || !ValidId(schoolId))
+            throw new ArgumentException("Compte et établissement obligatoires.");
+        this.user = user;
+        this.schoolId = schoolId;
+        centralOrigin = CentralPairingClient.RequireTrustedHttps(trustedCentralOrigin);
+        // Une école peut avoir le même identifiant en préproduction et en
+        // production. Ne jamais partager la file et les sections des deux
+        // origines. La nouvelle clé v2 conserve le vieux cache v1 sur disque
+        // pour examen sans l'expédier vers une autre origine.
+        var fingerprint = Convert.ToHexString(SHA256.HashData(
+            Encoding.UTF8.GetBytes(centralOrigin.AbsoluteUri)));
+        cacheKey = "central:sections:v2:" + schoolId + ":" + fingerprint;
+        http = new HttpClient(handler ?? new SocketsHttpHandler
+        {
+            UseCookies = false, AllowAutoRedirect = false,
+            ConnectTimeout = TimeSpan.FromSeconds(8),
+        }, disposeHandler: true) { Timeout = TimeSpan.FromSeconds(20) };
+    }
+
+    private static bool ValidId(string value) =>
+        value.Length is > 0 and <= 128 &&
+        value.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '-' or ':');
+
+    private void CheckUser()
+    {
+        // L'ancien compte ne peut pas écrire son cache après un changement de
+        // profil. L'identité est vérifiée de nouveau après chaque attente HTTP.
+        if (!string.Equals(store.User, user, StringComparison.Ordinal))
+            throw new InvalidOperationException("Le compte local SCOLIA a changé.");
+    }
+
+    private static Snapshot Decode(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return new Snapshot();
+        var doc = JsonSerializer.Deserialize<Snapshot>(text)
+            ?? throw new InvalidDataException("Réplique des sections invalide.");
+        if (doc.Revision < 0 || doc.Sections is null || doc.Pending is null)
+            throw new InvalidDataException("Réplique des sections incohérente.");
+        return doc;
+    }
+
+    private Snapshot Read()
+    {
+        CheckUser();
+        return Decode(store.ReadPage(cacheKey)?.Json);
+    }
+
+    /// <summary>
+    /// Mutations atomiques entre toutes les instances du même cache SQLite :
+    /// une réponse réseau ne remplace jamais la file ajoutée entre-temps.
+    /// Aucune attente réseau n'a lieu dans la transaction.
+    /// </summary>
+    private Snapshot Update(Func<Snapshot, Snapshot> change)
+    {
+        CheckUser();
+        Snapshot? updated = null;
+        try
+        {
+            store.UpdatePageFor(user, cacheKey, previous =>
+            {
+                CheckUser();
+                updated = change(Decode(previous));
+                CheckUser();
+                return JsonSerializer.Serialize(updated);
+            });
+        }
+        catch (IOException exception)
+        {
+            throw new InvalidDataException(
+                "Impossible de conserver la réplique des sections sur cet appareil.",
+                exception);
+        }
+        CheckUser();
+        return updated ?? throw new InvalidDataException("Réplique non enregistrée.");
+    }
+
+    public CentralSectionLocalState Local()
+    {
+        var snapshot = Read();
+        var visible = snapshot.Sections.ToDictionary(x => x.Id, x => x,
+            StringComparer.OrdinalIgnoreCase);
+        foreach (var item in snapshot.Pending)
+            visible[item.SectionId] = new CentralSectionRow(item.SectionId,
+                item.Code, item.Name, item.IsActive, item.ExpectedRevision, IsPending: true);
+        return new CentralSectionLocalState(
+            visible.Values.OrderBy(x => x.Code, StringComparer.Ordinal).ToArray(),
+            snapshot.Pending.Count, snapshot.Revision, Offline: true,
+            HasConflict: snapshot.Pending.Any(x => x.HasConflict));
+    }
+
+    /// <summary>
+    /// Liste en lecture seule des conflits persistés, avec leur cause métier
+    /// normalisée. L'administration pourra proposer l'arbitrage sans dévoiler
+    /// les opérations d'un autre compte ni modifier les saisies.
+    /// </summary>
+    public IReadOnlyList<CentralSectionPendingChange> Conflicts() =>
+        Read().Pending.Where(change => change.HasConflict).ToArray();
+
+    /// <summary>
+    /// Écriture 100 % locale dans SQLite, même sans connexion Internet.
+    /// Une seule opération en attente par section : éviter un dernier-écrivain
+    /// arbitraire en cas de changements concurrents de classe.
+    /// </summary>
+    public async Task<string> QueueUpsertAsync(
+        Guid sectionId, string code, string name, bool active,
+        CancellationToken ct = default)
+    {
+        ValidateSection(sectionId, code, name);
+
+        await gate.WaitAsync(ct);
+        try
+        {
+            var id = sectionId.ToString("D");
+            var op = Guid.NewGuid().ToString("D");
+            Update(snapshot =>
+            {
+                if (snapshot.Pending.Any(x =>
+                    string.Equals(x.SectionId, id, StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException(
+                        "Une modification de cette section attend encore la confirmation centrale.");
+                var previous = snapshot.Sections.FirstOrDefault(x =>
+                    string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
+                snapshot.Pending.Add(new CentralSectionPendingChange(op, id, code, name,
+                    active, previous?.Revision ?? 0));
+                return snapshot;
+            });
+            return op;
+        }
+        finally { gate.Release(); }
+    }
+
+    /// <summary>
+    /// Un responsable peut explicitement renoncer à une saisie conflictuelle
+    /// pour conserver l'état déjà reçu du serveur. Jamais de retrait implicite
+    /// sur HTTP 409 ; les autres opérations de l'école restent intactes.
+    /// </summary>
+    public async Task DiscardConflictedSectionAsync(
+        Guid sectionId, CancellationToken ct = default)
+    {
+        if (sectionId == Guid.Empty) throw new ArgumentException("Section invalide.");
+        await gate.WaitAsync(ct);
+        try
+        {
+            var id = sectionId.ToString("D");
+            Update(snapshot =>
+            {
+                var index = snapshot.Pending.FindIndex(x =>
+                    string.Equals(x.SectionId, id, StringComparison.OrdinalIgnoreCase)
+                    && x.HasConflict);
+                if (index < 0)
+                    throw new InvalidOperationException(
+                        "Aucun conflit de section à résoudre.");
+                snapshot.Pending.RemoveAt(index);
+                return snapshot;
+            });
+        }
+        finally { gate.Release(); }
+    }
+
+    /// <summary>
+    /// Nouvelle tentative uniquement sur décision explicite du responsable,
+    /// avec une nouvelle clé d'idempotence, sans jamais modifier la première
+    /// opération refusée au serveur. Le contenu ou la version attendue doit
+    /// avoir changé, sinon la boucle de conflits continuerait sans effet.
+    /// </summary>
+    public async Task<string> RetryConflictedSectionAsync(Guid sectionId,
+        string code, string name, bool active, CancellationToken ct = default)
+    {
+        ValidateSection(sectionId, code, name);
+        await gate.WaitAsync(ct);
+        try
+        {
+            var id = sectionId.ToString("D");
+            var nextOperation = Guid.NewGuid().ToString("D");
+            Update(snapshot =>
+            {
+                var index = snapshot.Pending.FindIndex(x =>
+                    string.Equals(x.SectionId, id, StringComparison.OrdinalIgnoreCase)
+                    && x.HasConflict);
+                if (index < 0)
+                    throw new InvalidOperationException("Aucune section en conflit.");
+                var previous = snapshot.Pending[index];
+                var central = snapshot.Sections.FirstOrDefault(x =>
+                    string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
+                if (previous.ExpectedRevision > 0 && central is null)
+                    throw new InvalidOperationException(
+                        "La version centrale doit être récupérée avant une nouvelle tentative.");
+                var revision = central?.Revision ?? 0;
+                // Un 409 pour version obsolète exige un vrai changement de
+                // révision centrale AVANT la nouvelle tentative. Modifier
+                // simplement le libellé ne peut pas réparer le verrou D1.
+                if (previous.ConflictCode == "stale_section_revision" &&
+                    revision <= previous.ExpectedRevision)
+                    throw new InvalidOperationException(
+                        "Récupérez la nouvelle version centrale de cette section avant de réessayer.");
+                if (revision == previous.ExpectedRevision &&
+                    previous.Code == code && previous.Name == name &&
+                    previous.IsActive == active)
+                    throw new InvalidOperationException(
+                        "Modifiez la saisie ou récupérez la nouvelle version centrale.");
+                snapshot.Pending[index] = new CentralSectionPendingChange(
+                    nextOperation, id, code, name, active, revision);
+                return snapshot;
+            });
+            return nextOperation;
+        }
+        finally { gate.Release(); }
+    }
+
+    private static void ValidateSection(Guid sectionId, string? code, string? name)
+    {
+        if (sectionId == Guid.Empty || code is null || code.Length is < 2 or > 16 ||
+            code.Any(c => !(char.IsAsciiLetterUpper(c) || char.IsAsciiDigit(c) || c is '_' or '-')) ||
+            string.IsNullOrWhiteSpace(name) || name.Length > 120 ||
+            name != name.Trim() || name.Any(char.IsControl))
+            throw new ArgumentException("Code ou libellé de section invalide.");
+    }
+
+    /// <summary>
+    /// Transmettre la file persistante, puis appliquer les événements D1 dans
+    /// le cache local. Jamais d'ACK avant un véritable moteur métier ; seules
+    /// les réponses "applied" retirent une opération de la file.
+    /// </summary>
+    public async Task<CentralSectionLocalState> SyncAsync(
+        Uri trustedCentralOrigin, string centralSessionJwt, CancellationToken ct = default)
+    {
+        var origin = CentralPairingClient.RequireTrustedHttps(trustedCentralOrigin);
+        if (!string.Equals(origin.AbsoluteUri, centralOrigin.AbsoluteUri,
+            StringComparison.Ordinal))
+            throw new ArgumentException(
+                "Cette réplique locale est associée à une autre origine Cloudflare.",
+                nameof(trustedCentralOrigin));
+        if (string.IsNullOrWhiteSpace(centralSessionJwt) ||
+            centralSessionJwt.Length > 4096 ||
+            centralSessionJwt.Count(ch => ch == '.') != 2 ||
+            centralSessionJwt.Any(ch => !(char.IsAsciiLetterOrDigit(ch) || ch is '_' or '-' or '.')))
+            throw new ArgumentException("Session D1 temporaire invalide.", nameof(centralSessionJwt));
+
+        await gate.WaitAsync(ct);
+        try
+        {
+            var snapshot = Read();
+            try
+            {
+                foreach (var operation in snapshot.Pending.Where(x => !x.HasConflict).ToArray())
+                {
+                    ct.ThrowIfCancellationRequested();
+                    using var request = new HttpRequestMessage(HttpMethod.Post,
+                        new Uri(origin, "v1/catalog/sections"))
+                    {
+                        Content = JsonContent.Create(new
+                        {
+                            operation_id = operation.OperationId,
+                            section_id = operation.SectionId,
+                            code = operation.Code, name = operation.Name,
+                            is_active = operation.IsActive,
+                            expected_revision = operation.ExpectedRevision,
+                        }),
+                    };
+                    request.Headers.Authorization =
+                        new AuthenticationHeaderValue("Bearer", centralSessionJwt);
+                    using var result = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+                    if (result.StatusCode == HttpStatusCode.Conflict)
+                    {
+                        // Le serveur ne transmet qu'un code d'erreur de
+                        // domaine connu. Un message imprévu n'est jamais
+                        // recopié dans le cache chiffré ou l'interface.
+                        var conflictCode = await ReadConflictCodeAsync(result, ct);
+                        // Conserver la saisie et son identifiant pour arbitrage :
+                        // ne pas rejouer un conflit à chaque reconnexion.
+                        snapshot = Update(current =>
+                        {
+                            var conflictIndex = current.Pending.FindIndex(x =>
+                                x.OperationId == operation.OperationId);
+                            if (conflictIndex >= 0)
+                                current.Pending[conflictIndex] =
+                                    current.Pending[conflictIndex] with
+                                    {
+                                        HasConflict = true,
+                                        ConflictCode = conflictCode,
+                                    };
+                            return current;
+                        });
+                        // Les sections indépendantes peuvent être validées
+                        // sans attendre l'arbitrage de celle-ci. Le conflit
+                        // est durablement enregistré et ne sera pas rejoué.
+                        // Continuer aussi le pull : il récupère la version
+                        // centrale qui permettra au responsable de trancher.
+                        continue;
+                    }
+                    if (result.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized)
+                        throw new CentralPairingException((int)result.StatusCode,
+                            "La session centrale a été retirée ou a expiré.");
+                    if (result.StatusCode is not (HttpStatusCode.Created or HttpStatusCode.OK))
+                        return Status(snapshot, Offline: true, HasConflict: false);
+                    var payload = await ReadJsonAsync(result, ct);
+                    if (payload.GetProperty("status").GetString() != "applied" ||
+                        payload.GetProperty("operation_id").GetString() != operation.OperationId ||
+                        payload.GetProperty("section_id").GetString() != operation.SectionId ||
+                        !payload.GetProperty("revision").TryGetInt64(out var version) ||
+                        version <= 0)
+                        throw new InvalidDataException("Accusé D1 incomplet ou non définitif.");
+
+                    // Confirmation D1 reçue : conserver immédiatement l'état
+                    // validé dans le cache local AVANT de retirer l'outbox.
+                    // Si le réseau tombe avant la lecture du journal, l'école
+                    // et ses sections restent consultables hors connexion.
+                    snapshot = Update(current =>
+                    {
+                        var index = current.Sections.FindIndex(x =>
+                            string.Equals(x.Id, operation.SectionId,
+                                StringComparison.OrdinalIgnoreCase));
+                        var accepted = new CentralSectionRow(operation.SectionId,
+                            operation.Code, operation.Name, operation.IsActive,
+                            version, IsPending: false);
+                        if (index >= 0)
+                        {
+                            if (current.Sections[index].Revision <= version)
+                                current.Sections[index] = accepted;
+                        }
+                        else current.Sections.Add(accepted);
+                        current.Pending.RemoveAll(x => x.OperationId == operation.OperationId);
+                        return current;
+                    }); // État confirmé et outbox : une seule transaction SQLite.
+                }
+
+                var hasMorePages = false;
+                for (var batch = 0; batch < 8; batch++)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    using var request = new HttpRequestMessage(HttpMethod.Get,
+                        new Uri(origin, "v1/catalog/sections?after=" +
+                            snapshot.Revision.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                            "&limit=50"));
+                    request.Headers.Authorization =
+                        new AuthenticationHeaderValue("Bearer", centralSessionJwt);
+                    using var result = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+                    if (result.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized)
+                        throw new CentralPairingException((int)result.StatusCode,
+                            "La lecture centrale de cette école n'est plus autorisée.");
+                    if (result.StatusCode != HttpStatusCode.OK)
+                        return Status(snapshot, Offline: true, HasConflict: false);
+                    var payload = await ReadJsonAsync(result, ct);
+                    var after = snapshot.Revision;
+                    var received = new List<CentralSectionRow>();
+                    var changes = payload.GetProperty("events");
+                    if (changes.ValueKind != JsonValueKind.Array ||
+                        changes.GetArrayLength() > 50)
+                        throw new InvalidDataException("Lot D1 non valide.");
+
+                    foreach (var item in changes.EnumerateArray())
+                    {
+                        if (!item.GetProperty("revision").TryGetInt64(out var revision) ||
+                            revision <= after ||
+                            item.GetProperty("section_id").GetString() is not { } id ||
+                            !Guid.TryParseExact(id, "D", out var parsedId) ||
+                            parsedId == Guid.Empty || id != parsedId.ToString("D") ||
+                            item.GetProperty("code").GetString() is not { } code ||
+                            code.Length is < 2 or > 16 ||
+                            code.Any(c => !(char.IsAsciiLetterUpper(c) ||
+                                char.IsAsciiDigit(c) || c is '_' or '-')) ||
+                            item.GetProperty("name").GetString() is not { } name ||
+                            string.IsNullOrWhiteSpace(name) || name.Length > 120 ||
+                            name != name.Trim() || name.Any(char.IsControl) ||
+                            !item.GetProperty("is_active").TryGetInt32(out var active) ||
+                            active is not (0 or 1))
+                            throw new InvalidDataException("Événement de section non valide.");
+                        received.Add(new CentralSectionRow(id, code, name,
+                            active == 1, revision, IsPending: false));
+                        after = revision;
+                    }
+
+                    if (!payload.GetProperty("next").TryGetInt64(out var nextRevision) ||
+                        nextRevision != after)
+                        throw new InvalidDataException("Curseur de section incohérent.");
+                    var more = payload.GetProperty("has_more");
+                    if (more.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                        throw new InvalidDataException("Indicateur de continuation invalide.");
+
+                    hasMorePages = more.GetBoolean();
+                    if (hasMorePages && changes.GetArrayLength() == 0)
+                        throw new InvalidDataException("Pagination D1 sans progression.");
+                    snapshot = Update(current =>
+                    {
+                        foreach (var next in received)
+                        {
+                            var old = current.Sections.FindIndex(x =>
+                                string.Equals(x.Id, next.Id, StringComparison.OrdinalIgnoreCase));
+                            // Une réponse ancienne ne rétrograde jamais l'état
+                            // D1 déjà confirmé, ni un curseur avancé ailleurs.
+                            if (old >= 0)
+                            {
+                                if (current.Sections[old].Revision <= next.Revision)
+                                    current.Sections[old] = next;
+                            }
+                            else current.Sections.Add(next);
+                        }
+                        current.Revision = Math.Max(current.Revision, after);
+                        return current;
+                    }); // Événements et curseur atomiques, sans écraser l'outbox.
+                    if (!hasMorePages) break;
+                }
+                // Huit lots au maximum par passage pour ne pas monopoliser
+                // le téléphone. Le curseur est durable ; l'appelant peut
+                // planifier une autre passe sans repartir de zéro.
+                return Status(snapshot, Offline: false,
+                    HasConflict: snapshot.Pending.Any(x => x.HasConflict),
+                    HasMorePages: hasMorePages);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
+            {
+                if (ct.IsCancellationRequested) throw;
+                // Coupure réseau : toutes les opérations sont déjà conservées.
+                return Status(snapshot, Offline: true, HasConflict: false);
+            }
+        }
+        finally { gate.Release(); }
+    }
+
+    /// <summary>
+    /// Termine automatiquement plusieurs pages de rattrapage, sans boucle
+    /// infinie ni remise à zéro du curseur. Une passe lit au plus huit lots
+    /// de cinquante événements ; un appel est borné à quatre passes par
+    /// défaut. Si la limite est atteinte, HasMorePages reste vrai pour une
+    /// reprise ultérieure.
+    /// </summary>
+    public async Task<CentralSectionLocalState> CatchUpAsync(
+        Uri trustedCentralOrigin, string centralSessionJwt,
+        int maxPasses = 4, CancellationToken ct = default)
+    {
+        if (maxPasses is < 1 or > 16)
+            throw new ArgumentOutOfRangeException(nameof(maxPasses));
+        CentralSectionLocalState state;
+        for (var pass = 0; pass < maxPasses; pass++)
+        {
+            ct.ThrowIfCancellationRequested();
+            state = await SyncAsync(trustedCentralOrigin, centralSessionJwt, ct);
+            if (state.Offline || !state.HasMorePages)
+                return state;
+        }
+        // Relecture locale seulement, sans répéter une requête réseau.
+        // Signaler les pages restantes pour la prochaine synchronisation.
+        var local = Local();
+        return local with { Offline = false, HasMorePages = true };
+    }
+
+    private CentralSectionLocalState Status(Snapshot snapshot, bool Offline,
+        bool HasConflict, bool HasMorePages = false)
+    {
+        // Une réponse HTTP 503, un timeout ou un 409 peut arriver APRÈS
+        // qu'un autre compte s'est connecté. Ne jamais rendre à ce compte
+        // le cliché de l'utilisateur précédent, même sur le chemin d'erreur.
+        CheckUser();
+        snapshot = Read(); // inclure les saisies locales ajoutées pendant l'attente HTTP
+        var view = snapshot.Sections.ToDictionary(x => x.Id, x => x,
+            StringComparer.OrdinalIgnoreCase);
+        foreach (var pending in snapshot.Pending)
+            view[pending.SectionId] = new CentralSectionRow(pending.SectionId,
+                pending.Code, pending.Name, pending.IsActive,
+                pending.ExpectedRevision, IsPending: true);
+        return new CentralSectionLocalState(
+            view.Values.OrderBy(x => x.Code, StringComparer.Ordinal).ToArray(),
+            snapshot.Pending.Count, snapshot.Revision, Offline,
+            HasConflict || snapshot.Pending.Any(x => x.HasConflict), HasMorePages);
+    }
+
+    private static async Task<string> ReadConflictCodeAsync(
+        HttpResponseMessage response, CancellationToken ct)
+    {
+        // Un serveur compromis ne doit pas forcer la lecture de plusieurs
+        // mégaoctets pour une simple erreur 409, même en Transfer-Encoding:
+        // chunked sans Content-Length.
+        try
+        {
+            var payload = await ReadBoundedJsonAsync(response, 256, ct);
+            if (!payload.TryGetProperty("error", out var error) ||
+                error.ValueKind != JsonValueKind.String)
+                return "conflict";
+            return error.GetString() switch
+            {
+                "stale_section_revision" => "stale_section_revision",
+                "duplicate_section_code_or_operation" => "duplicate_section_code_or_operation",
+                "operation_id_already_used" => "operation_id_already_used",
+                _ => "conflict",
+            };
+        }
+        catch (Exception ex) when (ex is InvalidDataException or JsonException)
+        {
+            return "conflict";
+        }
+    }
+
+    private static Task<JsonElement> ReadJsonAsync(
+        HttpResponseMessage response, CancellationToken ct) =>
+        ReadBoundedJsonAsync(response, 90_000, ct);
+
+    private static Task<JsonElement> ReadBoundedJsonAsync(
+        HttpResponseMessage response, int byteLimit, CancellationToken ct) =>
+        CentralBoundedJson.ReadAsync(response, byteLimit, ct);
+
+    public void Dispose()
+    {
+        http.Dispose();
+        gate.Dispose();
+    }
+}
+
+public sealed record CentralSectionRow(string Id, string Code, string Name,
+    bool IsActive, long Revision, bool IsPending = false);
+
+public sealed record CentralSectionPendingChange(string OperationId, string SectionId,
+    string Code, string Name, bool IsActive, long ExpectedRevision,
+    bool HasConflict = false, string? ConflictCode = null);
+
+public sealed record CentralSectionLocalState(IReadOnlyList<CentralSectionRow> Sections,
+    int PendingCount, long Revision, bool Offline, bool HasConflict = false,
+    bool HasMorePages = false);

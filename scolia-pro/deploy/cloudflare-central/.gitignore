@@ -1,0 +1,8 @@
+# Generated from protected staging variables; never commit this file.
+/wrangler.staging.toml
+/.dev.vars
+/.dev.vars.*
+/.env
+/.env.*
+/node_modules/
+/.wrangler/

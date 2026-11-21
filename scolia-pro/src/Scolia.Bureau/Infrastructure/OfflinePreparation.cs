@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Scolia.Bureau.Api;
+using Scolia.Bureau.Ribbon;
 
 namespace Scolia.Bureau.Infrastructure;
 
@@ -15,8 +16,34 @@ public sealed record OfflinePreparationResult(int Indexed, int Details, int Acco
 /// cette révision. À la révision suivante, tout est revalidé par ETag/HTTP 304.
 /// Aucun paiement n'est écrasé et aucune session scolaire n'est exportée.
 /// </summary>
+[Flags]
+public enum OfflinePreparationKind
+{
+    None = 0,
+    StudentRecords = 1,
+    AnonymousTeacherSheets = 2,
+}
+
 public static class OfflinePreparation
 {
+    /// <summary>
+    /// Autorisations déjà validées par le serveur : le compte enseignant ne
+    /// possède pas nécessairement le droit d'accès aux fiches nominatives.
+    /// Le préchargement des feuilles anonymes doit donc être déclenché même
+    /// quand le droit apprenants.lire est absent.
+    /// </summary>
+    public static OfflinePreparationKind KindForPermissions(IEnumerable<string> permissions)
+    {
+        ArgumentNullException.ThrowIfNull(permissions);
+        var rights = new HashSet<string>(permissions, StringComparer.OrdinalIgnoreCase);
+        var result = OfflinePreparationKind.None;
+        if (rights.Contains(Perm.StudentsRead))
+            result |= OfflinePreparationKind.StudentRecords;
+        if (rights.Contains(Perm.MarksEncode) || rights.Contains(Perm.JuryEncode))
+            result |= OfflinePreparationKind.AnonymousTeacherSheets;
+        return result;
+    }
+
     public const int PageSize = 50;
     public const int MaximumPages = 200;
     public const int MaximumStudents = PageSize * MaximumPages;

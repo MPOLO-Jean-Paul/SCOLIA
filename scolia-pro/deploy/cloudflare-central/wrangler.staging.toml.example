@@ -1,0 +1,36 @@
+# Exemple UNIQUEMENT pour un Worker de PREPRODUCTION distinct.
+# Copier sous un nom de configuration dédié après avoir créé une nouvelle D1
+# et deux espaces de rate limiting uniques sur le compte Cloudflare.
+# Ne pas relier au domaine api.jp-services.org (production).
+name = "scolia-identity-staging"
+main = "src/index.mjs"
+compatibility_date = "2026-11-21"
+# Expose uniquement le sous-domaine workers.dev du Worker de test après
+# validation de l'environnement staging, sans route du domaine de production.
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "scolia-identity-staging"
+database_id = "REPLACE_WITH_NEW_STAGING_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[[ratelimits]]
+name = "SCOLIA_LOGIN_RATE_LIMITER"
+namespace_id = "REPLACE_WITH_UNIQUE_NUMERIC_NAMESPACE_1"
+
+  [ratelimits.simple]
+  limit = 8
+  period = 60
+
+[[ratelimits]]
+name = "SCOLIA_LOGIN_SOURCE_LIMITER"
+namespace_id = "REPLACE_WITH_UNIQUE_NUMERIC_NAMESPACE_2"
+
+  [ratelimits.simple]
+  limit = 120
+  period = 60
+
+# NE JAMAIS inscrire ici SCOLIA_PAIRING_AUTH_KEY ou SCOLIA_AUTH_HMAC_KEY.
+# Elles doivent être injectées sous forme de secrets distincts par Cloudflare.
+# Tant qu'elles sont absentes, l'API sensible reste indisponible.

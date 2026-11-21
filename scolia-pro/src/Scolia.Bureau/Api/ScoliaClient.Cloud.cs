@@ -183,4 +183,155 @@ public sealed partial class ScoliaClient
             return 0;
         }
     }
+
+    /// <summary>
+    /// Point d'entrée partagé par SCOLIA Windows et Android pour la future
+    /// activation centrale. Nécessite une origine HTTPS approuvée, une
+    /// invitation délivrée par le secrétariat et le mot de passe du titulaire.
+    /// La confirmation n'est PAS une session et n'autorise PAS de données.
+    /// </summary>
+    public async Task<CentralPairingResult> PairCentralDeviceAsync(
+        Uri trustedCentralOrigin, Guid invitationId, string token,
+        string userName, string password, CancellationToken ct = default)
+    {
+        using var central = new CentralPairingClient();
+        return await central.PairAsync(trustedCentralOrigin, invitationId,
+            token, userName, password, Infrastructure.DeviceIdentity.Id, ct);
+    }
+
+    /// <summary>
+    /// Consulte les métadonnées D1 depuis Windows ou Android. Cette route ne
+    /// contient pas encore les données scolaires et n'avance aucun checkpoint.
+    /// Le JWT fourni doit être une session centrale et NON le JWT de jumelage.
+    /// </summary>
+    public async Task<CentralJournalPage> ReadCentralJournalPreviewAsync(
+        Uri trustedCentralOrigin, string centralSessionJwt,
+        long afterRevision = 0, CancellationToken ct = default)
+    {
+        using var journal = new CentralJournalClient();
+        return await journal.ReadMetadataAsync(trustedCentralOrigin,
+            centralSessionJwt, afterRevision, ct: ct);
+    }
+
+    /// <summary>Session de 15 minutes obtenue par la clé de l'appareil déjà
+    /// appairé, sans stocker de JWT ni réenvoyer un mot de passe.</summary>
+    public async Task<CentralSession> OpenCentralSessionAsync(
+        Uri trustedCentralOrigin, string schoolId, string userName,
+        CancellationToken ct = default)
+    {
+        using var central = new CentralPairingClient();
+        return await central.OpenSessionAsync(trustedCentralOrigin, schoolId,
+            userName, Infrastructure.DeviceIdentity.Id, ct);
+    }
+
+    /// <summary>
+    /// Parcours complet d'identité native : ouvrir une session par ECDSA,
+    /// puis lire UNIQUEMENT le journal informatif D1. Aucun accusé de
+    /// réception ni écriture scolaire n'est exécuté.
+    /// </summary>
+    public async Task<CentralJournalPage> CheckCentralJournalAsync(
+        Uri trustedCentralOrigin, string schoolId, string userName,
+        long afterRevision = 0, CancellationToken ct = default)
+    {
+        var session = await OpenCentralSessionAsync(
+            trustedCentralOrigin, schoolId, userName, ct);
+        return await ReadCentralJournalPreviewAsync(
+            trustedCentralOrigin, session.AccessToken, afterRevision, ct);
+    }
+
+    /// <summary>Restaurer la session centrale à partir de l'école mémorisée
+    /// sous une enveloppe protégée par le système, sans mot de passe.</summary>
+    public async Task<CentralSession> OpenSavedCentralSessionAsync(
+        Uri trustedCentralOrigin, string userName, CancellationToken ct = default)
+    {
+        using var central = new CentralPairingClient();
+        return await central.OpenSavedSessionAsync(trustedCentralOrigin, userName,
+            Infrastructure.DeviceIdentity.Id, ct);
+    }
+
+    /// <summary>Enregistre une modification de section dans SQLite, sans
+    /// aucune attente du réseau. La clé d'idempotence est créée une seule fois
+    /// et reste persistante jusqu'à confirmation métier D1.</summary>
+    public async Task<string> QueueCentralSectionAsync(
+        Uri trustedCentralOrigin, string userName, Guid sectionId, string code,
+        string name, bool active, CancellationToken ct = default)
+    {
+        if (Offline is not { } store || store.User != userName)
+            throw new InvalidOperationException("Le cache du compte connecté n'est pas disponible.");
+        using var central = new CentralPairingClient();
+        var origin = CentralPairingClient.RequireTrustedHttps(trustedCentralOrigin);
+        var activeOrigin = central.ReadActiveOrigin(
+            userName, Infrastructure.DeviceIdentity.Id);
+        // Une ancienne préproduction peut rester jumelée. Ne pas créer de
+        // nouvelles opérations pour une destination désactivée qui ne sera
+        // jamais reprise par WorkManager ni par la minuterie Windows.
+        if (activeOrigin is null ||
+            !string.Equals(activeOrigin.AbsoluteUri, origin.AbsoluteUri,
+                StringComparison.Ordinal))
+            throw new InvalidOperationException(
+                "Cette origine Cloudflare n'est pas le serveur central actif de ce compte.");
+        var schoolId = central.ReadSavedSchoolId(origin,
+            userName, Infrastructure.DeviceIdentity.Id) ??
+            throw new InvalidOperationException("Cet appareil n'est pas jumelé à l'école centrale.");
+        using var replica = new CentralSectionReplica(store, userName, schoolId, origin);
+        var operation = await replica.QueueUpsertAsync(sectionId, code, name, active, ct);
+        // Une écriture locale est terminée avant tout déclenchement réseau.
+        // Sur Android, WorkManager reprend la file lorsque le réseau revient.
+        try { Infrastructure.Platform.RequestBackgroundSync?.Invoke(); }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // Une erreur de WorkManager ne doit jamais faire croire que la
+            // saisie n'a pas été enregistrée, ni provoquer un second envoi.
+            System.Diagnostics.Trace.WriteLine(
+                $"SCOLIA central : planification différée ({ex.GetType().Name}).");
+        }
+        return operation;
+    }
+
+    /// <summary>
+    /// Synchronisation facultative de l'origine réellement approuvée par le
+    /// titulaire et ce poste. Fonctionne avec D1 même si l'ancien serveur PC
+    /// ne répond plus ; ne synchronise que les sections du pilote.
+    /// Null signifie qu'aucun jumelage central n'a été activé.
+    /// </summary>
+    public async Task<CentralSectionLocalState?> SyncActiveCentralSectionsAsync(
+        string userName, CancellationToken ct = default)
+    {
+        if (Offline is not { } store ||
+            !string.Equals(store.User, userName, StringComparison.Ordinal))
+            throw new InvalidOperationException("Session locale différente du compte demandé.");
+        using var central = new CentralPairingClient();
+        var origin = central.ReadActiveOrigin(userName, Infrastructure.DeviceIdentity.Id);
+        if (origin is null) return null;
+        return await SyncCentralSectionsAsync(origin, userName, ct);
+    }
+
+    /// <summary>
+    /// Reprend les sections mises en attente puis leur journal, sans mot de
+    /// passe ni clé stockée dans D1. Une coupure réseau conserve SQLite.
+    /// Seules les sections/option sont couvertes : les autres fonctionnalités
+    /// scolaires et financières conservent leur circuit serveur existant.
+    /// </summary>
+    public async Task<CentralSectionLocalState> SyncCentralSectionsAsync(
+        Uri trustedCentralOrigin, string userName, CancellationToken ct = default)
+    {
+        if (Offline is not { } store || store.User != userName)
+            throw new InvalidOperationException("Le cache du compte connecté n'est pas disponible.");
+        using var central = new CentralPairingClient();
+        var schoolId = central.ReadSavedSchoolId(trustedCentralOrigin,
+            userName, Infrastructure.DeviceIdentity.Id) ??
+            throw new InvalidOperationException("Cet appareil n'est pas jumelé à l'école centrale.");
+        using var replica = new CentralSectionReplica(store, userName, schoolId, trustedCentralOrigin);
+        try
+        {
+            var session = await central.OpenSavedSessionAsync(
+                trustedCentralOrigin, userName, Infrastructure.DeviceIdentity.Id, ct);
+            return await replica.CatchUpAsync(trustedCentralOrigin, session.AccessToken, ct: ct);
+        }
+        catch (Exception ex) when (!ct.IsCancellationRequested &&
+            ex is HttpRequestException or IOException or TaskCanceledException)
+        {
+            return replica.Local(); // réseau absent : état SQLite inchangé.
+        }
+    }
 }
