@@ -56,10 +56,9 @@ public sealed class CentralSectionReplica : IDisposable
             throw new InvalidOperationException("Le compte local SCOLIA a changé.");
     }
 
-    private Snapshot Read()
+    private static Snapshot Decode(string? text)
     {
-        CheckUser();
-        if (store.ReadPage(cacheKey)?.Json is not { Length: > 0 } text) return new Snapshot();
+        if (string.IsNullOrWhiteSpace(text)) return new Snapshot();
         var doc = JsonSerializer.Deserialize<Snapshot>(text)
             ?? throw new InvalidDataException("Réplique des sections invalide.");
         if (doc.Revision < 0 || doc.Sections is null || doc.Pending is null)
@@ -67,22 +66,39 @@ public sealed class CentralSectionReplica : IDisposable
         return doc;
     }
 
-    private void Save(Snapshot doc)
+    private Snapshot Read()
     {
         CheckUser();
+        return Decode(store.ReadPage(cacheKey)?.Json);
+    }
+
+    /// <summary>
+    /// Mutations atomiques entre toutes les instances du même cache SQLite :
+    /// une réponse réseau ne remplace jamais la file ajoutée entre-temps.
+    /// Aucune attente réseau n'a lieu dans la transaction.
+    /// </summary>
+    private Snapshot Update(Func<Snapshot, Snapshot> change)
+    {
+        CheckUser();
+        Snapshot? updated = null;
         try
         {
-            store.SavePageFor(user, cacheKey, JsonSerializer.Serialize(doc));
+            store.UpdatePageFor(user, cacheKey, previous =>
+            {
+                CheckUser();
+                updated = change(Decode(previous));
+                CheckUser();
+                return JsonSerializer.Serialize(updated);
+            });
         }
         catch (IOException exception)
         {
-            // Une erreur du disque n'est pas une coupure Internet. Ne jamais
-            // l'avaler dans la reprise HTTP : une écriture D1 confirmée ne
-            // doit pas sembler durable si SQLite n'a pas été mis à jour.
             throw new InvalidDataException(
                 "Impossible de conserver la réplique des sections sur cet appareil.",
                 exception);
         }
+        CheckUser();
+        return updated ?? throw new InvalidDataException("Réplique non enregistrée.");
     }
 
     public CentralSectionLocalState Local()
@@ -117,18 +133,20 @@ public sealed class CentralSectionReplica : IDisposable
         await gate.WaitAsync(ct);
         try
         {
-            var snapshot = Read();
             var id = sectionId.ToString("D");
-            if (snapshot.Pending.Any(x =>
-                string.Equals(x.SectionId, id, StringComparison.OrdinalIgnoreCase)))
-                throw new InvalidOperationException(
-                    "Une modification de cette section attend encore la confirmation centrale.");
-            var previous = snapshot.Sections.FirstOrDefault(x =>
-                string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
             var op = Guid.NewGuid().ToString("D");
-            snapshot.Pending.Add(new CentralSectionPendingChange(op, id, code, name,
-                active, previous?.Revision ?? 0));
-            Save(snapshot);
+            Update(snapshot =>
+            {
+                if (snapshot.Pending.Any(x =>
+                    string.Equals(x.SectionId, id, StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException(
+                        "Une modification de cette section attend encore la confirmation centrale.");
+                var previous = snapshot.Sections.FirstOrDefault(x =>
+                    string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
+                snapshot.Pending.Add(new CentralSectionPendingChange(op, id, code, name,
+                    active, previous?.Revision ?? 0));
+                return snapshot;
+            });
             return op;
         }
         finally { gate.Release(); }
@@ -177,11 +195,15 @@ public sealed class CentralSectionReplica : IDisposable
                     {
                         // Conserver la saisie et son identifiant pour arbitrage :
                         // ne pas rejouer un conflit à chaque reconnexion.
-                        var conflictIndex = snapshot.Pending.FindIndex(x =>
-                            x.OperationId == operation.OperationId);
-                        if (conflictIndex >= 0)
-                            snapshot.Pending[conflictIndex] = operation with { HasConflict = true };
-                        Save(snapshot);
+                        snapshot = Update(current =>
+                        {
+                            var conflictIndex = current.Pending.FindIndex(x =>
+                                x.OperationId == operation.OperationId);
+                            if (conflictIndex >= 0)
+                                current.Pending[conflictIndex] =
+                                    current.Pending[conflictIndex] with { HasConflict = true };
+                            return current;
+                        });
                         return Status(snapshot, Offline: false, HasConflict: true);
                     }
                     if (result.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized)
@@ -201,16 +223,23 @@ public sealed class CentralSectionReplica : IDisposable
                     // validé dans le cache local AVANT de retirer l'outbox.
                     // Si le réseau tombe avant la lecture du journal, l'école
                     // et ses sections restent consultables hors connexion.
-                    var index = snapshot.Sections.FindIndex(x =>
-                        string.Equals(x.Id, operation.SectionId,
-                            StringComparison.OrdinalIgnoreCase));
-                    var accepted = new CentralSectionRow(operation.SectionId,
-                        operation.Code, operation.Name, operation.IsActive,
-                        version, IsPending: false);
-                    if (index >= 0) snapshot.Sections[index] = accepted;
-                    else snapshot.Sections.Add(accepted);
-                    snapshot.Pending.RemoveAll(x => x.OperationId == operation.OperationId);
-                    Save(snapshot); // État local + retrait outbox : un seul commit.
+                    snapshot = Update(current =>
+                    {
+                        var index = current.Sections.FindIndex(x =>
+                            string.Equals(x.Id, operation.SectionId,
+                                StringComparison.OrdinalIgnoreCase));
+                        var accepted = new CentralSectionRow(operation.SectionId,
+                            operation.Code, operation.Name, operation.IsActive,
+                            version, IsPending: false);
+                        if (index >= 0)
+                        {
+                            if (current.Sections[index].Revision <= version)
+                                current.Sections[index] = accepted;
+                        }
+                        else current.Sections.Add(accepted);
+                        current.Pending.RemoveAll(x => x.OperationId == operation.OperationId);
+                        return current;
+                    }); // État confirmé et outbox : une seule transaction SQLite.
                 }
 
                 var hasMorePages = false;
@@ -231,6 +260,7 @@ public sealed class CentralSectionReplica : IDisposable
                         return Status(snapshot, Offline: true, HasConflict: false);
                     var payload = await ReadJsonAsync(result, ct);
                     var after = snapshot.Revision;
+                    var received = new List<CentralSectionRow>();
                     var changes = payload.GetProperty("events");
                     if (changes.ValueKind != JsonValueKind.Array ||
                         changes.GetArrayLength() > 50)
@@ -249,21 +279,8 @@ public sealed class CentralSectionReplica : IDisposable
                             !item.GetProperty("is_active").TryGetInt32(out var active) ||
                             active is not (0 or 1))
                             throw new InvalidDataException("Événement de section non valide.");
-                        var old = snapshot.Sections.FindIndex(x =>
-                            string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
-                        var next = new CentralSectionRow(id, code, name,
-                            active == 1, revision, IsPending: false);
-                        // Le journal peut repartir d'un ancien curseur après
-                        // confirmation d'une écriture (POST applied). Ne jamais
-                        // remplacer l'état local confirmé à la révision 70 par
-                        // un événement antérieur à la révision 70. Avancer quand
-                        // même le curseur de réception pour poursuivre le pull.
-                        if (old >= 0)
-                        {
-                            if (snapshot.Sections[old].Revision <= revision)
-                                snapshot.Sections[old] = next;
-                        }
-                        else snapshot.Sections.Add(next);
+                        received.Add(new CentralSectionRow(id, code, name,
+                            active == 1, revision, IsPending: false));
                         after = revision;
                     }
 
@@ -277,8 +294,24 @@ public sealed class CentralSectionReplica : IDisposable
                     hasMorePages = more.GetBoolean();
                     if (hasMorePages && changes.GetArrayLength() == 0)
                         throw new InvalidDataException("Pagination D1 sans progression.");
-                    snapshot.Revision = after;
-                    Save(snapshot); // Données et curseur : UNE SEULE écriture SQLite.
+                    snapshot = Update(current =>
+                    {
+                        foreach (var next in received)
+                        {
+                            var old = current.Sections.FindIndex(x =>
+                                string.Equals(x.Id, next.Id, StringComparison.OrdinalIgnoreCase));
+                            // Une réponse ancienne ne rétrograde jamais l'état
+                            // D1 déjà confirmé, ni un curseur avancé ailleurs.
+                            if (old >= 0)
+                            {
+                                if (current.Sections[old].Revision <= next.Revision)
+                                    current.Sections[old] = next;
+                            }
+                            else current.Sections.Add(next);
+                        }
+                        current.Revision = Math.Max(current.Revision, after);
+                        return current;
+                    }); // Événements et curseur atomiques, sans écraser l'outbox.
                     if (!hasMorePages) break;
                 }
                 // Huit lots au maximum par passage pour ne pas monopoliser
@@ -332,6 +365,7 @@ public sealed class CentralSectionReplica : IDisposable
         // qu'un autre compte s'est connecté. Ne jamais rendre à ce compte
         // le cliché de l'utilisateur précédent, même sur le chemin d'erreur.
         CheckUser();
+        snapshot = Read(); // inclure les saisies locales ajoutées pendant l'attente HTTP
         var view = snapshot.Sections.ToDictionary(x => x.Id, x => x,
             StringComparer.OrdinalIgnoreCase);
         foreach (var pending in snapshot.Pending)
