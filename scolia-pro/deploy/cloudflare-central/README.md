@@ -60,14 +60,14 @@ Fonctionnement protégé :
 - `0003_password_identity.sql` ajoute `cloud_users.password_hash` (empreinte salée uniquement) et `must_change_password` (par défaut 1). Les empreintes doivent être importées **uniquement via une migration contrôlée des comptes existants**, sans exporter de mots de passe en clair et sans commit dans GitHub. La modification locale d'un mot de passe doit augmenter `permission_revision` dans le cloud afin de rendre les preuves précédentes invalides.
 - `POST /v1/pair/accept` : prototype de consommation en une seule opération D1. Il exige simultanément une invitation QR non expirée et non utilisée, une **preuve JWT d'authentification du compte cible** émise par un service d'identité distinct et une **signature ECDSA P-256** produite par la clé privée du téléphone. Le JWT de jumelage (durée maximale 5 minutes) est lié à l'établissement, au compte, à l'invitation, à l'identifiant du téléphone, à la révision de ses permissions et à l'empreinte de sa clé publique. Le QR seul ne permet jamais de créer un appareil.
 - `0002_invitations.sql` comporte un déclencheur SQLite : une seule UPDATE conditionnelle consomme le QR et insère l'appareil avec sa clé publique dans la **même transaction**, afin qu'une erreur ou réutilisation ne laisse pas un appareil à moitié approuvé.
-- **Blocage avant déploiement** : le service qui authentifie réellement les utilisateurs et émet la preuve `scolia-identity` n'existe pas encore. Le secret distinct `SCOLIA_PAIRING_AUTH_KEY` doit être géré uniquement côté serveur. L'activation n'émet **aucune session** et ne permet pas de se connecter à l'application. Le renouvellement des jetons et la preuve d'appareil lors de chaque nouvelle session restent à développer.
+- **Blocage avant déploiement** : les routes de preuve et de session existent uniquement dans le prototype ; il manque l'approvisionnement sécurisé des comptes réels, les tests CPU réels sur Cloudflare et la validation des connexions natives en préproduction. Le secret distinct `SCOLIA_PAIRING_AUTH_KEY` doit être géré uniquement côté serveur. L'activation par QR n'émet **aucune session** : la session courte nécessite un second appel signé par l'appareil. Le renouvellement silencieux et les permissions métier fines restent à intégrer.
 - Les routes de lecture actuelles ne sont accessibles qu'aux rôles de direction et secrétariat. Les autorisations spécifiques des enseignants, de la comptabilité et des étudiants seront construites avant l'accès aux contenus correspondants.
 - Les paramètres secrets **distincts** `SCOLIA_AUTH_HMAC_KEY` (sessions existantes du prototype) et `SCOLIA_PAIRING_AUTH_KEY` (vérification/émission des preuves temporaires de jumelage) doivent chacun être générés aléatoirement et conservés exclusivement comme **secrets Workers**, jamais dans le dépôt, les sauvegardes publiques ou les APK. Leur valeur n'est pas définie dans le dépôt.
 - La vérification SCOLIA actuelle utilise **100 000 itérations PBKDF2-HMAC-SHA512** ; le vérificateur limite les paramètres acceptés à un intervalle contrôlé. **Workers Free ne dispose que de 10 ms de CPU par requête selon la documentation Cloudflare**. Le runtime fournit PBKDF2 mais les tests Node ne prouvent pas qu'une vérification passera ce quota. Mesurer le CPU réel sur un Worker de préproduction avant d'utiliser le service ; ne pas réduire le coût cryptographique pour contourner la limite. Si le quota est insuffisant, déplacer la vérification vers un service d'identité disposant des ressources adaptées.
 - Le premier couplage exige **Internet**. Une fois les sessions et appareils approuvés, les applications doivent rester entièrement utilisables hors ligne sur les données locales préchargées ; la validation immédiate d'une révocation sur un appareil sans réseau est impossible.
 - Un compte dont `must_change_password=1` doit d'abord modifier son mot de passe dans le flux autorisé du serveur existant ; aucune preuve de jumelage n'est émise. Les anciennes empreintes Identity V2/SHA1 et les empreintes V3 non compatibles ne sont **pas acceptées** par cette route et nécessitent une remise à niveau approuvée.
 - Le secret `SCOLIA_AUTH_HMAC_KEY` (clé aléatoire base64url de 32 octets minimum) doit être défini exclusivement dans les paramètres protégés du Worker **après** création d'un service d'identité approuvé. Jamais dans le dépôt, une APK ou les fichiers de configuration Android.
-- **Aucun service d'émission ou de renouvellement des jetons n'existe encore**. Le prototype ne peut pas authentifier les utilisateurs réels à ce stade.
+- **Émission de JWT de session à 15 minutes implémentée en prototype** pour appareils approuvés : signature de nonce P-256, anti-rejeu D1 et vérification des révocations à chaque appel. Les comptes réels ne sont pas migrés ; le service n'est pas déployé, ni raccordé aux écrans de connexion et à la synchronisation scolaire métier.
 
 Depuis `scolia-pro/deploy/cloudflare-central`, exécuter :
 
@@ -84,18 +84,18 @@ Le workflow `SCOLIA Cloudflare Central Preview - securite API` vérifie ces rout
 Le modèle prêt à compléter se trouve dans `wrangler.staging.toml.example`. Il utilise une **nouvelle base D1** pour la préproduction, les deux rate-limiters et aucun domaine de production.
 
 1. Créer une base D1 **vide et distincte** (sans donnée scolaire réelle). Compléter son identifiant dans une copie privée du modèle Wrangler, ainsi que deux `namespace_id` numériques distincts et propres au compte Cloudflare.
-2. Appliquer, **une seule fois et dans l'ordre**, les migrations `0001_core.sql`, `0002_invitations.sql` et `0003_password_identity.sql`. La troisième ajoute deux colonnes via `ALTER TABLE` : ne pas réexécuter le fichier déjà appliqué. Sauvegarder/restaurer avant toute migration future.
+2. Appliquer, **une seule fois et dans l'ordre**, les migrations `0001_core.sql`, `0002_invitations.sql`, `0003_password_identity.sql` et `0004_device_sessions.sql`. La troisième ajoute deux colonnes via `ALTER TABLE` : ne pas réexécuter le fichier déjà appliqué. La quatrième enregistre uniquement les empreintes SHA-256 des nonces anti-rejeu. Sauvegarder/restaurer avant toute migration future.
 3. Créer séparément les secrets Cloudflare `SCOLIA_PAIRING_AUTH_KEY` et `SCOLIA_AUTH_HMAC_KEY`, chacun avec au moins 32 octets aléatoires. **Ne jamais** les mettre dans un fichier GitHub, un e-mail, une capture ou une APK. Vérifier que les deux clés sont différentes.
 4. Ne provisionner que des **comptes de test** et des empreintes IdentityV3 de test. Les hachages des comptes réels ne doivent être copiés qu'après validation de la migration, du chiffrement au repos, des autorisations institutionnelles et de la révocation des sessions.
 5. Lancer `npm test` dans ce dossier et les tests SQLite `python3 -m unittest discover -s scolia-pro/tests -p 'test_cloudflare_central_schema.py' -v` depuis la racine du dépôt. Effectuer ensuite un essai **sur le runtime Cloudflare en préproduction**, notamment pour le coût CPU de PBKDF2 100 000.
-6. **Ne pas substituer ce prototype à `api.jp-services.org`**. Les sessions Android/Windows, le renouvellement, les permissions fines et la synchronisation métier restent distincts.
+6. **Ne pas substituer ce prototype à `api.jp-services.org`**. Le client C# Windows/Android partage désormais le protocole de jumelage et de session ECDSA, mais les écrans de connexion, le renouvellement automatique, les permissions fines et la synchronisation métier restent à raccorder.
 
 Une preuve de jumelage n'est délivrée qu'après validation du vrai hash connu du compte ; une invitation QR isolée ou un compte sans empreinte migrée ne peut jamais produire une session.
 
 ## Portes de validation avant activation de l'API
 
 1. Inventorier **toutes** les données métier réelles du modèle EF Core 1.2.86 et définir une migration complète vers D1.
-2. Compléter le service d'identité et les sessions natives : émission sûre de la preuve `scolia-identity` **uniquement après vérification du vrai mot de passe du compte cible** ; renouvellement des JWT, protection des clés privées dans Android Keystore/Windows, et contrôle des appareils approuvés. Le prototype gère émission, consommation cryptographique du QR, liste et révocation, mais pas l'authentification réelle ni la migration des comptes.
+2. Compléter le service d'identité et les sessions natives : émission sûre de la preuve `scolia-identity` **uniquement après vérification du vrai mot de passe du compte cible** ; renouvellement des JWT, protection des clés privées dans Android Keystore/Windows, et contrôle des appareils approuvés. Le prototype gère émission, consommation cryptographique du QR, liste et révocation, ainsi que la session de l'appareil déjà approuvé. L'import sécurisé des comptes et le raccordement aux écrans scolaires restent à réaliser.
 3. Implémenter la gestion des comptes du secrétariat avec droits vérifiés côté cloud ; propagation des révocations.
 4. Développer les API métier des inscriptions, notes, présences et surtout des paiements (atomiques, idempotents, conformes aux règles SCOLIA existantes).
 5. Implémenter `push/pull` des changements validés, pagination par révision, tombstones et traitement des conflits.
@@ -157,6 +157,44 @@ l'environnement GitHub. Le script ne reçoit ni ne stocke les clés de
 signature JWT.
 
 Même après un déploiement staging, l'API scolaire centrale ne fonctionne
-pas encore : aucun import de données réelles, aucune émission de session
-scolaire définitive, aucune synchronisation cloud métier des paiements
+pas encore : aucun import de données réelles, aucune connexion scolaire
+complète depuis les écrans natifs, aucune synchronisation cloud métier des paiements
 ou des notes n'est prête.
+
+## Intégration native pilote Windows / Android (code source, NON activée)
+
+Les deux plateformes partagent désormais les nouvelles classes
+`Scolia.Bureau.Api.CentralPairingClient` et `CentralJournalClient` :
+
+1. `ScoliaClient.PairCentralDeviceAsync(origin, invitationId, token, userName, password)`
+   : valide le mot de passe sur `/v1/identity/pairing-proof`, signe la
+   demande de jumelage avec une clé EC P-256 protégée par le système
+   (Android Keystore/Windows DPAPI) et confirme via `/v1/pair/accept`.
+   Retourne l'identifiant de l'établissement. L'URL doit être une origine
+   HTTPS de confiance **déjà configurée**, jamais une adresse copiée d'un QR.
+2. `ScoliaClient.OpenCentralSessionAsync(origin, schoolId, userName)`
+   : réutilise la clé existante (sans la recréer) et demande un JWT de
+   **15 minutes** sur `POST /v1/identity/session`. Le challenge signé
+   comprend école, appareil, nonce aléatoire et heure de création.
+   D1 enregistre son empreinte pour bloquer les relectures.
+   AUCUN mot de passe n'est renvoyé. Le JWT est conservé **en mémoire**.
+3. `ScoliaClient.CheckCentralJournalAsync(origin, schoolId, userName, afterRevision)`
+   : ouvre une session native, puis récupère uniquement les **métadonnées**
+   ordonnées du journal D1 avec pagination et contrôle d'intégrité.
+
+**Attention : ce troisième appel n'applique aucune inscription, note ou
+opération financière, et n'envoie aucun accusé de synchronisation.**
+Le journal D1 n'a pas encore les charges utiles scolaires et les règles métier.
+L'existence de cette méthode ne signifie donc pas que les données scolaires
+sont synchronisées de façon bidirectionnelle.
+
+Les clients sont compilés dans le projet Avalonia partagé, avec des tests
+C# simulant les réponses du Worker et vérifiant la signature ECDSA. Le
+parcours UI permettant de saisir l'invitation centrale et de choisir le compte
+n'est **pas encore branché** : tant que le staging Cloudflare et les comptes
+de test ne sont pas configurés, aucune tentative n'est lancée automatiquement.
+
+`/v1/identity/session` ne reçoit ni mot de passe ni code QR. Il exige un
+appareil déjà inscrit, une signature ECDSA fraîche et un nonce encore inconnu
+de D1 ; il revérifie les révocations et la révision des permissions. Le
+domaine de production n'est pas concerné.
