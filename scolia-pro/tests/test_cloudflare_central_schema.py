@@ -1,6 +1,7 @@
 """Tests SQLite de la fondation D1 centrale (sans réseau ni données réelles)."""
 from pathlib import Path
 import sqlite3
+import re
 import unittest
 
 MIGRATION = (
@@ -378,6 +379,78 @@ class CloudflareCentralSchemaTests(unittest.TestCase):
             "SELECT permission_revision FROM cloud_users "
             "WHERE school_id='a' AND id='teacher'"
         ).fetchone()[0])
+
+    def test_identity_finalization_uses_atomic_checks_from_real_worker_source(self):
+        # Extraire la requête exacte du Worker, sans la réécrire ici.
+        source = (MIGRATION.parent.parent / "src/identity.mjs").read_text(
+            encoding="utf-8"
+        )
+        start = source.index("const completed = await db.prepare(")
+        end = source.index(").bind(account.school_id", start)
+        sql = "".join(re.findall(r'"([^"]*)"', source[start:end]))
+        self.assertTrue(sql.startswith("DELETE FROM cloud_auth_attempts"))
+        self.assertIn("u.password_hash = ?", sql)
+        self.assertIn("u.permission_revision = ?", sql)
+        self.assertIn("i.expires_at > unixepoch()", sql)
+
+        self.db.execute(
+            "UPDATE cloud_users SET password_hash=?, must_change_password=0 "
+            "WHERE school_id='a' AND id='teacher'", ("A" * 84,)
+        )
+        revision = self.db.execute(
+            "SELECT permission_revision FROM cloud_users "
+            "WHERE school_id='a' AND id='teacher'"
+        ).fetchone()[0]
+        self.db.execute(
+            """INSERT INTO cloud_device_invitations
+               (id,school_id,target_user_id,issued_by,token_sha256,expires_at)
+               VALUES('inv-123','a','teacher','secretary',?,unixepoch()+300)""",
+            ("b" * 64,),
+        )
+
+        def try_finalize(expected_hash, expected_revision):
+            return self.db.execute(sql, (
+                "a", "teacher", "inv-123", "enseignant",
+                expected_hash, expected_revision,
+            )).rowcount
+
+        self.db.execute(
+            "INSERT INTO cloud_auth_attempts(school_id,user_id,failed_count) "
+            "VALUES('a','teacher',2)"
+        )
+        self.assertEqual(0, try_finalize("old-password-hash", revision))
+        self.assertEqual(2, self.db.execute(
+            "SELECT failed_count FROM cloud_auth_attempts "
+            "WHERE school_id='a' AND user_id='teacher'"
+        ).fetchone()[0])
+        self.assertEqual(1, try_finalize("A" * 84, revision))
+        self.assertIsNone(self.db.execute(
+            "SELECT failed_count FROM cloud_auth_attempts "
+            "WHERE school_id='a' AND user_id='teacher'"
+        ).fetchone())
+
+        self.db.execute(
+            "INSERT INTO cloud_auth_attempts(school_id,user_id,failed_count) "
+            "VALUES('a','teacher',1)"
+        )
+        self.db.execute(
+            "UPDATE cloud_users SET role='secretariat' "
+            "WHERE school_id='a' AND id='teacher'"
+        )
+        self.assertEqual(0, try_finalize("A" * 84, revision))
+        self.assertEqual(1, self.db.execute(
+            "SELECT failed_count FROM cloud_auth_attempts "
+            "WHERE school_id='a' AND user_id='teacher'"
+        ).fetchone()[0])
+        new_revision = self.db.execute(
+            "SELECT permission_revision FROM cloud_users "
+            "WHERE school_id='a' AND id='teacher'"
+        ).fetchone()[0]
+        self.db.execute(
+            "UPDATE cloud_device_invitations SET expires_at=unixepoch()-1 "
+            "WHERE id='inv-123'"
+        )
+        self.assertEqual(0, try_finalize("A" * 84, new_revision))
 
     def test_reapplying_migration_is_additive_and_safe(self):
         self.add_operation("a", "survives")
