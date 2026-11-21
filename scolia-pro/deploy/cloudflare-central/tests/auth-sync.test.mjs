@@ -23,7 +23,7 @@ async function token(claims = standard, signingKey = secret) {
 }
 
 function fakeEnvironment(options = {}) {
-  const calls = [], cursorWrites = [], revokedWrites = [];
+  const calls = [], cursorWrites = [], revokedWrites = [], invitationWrites = [];
   const env = {
     SCOLIA_AUTH_HMAC_KEY: secret,
     DB: {
@@ -33,6 +33,8 @@ function fakeEnvironment(options = {}) {
             calls.push({ sql, params });
             return {
               async first() {
+                if (sql.includes("SELECT id FROM cloud_users"))
+                  return options.targetEnabled ? { id: options.targetId ?? "teacher" } : null;
                 if (sql.includes("FROM cloud_users")) {
                   if (options.revoked || options.disabled || options.permissionRevisionChanged)
                     return null;
@@ -57,6 +59,10 @@ function fakeEnvironment(options = {}) {
                   revokedWrites.push(params);
                   return { success: true, meta: { changes: options.changeCount ?? 1 } };
                 }
+                if (sql.includes("INSERT INTO cloud_device_invitations")) {
+                  invitationWrites.push(params);
+                  return { success: true, meta: { changes: 1 } };
+                }
                 if (!sql.includes("INSERT INTO cloud_sync_cursors")) throw Error("unexpected run");
                 cursorWrites.push(params);
                 return { success: true };
@@ -67,7 +73,7 @@ function fakeEnvironment(options = {}) {
       },
     },
   };
-  return { env, calls, cursorWrites, revokedWrites };
+  return { env, calls, cursorWrites, revokedWrites, invitationWrites };
 }
 
 async function call(path, { method = "GET", body, claims, env = fakeEnvironment().env, authorization } = {}) {
@@ -281,4 +287,61 @@ test("l'accusé d'une autre session est invisible et les identifiants malformés
   }
   assert.equal((await call("/v1/sync/operations/my-op",
     { env: fakeEnvironment({ revoked: true, operation: { outcome: "applied" } }).env })).status, 401);
+});
+
+test("invitation secrétariat : code non stocké et expiration courte", async () => {
+  const { env, calls, invitationWrites } = fakeEnvironment({ targetEnabled: true });
+  const before = Math.floor(Date.now() / 1000);
+  const response = await call("/v1/admin/devices/invite", {
+    method: "POST", body: { target_user_id: "teacher" }, env,
+  });
+  assert.equal(response.status, 201);
+  const data = await response.json();
+  assert.equal(data.activation, "requires_authenticated_claim");
+  assert.equal(data.target_user_id, "teacher");
+  assert.match(data.token, /^[A-Za-z0-9_-]{43}$/);
+  assert.match(data.invitation_id, /^[0-9a-f-]{36}$/);
+  assert.ok(data.expires_at >= before + 599 && data.expires_at <= before + 602);
+  assert.deepEqual(calls[1].params, ["school-a", "teacher"]);
+  const record = invitationWrites[0];
+  assert.equal(record[1], "school-a");
+  assert.equal(record[2], "teacher");
+  assert.equal(record[3], "secretary");
+  assert.equal(record[5], data.expires_at);
+  assert.equal(record[4].length, 64);
+  const digest = await crypto.subtle.digest("SHA-256", Buffer.from(data.token, "base64url"));
+  assert.equal(record[4], Buffer.from(digest).toString("hex"));
+  assert.ok(!JSON.stringify(record).includes(data.token));
+  assert.equal(response.headers.get("Cache-Control"), "no-store");
+});
+
+test("une invitation ne cible pas un compte extérieur ou désactivé", async () => {
+  const { env, invitationWrites, calls } = fakeEnvironment({ targetEnabled: false });
+  const malformed = await call("/v1/admin/devices/invite", {
+    method: "POST", body: { target_user_id: "foreign-user", school_id: "school-b" }, env,
+  });
+  assert.equal(malformed.status, 400);
+  const unknown = await call("/v1/admin/devices/invite", {
+    method: "POST", body: { target_user_id: "foreign-user" }, env,
+  });
+  assert.equal(unknown.status, 404);
+  assert.deepEqual(calls[1].params, ["school-a", "foreign-user"]);
+  assert.deepEqual(invitationWrites, []);
+});
+
+test("enseignant et comptabilité ne peuvent inviter, le QR seul n'ouvre aucun compte", async () => {
+  for (const role of ["Enseignant", "Promoteur", "Comptabilite"]) {
+    const { env, invitationWrites } = fakeEnvironment({ role, targetEnabled: true });
+    assert.equal((await call("/v1/admin/devices/invite", {
+      method: "POST", body: { target_user_id: "teacher" }, env,
+    })).status, 403);
+    assert.deepEqual(invitationWrites, []);
+  }
+  assert.equal((await call("/v1/admin/devices/accept", {
+    method: "POST", body: { token: "fake-token" },
+  })).status, 404);
+  assert.equal((await call("/v1/admin/devices/invite", {
+    method: "POST", body: { target_user_id: "../bad" },
+    env: fakeEnvironment({ targetEnabled: true }).env,
+  })).status, 400);
 });
