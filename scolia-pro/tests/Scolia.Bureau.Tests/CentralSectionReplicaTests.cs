@@ -317,6 +317,76 @@ public sealed class CentralSectionReplicaTests
     }
 
     [Fact]
+    public async Task Version_obsolete_exige_un_rattrapage_central_avant_nouvelle_tentative()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-stale-revision-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            var section = Guid.NewGuid();
+            var serverUpdated = false;
+            var posts = 0;
+            using var replica = new CentralSectionReplica(store, store.User, School,
+                CentralOrigin, new Handler((request, _) =>
+                {
+                    if (request.Method == HttpMethod.Post)
+                    {
+                        posts++;
+                        return Task.FromResult(Json(HttpStatusCode.Conflict,
+                            """{"error":"stale_section_revision"}"""));
+                    }
+                    Assert.Equal(HttpMethod.Get, request.Method);
+                    var events = serverUpdated
+                        ? System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            events = new[]
+                            {
+                                new
+                                {
+                                    revision = 7,
+                                    section_id = section.ToString("D"),
+                                    code = "INF",
+                                    name = "Version du serveur",
+                                    is_active = 1,
+                                },
+                            },
+                            next = 7, has_more = false,
+                        })
+                        : """{"events":[],"next":0,"has_more":false}""";
+                    return Task.FromResult(Json(HttpStatusCode.OK, events));
+                }));
+            var initial = await replica.QueueUpsertAsync(section, "INF",
+                "Saisie locale", true);
+            var conflicted = await replica.SyncAsync(CentralOrigin, Jwt);
+            Assert.True(conflicted.HasConflict);
+            Assert.Equal("stale_section_revision",
+                Assert.Single(replica.Conflicts()).ConflictCode);
+            Assert.Equal(initial, Assert.Single(replica.Conflicts()).OperationId);
+
+            using var reopened = new CentralSectionReplica(
+                store, store.User, School, CentralOrigin);
+            Assert.Equal("stale_section_revision",
+                Assert.Single(reopened.Conflicts()).ConflictCode);
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                replica.RetryConflictedSectionAsync(section, "INF2",
+                    "Nom différent sans nouvelle version", true));
+
+            serverUpdated = true;
+            var caughtUp = await replica.SyncAsync(CentralOrigin, Jwt);
+            Assert.Equal(7, caughtUp.Revision);
+            var next = await replica.RetryConflictedSectionAsync(
+                section, "INF2", "Nom corrigé", true);
+            Assert.NotEqual(initial, next);
+            Assert.Empty(replica.Conflicts());
+            Assert.Equal(1, posts); // Aucune répétition du conflit D1.
+            Assert.Equal(1, replica.Local().PendingCount);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
     public async Task Conflit_sur_une_section_n_empeche_pas_les_autres_et_le_pull_d1()
     {
         var temp = Path.Combine(Path.GetTempPath(), "scolia-conflict-independent-" +
