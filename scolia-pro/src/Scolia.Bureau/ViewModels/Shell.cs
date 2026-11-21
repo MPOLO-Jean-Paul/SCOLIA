@@ -2187,12 +2187,15 @@ public sealed class ShellViewModel : Observable
         Sync.Forget();
         try { centralSyncCancellation?.Cancel(); }
         catch (ObjectDisposedException) { }
-        // La fermeture de session stoppe les nouvelles lectures centralisées
-        // sur Android/Windows, sans supprimer les données ou l'outbox SQLite.
+        // Déconnexion locale : bloquer D1 et effacer le cookie persistant de
+        // CET utilisateur atomiquement. Ne pas dépendre de store.User : une
+        // authentification du compte suivant peut déjà avoir commencé.
+        // Les données et opérations hors ligne restent accessibles après
+        // une nouvelle authentification avec le secret du compte.
         try
         {
             if (session is { } leaving && api.Offline is { } store)
-                store.SetCentralBackgroundAllowedFor(leaving.UserName, false);
+                store.SuspendBackgroundAccessFor(leaving.UserName);
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
