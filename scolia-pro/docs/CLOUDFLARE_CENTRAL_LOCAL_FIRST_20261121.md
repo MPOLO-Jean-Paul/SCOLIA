@@ -23,7 +23,7 @@
 - Séparer par `school_id` **toutes** les données et requêtes côté serveur, filtrées sur l'identité authentifiée, jamais sur un identifiant scolaire librement envoyé par le client.
 - `operation_id` / clé d'idempotence stable, contrainte UNIQUE sur le serveur et réponse stable en cas de nouvelle tentative.
 - Ordre des changements par révision/curseur serveur monotone. Faire la distinction entre copie locale, opération en attente, opération appliquée et conflit.
-- Pour les reçus et encaissements : numéro et validation définitifs **uniquement après réponse métier serveur**. Une prévisualisation locale est explicitement provisoire. Ne pas résoudre les conflits financiers par « last write wins ».
+- Pour les reçus et encaissements : numéro et validation définitifs **uniquement après réponse métier serveur**. Une prévisualisation locale est explicitement provisoire. Ne pas résoudre les conflits financiers par « last write wins ». **HTTP 202** signifie dépôt/acceptation en attente, pas validation financière : conserver l'outbox, la clé d'idempotence et le reçu provisoire jusqu'au résultat métier définitif.
 - Conserver les suppressions (tombstones) jusqu'à ce que les clients aient obtenu leur révision, avec mécanisme de re-synchronisation complète si l'historique a expiré.
 - Persister le curseur de réception uniquement **après** application locale atomique des changements.
 - Un changement de compte ne doit pas solder les opérations d'un autre compte ; ne jamais supprimer l'outbox pour « réparer » une erreur réseau.
@@ -46,13 +46,18 @@
 - [x] Servir les pages locales déjà autorisées lors d'une redirection/limitation temporaire, sans contourner une révocation explicite 403.
 - [x] Désactiver le suivi silencieux des redirections HTTP du client natif afin d'éviter qu'une page Access 200 soit prise pour un accusé métier.
 - [x] Ajouter les tests de non-régression HTTP loopback correspondants.
+- [x] Conserver les écritures sur HTTP 202 et retester sans doubler un encaissement.
+- [x] Retenter au plus une fois les lectures GET interrompues par le relais WSS, dans le délai global, sans rejouer les opérations POST/PUT.
+- [x] Préparer en arrière-plan les feuilles anonymes des enseignants, avec curseur distinct des dossiers apprenants et du cache financier.
 - [ ] Obtenir la compilation et l'exécution des tests .NET dans GitHub Actions, puis valider sur Windows et Android réels.
 
-### Phase B — backend Cloudflare central (non commencé)
+### Phase B — backend Cloudflare central (fondation prototype uniquement)
 
-- [ ] Inventorier tables, contraintes, permissions et opérations de SCOLIA 1.2.86.
+- [ ] Terminer l'inventaire des tables, contraintes, permissions et opérations de SCOLIA 1.2.86.
+- [x] Ajouter le schéma D1 prototype des écoles, appareils, opérations idempotentes et curseurs, avec tests d'isolation SQLite.
+- [x] Ajouter un aperçu d'API à jeton court avec lecture du journal et accusé de curseur, sans routes métier et **sans déploiement sur Cloudflare**.
 - [ ] Migrer le modèle métier réellement utilisé vers D1, sans importer de données scolaires dans la base de test.
-- [ ] Implémenter API authentifiée, isolation établissement, idempotence, journal de changements, conflits et accès R2 privé.
+- [ ] Compléter l'API authentifiée : émission/renouvellement des jetons, délégation du secrétariat, contrôles métier, publication de changements et accès R2 privé. Le prototype actuel ne suffit pas.
 - [ ] Définir et tester les transactions/quotas Cloudflare sur les paiements et les inscriptions.
 
 ### Phase C — clients Local-First cloud (non commencé)
