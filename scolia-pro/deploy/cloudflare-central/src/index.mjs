@@ -83,14 +83,41 @@ export async function handleRequest(request, env) {
     return json({ service: "SCOLIA central preview", status: "ready" });
   const isEvents = url.pathname === "/v1/sync/events" && request.method === "GET";
   const isAck = url.pathname === "/v1/sync/ack" && request.method === "POST";
+  // Une écriture 202 demeure provisoire. Le client peut vérifier sa validation
+  // définitive, sans exposer ni les montants ni les données de l'établissement.
+  const isOperationStatus = url.pathname.startsWith("/v1/sync/operations/") &&
+    request.method === "GET";
   const isDeviceList = url.pathname === "/v1/admin/devices" && request.method === "GET";
   const isDeviceRevoke = url.pathname === "/v1/admin/devices/revoke" && request.method === "POST";
-  if (!isEvents && !isAck && !isDeviceList && !isDeviceRevoke)
+  if (!isEvents && !isAck && !isDeviceList && !isDeviceRevoke && !isOperationStatus)
     return error(404, "not_found");
   if (!env?.DB || !env?.SCOLIA_AUTH_HMAC_KEY) return error(503, "not_configured");
   try {
     const user = await authorize(request, env);
     if (!user) return error(401, "unauthorized");
+    if (isOperationStatus) {
+      const operationId = url.pathname.slice("/v1/sync/operations/".length);
+      if (!/^[A-Za-z0-9_-]{1,128}$/.test(operationId))
+        return error(400, "invalid_operation_id");
+      // Lecture du seul accusé de l'opération déposée PAR CE compte et
+      // DEPUIS CET appareil. Même un administrateur ne reçoit pas le détail
+      // d'une écriture faite par un autre utilisateur via ce point d'accès.
+      const row = await env.DB.prepare(
+        "SELECT outcome, received_at, settled_at FROM cloud_operations " +
+        "WHERE school_id = ? AND operation_id = ? AND actor_user_id = ? " +
+        "AND device_id = ? LIMIT 1"
+      ).bind(user.school_id, operationId, user.sub, user.device_id).first();
+      if (!row) return error(404, "not_found");
+      if (!["pending", "applied", "rejected"].includes(row.outcome))
+        return error(503, "unexpected_status");
+      return json({
+        operation_id: operationId,
+        status: row.outcome,
+        finalized: row.outcome !== "pending",
+        received_at: row.received_at,
+        settled_at: row.settled_at,
+      });
+    }
     // Le journal ne dispose pas encore de filtres fins par cours / apprenant :
     // seuls les rôles avec accès global peuvent consulter les métadonnées.
     if (!privilegedRoles.has(user.role)) return error(403, "forbidden");
