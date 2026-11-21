@@ -184,13 +184,25 @@ public sealed class SyncWorker : Worker
         {
             try
             {
-                var prepared = await OfflinePreparation.RunAsync(api,
-                    includeFinancialAccounts: preparationKind == OfflinePreparationKind.StudentRecords &&
-                        active.Permissions.Contains(Perm.PaymentsRead, StringComparer.OrdinalIgnoreCase),
-                    includeTeacherSheets: preparationKind == OfflinePreparationKind.AnonymousTeacherSheets,
-                    ct: timeout.Token);
-                if (!prepared.Complete && prepared.Expected <= OfflinePreparation.MaximumStudents)
-                    return Result.InvokeRetry();
+                if ((preparationKind & OfflinePreparationKind.StudentRecords) != 0)
+                {
+                    var school = await OfflinePreparation.RunAsync(api,
+                        includeFinancialAccounts: active.Permissions.Contains(
+                            Perm.PaymentsRead, StringComparer.OrdinalIgnoreCase),
+                        ct: timeout.Token);
+                    if (!school.Complete && school.Expected <= OfflinePreparation.MaximumStudents)
+                        return Result.InvokeRetry();
+                }
+
+                if ((preparationKind & OfflinePreparationKind.AnonymousTeacherSheets) != 0)
+                {
+                    // Le cache pédagogique dispose de son propre curseur chiffré.
+                    // Un même compte peut consulter les dossiers ET saisir des notes,
+                    // sans que ces deux préparations effacent la progression mutuelle.
+                    var teaching = await OfflinePreparation.RunAsync(api,
+                        includeTeacherSheets: true, ct: timeout.Token);
+                    if (!teaching.Complete) return Result.InvokeRetry();
+                }
             }
             catch (ApiException ex) when (ex.Status is 401 or 403)
             {
