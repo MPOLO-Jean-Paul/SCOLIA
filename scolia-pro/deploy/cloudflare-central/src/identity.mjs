@@ -143,6 +143,32 @@ async function clearAttempts(db, account) {
   ).bind(account.school_id, account.id).run();
 }
 
+// Valider à nouveau l'état côté D1 APRÈS PBKDF2 et juste avant la signature.
+// Un changement de mot de passe/rôle, une désactivation, un QR expiré ou un
+// verrouillage concurrent ne doit pas déboucher sur un nouveau jeton.
+// Cette requête unique est atomique : si les droits ont changé, aucun compteur
+// n'est remis à zéro. L'acceptation QR revérifie ensuite permission_revision.
+async function finalizeSuccessfulAttempt(db, account, invitationId) {
+  const completed = await db.prepare(
+    "DELETE FROM cloud_auth_attempts WHERE school_id = ? AND user_id = ? " +
+    "AND lockout_until = 0 AND EXISTS (" +
+    "SELECT 1 FROM cloud_users u " +
+    "JOIN cloud_schools s ON s.id = u.school_id " +
+    "JOIN cloud_device_invitations i ON i.school_id = u.school_id " +
+    "AND i.target_user_id = u.id " +
+    "WHERE i.id = ? AND i.consumed_at IS NULL " +
+    "AND i.expires_at > unixepoch() AND s.status = 'active' " +
+    "AND u.school_id = cloud_auth_attempts.school_id " +
+    "AND u.id = cloud_auth_attempts.user_id " +
+    "AND u.enabled = 1 AND u.must_change_password = 0 " +
+    "AND u.login_normalized = ? AND u.password_hash = ? " +
+    "AND u.permission_revision = ?)"
+  ).bind(account.school_id, account.id, invitationId,
+    account.login_normalized, account.password_hash,
+    account.permission_revision).run();
+  return completed.meta?.changes === 1;
+}
+
 export async function issuePairingIdentityProof(request, env) {
   // Le service refuse de vérifier des mots de passe si ses deux garde-fous
   // anti-abus ne sont pas configurés sur Cloudflare. Pas de mode dégradé.
@@ -226,7 +252,8 @@ export async function issuePairingIdentityProof(request, env) {
       return fail(409, "password_change_required");
     }
 
-    await clearAttempts(env.DB, account);
+    if (!await finalizeSuccessfulAttempt(env.DB, account, body.invitation_id))
+      return fail(401, "invalid_credentials_or_invitation");
     const now = Math.floor(Date.now() / 1000);
     const proof = await signPairingClaims({
       iss: "scolia-identity",
