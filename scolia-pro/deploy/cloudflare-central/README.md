@@ -203,3 +203,62 @@ de test ne sont pas configurés, aucune tentative n'est lancée automatiquement.
 appareil déjà inscrit, une signature ECDSA fraîche et un nonce encore inconnu
 de D1 ; il revérifie les révocations et la révision des permissions. Le
 domaine de production n'est pas concerné.
+
+## Premier circuit métier : sections scolaires (prototype, PAS de migration réelle)
+
+Cette première ressource correspond à la classe `Section` de SCOLIA
+(`Id`, `Code`, `Name`, `IsActive`). Elle est **sans données personnelles**.
+Elle permet de prouver le parcours local SQLite → Cloudflare D1 → SQLite,
+sans improviser les règles de validation des paiements, notes ou inscriptions.
+
+- `POST /v1/catalog/sections`, réservé au secrétariat et à la direction :
+  `{ "operation_id":"uuid", "section_id":"uuid", "code":"INF",
+     "name":"Sciences infirmières", "is_active":true,
+     "expected_revision":0 }`. L'école et l'appareil sont **obtenus du JWT
+  valide et revérifiés côté D1**. Le contenu est normalisé, empreinte SHA-256
+  et clé d'idempotence contrôlées ; le résultat est `applied` avec une
+  révision confirmée, ou 409 si la version a changé. Un rejeu strictement
+  identique est sans effet et retourne la révision initiale.
+- `GET /v1/catalog/sections?after=0&limit=50` pour un utilisateur
+  authentifié : rend les événements ordonnés du **seul établissement du JWT**
+  avec `revision`, `section_id`, `code`, `name`, `is_active`. Aucune
+  recherche inter-écoles, aucune note ni donnée financière.
+- `0005_school_sections.sql` : une insertion dans le journal de section
+  produit **dans la même transaction** l'état courant, l'opération
+  `applied` et le journal de changement. Les doublons de code, versions
+  périmées, collisions d'identifiant ou FKs invalides annulent entièrement
+  l'écriture.
+- `Scolia.Bureau.Api.CentralSectionReplica` : utilise
+  `OfflineStore` (SQLite chiffré par compte) pour conserver ensemble
+  les sections lues, le curseur et les opérations en attente. La saisie
+  `QueueUpsertAsync` n'attend jamais Internet ; `SyncAsync` conserve
+  la file en cas de coupure, conserve un conflit 409 pour intervention
+  humaine et supprime une opération **seulement après `applied`**.
+- `ScoliaClient.QueueCentralSectionAsync(...)` et
+  `ScoliaClient.SyncCentralSectionsAsync(...)` permettent aux
+  applications Windows et Android d'employer ce circuit. Une session
+  centrale de courte durée est demandée à l'aide de la clé de l'appareil
+  déjà approuvé ; le mot de passe n'est pas renvoyé.
+- Tests : `test_cloudflare_sections_schema.py`,
+  `tests/sections.test.mjs`, `CentralSectionReplicaTests.cs`.
+  Les tests d'intégrité des migrations D1 sont obligatoires aussi dans
+  le workflow manuel de préproduction.
+
+### Ce qui reste obligatoire avant exploitation
+
+- Connecter les formulaires de sections aux appels ci-dessus et programmer
+  leur reprise automatique sur Android WorkManager et Windows sans action
+  de l'utilisateur. **Le code pilote n'est pas encore activé dans l'UI**.
+- Créer D1 et les comptes de test staging, déployer dans un environnement
+  protégé puis exercer le parcours sur deux vrais appareils, y compris
+  coupures, changements de compte, révocations et conflits.
+- Migrer les règles métier (années, promotions, apprenants, paiements,
+  notes, présence, discipline, permissions fines) **une par une** avec
+  schémas, contrôles transactionnels, tests et mécanismes de reprise.
+  Ne pas faire confiance à un simple stockage JSON de requêtes pour
+  valider des encaissements.
+- Migrer les vrais comptes et bases uniquement avec sauvegarde validée,
+  autorisation de l'établissement et procédure réversible.
+
+**Aucun vrai établissement ni domaine `api.jp-services.org` n'est
+modifié ; ce pilote ne constitue pas une synchronisation scolaire complète.**
