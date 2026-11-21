@@ -526,32 +526,9 @@ public sealed class CentralSectionReplica : IDisposable
         HttpResponseMessage response, CancellationToken ct) =>
         ReadBoundedJsonAsync(response, 90_000, ct);
 
-    private static async Task<JsonElement> ReadBoundedJsonAsync(
-        HttpResponseMessage response, int byteLimit, CancellationToken ct)
-    {
-        // Content-Length peut être faux ou absent. Arrêter la lecture dès
-        // qu'un seul lot dépasse la limite, AVANT toute allocation volumineuse.
-        if (response.Content.Headers.ContentLength is { } declared &&
-            declared > byteLimit)
-            throw new InvalidDataException("Réponse D1 trop volumineuse.");
-
-        await using var input = await response.Content.ReadAsStreamAsync(ct);
-        using var buffer = new MemoryStream();
-        var chunk = new byte[4096];
-        while (true)
-        {
-            var size = await input.ReadAsync(chunk.AsMemory(), ct);
-            if (size == 0) break;
-            if (buffer.Length > byteLimit - size)
-                throw new InvalidDataException("Réponse D1 trop volumineuse.");
-            buffer.Write(chunk.AsSpan(0, size));
-        }
-        using var doc = JsonDocument.Parse(
-            buffer.GetBuffer().AsMemory(0, checked((int)buffer.Length)));
-        if (doc.RootElement.ValueKind != JsonValueKind.Object)
-            throw new InvalidDataException("Réponse D1 invalide.");
-        return doc.RootElement.Clone();
-    }
+    private static Task<JsonElement> ReadBoundedJsonAsync(
+        HttpResponseMessage response, int byteLimit, CancellationToken ct) =>
+        CentralBoundedJson.ReadAsync(response, byteLimit, ct);
 
     public void Dispose()
     {
