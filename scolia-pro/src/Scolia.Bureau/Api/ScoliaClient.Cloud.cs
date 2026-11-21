@@ -262,7 +262,7 @@ public sealed partial class ScoliaClient
         var schoolId = central.ReadSavedSchoolId(trustedCentralOrigin,
             userName, Infrastructure.DeviceIdentity.Id) ??
             throw new InvalidOperationException("Cet appareil n'est pas jumelé à l'école centrale.");
-        using var replica = new CentralSectionReplica(store, userName, schoolId);
+        using var replica = new CentralSectionReplica(store, userName, schoolId, trustedCentralOrigin);
         return await replica.QueueUpsertAsync(sectionId, code, name, active, ct);
     }
 
@@ -281,7 +281,7 @@ public sealed partial class ScoliaClient
         var schoolId = central.ReadSavedSchoolId(trustedCentralOrigin,
             userName, Infrastructure.DeviceIdentity.Id) ??
             throw new InvalidOperationException("Cet appareil n'est pas jumelé à l'école centrale.");
-        using var replica = new CentralSectionReplica(store, userName, schoolId);
+        using var replica = new CentralSectionReplica(store, userName, schoolId, trustedCentralOrigin);
         try
         {
             var session = await central.OpenSavedSessionAsync(
