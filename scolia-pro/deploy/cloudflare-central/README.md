@@ -92,6 +92,29 @@ Le modèle prêt à compléter se trouve dans `wrangler.staging.toml.example`. I
 
 Une preuve de jumelage n'est délivrée qu'après validation du vrai hash connu du compte ; une invitation QR isolée ou un compte sans empreinte migrée ne peut jamais produire une session.
 
+## Secrets et garde-fous du workflow de préproduction
+
+Le workflow manuel `.github/workflows/scolia-identity-staging-manual.yml`
+nécessite un environnement GitHub protégé `scolia-staging` avec les **variables**
+`SCOLIA_STAGING_D1_ID`, `SCOLIA_STAGING_RL_INVITE_NS` et
+`SCOLIA_STAGING_RL_SOURCE_NS`, ainsi que les **secrets** :
+`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`,
+`SCOLIA_STAGING_PAIRING_AUTH_KEY` et `SCOLIA_STAGING_AUTH_HMAC_KEY`.
+
+Les deux derniers secrets sont **distincts** et encodés en base64url canonique,
+chacun représentant au moins 32 octets générés de manière cryptographiquement
+aléatoire sur un poste de confiance. Ne jamais les copier dans GitHub en tant
+que fichiers suivis, dans une APK ou dans cette documentation. Le workflow
+s'arrête **avant toute migration ou publication** si une clé manque, si son
+format est incorrect ou si les deux sont identiques. Après la validation des
+tests, les clés sont injectées exclusivement dans le Worker staging avec
+`wrangler secret put`. La production `api.jp-services.org` n'est pas ciblée.
+
+La première mise en service ne doit contenir **que des comptes fictifs**.
+Après le déploiement manuel, effectuer un test du coût CPU PBKDF2 et une
+séquence complète de jumelage/révocation sur des appareils de test.
+La validation GitHub CI ne suffit pas à prouver ce fonctionnement.
+
 ## Portes de validation avant activation de l'API
 
 1. Inventorier **toutes** les données métier réelles du modèle EF Core 1.2.86 et définir une migration complète vers D1.
