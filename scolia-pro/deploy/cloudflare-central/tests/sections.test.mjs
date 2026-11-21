@@ -136,6 +136,12 @@ test("la validation rejette mutations malformées et limite les curseurs", async
     { ...post, name: "Nom\ninvalide" }, { ...post, expected_revision: -1 },
     { ...post, is_active: "true" },
     { ...post, school_id: "school-b" }, { ...post, section_id: "random" },
+    // Une chaîne de 36 caractères n'est pas nécessairement un UUID :
+    // les clients .NET rejetteraient sinon tout le lot d'événements.
+    { ...post, section_id: "a".repeat(36) },
+    { ...post, operation_id: "a".repeat(36) },
+    { ...post, section_id: "00000000-0000-0000-0000-000000000000" },
+    { ...post, operation_id: "00000000-0000-0000-0000-000000000000" },
   ]) {
     const response = await call(DB, "POST", "/v1/catalog/sections", input);
     assert.equal(response.status, 400);
