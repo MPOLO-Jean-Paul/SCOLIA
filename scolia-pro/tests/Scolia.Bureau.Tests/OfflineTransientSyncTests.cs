@@ -66,6 +66,48 @@ public sealed class OfflineTransientSyncTests
     }
 
     [Theory]
+    [InlineData(302)]
+    [InlineData(408)]
+    [InlineData(425)]
+    [InlineData(429)]
+    public async Task Ecriture_immediate_temporairement_refusee_reste_persistante(int status)
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var server = new Uri($"http://127.0.0.1:{port}/");
+        var root = Path.Combine(Path.GetTempPath(), "scolia-retry", Guid.NewGuid().ToString("N"));
+
+        try
+        {
+            var store = new OfflineStore(server, root) { User = "secretariat" };
+            using var api = new ScoliaClient(server) { Offline = store };
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var serverTask = RespondOnceAsync(listener, status, timeout.Token);
+
+            await Assert.ThrowsAsync<OfflineQueuedException>(() =>
+                api.SendAsync(HttpMethod.Post, "api/depenses",
+                    new { amount = 25000m, reason = "Achat de fournitures" }, timeout.Token));
+            await serverTask;
+
+            Assert.Empty(store.Conflicts());
+            var queued = Assert.Single(store.Outbox());
+            Assert.Equal("api/depenses", queued.Path);
+            Assert.False(string.IsNullOrWhiteSpace(queued.Key));
+
+            // La réponse n'a pas validé l'écriture ; même après redémarrage,
+            // le compte pourra la renvoyer sous le même identifiant.
+            var reopened = new OfflineStore(server, root) { User = "secretariat" };
+            Assert.Equal(queued.Key, Assert.Single(reopened.Outbox()).Key);
+        }
+        finally
+        {
+            listener.Stop();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
     [InlineData(200, 1, 0)]
     [InlineData(422, 0, 1)]
     public async Task Accuse_valide_supprime_la_file_et_refus_metier_devient_conflit(
@@ -113,8 +155,9 @@ public sealed class OfflineTransientSyncTests
         using var reader = new StreamReader(stream, Encoding.ASCII, false, 1024, leaveOpen: true);
         while (await reader.ReadLineAsync(cancellationToken) is { Length: > 0 }) { }
 
+        var location = status == 302 ? "Location: /access/login\\r\\n" : string.Empty;
         var response = Encoding.ASCII.GetBytes(
-            $"HTTP/1.1 {status} Test\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+            $"HTTP/1.1 {status} Test\\r\\n{location}Content-Length: 0\\r\\nConnection: close\\r\\n\\r\\n");
         await stream.WriteAsync(response, cancellationToken);
     }
 }
