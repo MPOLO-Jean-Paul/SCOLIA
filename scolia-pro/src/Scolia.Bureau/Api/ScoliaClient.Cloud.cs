@@ -218,11 +218,15 @@ public sealed partial class ScoliaClient
                     }),
                 };
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", access.DepositToken);
-                using var response = await CloudHttp.SendAsync(request, ct);
+                using var response = await CloudHttp.SendAsync(
+                    request, HttpCompletionOption.ResponseHeadersRead, ct);
                 if (!response.IsSuccessStatusCode) break;
-                var body = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
-                // Déjà appliquée par le serveur (dépôt précédent) : elle quitte la file.
-                if (body.TryGetProperty("outcome", out var outcome) && outcome.GetString() == "applied")
+                // Refuser un HTTP 2xx sans vraie confirmation de stockage :
+                // ne jamais solder un paiement pour une réponse vide/illisible.
+                var body = await CentralBoundedJson.ReadAsync(response, 16_384, ct);
+                var receipt = CloudMailboxReceiptPolicy.Parse(body);
+                if (receipt == CloudMailboxReceipt.Refused) break;
+                if (receipt == CloudMailboxReceipt.Applied)
                     await Task.Run(() => store.SentFor(user, item.Id), ct);
                 else
                     await Task.Run(() => store.MarkDepositedFor(user, item.Id), ct);
@@ -231,7 +235,8 @@ public sealed partial class ScoliaClient
             return deposited;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or FormatException
-            or System.Security.Cryptography.CryptographicException or PlatformNotSupportedException or InvalidDataException) { return 0; }
+            or InvalidOperationException or System.Security.Cryptography.CryptographicException
+            or PlatformNotSupportedException or InvalidDataException) { return 0; }
         finally { depositGate.Release(); }
     }
 
@@ -255,13 +260,17 @@ public sealed partial class ScoliaClient
                 Content = JsonContent.Create(new { op_ids = deposited.Select(i => i.Key).Distinct().ToArray() }),
             };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", access.DepositToken);
-            using var response = await CloudHttp.SendAsync(request, ct);
+            using var response = await CloudHttp.SendAsync(
+                request, HttpCompletionOption.ResponseHeadersRead, ct);
             if (response.StatusCode != HttpStatusCode.OK) return 0;
-            var body = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
-            var outcomes = body.GetProperty("outcomes");
+            var body = await CentralBoundedJson.ReadAsync(response, 96_000, ct);
+            // Un seul champ inconnu ou invalide doit être détecté AVANT tout
+            // effacement d'opération : aucune confirmation partielle implicite.
+            var applied = CloudMailboxReceiptPolicy.AppliedOutcomes(
+                body, deposited.Select(item => item.Key));
             var done = 0;
             foreach (var item in deposited)
-                if (outcomes.TryGetProperty(item.Key, out var value) && value.GetString() == "applied")
+                if (applied.Contains(item.Key))
                 {
                     await Task.Run(() => store.SentFor(user, item.Id), ct);
                     done++;
