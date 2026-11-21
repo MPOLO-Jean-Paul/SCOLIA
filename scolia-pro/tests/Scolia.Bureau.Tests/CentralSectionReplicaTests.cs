@@ -376,6 +376,78 @@ public sealed class CentralSectionReplicaTests
     }
 
     [Fact]
+    public async Task Saisie_pendant_une_lecture_reseau_ne_disparait_pas_du_cache_partage()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-section-interleave-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var entered = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            var response = new TaskCompletionSource<HttpResponseMessage>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            var firstStore = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            var secondStore = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            using var sync = new CentralSectionReplica(firstStore, firstStore.User, School,
+                new Handler((request, _) =>
+                {
+                    Assert.Equal(HttpMethod.Get, request.Method);
+                    entered.TrySetResult(true);
+                    return response.Task;
+                }));
+            using var editor = new CentralSectionReplica(secondStore, secondStore.User, School);
+            var ongoing = sync.SyncAsync(new Uri("https://central.example/"), Jwt);
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var id = Guid.NewGuid();
+            await editor.QueueUpsertAsync(id, "INF", "Sciences infirmières", true);
+            response.SetResult(Json(HttpStatusCode.OK,
+                """{"events":[],"next":0,"has_more":false}"""));
+            var result = await ongoing;
+            Assert.False(result.Offline);
+            Assert.Equal(1, result.PendingCount);
+            Assert.Equal(1, sync.Local().PendingCount);
+            Assert.Equal(1, editor.Local().PendingCount);
+            Assert.True(Assert.Single(sync.Local().Sections).IsPending);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
+    public async Task Deux_instances_ne_peuvent_pas_creer_deux_operations_sur_meme_section()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-section-atomic-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var firstStore = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            var secondStore = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            using var first = new CentralSectionReplica(firstStore, firstStore.User, School);
+            using var second = new CentralSectionReplica(secondStore, secondStore.User, School);
+            var section = Guid.NewGuid();
+            async Task<bool> TryQueue(CentralSectionReplica replica)
+            {
+                try
+                {
+                    await replica.QueueUpsertAsync(section, "INF", "Infirmière", true);
+                    return true;
+                }
+                catch (InvalidOperationException) { return false; }
+            }
+            var outcomes = await Task.WhenAll(
+                Task.Run(() => TryQueue(first)),
+                Task.Run(() => TryQueue(second)));
+            Assert.Single(outcomes.Where(x => x));
+            Assert.Equal(1, first.Local().PendingCount);
+            Assert.Equal(1, second.Local().PendingCount);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
     public async Task Pagination_sans_progression_est_refusee_sans_avancer_le_curseur()
     {
         var temp = Path.Combine(Path.GetTempPath(), "scolia-section-empty-page-" +
