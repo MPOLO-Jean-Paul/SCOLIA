@@ -691,6 +691,40 @@ public sealed class CentralSectionReplicaTests
     }
 
     [Fact]
+    public async Task Retrait_du_compte_interdit_si_des_sections_centrales_sont_en_attente_ou_en_conflit()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-section-forget-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            store.RememberAccount("SECRETARIAT");
+            var section = Guid.NewGuid();
+            using var replica = new CentralSectionReplica(store, store.User, School,
+                CentralOrigin, new Handler((request, _) => Task.FromResult(
+                    request.Method == HttpMethod.Post
+                        ? Json(HttpStatusCode.Conflict,
+                            """{"error":"stale_section_revision"}""")
+                        : Json(HttpStatusCode.OK,
+                            """{"events":[],"next":0,"has_more":false}"""))));
+
+            await replica.QueueUpsertAsync(section, "INF", "Infirmière", true);
+            Assert.False(store.ForgetKnownAccount("SECRETARIAT"));
+            Assert.Equal(1, replica.Local().PendingCount);
+
+            Assert.True((await replica.SyncAsync(CentralOrigin, Jwt)).HasConflict);
+            Assert.False(store.ForgetKnownAccount("SECRETARIAT"));
+            Assert.True(replica.Local().HasConflict);
+
+            await replica.DiscardConflictedSectionAsync(section);
+            Assert.Equal(0, replica.Local().PendingCount);
+            Assert.True(store.ForgetKnownAccount("SECRETARIAT"));
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
     public async Task Preproduction_et_production_ne_partagent_pas_une_file_d_attente()
     {
         var temp = Path.Combine(Path.GetTempPath(), "scolia-section-origin-" +
