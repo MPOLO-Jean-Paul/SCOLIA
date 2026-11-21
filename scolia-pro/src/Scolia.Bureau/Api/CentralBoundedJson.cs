@@ -19,16 +19,32 @@ internal static class CentralBoundedJson
             declared > byteLimit)
             throw new InvalidDataException("Réponse centrale trop volumineuse.");
 
-        await using var input = await response.Content.ReadAsStreamAsync(ct);
+        // Avec ResponseHeadersRead, HttpClient.Timeout s'arrête après les
+        // en-têtes. Ce second délai protège contre un flux chunked qui reste
+        // ouvert indéfiniment en envoyant très peu d'octets.
+        using var readingBudget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        readingBudget.CancelAfter(TimeSpan.FromSeconds(20));
         using var buffer = new MemoryStream();
         var chunk = new byte[Math.Min(byteLimit + 1, 4096)];
-        while (true)
+        try
         {
-            var size = await input.ReadAsync(chunk.AsMemory(), ct);
-            if (size == 0) break;
-            if (buffer.Length > byteLimit - size)
-                throw new InvalidDataException("Réponse centrale trop volumineuse.");
-            buffer.Write(chunk.AsSpan(0, size));
+            await using var input = await response.Content.ReadAsStreamAsync(
+                readingBudget.Token);
+            while (true)
+            {
+                var size = await input.ReadAsync(chunk.AsMemory(),
+                    readingBudget.Token);
+                if (size == 0) break;
+                if (buffer.Length > byteLimit - size)
+                    throw new InvalidDataException("Réponse centrale trop volumineuse.");
+                buffer.Write(chunk.AsSpan(0, size));
+            }
+        }
+        catch (OperationCanceledException exception)
+            when (!ct.IsCancellationRequested && readingBudget.IsCancellationRequested)
+        {
+            throw new TaskCanceledException(
+                "Le délai de lecture de la réponse centrale est dépassé.", exception);
         }
 
         using var document = JsonDocument.Parse(
