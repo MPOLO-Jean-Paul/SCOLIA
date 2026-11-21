@@ -294,7 +294,12 @@ public sealed class CentralSectionReplica : IDisposable
                                     current.Pending[conflictIndex] with { HasConflict = true };
                             return current;
                         });
-                        return Status(snapshot, Offline: false, HasConflict: true);
+                        // Les sections indépendantes peuvent être validées
+                        // sans attendre l'arbitrage de celle-ci. Le conflit
+                        // est durablement enregistré et ne sera pas rejoué.
+                        // Continuer aussi le pull : il récupère la version
+                        // centrale qui permettra au responsable de trancher.
+                        continue;
                     }
                     if (result.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized)
                         throw new CentralPairingException((int)result.StatusCode,
