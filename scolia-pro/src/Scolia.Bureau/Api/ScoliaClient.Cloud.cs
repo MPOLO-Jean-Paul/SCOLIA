@@ -97,6 +97,47 @@ public sealed partial class ScoliaClient
         && Uri.TryCreate(access.ServiceUrl, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps;
 
     /// <summary>
+    /// Indique si au moins une opération non déposée dispose d'une délégation
+    /// cloud encore valable. Ne dépend pas d'une connexion au PC principal.
+    /// Aucun accès n'est accordé par la simple présence d'une opération.
+    /// </summary>
+    public static bool HasPendingDelegatedDeposits(Infrastructure.OfflineStore store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+        return store.AccountsAwaitingCloudDeposit()
+            .Any(account => Usable(ReadAccess(store, account)));
+    }
+
+    /// <summary>
+    /// Reprendre les dépôts chiffrés, dans chaque compte ayant déjà reçu sa
+    /// délégation signée. Cette méthode ne valide JAMAIS les paiements :
+    /// l'accusé de dépôt conserve l'outbox jusqu'à validation métier.
+    /// </summary>
+    public async Task<bool> DepositDelegatedAccountsAsync(CancellationToken ct = default)
+    {
+        var store = Offline;
+        if (store is null) return false;
+        var originalUser = store.User;
+        try
+        {
+            foreach (var account in store.AccountsAwaitingCloudDeposit())
+            {
+                ct.ThrowIfCancellationRequested();
+                if (!Usable(ReadAccess(store, account))) continue;
+                store.User = account;
+                await DepositPendingAsync(ct);
+            }
+        }
+        finally
+        {
+            // Évite de faire passer la prochaine opération d'un utilisateur
+            // pour celle d'un autre si le même ScoliaClient reste vivant.
+            store.User = originalUser;
+        }
+        return HasPendingDelegatedDeposits(store);
+    }
+
+    /// <summary>
     /// Dépose, dans l'ordre, les opérations du compte pas encore en sécurité en ligne. S'arrête à la première
     /// difficulté pour ne jamais inverser l'ordre ; tout reste gardé sur l'appareil.
     /// </summary>
