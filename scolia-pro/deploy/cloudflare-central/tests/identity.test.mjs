@@ -71,6 +71,22 @@ function fakeDb(account) {
                   return { meta: { changes: 1 } };
                 }
                 if (sql.includes("DELETE FROM cloud_auth_attempts")) {
+                  if (sql.includes("JOIN cloud_device_invitations")) {
+                    // La vérification finale doit être atomique et porter sur
+                    // l'empreinte, la révision, les droits et la validité du QR.
+                    assert.match(sql, /password_hash = \?/);
+                    assert.match(sql, /permission_revision = \?/);
+                    assert.match(sql, /expires_at > unixepoch\(\)/);
+                    assert.match(sql, /u\.enabled = 1/);
+                    assert.match(sql, /lockout_until = 0/);
+                    assert.deepEqual(params, [
+                      account.school_id, account.id, inviteId,
+                      account.login_normalized, account.password_hash,
+                      account.permission_revision,
+                    ]);
+                    if (state.credentialsChangedDuringHash || state.invitationRevokedDuringHash)
+                      return { meta: { changes: 0 } };
+                  }
                   state.failures = 0;
                   state.locked = false;
                   return { meta: { changes: 1 } };
@@ -232,4 +248,23 @@ test("limiteur de provenance : limite également les QR inconnus", async () => {
   assert.equal(response.status, 429);
   assert.equal(calls.length, 0);
   assert.match(state.lastSourceLimitKey, /^[A-Za-z0-9_-]{43}$/);
+});
+
+test("un mot de passe remplacé pendant PBKDF2 empêche l'émission d'une preuve", async () => {
+  const { env, state, calls } = fakeDb(await fixture());
+  state.credentialsChangedDuringHash = true;
+  const response = await request(env);
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { error: "invalid_credentials_or_invitation" });
+  assert.equal(state.failures, 1);
+  assert.ok(calls.some(x => x.sql.includes("JOIN cloud_device_invitations") &&
+    x.sql.includes("DELETE FROM cloud_auth_attempts")));
+});
+
+test("une invitation annulée pendant le calcul PBKDF2 empêche l'émission de preuve", async () => {
+  const { env, state } = fakeDb(await fixture());
+  state.invitationRevokedDuringHash = true;
+  const response = await request(env);
+  assert.equal(response.status, 401);
+  assert.equal(state.failures, 1);
 });
