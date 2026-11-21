@@ -131,9 +131,9 @@ public sealed class CentralSectionReplicaTests
                             await request.Content!.ReadAsStringAsync(ct));
                         var op = requestJson.RootElement.GetProperty("operation_id").GetString();
                         return Json(HttpStatusCode.Created,
-                            "{\\"operation_id\\":\\"" + op + "\\",\\"section_id\\":\\"" +
+                            "{\"operation_id\":\"" + op + "\",\"section_id\":\"" +
                             section.ToString("D") +
-                            "\\",\\"status\\":\\"applied\\",\\"revision\\":15,\\"replayed\\":false}");
+                            "\",\"status\":\"applied\",\"revision\":15,\"replayed\":false}");
                     }
                     throw new HttpRequestException("Réseau interrompu après l'encaissement D1");
                 })))
