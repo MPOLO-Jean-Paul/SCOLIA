@@ -1360,7 +1360,8 @@ public sealed class ShellViewModel : Observable
         catch (Exception exception) when (exception is HttpRequestException or
             TaskCanceledException or IOException or InvalidDataException or
             System.Security.Cryptography.CryptographicException or
-            UnauthorizedAccessException or InvalidOperationException)
+            UnauthorizedAccessException or InvalidOperationException or
+            ArgumentException or System.Text.Json.JsonException)
         {
             System.Diagnostics.Trace.WriteLine(
                 $"SCOLIA central : reprise différée ({exception.GetType().Name}).");
