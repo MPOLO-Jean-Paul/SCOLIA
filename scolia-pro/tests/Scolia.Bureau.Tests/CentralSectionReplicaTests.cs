@@ -27,6 +27,20 @@ public sealed class CentralSectionReplicaTests
         Content = new StringContent(data, Encoding.UTF8, "application/json"),
     };
 
+    // StreamContent ne peut pas fournir de Content-Length quand CanSeek=false.
+    // Les limites de lecture doivent donc fonctionner sur un vrai flux HTTP
+    // fragmenté, pas seulement sur une déclaration d'en-tête fiable.
+    private sealed class NoLengthStream(byte[] bytes) : MemoryStream(bytes)
+    {
+        public override bool CanSeek => false;
+    }
+
+    private static HttpResponseMessage Chunked(HttpStatusCode status, string data) =>
+        new(status)
+        {
+            Content = new StreamContent(new NoLengthStream(Encoding.UTF8.GetBytes(data))),
+        };
+
     [Fact]
     public async Task File_locale_survit_a_une_coupure_et_aux_nouvelles_instances()
     {
@@ -312,6 +326,65 @@ public sealed class CentralSectionReplicaTests
             Assert.Equal(9, synced.Revision);
             Assert.Equal("ACC2", Assert.Single(synced.Sections).Code);
             Assert.Equal(2, postCount);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
+    public async Task Lot_D1_sans_Content_Length_trop_grand_est_refuse_avant_chargement_complet()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-bounded-stream-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            using var replica = new CentralSectionReplica(store, store.User, School,
+                CentralOrigin, new Handler((request, _) =>
+                {
+                    Assert.Equal(HttpMethod.Get, request.Method);
+                    return Task.FromResult(Chunked(HttpStatusCode.OK,
+                        "{\"events\":[\"" + new string('x', 110_000) + "\"]}"));
+                }));
+            await Assert.ThrowsAsync<InvalidDataException>(() =>
+                replica.SyncAsync(CentralOrigin, Jwt));
+            Assert.Equal(0, replica.Local().Revision);
+            Assert.Empty(replica.Local().Sections);
+            // Le cache reste utilisable même si le serveur répond abusivement.
+            await replica.QueueUpsertAsync(Guid.NewGuid(), "INF",
+                "Section locale préservée", true);
+            Assert.Equal(1, replica.Local().PendingCount);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
+    public async Task Conflit_409_chunked_volumineux_ne_contamine_pas_le_cache_local()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-bounded-conflict-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            using var replica = new CentralSectionReplica(store, store.User, School,
+                CentralOrigin, new Handler((request, _) =>
+                {
+                    return Task.FromResult(request.Method == HttpMethod.Post
+                        ? Chunked(HttpStatusCode.Conflict,
+                            "{\"error\":\"" + new string('x', 4096) + "\"}")
+                        : Json(HttpStatusCode.OK,
+                            """{"events":[],"next":0,"has_more":false}"""));
+                }));
+            var id = Guid.NewGuid();
+            var op = await replica.QueueUpsertAsync(id, "INF", "Infirmière", true);
+            var result = await replica.SyncAsync(CentralOrigin, Jwt);
+            Assert.True(result.HasConflict);
+            Assert.False(result.Offline);
+            Assert.Equal(1, result.PendingCount);
+            var conflict = Assert.Single(replica.Conflicts());
+            Assert.Equal("conflict", conflict.ConflictCode);
+            Assert.Equal(op, conflict.OperationId);
         }
         finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
     }
