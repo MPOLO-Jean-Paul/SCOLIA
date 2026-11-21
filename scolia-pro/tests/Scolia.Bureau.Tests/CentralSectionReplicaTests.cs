@@ -330,6 +330,57 @@ public sealed class CentralSectionReplicaTests
         finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
     }
 
+    [Theory]
+    [InlineData("empty", "INF", "Infirmière")]
+    [InlineData("malformed", "INF", "Infirmière")]
+    [InlineData("upper", "INF", "Infirmière")]
+    [InlineData("valid", "inf", "Infirmière")]
+    [InlineData("valid", "INF", " Infirmière ")]
+    [InlineData("valid", "INF", "Infirmière\\nInterdite")]
+    public async Task Evenements_D1_invalides_ne_contaminent_jamais_SQLite(
+        string idKind, string code, string name)
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-section-invalid-event-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            var candidate = Guid.NewGuid().ToString("D");
+            var sectionId = idKind switch
+            {
+                "empty" => Guid.Empty.ToString("D"),
+                "malformed" => new string('z', 36),
+                "upper" => candidate.ToUpperInvariant(),
+                _ => candidate,
+            };
+            using var replica = new CentralSectionReplica(store, store.User, School,
+                CentralOrigin, new Handler((request, _) =>
+                {
+                    Assert.Equal(HttpMethod.Get, request.Method);
+                    return Task.FromResult(Json(HttpStatusCode.OK,
+                        System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            events = new[]
+                            {
+                                new
+                                {
+                                    revision = 1, section_id = sectionId,
+                                    code, name, is_active = 1,
+                                },
+                            },
+                            next = 1, has_more = false,
+                        })));
+                }));
+            await Assert.ThrowsAsync<InvalidDataException>(
+                () => replica.SyncAsync(CentralOrigin, Jwt));
+            Assert.Equal(0, replica.Local().Revision);
+            Assert.Empty(replica.Local().Sections);
+            Assert.Equal(0, replica.Local().PendingCount);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
     [Fact]
     public async Task Lot_D1_sans_Content_Length_trop_grand_est_refuse_avant_chargement_complet()
     {
