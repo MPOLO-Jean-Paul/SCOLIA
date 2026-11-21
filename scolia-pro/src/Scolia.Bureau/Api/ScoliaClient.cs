@@ -327,26 +327,47 @@ public sealed partial class ScoliaClient : IDisposable
             var etag = snapshot is { } old
                 ? "\"" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(old.Json))) + "\""
                 : null;
-            using var response = await ReadRawAsync(path, etag, deadline.Token);
-            if (response.StatusCode == HttpStatusCode.NoContent) return default!;
-            if (response.StatusCode == HttpStatusCode.NotModified && snapshot is { } unchanged)
+            // Une lecture GET est idempotente : une courte coupure du relais WSS
+            // pendant l'en-tête OU le corps de la réponse peut être retentée une
+            // seule fois. Ne JAMAIS appliquer cette règle aux écritures POST/PUT.
+            // Les délais existants (6 s en liaison distante) restent la limite ;
+            // les droits 401/403 et toute erreur métier ne sont pas retentés.
+            var sameSnapshot = false;
+            for (var attempt = 0; ; attempt++)
             {
-                text = unchanged.Json;
-                // HTTP 304 : aucune donnée métier n'a traversé le relais.
-                if (canCache && sourceStore is not null)
-                    sourceStore.TouchPageFor(sourceUser, path, text);
-            }
-            else
-            {
-                text = await response.Content.ReadAsStringAsync(deadline.Token);
-                if (canCache && sourceStore is not null)
+                try
                 {
-                    var previous = snapshot?.Json;
-                    if (string.Equals(previous, text, StringComparison.Ordinal))
-                        sourceStore.TouchPageFor(sourceUser, path, text);
+                    using var response = await ReadRawAsync(path, etag, deadline.Token);
+                    if (response.StatusCode == HttpStatusCode.NoContent) return default!;
+                    if (response.StatusCode == HttpStatusCode.NotModified && snapshot is { } unchanged)
+                    {
+                        text = unchanged.Json;
+                        sameSnapshot = true;
+                    }
                     else
-                        await Task.Run(() => sourceStore.SavePageFor(sourceUser, path, text), ct);
+                    {
+                        text = await response.Content.ReadAsStringAsync(deadline.Token);
+                        sameSnapshot = string.Equals(snapshot?.Json, text, StringComparison.Ordinal);
+                    }
+                    break;
                 }
+                catch (Exception ex) when (attempt == 0 && IsLongDistance
+                    && !deadline.IsCancellationRequested && !ct.IsCancellationRequested
+                    && (ex is HttpRequestException or IOException
+                        || ex is ApiException { Status: 502 or 503 or 504 }))
+                {
+                    // Éphémère : la première connexion WSS peut mourir entre
+                    // deux trames. Réessayer avec un nouveau socket et le même
+                    // cookie, sans faire disparaître l'outbox ni bloquer l'UI.
+                    await Task.Delay(TimeSpan.FromMilliseconds(120), deadline.Token);
+                }
+            }
+            if (canCache && sourceStore is not null)
+            {
+                if (sameSnapshot)
+                    sourceStore.TouchPageFor(sourceUser, path, text);
+                else
+                    await Task.Run(() => sourceStore.SavePageFor(sourceUser, path, text), ct);
             }
         }
         catch (Exception ex) when (IsDisconnected(ex, ct))
