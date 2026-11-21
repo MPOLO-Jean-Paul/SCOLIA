@@ -122,12 +122,24 @@ public sealed class OfflineStore
     // Portée : emplacement du serveur (root), compte (haché), révision et droits.
     // Seules les ressources obtenues intégralement sont marquées, APRÈS la
     // sauvegarde réussie dans SQLite chiffré. Aucune liste d'élèves n'est exportée.
-    private static string PreparedPrefixFor(string user) =>
-        "preparation:v3:" + Convert.ToHexString(
-            SHA256.HashData(Encoding.UTF8.GetBytes(user.Trim().ToUpperInvariant()))) + ":";
-    private static string PreparedRevisionKeyFor(string user) => PreparedPrefixFor(user) + "revision";
-    private static string PreparedResourceKeyFor(string user, string path) =>
-        PreparedPrefixFor(user) + "done:" + Convert.ToHexString(
+    // Cloisonner les révisions de préparation par usage : une session disposant
+    // à la fois de droits scolaires et enseignants doit pouvoir répliquer ses
+    // deux espaces sans invalider le curseur de l'autre.
+    // v4 démarre une validation fraîche, sans effacer aucun cliché ni journal.
+    private static string PreparedScopeFor(string revision) =>
+        revision.EndsWith("|enseignant", StringComparison.Ordinal) ? "enseignant" :
+        revision.EndsWith("|finances", StringComparison.Ordinal) ? "finances" : "dossiers";
+
+    private static string PreparedPrefixFor(string user, string revision) =>
+        "preparation:v4:" + Convert.ToHexString(
+            SHA256.HashData(Encoding.UTF8.GetBytes(user.Trim().ToUpperInvariant()))) +
+        ":" + PreparedScopeFor(revision) + ":";
+
+    private static string PreparedRevisionKeyFor(string user, string revision) =>
+        PreparedPrefixFor(user, revision) + "revision";
+
+    private static string PreparedResourceKeyFor(string user, string revision, string path) =>
+        PreparedPrefixFor(user, revision) + "done:" + Convert.ToHexString(
             SHA256.HashData(Encoding.UTF8.GetBytes(path)));
 
     /// <summary>
@@ -141,9 +153,9 @@ public sealed class OfflineStore
             throw new ArgumentException("Compte et révision de préparation requis.");
         lock (gate)
         {
-            if (database.Read(PreparedRevisionKeyFor(user)) == revision) return;
-            database.DeletePrefix(PreparedPrefixFor(user));
-            database.Write(PreparedRevisionKeyFor(user), revision);
+            if (database.Read(PreparedRevisionKeyFor(user, revision)) == revision) return;
+            database.DeletePrefix(PreparedPrefixFor(user, revision));
+            database.Write(PreparedRevisionKeyFor(user, revision), revision);
         }
     }
 
@@ -153,8 +165,8 @@ public sealed class OfflineStore
     {
         if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(path) ||
             string.IsNullOrWhiteSpace(revision)) return false;
-        return database.Read(PreparedRevisionKeyFor(user)) == revision
-            && database.Read(PreparedResourceKeyFor(user, path)) == "ok";
+        return database.Read(PreparedRevisionKeyFor(user, revision)) == revision
+            && database.Read(PreparedResourceKeyFor(user, revision, path)) == "ok";
     }
 
     /// <summary>Écriture durable après réception complète ; l'arrêt du programme,
@@ -165,8 +177,8 @@ public sealed class OfflineStore
             string.IsNullOrWhiteSpace(path)) return;
         lock (gate)
         {
-            if (database.Read(PreparedRevisionKeyFor(user)) == revision)
-                database.Write(PreparedResourceKeyFor(user, path), "ok");
+            if (database.Read(PreparedRevisionKeyFor(user, revision)) == revision)
+                database.Write(PreparedResourceKeyFor(user, revision, path), "ok");
         }
     }
 
