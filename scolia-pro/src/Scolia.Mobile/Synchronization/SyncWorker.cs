@@ -47,8 +47,8 @@ public sealed class SyncWorker : Worker
     public static void ScheduleOnResume(Context context)
     {
         var saved = ConnectionStore.Load();
-        if (saved?.Mode is not (ConnectionSettings.Remote or ConnectionSettings.Internet) &&
-            !HasLocalCentralSession(saved)) return;
+        if (!ConnectionStore.ShouldScheduleBackgroundSync(
+                saved?.Mode, HasLocalCentralSession(saved))) return;
         lock (ResumeGate)
         {
             var now = DateTime.UtcNow;
@@ -71,8 +71,8 @@ public sealed class SyncWorker : Worker
     public static void SchedulePending(Context context)
     {
         var saved = ConnectionStore.Load();
-        if (saved?.Mode is not (ConnectionSettings.Remote or ConnectionSettings.Internet) &&
-            !HasLocalCentralSession(saved)) return;
+        if (!ConnectionStore.ShouldScheduleBackgroundSync(
+                saved?.Mode, HasLocalCentralSession(saved))) return;
         var constraints = new Constraints.Builder()
             .SetRequiredNetworkType(NetworkType.Connected)!.Build();
         var once = new OneTimeWorkRequest.Builder(typeof(SyncWorker))
