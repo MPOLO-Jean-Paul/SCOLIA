@@ -15,9 +15,13 @@ namespace Scolia.Bureau.Api;
 public sealed class CentralPairingClient : IDisposable
 {
     private readonly HttpClient http;
+    private readonly string keyFolder;
 
-    public CentralPairingClient(HttpMessageHandler? handler = null)
+    public CentralPairingClient(HttpMessageHandler? handler = null, string? keyFolder = null)
     {
+        this.keyFolder = keyFolder ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "SCOLIA", "central-keys");
         http = new HttpClient(handler ?? new SocketsHttpHandler
         {
             UseCookies = false,
@@ -59,7 +63,7 @@ public sealed class CentralPairingClient : IDisposable
             throw new ArgumentException("Invitation, compte ou appareil invalide.");
 
         ct.ThrowIfCancellationRequested();
-        using var signingKey = LoadOrCreateDeviceKey(origin, deviceId, userName);
+        using var signingKey = LoadOrCreateDeviceKey(origin, deviceId, userName, keyFolder);
         var parameters = signingKey.ExportParameters(false);
         var publicKey = new
         {
@@ -140,15 +144,13 @@ public sealed class CentralPairingClient : IDisposable
     private static string Base64Url(ReadOnlySpan<byte> bytes) =>
         Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 
-    private static ECDsa LoadOrCreateDeviceKey(Uri origin, string deviceId, string userName)
+    private static ECDsa LoadOrCreateDeviceKey(Uri origin, string deviceId, string userName, string folder)
     {
         // Le nom du fichier est anonyme, unique à l'origine, l'appareil et le
         // compte. Le contenu est protégé par DPAPI Windows / Keystore Android.
         var keyName = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
             origin.AbsoluteUri + "|" + deviceId + "|" + userName.ToUpperInvariant())));
-        var path = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "SCOLIA", "central-keys", keyName + ".key");
+        var path = Path.Combine(folder, keyName + ".key");
         var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         try
         {
