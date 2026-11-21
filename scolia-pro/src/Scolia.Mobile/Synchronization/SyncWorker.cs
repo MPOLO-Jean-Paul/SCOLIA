@@ -27,7 +27,7 @@ public sealed class SyncWorker : Worker
         {
             var store = new OfflineStore(
                 ConnectionStore.CacheAddress(ConnectionStore.LocalAddress));
-            var mailbox = ScoliaClient.HasPendingDelegatedDeposits(store);
+            var mailbox = ScoliaClient.HasPendingDelegatedMailboxWork(store);
             var central = false;
             if (store.LastAccount is { Length: > 0 } account &&
                 store.CanSyncCentralInBackgroundFor(account))
@@ -227,7 +227,10 @@ public sealed class SyncWorker : Worker
             // autorisées auprès de la console HTTPS. L'outbox locale n'est jamais
             // soldée sur simple accusé de stockage ; seul le serveur la valide.
             if (!IsStopped && !timeout.IsCancellationRequested)
+            {
                 await api.DepositDelegatedAccountsAsync(timeout.Token);
+                await api.ReconcileDelegatedAccountsAsync(timeout.Token);
+            }
             return Result.InvokeRetry();
         }
         // Le jumelage donne seulement accès au serveur, jamais une session de compte.
@@ -313,6 +316,9 @@ public sealed class SyncWorker : Worker
         // ne les valide pas et ne produit aucun reçu définitif.
         var mailboxNeedsRetry = await cloudApi.DepositDelegatedAccountsAsync(
             timeout.Token);
+        // Relever aussi les issues des dépôts précédents, même sans
+        // nouvelle écriture ni accès au serveur historique.
+        await cloudApi.ReconcileDelegatedAccountsAsync(timeout.Token);
         return centralNeedsRetry || mailboxNeedsRetry
             ? Result.InvokeRetry() : Result.InvokeSuccess();
     }
