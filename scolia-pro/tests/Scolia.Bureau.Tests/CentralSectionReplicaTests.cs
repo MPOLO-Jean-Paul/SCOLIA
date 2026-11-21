@@ -112,6 +112,53 @@ public sealed class CentralSectionReplicaTests
     }
 
     [Fact]
+    public async Task Confirmation_d1_puis_coupure_preserve_la_section_validee_sur_disque()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "scolia-section-ack-" + Guid.NewGuid().ToString("N"));
+        var section = Guid.NewGuid();
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), temp)
+                { User = "SECRETARIAT" };
+            var calls = 0;
+            using (var replica = new CentralSectionReplica(store, store.User, School,
+                new Handler(async (request, ct) =>
+                {
+                    calls++;
+                    if (request.Method == HttpMethod.Post)
+                    {
+                        using var requestJson = System.Text.Json.JsonDocument.Parse(
+                            await request.Content!.ReadAsStringAsync(ct));
+                        var op = requestJson.RootElement.GetProperty("operation_id").GetString();
+                        return Json(HttpStatusCode.Created,
+                            "{\\"operation_id\\":\\"" + op + "\\",\\"section_id\\":\\"" +
+                            section.ToString("D") +
+                            "\\",\\"status\\":\\"applied\\",\\"revision\\":15,\\"replayed\\":false}");
+                    }
+                    throw new HttpRequestException("Réseau interrompu après l'encaissement D1");
+                })))
+            {
+                await replica.QueueUpsertAsync(section, "INF", "Sciences infirmières", true);
+                var incomplete = await replica.SyncAsync(new Uri("https://central.example/"), Jwt);
+                Assert.True(incomplete.Offline);
+                Assert.Equal(0, incomplete.PendingCount);
+                Assert.Equal(0, incomplete.Revision); // le journal n'a pas été lu
+                var confirmed = Assert.Single(incomplete.Sections);
+                Assert.Equal("INF", confirmed.Code);
+                Assert.Equal(15, confirmed.Revision);
+                Assert.False(confirmed.IsPending);
+                Assert.Equal(2, calls);
+            }
+            using var reopened = new CentralSectionReplica(store, store.User, School);
+            var saved = reopened.Local();
+            Assert.Empty(saved.Sections.Where(x => x.IsPending));
+            Assert.Equal(0, saved.PendingCount);
+            Assert.Equal(15, Assert.Single(saved.Sections).Revision);
+        }
+        finally { if (Directory.Exists(temp)) Directory.Delete(temp, true); }
+    }
+
+    [Fact]
     public async Task Reponse_409_conserve_l_operation_et_signale_un_conflit()
     {
         var temp = Path.Combine(Path.GetTempPath(), "scolia-section-conflict-" + Guid.NewGuid().ToString("N"));
