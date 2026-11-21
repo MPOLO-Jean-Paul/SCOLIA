@@ -313,9 +313,13 @@ public sealed class CentralSectionReplica : IDisposable
         return local with { Offline = false, HasMorePages = true };
     }
 
-    private static CentralSectionLocalState Status(Snapshot snapshot, bool Offline,
+    private CentralSectionLocalState Status(Snapshot snapshot, bool Offline,
         bool HasConflict, bool HasMorePages = false)
     {
+        // Une réponse HTTP 503, un timeout ou un 409 peut arriver APRÈS
+        // qu'un autre compte s'est connecté. Ne jamais rendre à ce compte
+        // le cliché de l'utilisateur précédent, même sur le chemin d'erreur.
+        CheckUser();
         var view = snapshot.Sections.ToDictionary(x => x.Id, x => x,
             StringComparer.OrdinalIgnoreCase);
         foreach (var pending in snapshot.Pending)
