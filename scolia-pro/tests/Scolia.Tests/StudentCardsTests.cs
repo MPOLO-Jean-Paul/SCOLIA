@@ -47,6 +47,36 @@ public sealed class StudentCardRulesTests
     }
 
     [Fact]
+    public void Chaque_promotion_a_une_couleur_unique_y_compris_dans_une_meme_filiere()
+    {
+        var promotions = new[] { "ACC1", "ACC2", "ACC3", "INF1", "INF2", "INF3" };
+        var bands = StudentCardRules.PromotionBandColors(promotions);
+        Assert.Equal(6, bands.Count);
+        Assert.Equal(6, bands.Values.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.NotEqual(bands["ACC1"], bands["ACC2"]);
+        Assert.NotEqual(bands["INF1"], bands["INF3"]);
+        Assert.Equal(bands.OrderBy(x => x.Key).Select(x => x.Value),
+            StudentCardRules.PromotionBandColors(promotions.Reverse())
+                .OrderBy(x => x.Key).Select(x => x.Value));
+        Assert.All(bands.Values, color => Assert.Matches("^#[0-9A-F]{6}$", color));
+
+        // Deux promotions pouvant porter un code visible identique dans
+        // deux cycles sont identifiees par leur ID unique.
+        var ids = new[] { Guid.NewGuid().ToString("D"), Guid.NewGuid().ToString("D") };
+        var sameVisibleCode = StudentCardRules.PromotionBandColors(ids);
+        Assert.NotEqual(sameVisibleCode[ids[0]], sameVisibleCode[ids[1]]);
+    }
+
+    [Fact]
+    public void Palette_extensible_ne_repete_pas_la_bande_apres_douze_promotions()
+    {
+        var promotions = Enumerable.Range(1, 60).Select(i => $"CL{i:00}").ToList();
+        var bands = StudentCardRules.PromotionBandColors(promotions);
+        Assert.Equal(60, bands.Count);
+        Assert.Equal(60, bands.Values.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+    }
+
+    [Fact]
     public void Only_active_students_are_eligible_unless_left_ones_are_requested()
     {
         Assert.True(StudentCardRules.Eligible(EnrollmentStatus.Actif, includeLeft: false));
@@ -108,6 +138,10 @@ public sealed class StudentCardsApiTests : IDisposable
             identity = new { lastName, middleName = "Kabeya", firstName = "Grace", birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14), gender = "F", guardianPhone = "0812345678", guardianName = "Parent" },
             promotionId, confirmDuplicate = false,
         }).Ok();
+        // Une carte n'affiche jamais le matricule technique : elle requiert
+        // le code deja attribue dans le registre de deliberation.
+        await admin.Post("/api/deliberation/codes/attribution",
+            new { promotionId }).Ok();
         return student.GetProperty("enrollments")[0].GetProperty("id").GetString()!;
     }
 
@@ -148,6 +182,70 @@ public sealed class StudentCardsApiTests : IDisposable
             new { enrollmentIds = new[] { student }, month = 9, year = 2026, copies = 1, includeLeft = false }).Fail();
         Assert.Equal(HttpStatusCode.BadRequest, invalid.Status);
         Assert.Contains("logo", invalid.Body.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Champs_matricule_et_carte_suivent_le_code_anonyme_actif_sans_alterer_le_dossier()
+    {
+        var admin = await app.InstalledAdmin();
+        await ConfigureSchoolLogoAsync(admin);
+        var promotion = await PromotionAsync(admin);
+        var student = await admin.Post("/api/apprenants", new
+        {
+            identity = new
+            {
+                lastName = "MUKENDI", middleName = "KABEYA",
+                firstName = "Grace", gender = "F",
+                birthDate = new DateOnly(2007, 3, 14),
+                birthPlace = "Lubumbashi", guardianPhone = "0812345678",
+            },
+            promotionId = promotion, confirmDuplicate = false,
+        }).Ok();
+        var studentId = student.GetProperty("id").GetString()!;
+        var enrollmentId = student.GetProperty("enrollments")[0].GetProperty("id").GetString()!;
+
+        // L'ancien matricule reste interne ; aucun code n'est invente en GET.
+        Assert.Equal("À ATTRIBUER", student.GetProperty("matricule").GetString());
+        var before = (await admin.GetAsync($"/api/cartes/candidats?promotionId={promotion}").Ok())
+            .EnumerateArray().Single();
+        Assert.False(before.GetProperty("hasAnonymousCode").GetBoolean());
+        Assert.False(before.GetProperty("eligible").GetBoolean());
+        Assert.Equal("À ATTRIBUER", before.GetProperty("matricule").GetString());
+
+        await admin.Post("/api/deliberation/codes/attribution",
+            new { promotionId = promotion }).Ok();
+        await admin.Put($"/api/deliberation/codes/{enrollmentId}",
+            new { code = "itm-26-ab12", reason = "Code officiel de l'etablissement" }).Ok();
+
+        var codes = (await admin.GetAsync($"/api/deliberation/codes?promotionId={promotion}").Ok())
+            .EnumerateArray().Single();
+        Assert.Equal("ITM-26-AB12", codes.GetProperty("code").GetString());
+        var after = (await admin.GetAsync($"/api/cartes/candidats?promotionId={promotion}").Ok())
+            .EnumerateArray().Single();
+        Assert.True(after.GetProperty("hasAnonymousCode").GetBoolean());
+        Assert.True(after.GetProperty("eligible").GetBoolean());
+        Assert.Equal("ITM-26-AB12", after.GetProperty("matricule").GetString());
+        var detail = await admin.GetAsync($"/api/apprenants/{studentId}").Ok();
+        Assert.Equal("ITM-26-AB12", detail.GetProperty("matricule").GetString());
+        var search = await admin.GetAsync("/api/apprenants?q=ITM-26-AB12").Ok();
+        Assert.Contains(search.GetProperty("items").EnumerateArray(),
+            item => item.GetProperty("matricule").GetString() == "ITM-26-AB12");
+
+        // La reference des comptes financiers n'est jamais remplacee.
+        var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
+        Assert.StartsWith("INF1", account.GetProperty("matricule").GetString(),
+            StringComparison.Ordinal);
+
+        using var response = await admin.Post("/api/cartes/export",
+            new { enrollmentIds = new[] { enrollmentId }, month = 9,
+                year = 2026, copies = 1, includeLeft = false, format = "docx" });
+        Assert.True(response.IsSuccessStatusCode);
+        using var zip = new System.IO.Compression.ZipArchive(
+            new MemoryStream(await response.Content.ReadAsByteArrayAsync()));
+        var word = zip.GetEntry("word/document.xml")!;
+        using var reader = new StreamReader(word.Open());
+        var xml = await reader.ReadToEndAsync();
+        Assert.Contains("MATRICULE : ITM-26-AB12", xml, StringComparison.Ordinal);
     }
 
     [Fact]

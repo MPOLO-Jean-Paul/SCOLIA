@@ -55,7 +55,9 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         foreach (var term in TextKey.Normalize(search).Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
             var t = term;
-            query = query.Where(x => x.s.SearchText.Contains(t));
+            query = query.Where(x => x.s.SearchText.Contains(t) ||
+                db.AnonymousCodes.Any(c => c.EnrollmentId == x.e.Id &&
+                    c.AcademicYearId == year.Id && c.IsActive && c.Code.Contains(t)));
         }
         var ordered = query.OrderBy(x => x.p.Code).ThenBy(x => x.s.LastName).ThenBy(x => x.s.MiddleName).ThenBy(x => x.s.FirstName);
         var filter = PaymentFilter.Parse(payment);
@@ -82,11 +84,20 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             total = kept.Count;
             rows = kept.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         }
+        // Le code anonyme actif de cette inscription est l'identifiant affiche
+        // dans les champs « Matricule ». La reference interne historique reste
+        // preservee pour les paiements, recus et autres annees scolaires.
+        var enrollmentIds = rows.Select(r => r.e.Id).ToList();
+        var activeCodes = await db.AnonymousCodes.AsNoTracking()
+            .Where(c => c.AcademicYearId == year.Id && c.IsActive && enrollmentIds.Contains(c.EnrollmentId))
+            .Select(c => new { c.EnrollmentId, c.Code })
+            .ToDictionaryAsync(c => c.EnrollmentId, c => c.Code, ct);
         var items = rows.Select(r =>
         {
             var entry = map.GetValueOrDefault(r.e.Id);
             var account = entry?.Account;
-            return new StudentListItem(r.s.Id, r.e.Id, r.s.Matricule, r.s.LastName, r.s.MiddleName, r.s.FirstName, r.s.Gender.ToString(), r.p.Code,
+            return new StudentListItem(r.s.Id, r.e.Id,
+                activeCodes.GetValueOrDefault(r.e.Id) ?? "À ATTRIBUER", r.s.LastName, r.s.MiddleName, r.s.FirstName, r.s.Gender.ToString(), r.p.Code,
                 Labels.Of(r.e.Status), r.s.GuardianPhone, account?.Balance ?? 0, account?.Overdue ?? 0,
                 entry is null ? null : CoverageText.Of(entry.Coverage));
         }).ToList();
@@ -103,7 +114,12 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
                                  orderby y.StartDate descending
                                  select new EnrollmentDto(e.Id, y.Id, y.Label, p.Id, p.Code, p.Name, e.EnrolledOn, Labels.Of(e.Status), e.ExitDate, e.ExitReason, e.IsReEnrollment))
                                  .ToListAsync(ct);
-        return new StudentDto(s.Id, s.Matricule, s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(), s.BirthDate, s.BirthPlace, s.Nationality,
+        var latestEnrollment = enrollments.FirstOrDefault();
+        var activeCode = latestEnrollment is null ? null :
+            await db.AnonymousCodes.AsNoTracking()
+                .Where(c => c.EnrollmentId == latestEnrollment.Id && c.IsActive)
+                .Select(c => c.Code).FirstOrDefaultAsync(ct);
+        return new StudentDto(s.Id, activeCode ?? "À ATTRIBUER", s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(), s.BirthDate, s.BirthPlace, s.Nationality,
             s.Address, s.Phone, s.Email, s.GuardianName, s.GuardianRelation, s.GuardianPhone, s.GuardianPhone2, s.Notes, s.Photo is { Length: > 0 },
             enrollments, s.Version, s.PermanentNumber);
     }
@@ -187,6 +203,9 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             var duplicates = await FindDuplicatesAsync(student.LastName, student.MiddleName, student.FirstName, null, ct);
             if (duplicates.Count > 0) throw new DuplicateStudentException(duplicates);
         }
+        // Conserver la référence technique historique : reçus et paiements
+        // continuent de s'y rattacher. Les écrans utilisent le code anonyme
+        // actif de l'inscription plutôt que de révéler cette référence.
         var prefix = promotion.Code;
         var taken = await db.Students.Where(s => s.Matricule.StartsWith(prefix)).Select(s => s.Matricule).ToListAsync(ct);
         student.Matricule = MatriculeGenerator.Next(prefix, taken);
