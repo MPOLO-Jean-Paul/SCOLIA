@@ -54,6 +54,8 @@ public sealed class DesktopPolishTests
     public void Roboto_est_proposee_sur_le_bureau_sans_installer_de_police_Windows()
     {
         Assert.Contains(Preferences.Fonts, p => p.Value == "roboto" && p.Label == "Roboto");
+        // Aucune ligne sans nom dans la liste des polices.
+        Assert.DoesNotContain(Preferences.Fonts, p => string.IsNullOrWhiteSpace(p.Label));
     }
 
     [Fact]

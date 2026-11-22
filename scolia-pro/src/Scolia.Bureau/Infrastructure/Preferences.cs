@@ -68,7 +68,8 @@ public sealed class Preferences : Observable
     public static IReadOnlyList<ChoiceItem> Fonts => Platform.IsMobile ? (mobileFonts ??= FontsFor(true)) : (desktopFonts ??= FontsFor(false));
     private static IReadOnlyList<ChoiceItem>? mobileFonts, desktopFonts;
     private static List<ChoiceItem> FontsFor(bool mobile) => FontTable
-        .Where(f => !mobile || f.OnPhone)
+        // Chaque appareil ne montre que les polices qui portent un nom chez lui : pas de ligne vide.
+        .Where(f => mobile ? f.OnPhone && f.Mobile.Length > 0 : f.Desktop.Length > 0)
         .Select(f => new ChoiceItem(f.Key, mobile ? f.Mobile : f.Desktop)).ToList();
 
     /// <summary>Famille de caractères d'une police, pour l'appliquer ou la montrer dans un aperçu.</summary>
