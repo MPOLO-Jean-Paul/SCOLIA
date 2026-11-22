@@ -19,8 +19,9 @@ const fail = (status, code) => response({ error: code }, status);
 function validate(body) {
   if (!body || typeof body !== "object" || Array.isArray(body) ||
       Object.keys(body).sort().join(",") !==
-      "code,expected_revision,is_active,name,operation_id,promotion_id,section_id" ||
-      !validId(body.promotion_id) || !validId(body.section_id) ||
+      "academic_year_id,code,expected_revision,is_active,name,operation_id,promotion_id,section_id" ||
+      !validId(body.promotion_id) || !validId(body.academic_year_id) ||
+      !(body.section_id === null || validId(body.section_id)) ||
       !validId(body.operation_id) ||
       typeof body.code !== "string" || !validCode.test(body.code) ||
       typeof body.name !== "string" || body.name !== body.name.trim() ||
@@ -31,7 +32,8 @@ function validate(body) {
     return null;
   return {
     promotion_id: body.promotion_id.toLowerCase(),
-    section_id: body.section_id.toLowerCase(),
+    academic_year_id: body.academic_year_id.toLowerCase(),
+    section_id: body.section_id === null ? null : body.section_id.toLowerCase(),
     operation_id: body.operation_id.toLowerCase(),
     code: body.code,
     name: body.name,
@@ -42,7 +44,8 @@ function validate(body) {
 
 async function digest(body) {
   const canonical = JSON.stringify({
-    promotion_id: body.promotion_id, section_id: body.section_id,
+    promotion_id: body.promotion_id,
+    academic_year_id: body.academic_year_id, section_id: body.section_id,
     code: body.code, name: body.name, is_active: body.is_active,
     expected_revision: body.expected_revision,
   });
@@ -81,7 +84,7 @@ export async function handleSchoolPromotions(request, env, user) {
         limit < 1 || limit > 100) return fail(400, "invalid_cursor");
     try {
       const result = await env.DB.prepare(
-        "SELECT revision,promotion_id,section_id,code,name,is_active,created_at " +
+        "SELECT revision,promotion_id,academic_year_id,section_id,code,name,is_active,created_at " +
         "FROM cloud_promotion_events WHERE school_id=? AND revision>? " +
         "ORDER BY revision ASC LIMIT ?"
       ).bind(user.school_id, after, limit).all();
@@ -115,11 +118,11 @@ export async function handleSchoolPromotions(request, env, user) {
     // de l'operation et le journal. La version attendue protege les conflits.
     const result = await env.DB.prepare(
       "INSERT INTO cloud_promotion_events " +
-      "(school_id,operation_id,promotion_id,section_id,actor_user_id,device_id," +
-      "code,name,is_active,expected_revision,request_sha256) " +
-      "VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+      "(school_id,operation_id,promotion_id,academic_year_id,section_id," +
+      "actor_user_id,device_id,code,name,is_active,expected_revision,request_sha256) " +
+      "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
     ).bind(user.school_id, body.operation_id, body.promotion_id,
-      body.section_id, user.sub, user.device_id, body.code,
+      body.academic_year_id, body.section_id, user.sub, user.device_id, body.code,
       body.name, body.is_active, body.expected_revision, hash).run();
     if (result.meta?.changes !== 1)
       return fail(503, "temporarily_unavailable");
@@ -136,6 +139,10 @@ export async function handleSchoolPromotions(request, env, user) {
       const reason = String(exception?.message || "");
       if (reason.includes("cloud_promotion_stale_revision"))
         return fail(409, "stale_promotion_revision");
+      if (reason.includes("cloud_promotion_invalid_year"))
+        return fail(409, "closed_or_unknown_academic_year");
+      if (reason.includes("cloud_promotion_year_immutable"))
+        return fail(409, "promotion_academic_year_immutable");
       if (reason.includes("cloud_promotion_invalid_section") ||
           reason.includes("FOREIGN KEY constraint failed"))
         return fail(409, "inactive_or_unknown_section");
