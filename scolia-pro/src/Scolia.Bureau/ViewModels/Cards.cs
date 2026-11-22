@@ -18,7 +18,7 @@ public sealed class CardRowVm(CardCandidateDto source, string diagnostic, Action
     public string Promotion { get; } = source.PromotionCode;
     public string Status { get; } = source.Status;
     public string Diagnostic { get; } = diagnostic;
-    public bool Selectable { get; } = source.Eligible && source.IdentityComplete && !source.DuplicateMatricule && source.HasAnonymousCode;
+    public bool Selectable { get; } = source.Eligible && source.IdentityComplete && !source.DuplicateMatricule;
 
     public bool Selected
     {
@@ -168,13 +168,13 @@ public sealed class CardsPage : PageViewModel
         Rows.Clear();
         foreach (var c in candidates)
         {
-            var diagnostic = !c.HasAnonymousCode ? "Code anonyme à attribuer" :
+            var diagnostic = !c.HasAnonymousCode ? "Code anonyme absent : matricule vide" :
                 !c.IdentityComplete ? "Identité incomplète" :
                 c.DuplicateMatricule ? "Code anonyme répété" :
                 !c.Eligible ? $"Exclu : {c.Status}" : string.Empty;
             var row = new CardRowVm(c, diagnostic, SelectionChanged)
             {
-                Selected = c.Eligible && c.IdentityComplete && !c.DuplicateMatricule && c.HasAnonymousCode && selectedCardIds.Contains(c.EnrollmentId),
+                Selected = c.Eligible && c.IdentityComplete && !c.DuplicateMatricule && selectedCardIds.Contains(c.EnrollmentId),
             };
             Rows.Add(row);
         }
