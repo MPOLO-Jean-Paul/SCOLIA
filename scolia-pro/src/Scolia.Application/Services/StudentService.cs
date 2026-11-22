@@ -97,7 +97,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             var entry = map.GetValueOrDefault(r.e.Id);
             var account = entry?.Account;
             return new StudentListItem(r.s.Id, r.e.Id,
-                activeCodes.GetValueOrDefault(r.e.Id) ?? "À ATTRIBUER", r.s.LastName, r.s.MiddleName, r.s.FirstName, r.s.Gender.ToString(), r.p.Code,
+                activeCodes.GetValueOrDefault(r.e.Id) ?? string.Empty, r.s.LastName, r.s.MiddleName, r.s.FirstName, r.s.Gender.ToString(), r.p.Code,
                 Labels.Of(r.e.Status), r.s.GuardianPhone, account?.Balance ?? 0, account?.Overdue ?? 0,
                 entry is null ? null : CoverageText.Of(entry.Coverage));
         }).ToList();
@@ -119,7 +119,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             await db.AnonymousCodes.AsNoTracking()
                 .Where(c => c.EnrollmentId == latestEnrollment.Id && c.IsActive)
                 .Select(c => c.Code).FirstOrDefaultAsync(ct);
-        return new StudentDto(s.Id, activeCode ?? "À ATTRIBUER", s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(), s.BirthDate, s.BirthPlace, s.Nationality,
+        return new StudentDto(s.Id, activeCode ?? string.Empty, s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(), s.BirthDate, s.BirthPlace, s.Nationality,
             s.Address, s.Phone, s.Email, s.GuardianName, s.GuardianRelation, s.GuardianPhone, s.GuardianPhone2, s.Notes, s.Photo is { Length: > 0 },
             enrollments, s.Version, s.PermanentNumber);
     }
