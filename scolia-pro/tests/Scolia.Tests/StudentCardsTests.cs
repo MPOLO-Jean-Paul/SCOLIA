@@ -227,7 +227,7 @@ public sealed class StudentCardsApiTests : IDisposable
         Assert.Equal("ITM-26-AB12", after.GetProperty("matricule").GetString());
         var detail = await admin.GetAsync($"/api/apprenants/{studentId}").Ok();
         Assert.Equal("ITM-26-AB12", detail.GetProperty("matricule").GetString());
-        var search = await admin.GetAsync("/api/apprenants?search=ITM-26-AB12").Ok();
+        var search = await admin.GetAsync("/api/apprenants?q=ITM-26-AB12").Ok();
         Assert.Contains(search.GetProperty("items").EnumerateArray(),
             item => item.GetProperty("matricule").GetString() == "ITM-26-AB12");
 
