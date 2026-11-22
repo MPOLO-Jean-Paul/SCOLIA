@@ -205,12 +205,12 @@ public sealed class StudentCardsApiTests : IDisposable
         var enrollmentId = student.GetProperty("enrollments")[0].GetProperty("id").GetString()!;
 
         // L'ancien matricule reste interne ; aucun code n'est invente en GET.
-        Assert.Equal("À ATTRIBUER", student.GetProperty("matricule").GetString());
+        Assert.Equal(string.Empty, student.GetProperty("matricule").GetString());
         var before = (await admin.GetAsync($"/api/cartes/candidats?promotionId={promotion}").Ok())
             .EnumerateArray().Single();
         Assert.False(before.GetProperty("hasAnonymousCode").GetBoolean());
         Assert.False(before.GetProperty("eligible").GetBoolean());
-        Assert.Equal("À ATTRIBUER", before.GetProperty("matricule").GetString());
+        Assert.Equal(string.Empty, before.GetProperty("matricule").GetString());
 
         await admin.Post("/api/deliberation/codes/attribution",
             new { promotionId = promotion }).Ok();
