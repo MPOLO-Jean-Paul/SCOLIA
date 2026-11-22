@@ -93,14 +93,15 @@ public static class StudentCardRules
 
     /// <summary>
     /// Chaque promotion possede sa bande propre : ACC1, ACC2 et ACC3 ont
-    /// trois couleurs distinctes, independamment de leur section.
+    /// trois couleurs distinctes, independamment de leur section. Utiliser
+    /// l'ID de la promotion comme cle distingue aussi P1 primaire/secondaire.
     /// Le tri sur toutes les promotions de l'annee garantit la meme couleur
     /// pour un export PDF, Word ou un lot filtre.
     /// </summary>
     public static IReadOnlyDictionary<string, string> PromotionBandColors(
-        IEnumerable<string> promotionCodes)
+        IEnumerable<string> promotionKeys)
     {
-        var keys = promotionCodes
+        var keys = promotionKeys
             .Where(code => !string.IsNullOrWhiteSpace(code))
             .Select(code => code.Trim().ToUpperInvariant())
             .Distinct(StringComparer.Ordinal)
