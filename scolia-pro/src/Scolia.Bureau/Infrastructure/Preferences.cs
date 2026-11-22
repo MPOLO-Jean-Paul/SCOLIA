@@ -336,14 +336,27 @@ public sealed class Preferences : Observable
         r["UiFont"] = FamilyOf(font);
         var k = Factor;
         GridPriority.SetTextFactor(k);
-        // Téléphone : un demi-point de plus, la lecture à bout de bras reste confortable.
-        var phoneText = MobileLayout ? 0.5 : 0.0;
-        r["FsBase"] = (13.5 + 2 * phoneText) * k;
-        r["FsSmall"] = (12.0 + phoneText) * k;
-        r["FsCaption"] = (11.0 + phoneText) * k;
-        r["FsHeading"] = 15.0 * k;
-        r["FsTitle"] = 22.0 * k;
-        r["FsDisplay"] = 28.0 * k;
+        if (MobileLayout)
+        {
+            // Téléphone : un demi-point de plus, la lecture à bout de bras reste confortable.
+            r["FsBase"] = 14.5 * k;
+            r["FsSmall"] = 12.5 * k;
+            r["FsCaption"] = 11.5 * k;
+            r["FsHeading"] = 15.0 * k;
+            r["FsTitle"] = 22.0 * k;
+            r["FsDisplay"] = 28.0 * k;
+        }
+        else
+        {
+            // Ordinateur : échelle typographique de Windows 11 (Caption 12, Body 14, Body Large 18,
+            // Subtitle 20, Title 28). Les titres de bloc prennent 16 : entre Body et Body Large.
+            r["FsBase"] = 14.0 * k;
+            r["FsSmall"] = 12.0 * k;
+            r["FsCaption"] = 12.0 * k;
+            r["FsHeading"] = 16.0 * k;
+            r["FsTitle"] = 24.0 * k;
+            r["FsDisplay"] = 28.0 * k;
+        }
         r["RowHeight"] = (compact ? 28.0 : 36.0) * k;
         r["CtlHeight"] = (compact ? 26.0 : 30.0) * k;
         r["GridLines"] = grid ? Avalonia.Controls.DataGridGridLinesVisibility.Horizontal : Avalonia.Controls.DataGridGridLinesVisibility.None;
@@ -374,6 +387,10 @@ public sealed class Preferences : Observable
             ["AccentHoverBrush"] = new SolidColorBrush(hover),
             ["OnAccentBrush"] = new SolidColorBrush(dark ? ThemeContrast.OnAccent(color, hover) : Colors.White),
             ["AccentSoftBrush"] = new SolidColorBrush(soft),
+            // Volet de navigation : fond discret de Windows 11 sur l'ordinateur (SubtleFillColorSecondary),
+            // teinte d'accent sur le téléphone.
+            ["NavSelectedBrush"] = new SolidColorBrush(MobileLayout ? soft
+                : dark ? Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF) : Color.FromArgb(0x0A, 0x00, 0x00, 0x00)),
             ["AccentColor"] = color,
             ["SystemAccentColor"] = color,
             ["SystemAccentColorDark1"] = hover,

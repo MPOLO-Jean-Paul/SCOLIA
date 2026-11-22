@@ -221,8 +221,13 @@ public sealed class ProfessionalAccessPagesTests
             Assert.True(File.Exists(Source($"Assets/Fonts/Roboto-{weight}.ttf")), weight);
         Assert.False(File.Exists(Source("Assets/Fonts/Roboto-Variable.ttf")));
         var nodes = Elements("Themes/Controls.axaml");
-        Assert.Equal("Medium", Setting(StyleOf(nodes, "TextBlock"), "FontWeight"));
-        Assert.Equal("Medium", Setting(StyleOf(nodes, "TemplatedControl"), "FontWeight"));
+        // Graisse du texte courant : Medium sur le téléphone, Regular sur l'ordinateur comme dans Windows 11.
+        Assert.Equal("{DynamicResource BodyWeight}", Setting(StyleOf(nodes, "TextBlock"), "FontWeight"));
+        Assert.Equal("{DynamicResource BodyWeight}", Setting(StyleOf(nodes, "TemplatedControl"), "FontWeight"));
+        var palette = File.ReadAllText(Source("Themes/Palette.axaml"));
+        Assert.Contains("<FontWeight x:Key=\"BodyWeight\">Medium</FontWeight>", palette, StringComparison.Ordinal);
+        var windows = File.ReadAllText(Source("Themes/Windows11.axaml"));
+        Assert.Contains("<FontWeight x:Key=\"BodyWeight\">Normal</FontWeight>", windows, StringComparison.Ordinal);
         Assert.Equal("Normal", Setting(StyleOf(nodes, "TextBlock.muted"), "FontWeight"));
         Assert.Equal("Normal", Setting(StyleOf(nodes, "DataGridCell TextBlock"), "FontWeight"));
         var main = File.ReadAllText(Source("Views/MainView.axaml.cs"));

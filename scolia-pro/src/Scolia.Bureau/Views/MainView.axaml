@@ -491,11 +491,12 @@
                                   <DataTemplate>
                                     <Button Classes="navitem" Classes.selected="{Binding IsSelected}" Command="{Binding Open}"
                                             Margin="0" HorizontalContentAlignment="Stretch">
-                                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                                        <Border Classes="appicon" Background="{Binding Brush}">
+                                      <Grid ColumnDefinitions="Auto,Auto,*">
+                                        <Border Classes="navmark" Margin="-4,0,7,0" />
+                                        <Border Grid.Column="1" Classes="appicon" Background="{Binding Brush}" Margin="0,0,10,0">
                                           <mi:MaterialIcon Kind="{Binding Icon}" />
                                         </Border>
-                                        <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center"
+                                        <TextBlock Grid.Column="2" Text="{Binding Label}" VerticalAlignment="Center"
                                                    TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}" />
                                       </Grid>
                                     </Button>

@@ -24,7 +24,15 @@
       <SolidColorBrush x:Key="NavItemBrush" Color="Transparent" />
       <SolidColorBrush x:Key="FieldLineBrush" Color="#868686" />
       <SolidColorBrush x:Key="ButtonLineBrush" Color="#8A8A8A" />
-      <SolidColorBrush x:Key="ButtonHoverBrush" Color="#EAEAEA" />
+      <!-- Bouton standard WinUI : remplissage ControlFillColorDefault, filet d'élévation plus sombre en bas -->
+      <SolidColorBrush x:Key="ButtonHoverBrush" Color="#F6F6F6" />
+      <SolidColorBrush x:Key="ButtonFillBrush" Color="#FBFBFB" />
+      <SolidColorBrush x:Key="ButtonPressedBrush" Color="#F5F5F5" />
+      <LinearGradientBrush x:Key="ButtonStrokeBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Offset="0" Color="#E5E5E5" />
+        <GradientStop Offset="0.9" Color="#E5E5E5" />
+        <GradientStop Offset="1" Color="#CCCCCC" />
+      </LinearGradientBrush>
       <SolidColorBrush x:Key="TextBrush" Color="#1B1B1B" />
       <SolidColorBrush x:Key="Text2Brush" Color="#323232" />
       <SolidColorBrush x:Key="MutedBrush" Color="#5C5C5C" />
@@ -65,7 +73,14 @@
       <SolidColorBrush x:Key="NavItemBrush" Color="Transparent" />
       <SolidColorBrush x:Key="FieldLineBrush" Color="#8F8F8F" />
       <SolidColorBrush x:Key="ButtonLineBrush" Color="#8A8A8A" />
-      <SolidColorBrush x:Key="ButtonHoverBrush" Color="#3A3A3A" />
+      <SolidColorBrush x:Key="ButtonHoverBrush" Color="#323232" />
+      <SolidColorBrush x:Key="ButtonFillBrush" Color="#2D2D2D" />
+      <SolidColorBrush x:Key="ButtonPressedBrush" Color="#272727" />
+      <LinearGradientBrush x:Key="ButtonStrokeBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Offset="0" Color="#3A3A3A" />
+        <GradientStop Offset="0.1" Color="#353535" />
+        <GradientStop Offset="1" Color="#353535" />
+      </LinearGradientBrush>
       <SolidColorBrush x:Key="TextBrush" Color="#FFFFFF" />
       <SolidColorBrush x:Key="Text2Brush" Color="#E0E0E0" />
       <SolidColorBrush x:Key="MutedBrush" Color="#C5C5C5" />
@@ -94,4 +109,16 @@
   <CornerRadius x:Key="RadiusField">4</CornerRadius>
   <CornerRadius x:Key="RadiusPill">4</CornerRadius>
   <CornerRadius x:Key="RadiusSmall">4</CornerRadius>
+  <!-- Contrôles WinUI 3 : boutons et champs de 32 px, coins de 4 px, filet de 1 px, texte en Regular -->
+  <Thickness x:Key="ButtonStroke">1</Thickness>
+  <x:Double x:Key="FieldHeight">32</x:Double>
+  <x:Double x:Key="SearchHeight">36</x:Double>
+  <CornerRadius x:Key="RadiusInput">4</CornerRadius>
+  <!-- Recherche, puce du compte, boutons de barre et lignes : 4 px comme les contrôles WinUI -->
+  <CornerRadius x:Key="RadiusSearch">4</CornerRadius>
+  <CornerRadius x:Key="RadiusChip">4</CornerRadius>
+  <CornerRadius x:Key="RadiusControl">4</CornerRadius>
+  <CornerRadius x:Key="RadiusIconButton">4</CornerRadius>
+  <CornerRadius x:Key="RadiusRow">4</CornerRadius>
+  <FontWeight x:Key="BodyWeight">Normal</FontWeight>
 </ResourceDictionary>

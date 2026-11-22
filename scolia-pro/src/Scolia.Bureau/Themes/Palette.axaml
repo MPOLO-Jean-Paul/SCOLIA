@@ -33,6 +33,10 @@
       <SolidColorBrush x:Key="FieldLineBrush" Color="#8A94A6" />
       <SolidColorBrush x:Key="ButtonLineBrush" Color="#7D8798" />
       <SolidColorBrush x:Key="ButtonHoverBrush" Color="#DEE6F1" />
+      <SolidColorBrush x:Key="ButtonFillBrush" Color="#EAEFF6" />
+      <SolidColorBrush x:Key="ButtonPressedBrush" Color="#7D8798" />
+      <SolidColorBrush x:Key="ButtonStrokeBrush" Color="Transparent" />
+      <SolidColorBrush x:Key="NavSelectedBrush" Color="#E7EEFA" />
       <SolidColorBrush x:Key="TextBrush" Color="#152C4D" />
       <SolidColorBrush x:Key="Text2Brush" Color="#263D5E" />
       <SolidColorBrush x:Key="MutedBrush" Color="#56677F" />
@@ -107,6 +111,10 @@
       <SolidColorBrush x:Key="FieldLineBrush" Color="#85858D" />
       <SolidColorBrush x:Key="ButtonLineBrush" Color="#808088" />
       <SolidColorBrush x:Key="ButtonHoverBrush" Color="#3A3A41" />
+      <SolidColorBrush x:Key="ButtonFillBrush" Color="#2E2E34" />
+      <SolidColorBrush x:Key="ButtonPressedBrush" Color="#808088" />
+      <SolidColorBrush x:Key="NavSelectedBrush" Color="#2B3446" />
+      <SolidColorBrush x:Key="ButtonStrokeBrush" Color="Transparent" />
       <SolidColorBrush x:Key="TextBrush" Color="#E6E6EB" />
       <SolidColorBrush x:Key="Text2Brush" Color="#C9C9CF" />
       <SolidColorBrush x:Key="MutedBrush" Color="#A1A1A9" />
@@ -177,6 +185,17 @@
   <CornerRadius x:Key="RadiusPill">14</CornerRadius>
   <CornerRadius x:Key="RadiusSmall">6</CornerRadius>
   <BoxShadows x:Key="SidebarShadow">0 1 5 0 #10000000</BoxShadows>
+  <!-- Géométrie des contrôles, ajustée par Themes/Windows11.axaml sur l'ordinateur -->
+  <Thickness x:Key="ButtonStroke">0</Thickness>
+  <x:Double x:Key="FieldHeight">44</x:Double>
+  <x:Double x:Key="SearchHeight">44</x:Double>
+  <CornerRadius x:Key="RadiusInput">12</CornerRadius>
+  <CornerRadius x:Key="RadiusSearch">23</CornerRadius>
+  <CornerRadius x:Key="RadiusChip">17</CornerRadius>
+  <CornerRadius x:Key="RadiusControl">14</CornerRadius>
+  <CornerRadius x:Key="RadiusIconButton">22</CornerRadius>
+  <CornerRadius x:Key="RadiusRow">10</CornerRadius>
+  <FontWeight x:Key="BodyWeight">Medium</FontWeight>
   <x:Double x:Key="FsBase">13.5</x:Double>
   <x:Double x:Key="FsSmall">12</x:Double>
   <x:Double x:Key="FsCaption">11</x:Double>
