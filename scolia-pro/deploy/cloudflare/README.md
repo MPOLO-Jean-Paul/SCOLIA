@@ -129,3 +129,42 @@ délivré une délégation encore valide.
 - L'autonomie **métier complète** sans PC principal nécessitera encore la
   migration validée des inscriptions, notes et paiements vers le serveur central
   D1, ainsi qu'un déploiement de préproduction isolé et des essais réels.
+
+
+## Inspection et réparation guidées depuis GitHub Actions
+
+Le workflow **SCOLIA Cloudflare - inspecter ou reparer les builds du relais (manuel)**
+est déjà disponible sur la branche par défaut `main` :
+[Ouvrir le workflow GitHub Actions](https://github.com/MPOLO-Jean-Paul/SCOLIA/actions/workflows/scolia-cloudflare-builds-repair.yml).
+
+1. Dans GitHub → **Settings → Environments**, ouvrir `scolia-relay-builds`
+   et y définir les secrets `CLOUDFLARE_BUILD_SETTINGS_TOKEN`
+   et `CLOUDFLARE_ACCOUNT_ID`. Ne jamais les envoyer en conversation
+   ou les écrire dans le dépôt.
+2. Le jeton doit être un **API token Cloudflare lié à l'utilisateur** (et non
+   un jeton de compte ou le build token de déploiement), limité aux permissions
+   **Workers Builds Configuration: Edit** et **Workers Scripts: Read**.
+   Le Worker conserve son propre build token, qui n'est pas modifié.
+3. Dans l'onglet **Actions**, sélectionner ce workflow, puis **Run workflow**.
+   Choisir `inspect`, renseigner la confirmation `REPARER_RELAIS`
+   et lancer. Cette opération n'exécute aucun PATCH.
+4. La vérification affiche seulement les **noms des champs divergents** et,
+   s'ils sont lisibles, une **catégorie fixe d'erreur** du dernier build échoué.
+   Aucun contenu brut des logs ni aucun secret Cloudflare n'est imprimé.
+5. Si la vérification confirme la mauvaise branche, le mauvais répertoire
+   ou les mauvaises commandes, relancer manuellement en mode `apply`,
+   avec la même confirmation. Le script ne change que ces paramètres
+   du Worker nommé `scolia-pro-relay`.
+6. Le correcteur relit les réglages pour vérifier qu'ils correspondent
+   aux paramètres attendus. Il ne crée ni Worker, ni migration D1, ni
+   déploiement. Relancer ensuite un build depuis le tableau de bord
+   Cloudflare, puis vérifier la réussite et le chemin `/health`.
+
+**Si les paramètres sont déjà conformes**, ne pas relancer le mode `apply`
+pour tenter de corriger autre chose. Consulter les causes proposées par
+l'inspection (répertoire, point d'entrée, jeton, permissions, npm, quota).
+La cause réelle ne peut être conclue qu'après lecture du journal Cloudflare.
+Même après correction, tester les WebSockets WSS et les appareils réels :
+un endpoint `/health` ne prouve pas les échanges chiffrés.
+
+Référence : https://developers.cloudflare.com/workers/ci-cd/builds/api-reference/
