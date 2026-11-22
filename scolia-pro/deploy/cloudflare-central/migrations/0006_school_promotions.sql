@@ -67,6 +67,20 @@ WHEN EXISTS (
 )
 BEGIN SELECT RAISE(ABORT, 'cloud_year_identity_immutable'); END;
 
+-- Une annee cloturee n'est pas rouverte dans le service natif SCOLIA :
+-- son etat et ses dates restent immuables dans le catalogue central.
+CREATE TRIGGER IF NOT EXISTS cloud_year_closed_immutable
+BEFORE INSERT ON cloud_academic_year_events
+FOR EACH ROW
+WHEN EXISTS (
+    SELECT 1 FROM cloud_academic_years
+    WHERE school_id=NEW.school_id AND id=NEW.academic_year_id
+      AND status='closed'
+      AND (NEW.status<>'closed' OR
+           NEW.start_date<>start_date OR NEW.end_date<>end_date)
+)
+BEGIN SELECT RAISE(ABORT, 'cloud_year_closed_immutable'); END;
+
 CREATE TRIGGER IF NOT EXISTS cloud_year_event_applied
 AFTER INSERT ON cloud_academic_year_events
 FOR EACH ROW
