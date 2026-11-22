@@ -4,14 +4,19 @@
         xmlns:mi="using:Material.Icons.Avalonia">
 
   <Styles.Resources>
-    <!-- Indicateur : libellé, chiffre, précision. Pas d'icône ni de couleur décorative, comme les tableaux de bord d'Office. -->
+    <!-- Indicateur : libellé, chiffre et précision, avec l'icône de l'indicateur dans une tuile teintée de sa couleur. -->
     <DataTemplate x:Key="KpiTile">
       <Border Classes="tile" Margin="0,0,12,12">
-        <StackPanel Spacing="2">
-          <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" />
-          <TextBlock Text="{Binding Value}" Classes="kpi" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
-          <TextBlock Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" />
-        </StackPanel>
+        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+          <!-- L'icône partage la ligne du libellé : le montant garde toute la largeur de la tuile. -->
+          <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" VerticalAlignment="Center"
+                     TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
+          <Border Grid.Column="1" Classes="kpiicon" Background="{Binding Soft}" VerticalAlignment="Top">
+            <mi:MaterialIcon Kind="{Binding Icon}" Foreground="{Binding Accent}" />
+          </Border>
+          <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Value}" Classes="kpi" Margin="0,4,0,0" TextTrimming="CharacterEllipsis" />
+          <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" Margin="0,2,0,0" />
+        </Grid>
       </Border>
     </DataTemplate>
   </Styles.Resources>
@@ -1149,6 +1154,26 @@
   <Style Selector="ProgressBar.slim /template/ Border#PART_Indicator">
     <Setter Property="CornerRadius" Value="2" />
   </Style>
+  <!-- Jauge des tableaux de bord : 8 px, coins pleins, piste teintée -->
+  <Style Selector="ProgressBar.meter">
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="8" />
+    <Setter Property="Height" Value="8" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" />
+  </Style>
+  <Style Selector="ProgressBar.meter /template/ Border#ProgressBarTrack"><Setter Property="CornerRadius" Value="4" /></Style>
+  <Style Selector="ProgressBar.meter /template/ Border#PART_Indicator"><Setter Property="CornerRadius" Value="4" /></Style>
+  <!-- Tuile d'icône des indicateurs -->
+  <Style Selector="Border.kpiicon">
+    <Setter Property="Width" Value="36" /><Setter Property="Height" Value="36" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+  </Style>
+  <Style Selector="Border.kpiicon > mi|MaterialIcon">
+    <Setter Property="Width" Value="20" /><Setter Property="Height" Value="20" />
+    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.kpiicon"><Setter Property="Width" Value="30" /><Setter Property="Height" Value="30" /></Style>
   <Style Selector="ProgressBar.warn">
     <Setter Property="Foreground" Value="{DynamicResource ToneOrange}" />
   </Style>

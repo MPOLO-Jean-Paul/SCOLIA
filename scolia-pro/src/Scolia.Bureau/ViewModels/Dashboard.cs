@@ -8,13 +8,19 @@ using Scolia.Bureau.Ribbon;
 namespace Scolia.Bureau.ViewModels;
 
 /// <summary>Tuile d'indicateur : libellé, valeur, précision, icône et couleur d'accent.</summary>
-public sealed record KpiVm(string Label, string Value, string Hint, IBrush Accent, MaterialIconKind Icon = MaterialIconKind.ChartLine);
+public sealed record KpiVm(string Label, string Value, string Hint, IBrush Accent, MaterialIconKind Icon = MaterialIconKind.ChartLine)
+{
+    /// <summary>Fond teinté de la tuile d'icône : la couleur d'accent à 14 %.</summary>
+    public IBrush Soft => Accent is ISolidColorBrush solid
+        ? new SolidColorBrush(Color.FromArgb(0x24, solid.Color.R, solid.Color.G, solid.Color.B))
+        : Brushes.Transparent;
+}
 
 /// <summary>Ligne libellé et valeur d'une fiche.</summary>
 public sealed record InfoLine(string Label, string Value);
 
 /// <summary>Colonne de graphique, hauteur en pixels proportionnelle à la plus grande valeur.</summary>
-public sealed record BarVm(string Label, string Value, double Height, double Track = 0);
+public sealed record BarVm(string Label, string Value, double Height, double Track = 0, IBrush? Brush = null);
 
 /// <summary>Ligne du tableau des promotions, avec sa barre de recouvrement.</summary>
 public sealed record PromotionStatVm(string Code, string Name, string Students, string Expected, string Collected, string Outstanding, string Overdue, string Recovery, double RecoveryValue,
@@ -116,8 +122,12 @@ public sealed class DashboardPage : PageViewModel
 
         Aging.Clear();
         var agingMax = d.Aging.Select(a => a.Value).DefaultIfEmpty(1m).Max();
+        // Plus le retard est ancien, plus la barre tire vers le rouge.
+        string[] agingTones = ["ToneOrange", "ToneOrange", "ToneRed", "ToneRed"];
+        var agingIndex = 0;
         foreach (var a in d.Aging)
-            Aging.Add(new BarVm(a.Label, Money(a.Value), agingMax <= 0 ? 0 : (double)(a.Value / agingMax) * 100));
+            Aging.Add(new BarVm(a.Label, Money(a.Value), agingMax <= 0 ? 0 : (double)(a.Value / agingMax) * 100, 0,
+                ThemeBrush.Get(agingTones[Math.Min(agingIndex++, agingTones.Length - 1)])));
 
         Promotions.Clear();
         foreach (var p in d.Promotions)

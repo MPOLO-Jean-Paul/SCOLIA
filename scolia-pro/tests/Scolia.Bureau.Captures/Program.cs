@@ -1894,6 +1894,16 @@ if (args.Length > 3 && args[3] == "cartes")
     Wait(shell.Open(() => new StudentsPage(shell)));
     Wait(Task.Delay(800));
     Save(window, $"apprenants-{suffix}.png");
+    Wait(shell.Open(() => new DashboardPage(shell)));
+    Wait(Task.Delay(1200));
+    Save(window, $"tableau-de-bord-{suffix}.png");
+    // Bas du tableau de bord : graphique, retards et promotions.
+    if (window.GetVisualDescendants().OfType<ScrollViewer>().Where(v => v.IsEffectivelyVisible && v.Extent.Height > v.Viewport.Height + 50)
+            .OrderByDescending(v => v.Extent.Height).FirstOrDefault() is { } board)
+    {
+        board.Offset = new Vector(0, Math.Max(0, board.Extent.Height - board.Viewport.Height));
+        Save(window, $"tableau-de-bord-bas-{suffix}.png");
+    }
     return;
 }
 
