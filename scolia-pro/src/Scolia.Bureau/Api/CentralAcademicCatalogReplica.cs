@@ -153,8 +153,8 @@ public sealed class CentralAcademicCatalogReplica : IDisposable
             first is < 2000 or > 2199 || second != first + 1 ||
             !ValidDate(start, out var startDay) ||
             !ValidDate(end, out var endDay) || endDay < startDay ||
-            startDay.Year != first || endDay.Year is not (var y) ||
-            (y != first && y != second) ||
+            startDay.Year != first ||
+            (endDay.Year != first && endDay.Year != second) ||
             status is not ("preparation" or "open" or "closed"))
             throw new InvalidDataException("Annee scolaire D1 invalide.");
         return new CentralAcademicYearRow(id, label, start!, end!, status, revision);
