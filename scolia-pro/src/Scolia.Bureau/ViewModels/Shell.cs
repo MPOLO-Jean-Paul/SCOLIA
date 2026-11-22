@@ -1360,6 +1360,18 @@ public sealed class ShellViewModel : Observable
             var state = await api.SyncActiveCentralSectionsAsync(account, budget.Token);
             if (state is { HasMorePages: true })
                 nextCentralSyncUtc = DateTime.UtcNow.AddSeconds(15);
+            // La copie des annees/promotions reste informative : on ne
+            // change aucun dossier scolaire et on ne bloque pas les ecrans.
+            // Priorite a la file des sections avant d'utiliser le meme
+            // budget de 35 secondes pour les deux catalogues.
+            if (state is { Offline: false, HasMorePages: false })
+            {
+                var catalogs = await api.SyncActiveCentralAcademicCatalogsAsync(
+                    account, budget.Token);
+                if (catalogs is { } pages &&
+                    (pages.Years.HasMorePages || pages.Promotions.HasMorePages))
+                    nextCentralSyncUtc = DateTime.UtcNow.AddSeconds(15);
+            }
         }
         catch (CentralPairingException exception)
         {
