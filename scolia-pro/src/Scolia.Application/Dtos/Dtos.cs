@@ -296,7 +296,7 @@ public sealed record AttendanceSheetDto(Guid PromotionId, DateOnly Date, IReadOn
 
 /// <summary>Apprenant proposé pour les cartes. Les identités incomplètes et les matricules répétés sont signalés et écartés.</summary>
 public sealed record CardCandidateDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Status, bool Eligible,
-    bool IdentityComplete, bool DuplicateMatricule);
+    bool IdentityComplete, bool DuplicateMatricule, bool HasAnonymousCode = true);
 
 /// <summary>Nettoyage manuel des sauvegardes : garder les plus récentes, et ne supprimer que celles qui ont plus de N jours.</summary>
 public sealed record BackupCleanup(int Garder, int PlusAnciennesQue);
