@@ -56,6 +56,9 @@ function fakeD1() {
                   throw Error("cloud_year_stale_revision");
                 if (previous && previous.label !== label)
                   throw Error("cloud_year_identity_immutable");
+                if (previous?.status === "closed" && (status !== "closed" ||
+                    start !== previous.start_date || end !== previous.end_date))
+                  throw Error("cloud_year_closed_immutable");
                 const record = {
                   school_id: school, operation_id: op, academic_year_id: year,
                   actor_user_id: user, device_id: device,
