@@ -1878,6 +1878,36 @@ if (args.Length > 3 && args[3] == "commandes")
 
 // Défilement du téléphone (argument « defilement ») : la page reste là où le doigt la laisse, en descendant
 // comme en remontant. Chaque pas compare la position demandée à celle obtenue après la mise en page.
+// Visite de tous les écrans : chaque page qui s'ouvre avec le seul shell est capturée (ordinateur ou téléphone).
+// SCOLIA_MOBILE=0 dotnet run -- <sortie> <serveur> <mot_de_passe> visite
+if (args.Length > 3 && args[3] == "visite")
+{
+    prefs.Animations = false;
+    prefs.Tips = false;
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    var suffix = Preferences.MobileLayout ? "mobile" : "bureau";
+    var pages = typeof(PageViewModel).Assembly.GetTypes()
+        .Where(t => !t.IsAbstract && typeof(PageViewModel).IsAssignableFrom(t)
+                    && t.GetConstructor([typeof(ShellViewModel)]) is not null)
+        .OrderBy(t => t.Name, StringComparer.Ordinal).ToList();
+    var onlyPages = Environment.GetEnvironmentVariable("SCOLIA_PAGES")?.Split(',', StringSplitOptions.RemoveEmptyEntries);
+    foreach (var type in pages)
+    {
+        if (onlyPages is { Length: > 0 } && !onlyPages.Contains(type.Name)) continue;
+        try
+        {
+            Wait(shell.Open(() => (PageViewModel)Activator.CreateInstance(type, shell)!));
+            Wait(Task.Delay(500));
+            Save(window, $"visite-{type.Name}-{suffix}.png");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"VISITE {type.Name} : {ex.GetBaseException().Message}");
+        }
+    }
+    return;
+}
+
 // Cartes et codes anonymes : captures des deux écrans (ordinateur ou téléphone).
 // SCOLIA_MOBILE=0 dotnet run -- <sortie> <serveur> <mot_de_passe> cartes
 if (args.Length > 3 && args[3] == "cartes")
