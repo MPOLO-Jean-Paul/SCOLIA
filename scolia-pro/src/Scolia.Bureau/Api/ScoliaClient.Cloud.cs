@@ -407,6 +407,46 @@ public sealed partial class ScoliaClient
     }
 
     /// <summary>
+    /// Consultation facultative des annees et promotions du catalogue central.
+    /// Les appareils non appaires renvoient null ; aucun compte ni donnees
+    /// scolaires ne sont importes dans l'API locale historique.
+    /// La copie SQLite reste lisible apres une perte d'Internet.
+    /// Ce pilote n'est pas encore active dans le planificateur WorkManager.
+    /// </summary>
+    public async Task<(CentralAcademicCatalogState Years,
+        CentralAcademicCatalogState Promotions)?> SyncActiveCentralAcademicCatalogsAsync(
+        string userName, CancellationToken ct = default)
+    {
+        if (Offline is not { } store ||
+            !string.Equals(store.User, userName, StringComparison.Ordinal))
+            throw new InvalidOperationException("Compte local absent ou different.");
+        using var central = new CentralPairingClient();
+        var origin = central.ReadActiveOrigin(userName, Infrastructure.DeviceIdentity.Id);
+        if (origin is null) return null;
+        var schoolId = central.ReadSavedSchoolId(origin, userName,
+            Infrastructure.DeviceIdentity.Id) ??
+            throw new InvalidOperationException("Appareil non approuve pour cette ecole.");
+
+        using var years = new CentralAcademicCatalogReplica(store, userName,
+            schoolId, origin, CentralAcademicCatalogKind.Years);
+        using var promotions = new CentralAcademicCatalogReplica(store, userName,
+            schoolId, origin, CentralAcademicCatalogKind.Promotions);
+        try
+        {
+            var session = await central.OpenSavedSessionAsync(
+                origin, userName, Infrastructure.DeviceIdentity.Id, ct);
+            var savedYears = await years.SyncAsync(origin, session.AccessToken, ct);
+            var savedPromotions = await promotions.SyncAsync(origin, session.AccessToken, ct);
+            return (savedYears, savedPromotions);
+        }
+        catch (Exception ex) when (!ct.IsCancellationRequested &&
+            ex is HttpRequestException or IOException or TaskCanceledException)
+        {
+            return (years.Local(), promotions.Local());
+        }
+    }
+
+    /// <summary>
     /// Reprend les sections mises en attente puis leur journal, sans mot de
     /// passe ni clé stockée dans D1. Une coupure réseau conserve SQLite.
     /// Seules les sections/option sont couvertes : les autres fonctionnalités

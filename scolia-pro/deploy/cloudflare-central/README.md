@@ -21,6 +21,52 @@ Le journal ne contient pour l'instant que des métadonnées d'événements et le
 
 **Ce dossier n'est pas automatiquement déployé dans le compte Cloudflare de l'établissement.** En particulier, ne pas exécuter la migration sur une base comportant des données réelles avant les contrôles de compatibilité et de restauration.
 
+## Catalogue scolaire : annees, sections, promotions (prototype NON deploye)
+
+SCOLIA local possede une `Promotion.AcademicYearId` obligatoire ; le code
+`INF1` peut etre reutilise dans chaque nouvelle annee. La section est
+optionnelle dans le modele natif (notamment pour certains cursus superieurs).
+La migration `0006_school_promotions.sql` corrige ces invariants et DOIT
+etre appliquee **apres** `0005_school_sections.sql`, uniquement en staging.
+
+Routes du catalogue central sans apprenants ni donnees financieres :
+- `GET/POST /v1/catalog/years` : identifiant stable, label `2026-2027`,
+  dates ISO, et statut `preparation/open/closed` ;
+- `GET/POST /v1/catalog/sections` : section ou option globale a l'ecole ;
+- `GET/POST /v1/catalog/promotions` : promotion, `academic_year_id`
+  obligatoire, `section_id` nullable, code, nom, statut et revision.
+
+Le code est unique **pour une annee d'un etablissement**, pas pour toute sa
+vie. Le passage a l'annee suivante exige une **nouvelle promotion** :
+une promotion existante ne peut changer d'annee ni une annee changer de
+label. La creation/modification d'une promotion d'une annee cloturee est
+refusee. Une promotion active liee a une section exige une section active
+du meme etablissement ; une promotion sans section reste admise pour les
+futurs profils.
+
+Les ecritures sont reservees aux roles `secretariat`, `administrateur`
+ou `direction` sur un appareil deja autorise, les lectures au meme
+etablissement. Chaque POST demande un UUID `operation_id` stable et
+`expected_revision` ; etat, journal et resultat idempotent sont ecrits
+atomiquement. Les conflits de concurrence sont refuses avec HTTP 409,
+sans ecrasement silencieux. Les cursors `after` sont **distincts par
+catalogue**, pas interchangeables avec le journal general.
+
+**Limites fonctionnelles explicites :** aucun cycle scolaire, filiere LMD,
+UE, parcours, annee courante (`IsCurrent`), niveau, capacite, passerelle
+d'import, dossier, inscription, paie, note, recu ou document n'est gere par
+cette API. Les clients Windows/Android n'utilisent **pas** ces routes.
+Le modele reste un pilote technique. La compatibilite detaillee ITM/IEM,
+EPST et ESU et les regles de l'annee scolaire doivent etre verifiees avant
+integration native. Aucun deploiement D1 reel ni migration de production
+n'est autorise par cette PR.
+
+Tests isolés :
+```sh
+cd scolia-pro/deploy/cloudflare-central && npm test
+python3 -m unittest discover -s scolia-pro/tests -p 'test_cloudflare_*schema.py' -v
+```
+
 ## Vérifier les migrations hors production
 
 Depuis la racine du dépôt :
@@ -41,7 +87,7 @@ Un workflow GitHub Actions exécute également ces tests à chaque modification 
 
 ## Nouvelle API de synchronisation — prototype testé, NON déployé
 
-Le fichier `src/index.mjs` contient une première API Cloudflare Workers ne permettant **aucune mutation scolaire**. Les tests `tests/auth-sync.test.mjs` s'exécutent sans données réelles.
+Le fichier `src/index.mjs` contient une première API Cloudflare Workers ne permettant de modifier que des **metadonnees de catalogue** (annees, sections, promotions), sans inscriptions, notes ou paiements. Les tests `tests/auth-sync.test.mjs` s'exécutent sans données réelles.
 
 Fonctionnement protégé :
 - `GET /v1/sync/events?after=0&limit=50` retourne les métadonnées des changements **du seul établissement authentifié**. Le `limit` accepté est compris entre 1 et 100, et les événements ne contiennent aucun contenu métier.
