@@ -21,6 +21,29 @@ Le journal ne contient pour l'instant que des métadonnées d'événements et le
 
 **Ce dossier n'est pas automatiquement déployé dans le compte Cloudflare de l'établissement.** En particulier, ne pas exécuter la migration sur une base comportant des données réelles avant les contrôles de compatibilité et de restauration.
 
+## Catalogue scolaire : sections et promotions (pilotage technique, non deployee)
+
+Le prototype offre deux ressources **sans donnees nominatives** :
+- `GET/POST /v1/catalog/sections` : code, nom, statut et revision de la section ;
+- `GET/POST /v1/catalog/promotions` : code, nom, section rattachee, statut et revision de la promotion.
+
+La migration `0006_school_promotions.sql` depend de `0005_school_sections.sql`.
+Une promotion active requiert une section active **du meme etablissement**.
+Les creations et modifications sont reservees aux roles `secretariat`,
+`administrateur` ou `direction` ; les enseignants peuvent lire le
+catalogue de leur propre ecole, une fois leur appareil authentifie.
+Chaque ecriture demande un UUID d'operation stable et `expected_revision` ;
+l'etat, l'accuse et le journal sont enregistres dans une transaction D1.
+Une relecture avec la meme operation et le meme corps ne duplique rien.
+Les conflits de revision retournent HTTP 409 et doivent etre resolus dans
+l'application, **sans ecraser silencieusement le changement d'un autre poste**.
+
+Ces API ne portent pas encore les annees academiques, les cours, dossiers
+d'eleves/etudiants, frais, paiements ou notes. Elles ne sont **ni deployees
+ni connectees aux clients Windows/Android**. Avant toute migration reelle,
+definir les correspondances des promotions existantes (ITM/IEM, EPST et ESU),
+valider les synchronisations et tester la restauration d'une base de test.
+
 ## Vérifier les migrations hors production
 
 Depuis la racine du dépôt :
