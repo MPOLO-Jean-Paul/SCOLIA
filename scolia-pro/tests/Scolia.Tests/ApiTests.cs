@@ -336,7 +336,8 @@ public sealed class BusinessApiTests : IDisposable
         var payload = new { identity = new { lastName = "MUKENDI", middleName = "kabeya", firstName = "Grace", birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14), gender = "F", guardianPhone = "0812345670" }, promotionId, confirmDuplicate = false };
         var (status, body) = await admin.Post("/api/apprenants", payload).Fail();
         Assert.Equal(HttpStatusCode.Conflict, status);
-        Assert.Equal("INF101", body.GetProperty("candidates")[0].GetProperty("matricule").GetString());
+        // L'homonyme est présenté par son code anonyme (ici pas encore attribué), jamais par INF101.
+        Assert.Equal("À ATTRIBUER", body.GetProperty("candidates")[0].GetProperty("matricule").GetString());
         var confirmed = await admin.Post("/api/apprenants", payload with { confirmDuplicate = true }).Ok();
         // Nouvel homonyme confirmé : même règle, le champ « Matricule » attend son code anonyme.
         Assert.Equal("À ATTRIBUER", confirmed.GetProperty("matricule").GetString());

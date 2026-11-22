@@ -13,12 +13,13 @@ public sealed class CardRowVm(CardCandidateDto source, string diagnostic, Action
     private bool selected;
 
     public Guid EnrollmentId { get; } = source.EnrollmentId;
-    public string Matricule { get; } = source.Matricule;
+    /// <summary>Code anonyme actif ; un tiret tant qu'il n'est pas généré (la carte laisse alors la rubrique vide).</summary>
+    public string Matricule { get; } = string.IsNullOrWhiteSpace(source.Matricule) ? "—" : source.Matricule;
     public string Name { get; } = source.FullName;
     public string Promotion { get; } = source.PromotionCode;
     public string Status { get; } = source.Status;
     public string Diagnostic { get; } = diagnostic;
-    public bool Selectable { get; } = source.Eligible && source.IdentityComplete && !source.DuplicateMatricule && source.HasAnonymousCode;
+    public bool Selectable { get; } = source.Eligible && source.IdentityComplete && !source.DuplicateMatricule;
 
     public bool Selected
     {
@@ -168,13 +169,14 @@ public sealed class CardsPage : PageViewModel
         Rows.Clear();
         foreach (var c in candidates)
         {
-            var diagnostic = !c.HasAnonymousCode ? "Code anonyme à attribuer" :
-                !c.IdentityComplete ? "Identité incomplète" :
+            var diagnostic = !c.IdentityComplete ? "Identité incomplète" :
                 c.DuplicateMatricule ? "Code anonyme répété" :
-                !c.Eligible ? $"Exclu : {c.Status}" : string.Empty;
+                !c.Eligible ? $"Exclu : {c.Status}" :
+                // Imprimable : la rubrique MATRICULE reste vide jusqu'à la génération des codes.
+                !c.HasAnonymousCode ? "Sans code anonyme : rubrique vide" : string.Empty;
             var row = new CardRowVm(c, diagnostic, SelectionChanged)
             {
-                Selected = c.Eligible && c.IdentityComplete && !c.DuplicateMatricule && c.HasAnonymousCode && selectedCardIds.Contains(c.EnrollmentId),
+                Selected = c.Eligible && c.IdentityComplete && !c.DuplicateMatricule && selectedCardIds.Contains(c.EnrollmentId),
             };
             Rows.Add(row);
         }

@@ -178,13 +178,17 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var result = new List<DuplicateCandidate>();
         foreach (var c in candidates)
         {
-            var code = await (from e in db.Enrollments.AsNoTracking()
-                              join p in db.Promotions.AsNoTracking() on e.PromotionId equals p.Id
-                              join y in db.AcademicYears.AsNoTracking() on e.AcademicYearId equals y.Id
-                              where e.StudentId == c.Id
-                              orderby y.StartDate descending
-                              select p.Code).FirstOrDefaultAsync(ct);
-            result.Add(new DuplicateCandidate(c.Id, c.Matricule, c.FullName, code));
+            var latest = await (from e in db.Enrollments.AsNoTracking()
+                                join p in db.Promotions.AsNoTracking() on e.PromotionId equals p.Id
+                                join y in db.AcademicYears.AsNoTracking() on e.AcademicYearId equals y.Id
+                                where e.StudentId == c.Id
+                                orderby y.StartDate descending
+                                select new { e.Id, p.Code }).FirstOrDefaultAsync(ct);
+            // Comme partout ailleurs, l'homonyme est présenté par son code anonyme actif, jamais par la
+            // référence technique (INF101…).
+            var anonymous = latest is null ? null : await db.AnonymousCodes.AsNoTracking()
+                .Where(a => a.EnrollmentId == latest.Id && a.IsActive).Select(a => a.Code).FirstOrDefaultAsync(ct);
+            result.Add(new DuplicateCandidate(c.Id, anonymous ?? "À ATTRIBUER", c.FullName, latest?.Code));
         }
         return result;
     }

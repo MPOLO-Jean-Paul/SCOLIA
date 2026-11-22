@@ -209,8 +209,23 @@ public sealed class StudentCardsApiTests : IDisposable
         var before = (await admin.GetAsync($"/api/cartes/candidats?promotionId={promotion}").Ok())
             .EnumerateArray().Single();
         Assert.False(before.GetProperty("hasAnonymousCode").GetBoolean());
-        Assert.False(before.GetProperty("eligible").GetBoolean());
-        Assert.Equal("À ATTRIBUER", before.GetProperty("matricule").GetString());
+        // Sans code anonyme, la carte reste imprimable : la rubrique MATRICULE est laissée vide.
+        Assert.True(before.GetProperty("eligible").GetBoolean());
+        Assert.Equal(string.Empty, before.GetProperty("matricule").GetString());
+        using (var blank = await admin.Post("/api/cartes/export",
+            new { enrollmentIds = new[] { enrollmentId }, month = 9,
+                year = 2026, copies = 1, includeLeft = false, format = "docx" }))
+        {
+            Assert.True(blank.IsSuccessStatusCode, await blank.Content.ReadAsStringAsync());
+            using var blankZip = new System.IO.Compression.ZipArchive(
+                new MemoryStream(await blank.Content.ReadAsByteArrayAsync()));
+            using var blankReader = new StreamReader(blankZip.GetEntry("word/document.xml")!.Open());
+            var blankXml = await blankReader.ReadToEndAsync();
+            Assert.Contains("MATRICULE :", blankXml, StringComparison.Ordinal);
+            Assert.DoesNotContain("INF101", blankXml, StringComparison.Ordinal);
+            Assert.Contains("PROMOTION : INF1", blankXml, StringComparison.Ordinal);
+            Assert.DoesNotContain("ATTRIBUER", blankXml, StringComparison.Ordinal);
+        }
 
         await admin.Post("/api/deliberation/codes/attribution",
             new { promotionId = promotion }).Ok();

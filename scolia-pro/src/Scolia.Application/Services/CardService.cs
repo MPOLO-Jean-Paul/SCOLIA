@@ -31,7 +31,7 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
             .Where(r => term.Length == 0 || TextKey.Normalize($"{r.Matricule} {r.LastName} {r.MiddleName} {r.FirstName}").Contains(term, StringComparison.Ordinal))
             .OrderBy(r => r.Promotion).ThenBy(r => r.LastName).ThenBy(r => r.FirstName)
             .Select(r => new CardCandidateDto(r.EnrollmentId, r.Matricule, Name(r), r.Promotion, Labels.Of(r.Effective),
-                StudentCardRules.Eligible(r.Effective, includeLeft) && r.HasAnonymousCode,
+                StudentCardRules.Eligible(r.Effective, includeLeft),
                 StudentCardRules.IdentityComplete(r.LastName, r.FirstName), r.Duplicate,
                 r.HasAnonymousCode))
             .ToList();
@@ -51,12 +51,14 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         var year = await YearContext.CurrentAsync(db, ct);
         var rows = await CandidateRowsAsync(year, null, requested, ct);
         var selected = rows
-            .Where(r => StudentCardRules.Eligible(r.Effective, input.IncludeLeft) && StudentCardRules.IdentityComplete(r.LastName, r.FirstName) && !r.Duplicate && r.HasAnonymousCode)
+            // Sans code anonyme, la carte est imprimée avec la rubrique MATRICULE laissée vide ; le code est relu à
+            // chaque export, si bien qu'une carte réimprimée après la génération des codes le porte automatiquement.
+            .Where(r => StudentCardRules.Eligible(r.Effective, input.IncludeLeft) && StudentCardRules.IdentityComplete(r.LastName, r.FirstName) && !r.Duplicate)
             .OrderBy(r => r.Promotion).ThenBy(r => r.LastName).ThenBy(r => r.FirstName)
             .ToList();
         var skipped = requested.Count - selected.Count;
         if (selected.Count == 0)
-            throw new DomainException("cartes", "Aucune carte à imprimer : vérifiez les identités et attribuez les codes dans Délibération > Codes anonymes.");
+            throw new DomainException("cartes", "Aucune carte à imprimer : les apprenants choisis sont sortis ou suspendus, ou leur identité est incomplète.");
         foreach (var r in selected)
         {
             StudentCardRules.EnsureFits(r.LastName, "nom");
@@ -150,7 +152,8 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
             .GroupBy(d => d.EnrollmentId).ToDictionary(g => g.Key, g => g.ToList());
         var today = clock.Today;
         return items.Select(x => new CandidateRow(
-            x.Id, x.PromotionId, codes.GetValueOrDefault(x.Id) ?? "À ATTRIBUER",
+            // Code anonyme actif, ou rien : la référence technique (INF101…) n'apparaît jamais sur une carte.
+            x.Id, x.PromotionId, codes.GetValueOrDefault(x.Id) ?? string.Empty,
             x.LastName, x.MiddleName, x.FirstName, x.Promotion,
             DisciplineRules.EffectiveStatus(x.Status, decisions.TryGetValue(x.Id, out var mine) ? mine : [], today),
             repeated.Contains(codes.GetValueOrDefault(x.Id) ?? string.Empty),
