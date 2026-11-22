@@ -155,6 +155,41 @@ public sealed class CentralAcademicCatalogReplicaTests
     }
 
     [Fact]
+    public async Task Champ_JSON_absent_ne_detruit_pas_le_cache_et_une_reprise_valide_reussit()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "scolia-catalog-parse-" +
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example/"), root)
+                { User = "SECRETARIAT" };
+            var calls = 0;
+            var handler = new Handler((_, _) =>
+            {
+                calls++;
+                if (calls == 1)
+                    return Task.FromResult(Json(
+                        "{\\"events\\":[{\\"revision\\":1,\\"academic_year_id\\":\\"" +
+                        YearId + "\\",\\"label\\":12}],\\"next\\":1,\\"has_more\\":false}"));
+                return Task.FromResult(Json("{\\"events\\":[" + YearEvent(1, YearId) +
+                    "],\\"next\\":1,\\"has_more\\":false}"));
+            });
+            using var replica = new CentralAcademicCatalogReplica(store, store.User,
+                School, Origin, CentralAcademicCatalogKind.Years, handler);
+            await Assert.ThrowsAsync<InvalidDataException>(
+                () => replica.SyncAsync(Origin, Jwt));
+            Assert.Equal(0, replica.Local().Revision);
+            Assert.Empty(replica.Local().Years);
+            var recovered = await replica.SyncAsync(Origin, Jwt);
+            Assert.False(recovered.Offline);
+            Assert.Equal(1, recovered.Revision);
+            Assert.Single(recovered.Years);
+            Assert.Equal(2, calls);
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task Changement_de_compte_bloque_la_lecture_meme_apres_HTTP()
     {
         var root = Path.Combine(Path.GetTempPath(), "scolia-catalog-user-" +
