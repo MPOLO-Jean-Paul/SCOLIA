@@ -214,8 +214,24 @@ public sealed class StudentCardsApiTests : IDisposable
         var before = (await admin.GetAsync($"/api/cartes/candidats?promotionId={promotion}").Ok())
             .EnumerateArray().Single();
         Assert.False(before.GetProperty("hasAnonymousCode").GetBoolean());
-        Assert.False(before.GetProperty("eligible").GetBoolean());
+        Assert.True(before.GetProperty("eligible").GetBoolean());
         Assert.Equal(string.Empty, before.GetProperty("matricule").GetString());
+
+        // La carte doit rester imprimable avec le champ vide, et ne doit
+        // jamais recuperer l'ancien matricule technique.
+        using (var blankCard = await admin.Post("/api/cartes/export",
+            new { enrollmentIds = new[] { enrollmentId }, month = 9,
+                year = 2026, copies = 1, includeLeft = false, format = "docx" }))
+        {
+            Assert.True(blankCard.IsSuccessStatusCode);
+            using var blankZip = new System.IO.Compression.ZipArchive(
+                new MemoryStream(await blankCard.Content.ReadAsByteArrayAsync()));
+            using var blankReader = new StreamReader(blankZip.GetEntry("word/document.xml")!.Open());
+            var blankXml = await blankReader.ReadToEndAsync();
+            Assert.Contains("MATRICULE : ", blankXml, StringComparison.Ordinal);
+            Assert.DoesNotContain("MATRICULE : INF101", blankXml, StringComparison.Ordinal);
+            Assert.DoesNotContain("À ATTRIBUER", blankXml, StringComparison.Ordinal);
+        }
 
         await admin.Post("/api/deliberation/codes/attribution",
             new { promotionId = promotion }).Ok();
