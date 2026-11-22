@@ -114,10 +114,14 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
                                  orderby y.StartDate descending
                                  select new EnrollmentDto(e.Id, y.Id, y.Label, p.Id, p.Code, p.Name, e.EnrolledOn, Labels.Of(e.Status), e.ExitDate, e.ExitReason, e.IsReEnrollment))
                                  .ToListAsync(ct);
-        var latestEnrollment = enrollments.FirstOrDefault();
-        var activeCode = latestEnrollment is null ? null :
+        // La fiche suit l'annee scolaire active, comme la liste et les
+        // cartes. Un ancien code ne remplit jamais le champ par erreur
+        // lorsqu'aucun code n'existe pour l'inscription actuelle.
+        var currentYear = await YearContext.CurrentAsync(db, ct);
+        var currentEnrollment = enrollments.FirstOrDefault(e => e.AcademicYearId == currentYear.Id);
+        var activeCode = currentEnrollment is null ? null :
             await db.AnonymousCodes.AsNoTracking()
-                .Where(c => c.EnrollmentId == latestEnrollment.Id && c.IsActive)
+                .Where(c => c.EnrollmentId == currentEnrollment.Id && c.IsActive)
                 .Select(c => c.Code).FirstOrDefaultAsync(ct);
         return new StudentDto(s.Id, activeCode ?? string.Empty, s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(), s.BirthDate, s.BirthPlace, s.Nationality,
             s.Address, s.Phone, s.Email, s.GuardianName, s.GuardianRelation, s.GuardianPhone, s.GuardianPhone2, s.Notes, s.Photo is { Length: > 0 },
