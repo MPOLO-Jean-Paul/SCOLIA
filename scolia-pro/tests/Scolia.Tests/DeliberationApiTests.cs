@@ -112,6 +112,13 @@ public sealed class DeliberationApiTests : IDisposable
         var admin = await app.InstalledAdmin();
         var setup = await SetupAsync(admin, "MUKENDI", "KASONGO", "ILUNGA");
 
+        var before = await admin.GetAsync($"{D}/codes?promotionId={setup.PromotionId}").Ok();
+        Assert.All(before.EnumerateArray(), row =>
+        {
+            Assert.Equal(string.Empty, row.GetProperty("matricule").GetString());
+            Assert.Null(row.GetProperty("code").GetString());
+        });
+
         var first = await admin.Post($"{D}/codes/attribution", new { promotionId = setup.PromotionId }).Ok();
         Assert.Equal(3, first.GetProperty("assigned").GetInt32());
         var again = await admin.Post($"{D}/codes/attribution", new { promotionId = setup.PromotionId }).Ok();
@@ -121,6 +128,10 @@ public sealed class DeliberationApiTests : IDisposable
         var codes = await CodesAsync(admin, setup.PromotionId);
         Assert.Equal(3, codes.Values.Distinct().Count());
         Assert.All(codes.Values, c => Assert.Matches("^[A-Z][0-9]{2}[A-Z][0-9][A-Z]$", c));
+        var after = await admin.GetAsync($"{D}/codes?promotionId={setup.PromotionId}").Ok();
+        Assert.All(after.EnumerateArray(), row =>
+            Assert.Equal(row.GetProperty("code").GetString(),
+                row.GetProperty("matricule").GetString()));
 
         // Code officiel d'ITMCD saisi à la main ; remplacer exige un motif ; un code déjà pris est refusé.
         var target = setup.Enrollments[0];
@@ -128,6 +139,7 @@ public sealed class DeliberationApiTests : IDisposable
         Assert.Equal(HttpStatusCode.BadRequest, noReason);
         var manual = await admin.Put($"{D}/codes/{target}", new { code = "itm-26-ab12", reason = "Code officiel ITMCD" }).Ok();
         Assert.Equal("ITM-26-AB12", manual.GetProperty("code").GetString());
+        Assert.Equal("ITM-26-AB12", manual.GetProperty("matricule").GetString());
         Assert.True(manual.GetProperty("isManual").GetBoolean());
         var (taken, _) = await admin.Put($"{D}/codes/{setup.Enrollments[1]}", new { code = "ITM-26-AB12", reason = "Essai de doublon" }).Fail();
         Assert.Equal(HttpStatusCode.Conflict, taken);
