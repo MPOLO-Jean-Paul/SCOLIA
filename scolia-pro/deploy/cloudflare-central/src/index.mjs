@@ -4,7 +4,8 @@ import { issuePairingIdentityProof } from "./identity.mjs";
 import { issueCentralSession } from "./session.mjs";
 import { handleSchoolSections } from "./sections.mjs";
 import { handleSchoolPromotions } from "./promotions.mjs";
-// Seuls les catalogues de sections et promotions admettent des mutations versionnees.
+import { handleAcademicYears } from "./years.mjs";
+// Seuls les catalogues des annees, sections et promotions admettent des mutations versionnees.
 // Aucun dossier nominatif, paiement, note ou recu n'est modifiable ici.
 const textEncoder = new TextEncoder();
 const privilegedRoles = new Set(["secretariat", "administrateur", "direction"]);
@@ -92,6 +93,8 @@ export async function handleRequest(request, env) {
     (request.method === "GET" || request.method === "POST");
   const isPromotionCatalog = url.pathname === "/v1/catalog/promotions" &&
     (request.method === "GET" || request.method === "POST");
+  const isAcademicYearCatalog = url.pathname === "/v1/catalog/years" &&
+    (request.method === "GET" || request.method === "POST");
   const isAck = url.pathname === "/v1/sync/ack" && request.method === "POST";
   // Une écriture 202 demeure provisoire. Le client peut vérifier sa validation
   // définitive, sans exposer ni les montants ni les données de l'établissement.
@@ -117,7 +120,7 @@ export async function handleRequest(request, env) {
   if (isPairingAcceptance) return acceptPairing(request, env);
   if (!isEvents && !isAck && !isDeviceList && !isDeviceRevoke &&
       !isDeviceInvite && !isOperationStatus && !isSectionCatalog &&
-      !isPromotionCatalog)
+      !isPromotionCatalog && !isAcademicYearCatalog)
     return error(404, "not_found");
   if (!env?.DB || !env?.SCOLIA_AUTH_HMAC_KEY) return error(503, "not_configured");
   try {
@@ -127,6 +130,8 @@ export async function handleRequest(request, env) {
       return handleSchoolSections(request, env, user);
     if (isPromotionCatalog)
       return handleSchoolPromotions(request, env, user);
+    if (isAcademicYearCatalog)
+      return handleAcademicYears(request, env, user);
     if (isOperationStatus) {
       const operationId = url.pathname.slice("/v1/sync/operations/".length);
       if (!/^[A-Za-z0-9_-]{1,128}$/.test(operationId))
