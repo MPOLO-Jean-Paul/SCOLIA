@@ -204,8 +204,13 @@ public sealed class StudentCardsApiTests : IDisposable
         var studentId = student.GetProperty("id").GetString()!;
         var enrollmentId = student.GetProperty("enrollments")[0].GetProperty("id").GetString()!;
 
-        // L'ancien matricule reste interne ; aucun code n'est invente en GET.
+        // L'ancien matricule reste interne ; aucune consultation ne cree un code.
         Assert.Equal(string.Empty, student.GetProperty("matricule").GetString());
+        var blankDetail = await admin.GetAsync($"/api/apprenants/{studentId}").Ok();
+        Assert.Equal(string.Empty, blankDetail.GetProperty("matricule").GetString());
+        var blankList = await admin.GetAsync($"/api/apprenants?promotionId={promotion}").Ok();
+        Assert.Equal(string.Empty, blankList.GetProperty("items")
+            .EnumerateArray().Single().GetProperty("matricule").GetString());
         var before = (await admin.GetAsync($"/api/cartes/candidats?promotionId={promotion}").Ok())
             .EnumerateArray().Single();
         Assert.False(before.GetProperty("hasAnonymousCode").GetBoolean());
