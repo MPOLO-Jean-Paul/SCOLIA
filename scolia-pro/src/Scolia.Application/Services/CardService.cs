@@ -31,7 +31,7 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
             .Where(r => term.Length == 0 || TextKey.Normalize($"{r.Matricule} {r.LastName} {r.MiddleName} {r.FirstName}").Contains(term, StringComparison.Ordinal))
             .OrderBy(r => r.Promotion).ThenBy(r => r.LastName).ThenBy(r => r.FirstName)
             .Select(r => new CardCandidateDto(r.EnrollmentId, r.Matricule, Name(r), r.Promotion, Labels.Of(r.Effective),
-                StudentCardRules.Eligible(r.Effective, includeLeft) && r.HasAnonymousCode,
+                StudentCardRules.Eligible(r.Effective, includeLeft),
                 StudentCardRules.IdentityComplete(r.LastName, r.FirstName), r.Duplicate,
                 r.HasAnonymousCode))
             .ToList();
@@ -51,12 +51,12 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         var year = await YearContext.CurrentAsync(db, ct);
         var rows = await CandidateRowsAsync(year, null, requested, ct);
         var selected = rows
-            .Where(r => StudentCardRules.Eligible(r.Effective, input.IncludeLeft) && StudentCardRules.IdentityComplete(r.LastName, r.FirstName) && !r.Duplicate && r.HasAnonymousCode)
+            .Where(r => StudentCardRules.Eligible(r.Effective, input.IncludeLeft) && StudentCardRules.IdentityComplete(r.LastName, r.FirstName) && !r.Duplicate)
             .OrderBy(r => r.Promotion).ThenBy(r => r.LastName).ThenBy(r => r.FirstName)
             .ToList();
         var skipped = requested.Count - selected.Count;
         if (selected.Count == 0)
-            throw new DomainException("cartes", "Aucune carte à imprimer : vérifiez les identités et attribuez les codes dans Délibération > Codes anonymes.");
+            throw new DomainException("cartes", "Aucune carte à imprimer : les apprenants choisis sont sortis ou suspendus, ou leur identité est incomplète.");
         foreach (var r in selected)
         {
             StudentCardRules.EnsureFits(r.LastName, "nom");
