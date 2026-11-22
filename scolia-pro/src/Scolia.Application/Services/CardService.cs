@@ -150,7 +150,7 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
             .GroupBy(d => d.EnrollmentId).ToDictionary(g => g.Key, g => g.ToList());
         var today = clock.Today;
         return items.Select(x => new CandidateRow(
-            x.Id, x.PromotionId, codes.GetValueOrDefault(x.Id) ?? "À ATTRIBUER",
+            x.Id, x.PromotionId, codes.GetValueOrDefault(x.Id) ?? string.Empty,
             x.LastName, x.MiddleName, x.FirstName, x.Promotion,
             DisciplineRules.EffectiveStatus(x.Status, decisions.TryGetValue(x.Id, out var mine) ? mine : [], today),
             repeated.Contains(codes.GetValueOrDefault(x.Id) ?? string.Empty),
