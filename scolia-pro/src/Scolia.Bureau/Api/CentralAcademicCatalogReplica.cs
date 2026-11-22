@@ -124,6 +124,23 @@ public sealed class CentralAcademicCatalogReplica : IDisposable
             value.Revision, Offline: true);
     }
 
+    // Les champs d'un serveur distant doivent etre valides avant usage.
+    private static JsonElement Require(JsonElement item, string name)
+    {
+        if (item.ValueKind != JsonValueKind.Object ||
+            !item.TryGetProperty(name, out var value))
+            throw new InvalidDataException("Propriete obligatoire absente dans D1.");
+        return value;
+    }
+
+    private static string? ReadString(JsonElement item, string name)
+    {
+        var value = Require(item, name);
+        if (value.ValueKind != JsonValueKind.String)
+            throw new InvalidDataException("Type de champ D1 invalide.");
+        return value.GetString();
+    }
+
     private static string ValidGuid(JsonElement element)
     {
         if (element.ValueKind != JsonValueKind.String ||
@@ -140,11 +157,11 @@ public sealed class CentralAcademicCatalogReplica : IDisposable
 
     private static CentralAcademicYearRow ReadYear(JsonElement item, long revision)
     {
-        var id = ValidGuid(item.GetProperty("academic_year_id"));
-        var label = item.GetProperty("label").GetString();
-        var start = item.GetProperty("start_date").GetString();
-        var end = item.GetProperty("end_date").GetString();
-        var status = item.GetProperty("status").GetString();
+        var id = ValidGuid(Require(item, "academic_year_id"));
+        var label = ReadString(item, "label");
+        var start = ReadString(item, "start_date");
+        var end = ReadString(item, "end_date");
+        var status = ReadString(item, "status");
         if (label is null || label.Length != 9 || label[4] != '-' ||
             !int.TryParse(label.AsSpan(0, 4), NumberStyles.None,
                 CultureInfo.InvariantCulture, out var first) ||
@@ -163,14 +180,14 @@ public sealed class CentralAcademicCatalogReplica : IDisposable
     private static CentralAcademicPromotionRow ReadPromotion(JsonElement item,
         long revision)
     {
-        var id = ValidGuid(item.GetProperty("promotion_id"));
-        var year = ValidGuid(item.GetProperty("academic_year_id"));
-        var sectionElement = item.GetProperty("section_id");
+        var id = ValidGuid(Require(item, "promotion_id"));
+        var year = ValidGuid(Require(item, "academic_year_id"));
+        var sectionElement = Require(item, "section_id");
         var section = sectionElement.ValueKind == JsonValueKind.Null ?
             null : ValidGuid(sectionElement);
-        var code = item.GetProperty("code").GetString();
-        var name = item.GetProperty("name").GetString();
-        var activeElement = item.GetProperty("is_active");
+        var code = ReadString(item, "code");
+        var name = ReadString(item, "name");
+        var activeElement = Require(item, "is_active");
         if (code is null || code.Length is < 2 or > 16 ||
             code.Any(c => !(char.IsAsciiLetterUpper(c) || char.IsAsciiDigit(c) ||
                              c is '_' or '-')) ||
@@ -228,7 +245,7 @@ public sealed class CentralAcademicCatalogReplica : IDisposable
                         return Local() with { Offline = true };
 
                     var root = await CentralBoundedJson.ReadAsync(response, 90_000, ct);
-                    var items = root.GetProperty("events");
+                    var items = Require(root, "events");
                     if (items.ValueKind != JsonValueKind.Array ||
                         items.GetArrayLength() > 50)
                         throw new InvalidDataException("Page de catalogue D1 invalide.");
@@ -239,7 +256,8 @@ public sealed class CentralAcademicCatalogReplica : IDisposable
                     foreach (var item in items.EnumerateArray())
                     {
                         if (item.ValueKind != JsonValueKind.Object ||
-                            !item.GetProperty("revision").TryGetInt64(out var rev) ||
+                            Require(item, "revision").ValueKind != JsonValueKind.Number ||
+                            !Require(item, "revision").TryGetInt64(out var rev) ||
                             rev <= last)
                             throw new InvalidDataException("Revision D1 invalide.");
                         if (kind == CentralAcademicCatalogKind.Years)
@@ -248,10 +266,11 @@ public sealed class CentralAcademicCatalogReplica : IDisposable
                             nextPromotions.Add(ReadPromotion(item, rev));
                         last = rev;
                     }
-                    if (!root.GetProperty("next").TryGetInt64(out var cursor) ||
+                    if (Require(root, "next").ValueKind != JsonValueKind.Number ||
+                        !Require(root, "next").TryGetInt64(out var cursor) ||
                         cursor != last)
                         throw new InvalidDataException("Curseur D1 incoherent.");
-                    var flag = root.GetProperty("has_more");
+                    var flag = Require(root, "has_more");
                     if (flag.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
                         throw new InvalidDataException("Pagination D1 invalide.");
                     more = flag.GetBoolean();
