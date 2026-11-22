@@ -340,6 +340,30 @@ public sealed class SyncWorker : Worker
             using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
             budget.CancelAfter(TimeSpan.FromSeconds(35));
             var state = await api.SyncActiveCentralSectionsAsync(account, budget.Token);
+            // Les catalogues ne sont pas encore des donnees de facturation :
+            // rafraichir en lecture seule, apres la validation des sections D1.
+            // Si le prototype de catalogue n'est pas deploye, sa copie locale
+            // reste utilisable et son absence ne provoque pas de retries en boucle.
+            if (state is { Offline: false })
+            {
+                try
+                {
+                    _ = await api.SyncActiveCentralAcademicCatalogsAsync(
+                        account, budget.Token);
+                }
+                catch (CentralPairingException ex) when (ex.Status is 404 or 503)
+                {
+                    Android.Util.Log.Info("SCOLIA-Central",
+                        "Catalogue D1 facultatif indisponible : prochain passage planifie.");
+                }
+                catch (InvalidDataException)
+                {
+                    // Ne pas faire progresser un curseur si le Worker renvoie
+                    // un evenement invalide ; garder la derniere copie SQLite.
+                    Android.Util.Log.Warn("SCOLIA-Central",
+                        "Catalogue D1 non valide : copie locale conservee.");
+                }
+            }
             return state is { Offline: true } or { HasMorePages: true };
         }
         catch (CentralPairingException exception)
