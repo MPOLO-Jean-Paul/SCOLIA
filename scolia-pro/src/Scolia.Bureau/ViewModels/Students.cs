@@ -693,7 +693,7 @@ public static class StudentForms
             if (promotions.Count == 0) return;
         }
         string? confirmedIdentity = null;
-        var form = new FormViewModel("Nouvelle inscription", "Le matricule est attribué automatiquement à l'enregistrement.", async f =>
+        var form = new FormViewModel("Nouvelle inscription", "Le code anonyme actif sera repris automatiquement dans le champ Matricule après son attribution.", async f =>
         {
             // La confirmation d'un homonyme ne vaut que pour la saisie vérifiée.
             // Changer le nom, la promotion ou les coordonnées impose une nouvelle vérification.
@@ -732,7 +732,7 @@ public static class StudentForms
             }
             catch (OfflineQueuedException)
             {
-                shell.Notify("Inscription enregistrée sur cet appareil. Matricule provisoire LOCAL ; confirmation automatique au retour du serveur.");
+                shell.Notify("Inscription enregistrée sur cet appareil. Confirmation automatique au retour du serveur ; le code anonyme sera ensuite repris dans le champ Matricule.");
             }
             return true;
         })

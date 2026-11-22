@@ -175,7 +175,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         return students.Select(s =>
         {
             var code = codes.GetValueOrDefault(s.EnrollmentId);
-            return new AnonymousCodeRowDto(s.EnrollmentId, s.Matricule, s.FullName, s.PromotionCode, code?.Code, code?.IsManual ?? false, code?.UpdatedAtUtc ?? code?.CreatedAtUtc);
+            return new AnonymousCodeRowDto(s.EnrollmentId, code?.Code ?? string.Empty, s.FullName, s.PromotionCode, code?.Code, code?.IsManual ?? false, code?.UpdatedAtUtc ?? code?.CreatedAtUtc);
         }).OrderBy(r => r.PromotionCode).ThenBy(r => r.FullName).ToList();
     }
 
@@ -342,7 +342,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     }
 
     private static AnonymousCodeRowDto Row(EnrolledStudent s, AnonymousCode c) =>
-        new(s.EnrollmentId, s.Matricule, s.FullName, s.PromotionCode, c.Code, c.IsManual, c.UpdatedAtUtc ?? c.CreatedAtUtc);
+        new(s.EnrollmentId, c.Code, s.FullName, s.PromotionCode, c.Code, c.IsManual, c.UpdatedAtUtc ?? c.CreatedAtUtc);
 
     private async Task<(AnonymousCode Code, EnrolledStudent Student)> ResolveCodeAsync(Guid yearId, string? value, CancellationToken ct)
     {

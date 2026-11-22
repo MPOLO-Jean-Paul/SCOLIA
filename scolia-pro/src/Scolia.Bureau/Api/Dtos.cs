@@ -104,7 +104,7 @@ public sealed record SchoolBulletinPreviewDto(
 
 /// <summary>Apprenant proposé pour les cartes d'accès, avec son diagnostic.</summary>
 public sealed record CardCandidateDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Status, bool Eligible,
-    bool IdentityComplete, bool DuplicateMatricule);
+    bool IdentityComplete, bool DuplicateMatricule, bool HasAnonymousCode = true);
 
 public sealed record CardBatchDto(Guid Id, DateTime CreatedAtUtc, string Session, string PromotionLabel, int StudentCount, int CardCount, int PageCount,
     string Format, string FileName, string CreatedBy);

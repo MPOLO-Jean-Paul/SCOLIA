@@ -168,7 +168,10 @@ public sealed class CardsPage : PageViewModel
         Rows.Clear();
         foreach (var c in candidates)
         {
-            var diagnostic = !c.IdentityComplete ? "Identité incomplète" : c.DuplicateMatricule ? "Matricule répété" : !c.Eligible ? $"Exclu : {c.Status}" : string.Empty;
+            var diagnostic = !c.HasAnonymousCode ? "Code anonyme absent : matricule vide" :
+                !c.IdentityComplete ? "Identité incomplète" :
+                c.DuplicateMatricule ? "Code anonyme répété" :
+                !c.Eligible ? $"Exclu : {c.Status}" : string.Empty;
             var row = new CardRowVm(c, diagnostic, SelectionChanged)
             {
                 Selected = c.Eligible && c.IdentityComplete && !c.DuplicateMatricule && selectedCardIds.Contains(c.EnrollmentId),
