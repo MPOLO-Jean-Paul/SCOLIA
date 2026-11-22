@@ -19,7 +19,7 @@ public sealed record CardExportResult(byte[] Bytes, string FileName, int Cards, 
 /// </summary>
 public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, ICurrentUser user, IDocumentService documents)
 {
-    private sealed record CandidateRow(Guid EnrollmentId, string Matricule, string LastName, string MiddleName, string FirstName, string Promotion,
+    private sealed record CandidateRow(Guid EnrollmentId, Guid PromotionId, string Matricule, string LastName, string MiddleName, string FirstName, string Promotion,
         EnrollmentStatus Effective, bool Duplicate, bool HasAnonymousCode);
 
     public async Task<IReadOnlyList<CardCandidateDto>> CandidatesAsync(Guid? promotionId, string? search, bool includeLeft, CancellationToken ct = default)
@@ -68,12 +68,13 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         if (school.Logo is not { Length: > 0 })
             throw new DomainException("cartes",
                 "Le logo de votre établissement n'est pas configuré. Ajoutez-le dans Paramètres > Établissement avant d'imprimer les cartes d'accès.");
-        // Couleur unique pour CHAQUE promotion (ACC1 != ACC2 != ACC3),
-        // sur la liste complete de l'annee : filtrer les cartes ne change
-        // jamais la correspondance couleur/promotion.
-        var promotionCodes = await db.Promotions.AsNoTracking()
-            .Where(p => p.AcademicYearId == year.Id).Select(p => p.Code).ToListAsync(ct);
-        var bands = StudentCardRules.PromotionBandColors(promotionCodes);
+        // Couleur unique par identifiant de promotion, y compris pour
+        // deux cycles qui reutilisent le meme code de classe (ex. P1).
+        // La liste complete de l'annee stabilise les exports partiels.
+        var promotionIds = await db.Promotions.AsNoTracking()
+            .Where(p => p.AcademicYearId == year.Id).Select(p => p.Id).ToListAsync(ct);
+        var bands = StudentCardRules.PromotionBandColors(
+            promotionIds.Select(id => id.ToString("D")));
         // Les cartes reprennent l'identité et le logo propres à l'établissement actif. Le cachet n'est pas imprimé :
         // l'établissement appose son cachet original à la main sur la carte imprimée.
         var header = new SchoolCardHeader(
@@ -91,7 +92,7 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         {
             var qr = $"{school.Name} | {session} | {year.Label} | {r.Matricule} | {Name(r)} | {r.Promotion}";
             for (var i = 0; i < copies; i++)
-                cards.Add(new CardItem(r.LastName, r.MiddleName, r.FirstName, r.Promotion, bands.GetValueOrDefault(r.Promotion, StudentCardRules.BandPalette[0]), qr, r.Matricule));
+                cards.Add(new CardItem(r.LastName, r.MiddleName, r.FirstName, r.Promotion, bands.GetValueOrDefault(r.PromotionId.ToString("D"), StudentCardRules.BandPalette[0]), qr, r.Matricule));
         }
 
         var word = string.Equals(input.Format, "docx", StringComparison.OrdinalIgnoreCase);
@@ -149,7 +150,7 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
             .GroupBy(d => d.EnrollmentId).ToDictionary(g => g.Key, g => g.ToList());
         var today = clock.Today;
         return items.Select(x => new CandidateRow(
-            x.Id, codes.GetValueOrDefault(x.Id) ?? "À ATTRIBUER",
+            x.Id, x.PromotionId, codes.GetValueOrDefault(x.Id) ?? "À ATTRIBUER",
             x.LastName, x.MiddleName, x.FirstName, x.Promotion,
             DisciplineRules.EffectiveStatus(x.Status, decisions.TryGetValue(x.Id, out var mine) ? mine : [], today),
             repeated.Contains(codes.GetValueOrDefault(x.Id) ?? string.Empty),
