@@ -91,6 +91,56 @@ public static class StudentCardRules
             .Select((key, index) => (key, color: BandPalette[index % BandPalette.Count]))
             .ToDictionary(x => x.key, x => x.color, StringComparer.Ordinal);
 
+    /// <summary>
+    /// Chaque promotion possede sa bande propre : ACC1, ACC2 et ACC3 ont
+    /// trois couleurs distinctes, independamment de leur section.
+    /// Le tri sur toutes les promotions de l'annee garantit la meme couleur
+    /// pour un export PDF, Word ou un lot filtre.
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> PromotionBandColors(
+        IEnumerable<string> promotionCodes)
+    {
+        var keys = promotionCodes
+            .Where(code => !string.IsNullOrWhiteSpace(code))
+            .Select(code => code.Trim().ToUpperInvariant())
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(code => code, StringComparer.Ordinal)
+            .ToList();
+        var bands = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var generated = BandPalette.Count;
+        for (var i = 0; i < keys.Count; i++)
+        {
+            var color = i < BandPalette.Count ? BandPalette[i] : ExtraBandColor(generated++);
+            while (!used.Add(color))
+                color = ExtraBandColor(generated++);
+            bands.Add(keys[i], color);
+        }
+        return bands;
+    }
+
+    /// <summary>Une teinte saturée imprimable au-delà des 12 couleurs de base.</summary>
+    private static string ExtraBandColor(int index)
+    {
+        var hue = (index * 137.508d) % 360d;
+        const double saturation = 0.70d;
+        const double value = 0.78d;
+        var chroma = value * saturation;
+        var x = chroma * (1 - Math.Abs((hue / 60d) % 2d - 1));
+        var m = value - chroma;
+        var (r, g, b) = hue switch
+        {
+            < 60 => (chroma, x, 0d),
+            < 120 => (x, chroma, 0d),
+            < 180 => (0d, chroma, x),
+            < 240 => (0d, x, chroma),
+            < 300 => (x, 0d, chroma),
+            _ => (chroma, 0d, x),
+        };
+        static int Channel(double v) => Math.Clamp((int)Math.Round(255d * v), 0, 255);
+        return $"#{Channel(r + m):X2}{Channel(g + m):X2}{Channel(b + m):X2}";
+    }
+
     /// <summary>Détecte les matricules doublés de l'année avant tout filtrage.</summary>
     public static HashSet<string> DuplicateMatricules(IEnumerable<string> matricules) =>
         matricules.Where(v => !string.IsNullOrWhiteSpace(v))
