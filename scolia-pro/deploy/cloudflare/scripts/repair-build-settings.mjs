@@ -62,6 +62,40 @@ export function findWorkerTag(scripts) {
   return workers[0].tag;
 }
 
+/** Lit uniquement les métadonnées publiques du build : jamais un corps de log brut. */
+export function latestFailedBuild(builds) {
+  if (!Array.isArray(builds)) return null;
+  return builds
+    .filter(item => item && item.build_outcome === 'fail' &&
+      typeof item.build_uuid === 'string' &&
+      /^[0-9a-f-]{36}$/i.test(item.build_uuid))
+    .sort((a, b) => String(b.created_on ?? '').localeCompare(String(a.created_on ?? '')))[0] ?? null;
+}
+
+/** Diagnostic à partir de messages non fiables. Ne retourner QUE des phrases fixes. */
+export function classifyBuildLog(lines) {
+  if (!Array.isArray(lines)) return 'Cause inconnue : consulter les logs dans Cloudflare.';
+  // Les logs peuvent contenir des secrets : n'afficher ni extrait, ni chemin,
+  // ni URL, même sur échec. La classification doit rester non réversible.
+  const message = lines.slice(0, 3000)
+    .filter(row => Array.isArray(row))
+    .map(row => typeof row[1] === 'string' ? row[1] : '')
+    .join('\n').toLowerCase();
+  if (/root directory not found|cannot find root directory|root directory does not exist/.test(message))
+    return 'Répertoire racine introuvable : vérifier Settings > Builds > Root directory.';
+  if (/missing entry.point|entry.point should be specified|could not resolve.*src\/index/.test(message))
+    return 'Point d’entrée Worker introuvable : vérifier le root directory et wrangler.jsonc.';
+  if (/invalid token|authentication error|invalid api token|authorization failed|not authorized|authentication failed/.test(message))
+    return 'Autorisation de build invalide : renouveler le build token dans Cloudflare.';
+  if (/permission denied|insufficient permissions|missing permissions|forbidden.*api/.test(message))
+    return 'Permissions Cloudflare insuffisantes : contrôler le build token.';
+  if (/npm err|npm error|npm ci failed|npm ci.*error/.test(message))
+    return 'Installation npm en échec : vérifier le lockfile et la version de Node.js.';
+  if (/exceeded.*limit|quota exceeded|workers free plan.*limit/.test(message))
+    return 'Quota Cloudflare atteint : vérifier l’utilisation du plan et ses limites.';
+  return 'Cause non reconnue automatiquement : consulter les logs dans Cloudflare.';
+}
+
 async function run() {
   const args = process.argv.slice(2);
   if (args.some(x => !['--inspect', '--apply'].includes(x)) ||
@@ -98,6 +132,23 @@ async function run() {
   const tag = findWorkerTag(await request('/workers/scripts'));
   const route = '/builds/workers/' + encodeURIComponent(tag);
   const current = await request(route);
+  // Diagnostic en lecture seule. Le Worker, ses secrets et ses données
+  // ne sont jamais modifiés par cette requête.
+  if (!apply) {
+    try {
+      const failed = latestFailedBuild(await request(route + '/builds'));
+      if (failed) {
+        const logs = await request('/builds/builds/' +
+          encodeURIComponent(failed.build_uuid) + '/logs');
+        console.log('Dernier build échoué : ' +
+          classifyBuildLog(logs?.lines));
+      } else {
+        console.log('Aucun build échoué identifiable dans la page récente.');
+      }
+    } catch {
+      console.log('Diagnostic des logs indisponible : vérifier les permissions Workers Builds.');
+    }
+  }
   const patch = plannedPatch(current);
   if (Object.keys(patch).length === 0) {
     console.log('Configuration Builders deja conforme. Si le build est rouge, inspecter son log (token, quota, git).');
