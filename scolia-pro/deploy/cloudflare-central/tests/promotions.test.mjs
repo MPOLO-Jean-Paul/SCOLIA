@@ -8,11 +8,13 @@ if (!globalThis.crypto) globalThis.crypto = webcrypto;
 
 const promotionId = "816be80f-0623-4104-887a-7ee6ac57ee8a";
 const sectionId = "d561b4c0-f5ac-4ad5-9d6d-b2ec34a41101";
+const yearId = "5c2a9ccf-5425-460d-9026-f3e7611d1e65";
 const opId = "3ca2b5a4-770d-4f21-a857-4f5f0a1a1c6b";
 const user = { school_id: "school-a", sub: "secretary", device_id: "pc-1",
   role: "secretariat" };
 const original = {
-  operation_id: opId, promotion_id: promotionId, section_id: sectionId,
+  operation_id: opId, promotion_id: promotionId,
+  academic_year_id: yearId, section_id: sectionId,
   code: "INF1", name: "Premiere infirmiere",
   is_active: true, expected_revision: 0,
 };
@@ -20,10 +22,11 @@ const original = {
 function fakeDb() {
   const events = [], operations = new Map(), calls = [];
   const sections = new Set(["school-a|" + sectionId]);
+  const years = new Set(["school-a|" + yearId]);
   let revision = 0;
   const key = (school, op) => school + "|" + op;
   return {
-    events, operations, calls, sections,
+    events, operations, calls, sections, years,
     DB: {
       prepare(sql) {
         return {
@@ -48,13 +51,16 @@ function fakeDb() {
               async run() {
                 if (!sql.startsWith("INSERT INTO cloud_promotion_events"))
                   throw Error("unexpected run");
-                const [school, operation, promotion, section, actor, device,
+                const [school, operation, promotion, year, section, actor, device,
                   code, name, active, expected, request_sha256] = params;
                 if (operations.has(key(school, operation)))
                   throw Error("UNIQUE constraint failed");
-                if (active === 1 && !sections.has(school + "|" + section))
+                if (!years.has(school + "|" + year))
+                  throw Error("cloud_promotion_invalid_year");
+                if (section !== null && active === 1 &&
+                    !sections.has(school + "|" + section))
                   throw Error("cloud_promotion_invalid_section");
-                if (!sections.has(school + "|" + section))
+                if (section !== null && !sections.has(school + "|" + section))
                   throw Error("FOREIGN KEY constraint failed");
                 const previous = events.filter(row => row.school_id === school &&
                   row.promotion_id === promotion).at(-1)?.revision ?? 0;
@@ -62,7 +68,8 @@ function fakeDb() {
                   throw Error("cloud_promotion_stale_revision");
                 const row = {
                   school_id: school, revision: ++revision,
-                  operation_id: operation, promotion_id: promotion, section_id: section,
+                  operation_id: operation, promotion_id: promotion,
+                  academic_year_id: year, section_id: section,
                   actor_user_id: actor, device_id: device, code, name,
                   is_active: active, request_sha256, created_at: 123,
                 };
@@ -145,6 +152,22 @@ test("ecriture interdite aux enseignants et sections etrangeres", async () => {
   assert.equal(f.events.length, 0);
 });
 
+test("la section peut etre absente mais une annee valide est obligatoire", async () => {
+  const f = fakeDb();
+  const noSection = await call(f.DB, "POST", "/v1/catalog/promotions", {
+    ...original, section_id: null,
+  });
+  assert.equal(noSection.status, 201);
+  assert.equal(f.events[0].section_id, null);
+  const otherYear = await call(f.DB, "POST", "/v1/catalog/promotions", {
+    ...original, operation_id: "c016d4e0-18bd-4934-a951-918103cdb7b9",
+    academic_year_id: "03c275f1-8112-46ba-9dc3-5f7bd72475cc",
+  });
+  assert.equal(otherYear.status, 409);
+  assert.equal((await otherYear.json()).error, "closed_or_unknown_academic_year");
+  assert.equal(f.events.length, 1);
+});
+
 test("validation stricte des IDs, champs et curseurs", async () => {
   const f = fakeDb();
   for (const wrong of [
@@ -157,6 +180,7 @@ test("validation stricte des IDs, champs et curseurs", async () => {
     { ...original, is_active: 1 },
     { ...original, expected_revision: -1 },
     { ...original, section_id: "school-b:section" },
+    { ...original, academic_year_id: null },
     { ...original, school_id: "school-b" },
   ]) {
     const response = await call(f.DB, "POST", "/v1/catalog/promotions", wrong);
