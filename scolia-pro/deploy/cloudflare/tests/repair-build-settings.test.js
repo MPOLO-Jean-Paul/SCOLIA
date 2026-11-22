@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TARGET, findWorkerTag, plannedPatch } from '../scripts/repair-build-settings.mjs';
+import { TARGET, classifyBuildLog, findWorkerTag, latestFailedBuild, plannedPatch } from '../scripts/repair-build-settings.mjs';
 
 function config(overrides = {}) {
   return {
@@ -68,4 +68,46 @@ test('le tag du seul Worker attendu est utilise', () => {
 test('config illisible est refusee sans tentative', () => {
   assert.throws(() => plannedPatch(null), /vide/);
   assert.throws(() => plannedPatch({ git_repository: config().git_repository }), /absente/);
+});
+
+test('diagnostic : selectionne le dernier build echoue uniquement', () => {
+  const id1 = '12345678-1111-4111-8111-123456789abc';
+  const id2 = '87654321-1111-4111-8111-123456789abc';
+  const builds = [
+    { build_uuid: id1, build_outcome: 'fail', created_on: '2026-11-21T18:00:00Z' },
+    { build_uuid: id2, build_outcome: 'fail', created_on: '2026-11-22T01:00:00Z' },
+    { build_uuid: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', build_outcome: 'success',
+      created_on: '2026-11-22T04:00:00Z' },
+    { build_uuid: 'not-an-id', build_outcome: 'fail', created_on: '2026-11-22T05:00:00Z' },
+  ];
+  assert.equal(latestFailedBuild(builds).build_uuid, id2);
+  assert.equal(latestFailedBuild([]), null);
+  assert.equal(latestFailedBuild(null), null);
+});
+
+test('diagnostic : les messages de logs restent prives, seule une classe fixe sort', () => {
+  const secret = 'CLOUDFLARE_API_TOKEN=S3cret-Very-Private';
+  const lines = [
+    [1763778000, secret],
+    [1763778001, 'Failed: root directory not found'],
+  ];
+  const message = classifyBuildLog(lines);
+  assert.match(message, /racine introuvable/);
+  assert.ok(!message.includes('S3cret'));
+  assert.ok(!message.includes('CLOUDFLARE_API_TOKEN'));
+});
+
+test('diagnostic : reconnait erreur du point entree et erreur de jeton', () => {
+  assert.match(classifyBuildLog([[1, 'Missing entry-point in your Worker']]),
+    /Point d’entrée/);
+  assert.match(classifyBuildLog([[1, 'Error: Invalid token']]), /Autorisation/);
+  assert.match(classifyBuildLog([[1, 'permission denied while deploying']]), /Permissions/);
+});
+
+test('diagnostic : refuse les messages non reconnus sans publier leur contenu', () => {
+  const secret = 'very-private-token-987654321';
+  assert.match(classifyBuildLog([[1, secret]]), /Cause non reconnue/);
+  assert.ok(!classifyBuildLog([[1, secret]]).includes(secret));
+  assert.match(classifyBuildLog([]), /Cause non reconnue/);
+  assert.match(classifyBuildLog(null), /Cause inconnue/);
 });
