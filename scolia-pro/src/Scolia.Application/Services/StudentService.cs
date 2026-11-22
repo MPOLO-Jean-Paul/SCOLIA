@@ -175,6 +175,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     {
         var key = Student.BuildIdentityKey(lastName, middleName, firstName);
         var candidates = await db.Students.AsNoTracking().Where(s => s.IdentityKey == key && s.Id != excludeId).ToListAsync(ct);
+        var year = await YearContext.CurrentAsync(db, ct);
         var result = new List<DuplicateCandidate>();
         foreach (var c in candidates)
         {
@@ -184,7 +185,11 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
                               where e.StudentId == c.Id
                               orderby y.StartDate descending
                               select p.Code).FirstOrDefaultAsync(ct);
-            result.Add(new DuplicateCandidate(c.Id, c.Matricule, c.FullName, code));
+            var anonymous = await (from e in db.Enrollments.AsNoTracking()
+                                   join a in db.AnonymousCodes.AsNoTracking() on e.Id equals a.EnrollmentId
+                                   where e.StudentId == c.Id && e.AcademicYearId == year.Id && a.IsActive
+                                   select a.Code).FirstOrDefaultAsync(ct);
+            result.Add(new DuplicateCandidate(c.Id, anonymous ?? string.Empty, c.FullName, code));
         }
         return result;
     }
@@ -365,10 +370,18 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     {
         var keys = await db.Students.AsNoTracking().GroupBy(s => s.IdentityKey).Where(g => g.Count() > 1).Select(g => g.Key).ToListAsync(ct);
         var result = new List<IReadOnlyList<DuplicateCandidate>>();
+        var year = await YearContext.CurrentAsync(db, ct);
         foreach (var key in keys)
         {
             var students = await db.Students.AsNoTracking().Where(s => s.IdentityKey == key).ToListAsync(ct);
-            result.Add(students.Select(s => new DuplicateCandidate(s.Id, s.Matricule, s.FullName, null)).ToList());
+            var ids = students.Select(s => s.Id).ToList();
+            var codes = await (from e in db.Enrollments.AsNoTracking()
+                               join a in db.AnonymousCodes.AsNoTracking() on e.Id equals a.EnrollmentId
+                               where e.AcademicYearId == year.Id && ids.Contains(e.StudentId) && a.IsActive
+                               select new { e.StudentId, a.Code })
+                               .ToDictionaryAsync(x => x.StudentId, x => x.Code, ct);
+            result.Add(students.Select(s => new DuplicateCandidate(s.Id,
+                codes.GetValueOrDefault(s.Id) ?? string.Empty, s.FullName, null)).ToList());
         }
         return result;
     }
