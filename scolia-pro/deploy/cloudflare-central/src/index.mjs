@@ -4,7 +4,8 @@ import { issuePairingIdentityProof } from "./identity.mjs";
 import { issueCentralSession } from "./session.mjs";
 import { handleSchoolSections } from "./sections.mjs";
 import { handleSchoolPromotions } from "./promotions.mjs";
-// Aucune route de mutation scolaire n'est exposée dans ce prototype.
+// Seuls les catalogues de sections et promotions admettent des mutations versionnees.
+// Aucun dossier nominatif, paiement, note ou recu n'est modifiable ici.
 const textEncoder = new TextEncoder();
 const privilegedRoles = new Set(["secretariat", "administrateur", "direction"]);
 const MAX_EVENTS = 100;
