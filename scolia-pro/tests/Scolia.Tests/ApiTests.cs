@@ -275,7 +275,9 @@ public sealed class BusinessApiTests : IDisposable
             identity = new { lastName = "Mukendi", middleName = "Kabeya", firstName = "grâce", birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14), gender = "F", guardianPhone = "0812345678", guardianName = "Parent" },
             promotionId, confirmDuplicate = false,
         }).Ok();
-        Assert.Equal("INF101", student.GetProperty("matricule").GetString());
+        // Le champ « Matricule » affiche le code anonyme actif ; tant qu'aucun code n'est attribué, il l'annonce
+        // au lieu de révéler la référence technique (INF101), qui reste rattachée aux paiements et aux reçus.
+        Assert.Equal("À ATTRIBUER", student.GetProperty("matricule").GetString());
         Assert.Equal("MUKENDI", student.GetProperty("lastName").GetString());
         Assert.Equal("Grâce", student.GetProperty("firstName").GetString());
         return (promotionId, student.GetProperty("enrollments")[0].GetProperty("id").GetString()!, student.GetProperty("id").GetString()!);
@@ -336,7 +338,8 @@ public sealed class BusinessApiTests : IDisposable
         Assert.Equal(HttpStatusCode.Conflict, status);
         Assert.Equal("INF101", body.GetProperty("candidates")[0].GetProperty("matricule").GetString());
         var confirmed = await admin.Post("/api/apprenants", payload with { confirmDuplicate = true }).Ok();
-        Assert.Equal("INF102", confirmed.GetProperty("matricule").GetString());
+        // Nouvel homonyme confirmé : même règle, le champ « Matricule » attend son code anonyme.
+        Assert.Equal("À ATTRIBUER", confirmed.GetProperty("matricule").GetString());
     }
 
     [Fact]
