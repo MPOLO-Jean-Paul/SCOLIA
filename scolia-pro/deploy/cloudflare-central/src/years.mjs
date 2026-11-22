@@ -41,7 +41,7 @@ function validate(body) {
   const last = Number(body.label.slice(5));
   if (first < 2000 || first > 2199 || last !== first + 1 ||
       Number(body.start_date.slice(0, 4)) !== first ||
-      Number(body.end_date.slice(0, 4)) !== last)
+      ![first, last].includes(Number(body.end_date.slice(0, 4))))
     return null;
   return {
     academic_year_id: body.academic_year_id.toLowerCase(),
@@ -144,6 +144,8 @@ export async function handleAcademicYears(request, env, user) {
       const reason = String(ex?.message || "");
       if (reason.includes("cloud_year_stale_revision"))
         return fail(409, "stale_academic_year_revision");
+      if (reason.includes("cloud_year_closed_immutable"))
+        return fail(409, "academic_year_closed");
       if (reason.includes("cloud_year_identity_immutable"))
         return fail(409, "academic_year_identity_immutable");
       if (reason.includes("UNIQUE constraint failed"))
