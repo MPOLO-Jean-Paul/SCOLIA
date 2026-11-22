@@ -50,10 +50,10 @@
       <DataGrid.Columns>
         <DataGridCheckBoxColumn Header="Carte" Binding="{Binding Selected}" Width="Auto" MinWidth="70" infra:GridPriority.Level="1" />
         <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="122" infra:GridPriority.Level="1" />
-        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" IsReadOnly="True" Width="*" MinWidth="220" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" IsReadOnly="True" Width="1.3*" MinWidth="220" infra:GridPriority.Level="1" />
         <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" IsReadOnly="True" Width="Auto" MinWidth="122" infra:GridPriority.Level="2" />
         <DataGridTextColumn Header="Statut" Binding="{Binding Status}" IsReadOnly="True" Width="Auto" MinWidth="100" infra:GridPriority.Level="2" />
-        <DataGridTextColumn Header="Diagnostic" Binding="{Binding Diagnostic}" IsReadOnly="True" Width="Auto" MinWidth="170" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Diagnostic" Binding="{Binding Diagnostic}" IsReadOnly="True" Width="*" MinWidth="200" infra:GridPriority.Level="1" />
       </DataGrid.Columns>
     </DataGrid>
     <c:EmptyState Grid.Row="2" Icon="CardAccountDetailsOutline" Title="{infra:Terms 'Aucun apprenant pour ces critères'}" Hint="Changez de promotion ou incluez les sortis et suspendus." IsVisible="{Binding !Rows.Count}" />

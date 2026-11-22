@@ -350,12 +350,12 @@
           </Grid>
           <!-- Recherche générale, dans la barre même, façon Android : on tape ici, les résultats se déroulent dessous.
                Sur une liste, la même place sert au filtre de la page (ci-dessous). -->
-          <Border x:Name="HeaderFinderBar" Grid.Column="3" Classes="googlebar pill" MaxWidth="460" MinWidth="220" Margin="18,0"
+          <Border x:Name="HeaderFinderBar" Grid.Column="3" Classes="googlebar pill" MaxWidth="460" MinWidth="160" Margin="16,0,12,0"
                   VerticalAlignment="Center" IsVisible="{Binding !HeaderSearch.IsOpen}">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
               <mi:MaterialIcon Kind="Magnify" Width="20" Height="20" Margin="14,0,4,0" VerticalAlignment="Center"
                                Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
-              <TextBox x:Name="HeaderFinderBox" Grid.Column="1" Classes="searchfield" MinHeight="40"
+              <TextBox x:Name="HeaderFinderBox" Grid.Column="1" Classes="searchfield" MinHeight="{DynamicResource FieldHeight}"
                        Text="{Binding HeaderFinder.Query, Mode=TwoWay}" PlaceholderText="{Binding HeaderFinder.Placeholder}"
                        GotFocus="OnHeaderFinderFocus" KeyDown="OnHeaderFinderKeyDown" ToolTip.Tip="{Binding GlobalSearchTip}" />
               <Button Grid.Column="3" Classes="baricon" Command="{Binding HeaderFinder.ClearQuery}" IsVisible="{Binding HeaderFinder.HasQuery}"
@@ -373,7 +373,7 @@
             </Grid>
           </Border>
           <!-- Filtre ouvert : la barre de la recherche de l'accueil, façon Google, en pilule -->
-          <Border Grid.Column="3" Classes="googlebar pill" MaxWidth="460" MinWidth="260" Margin="18,0" VerticalAlignment="Center"
+          <Border Grid.Column="3" Classes="googlebar pill" MaxWidth="460" MinWidth="160" Margin="16,0,12,0" VerticalAlignment="Center"
                   IsVisible="{Binding HeaderSearch.IsOpen}">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto">
               <!-- Filtre toujours ouvert sur une liste : une loupe fixe, Échap vide le texte -->
@@ -381,7 +381,7 @@
                                Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
               <TextBox x:Name="DesktopContextSearchBox" Grid.Column="1" Classes="searchfield"
                        Text="{Binding HeaderSearch.Query, Mode=TwoWay}" PlaceholderText="{Binding HeaderSearch.Placeholder}"
-                       KeyDown="OnDesktopContextSearchKeyDown" MinHeight="40" />
+                       KeyDown="OnDesktopContextSearchKeyDown" MinHeight="{DynamicResource FieldHeight}" />
               <Button Grid.Column="2" Classes="baricon" Command="{Binding HeaderSearch.Clear}" IsVisible="{Binding HeaderSearch.HasQuery}"
                       ToolTip.Tip="Effacer" Width="40" Height="40">
                 <mi:MaterialIcon Kind="Close" />

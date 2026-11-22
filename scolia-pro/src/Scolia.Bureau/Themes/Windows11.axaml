@@ -113,6 +113,8 @@
   <Thickness x:Key="ButtonStroke">1</Thickness>
   <x:Double x:Key="FieldHeight">32</x:Double>
   <x:Double x:Key="SearchHeight">36</x:Double>
+  <x:Double x:Key="SearchBarHeight">36</x:Double>
+  <x:Double x:Key="FsSearch">14</x:Double>
   <CornerRadius x:Key="RadiusInput">4</CornerRadius>
   <!-- Recherche, puce du compte, boutons de barre et lignes : 4 px comme les contrôles WinUI -->
   <CornerRadius x:Key="RadiusSearch">4</CornerRadius>

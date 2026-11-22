@@ -1878,6 +1878,25 @@ if (args.Length > 3 && args[3] == "commandes")
 
 // Défilement du téléphone (argument « defilement ») : la page reste là où le doigt la laisse, en descendant
 // comme en remontant. Chaque pas compare la position demandée à celle obtenue après la mise en page.
+// Cartes et codes anonymes : captures des deux écrans (ordinateur ou téléphone).
+// SCOLIA_MOBILE=0 dotnet run -- <sortie> <serveur> <mot_de_passe> cartes
+if (args.Length > 3 && args[3] == "cartes")
+{
+    prefs.Animations = false;
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    var suffix = Preferences.MobileLayout ? "mobile" : "bureau";
+    Wait(shell.Open(() => new CardsPage(shell)));
+    Wait(Task.Delay(800));
+    Save(window, $"cartes-{suffix}.png");
+    Wait(shell.Open(() => new AnonymousCodesPage(shell)));
+    Wait(Task.Delay(800));
+    Save(window, $"codes-anonymes-{suffix}.png");
+    Wait(shell.Open(() => new StudentsPage(shell)));
+    Wait(Task.Delay(800));
+    Save(window, $"apprenants-{suffix}.png");
+    return;
+}
+
 // Défilement à la molette amorti (ordinateur) : chaque cran fixe une destination, la page y glisse.
 // SCOLIA_MOBILE=0 dotnet run -- <sortie> <serveur> <mot_de_passe> molette
 if (args.Length > 3 && args[3] == "molette")

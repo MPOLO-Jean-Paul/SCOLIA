@@ -464,12 +464,14 @@
   <Style Selector="Border.googlebar.pill">
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSearch}" />
     <Setter Property="Padding" Value="2,0,4,0" />
-    <Setter Property="MinHeight" Value="46" />
+    <Setter Property="MinHeight" Value="{DynamicResource SearchBarHeight}" />
   </Style>
+  <!-- Focus : filet d'accent et trait inférieur de 2 px, comme la zone de recherche de Windows 11 -->
   <Style Selector="Border.googlebar.pill:focus-within">
     <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="1,1,1,2" />
   </Style>
   <Style Selector="TextBox.searchfield">
     <Setter Property="BorderThickness" Value="0" />
@@ -481,7 +483,7 @@
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
   <Style Selector="Border.googlebar.pill TextBox.searchfield">
-    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontSize" Value="{DynamicResource FsSearch}" />
   </Style>
   <Style Selector="TextBox.searchfield /template/ Border#PART_BorderElement">
     <Setter Property="BorderThickness" Value="0" />
@@ -1105,7 +1107,8 @@
     <Setter Property="MinWidth" Value="0" />
   </Style>
   <!-- Tableaux denses : le chiffre et le nom restent en Regular, l'en-tête porte la graisse -->
-  <Style Selector="DataGridCell TextBlock"><Setter Property="FontWeight" Value="Normal" /></Style>
+  <!-- Cellule trop étroite : points de suspension, jamais un mot coupé net -->
+  <Style Selector="DataGridCell TextBlock"><Setter Property="FontWeight" Value="Normal" /><Setter Property="TextTrimming" Value="CharacterEllipsis" /></Style>
   <Style Selector="DataGridColumnHeader TextBlock">
     <Setter Property="TextWrapping" Value="NoWrap" />
     <Setter Property="TextTrimming" Value="None" />
