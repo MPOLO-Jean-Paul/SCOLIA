@@ -59,6 +59,12 @@ public sealed class StudentCardRulesTests
             StudentCardRules.PromotionBandColors(promotions.Reverse())
                 .OrderBy(x => x.Key).Select(x => x.Value));
         Assert.All(bands.Values, color => Assert.Matches("^#[0-9A-F]{6}$", color));
+
+        // Deux promotions pouvant porter un code visible identique dans
+        // deux cycles sont identifiees par leur ID unique.
+        var ids = new[] { Guid.NewGuid().ToString("D"), Guid.NewGuid().ToString("D") };
+        var sameVisibleCode = StudentCardRules.PromotionBandColors(ids);
+        Assert.NotEqual(sameVisibleCode[ids[0]], sameVisibleCode[ids[1]]);
     }
 
     [Fact]
@@ -221,6 +227,14 @@ public sealed class StudentCardsApiTests : IDisposable
         Assert.Equal("ITM-26-AB12", after.GetProperty("matricule").GetString());
         var detail = await admin.GetAsync($"/api/apprenants/{studentId}").Ok();
         Assert.Equal("ITM-26-AB12", detail.GetProperty("matricule").GetString());
+        var search = await admin.GetAsync("/api/apprenants?search=ITM-26-AB12").Ok();
+        Assert.Contains(search.GetProperty("items").EnumerateArray(),
+            item => item.GetProperty("matricule").GetString() == "ITM-26-AB12");
+
+        // La reference des comptes financiers n'est jamais remplacee.
+        var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
+        Assert.StartsWith("INF1", account.GetProperty("matricule").GetString(),
+            StringComparison.Ordinal);
 
         using var response = await admin.Post("/api/cartes/export",
             new { enrollmentIds = new[] { enrollmentId }, month = 9,
