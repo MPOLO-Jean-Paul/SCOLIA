@@ -30,20 +30,29 @@ class SchoolPromotionsD1Tests(unittest.TestCase):
                    VALUES(?,? ,?,'secretary','pc','INF','Infirmiere',1,0,?)""",
                 (school, "section-" + school, "sec-" + school, HASH),
             )
+            self.db.execute(
+                """INSERT INTO cloud_academic_year_events
+                   (school_id,operation_id,academic_year_id,actor_user_id,device_id,
+                    label,start_date,end_date,status,expected_revision,request_sha256)
+                   VALUES(?,?,?,'secretary','pc',
+                          '2026-2027','2026-09-01','2027-07-31','open',0,?)""",
+                (school, "year-" + school, "year-" + school, HASH),
+            )
 
     def tearDown(self):
         self.db.close()
 
     def put(self, school="a", op="prom-1", promotion="inf1",
             section="sec-a", code="INF1", name="Premiere infirmiere",
-            active=1, version=0, actor="secretary", device="pc"):
+            active=1, version=0, actor="secretary", device="pc", year=None):
+        year = year or "year-" + school
         return self.db.execute(
             """INSERT INTO cloud_promotion_events
-               (school_id,operation_id,promotion_id,section_id,
+               (school_id,operation_id,promotion_id,academic_year_id,section_id,
                 actor_user_id,device_id,code,name,is_active,
                 expected_revision,request_sha256)
-               VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
-            (school, op, promotion, section, actor, device,
+               VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (school, op, promotion, year, section, actor, device,
              code, name, active, version, HASH),
         )
 
@@ -58,9 +67,9 @@ class SchoolPromotionsD1Tests(unittest.TestCase):
         self.put()
         rev = self.revision()
         self.assertGreater(rev, 0)
-        self.assertEqual(("sec-a", "INF1", "Premiere infirmiere", 1, rev),
+        self.assertEqual(("year-a", "sec-a", "INF1", "Premiere infirmiere", 1, rev),
                          self.db.execute(
-                             "SELECT section_id,code,name,is_active,last_revision "
+                             "SELECT academic_year_id,section_id,code,name,is_active,last_revision "
                              "FROM cloud_promotions WHERE school_id='a'"
                          ).fetchone())
         self.assertEqual(("promotion_upsert", "applied"),
@@ -117,6 +126,81 @@ class SchoolPromotionsD1Tests(unittest.TestCase):
         self.assertEqual(0, self.db.execute(
             "SELECT is_active FROM cloud_promotions "
             "WHERE school_id='a' AND id='inf1'").fetchone()[0])
+
+
+    def test_same_code_in_different_years_and_optional_section(self):
+        self.put()
+        self.db.execute(
+            """INSERT INTO cloud_academic_year_events
+               (school_id,operation_id,academic_year_id,actor_user_id,device_id,
+                label,start_date,end_date,status,expected_revision,request_sha256)
+               VALUES('a','new-year','year-a-next','secretary','pc',
+                      '2027-2028','2027-09-01','2028-07-31','open',0,?)""",
+            (HASH,),
+        )
+        self.put(op="prom-next", promotion="inf1-next", code="INF1",
+                 section=None, year="year-a-next")
+        rows = self.db.execute(
+            "SELECT academic_year_id,section_id,code FROM cloud_promotions "
+            "WHERE school_id='a' ORDER BY academic_year_id"
+        ).fetchall()
+        self.assertEqual([("year-a", "sec-a", "INF1"),
+                          ("year-a-next", None, "INF1")], rows)
+
+    def test_year_cannot_be_changed_after_promotion_creation(self):
+        self.put()
+        self.db.execute(
+            """INSERT INTO cloud_academic_year_events
+               (school_id,operation_id,academic_year_id,actor_user_id,device_id,
+                label,start_date,end_date,status,expected_revision,request_sha256)
+               VALUES('a','new-year','year-a-next','secretary','pc',
+                      '2027-2028','2027-09-01','2028-07-31','open',0,?)""",
+            (HASH,),
+        )
+        with self.assertRaisesRegex(sqlite3.IntegrityError,
+                                    "cloud_promotion_year_immutable"):
+            self.put(op="illegal-move", year="year-a-next",
+                     version=self.revision())
+        self.assertEqual("year-a", self.db.execute(
+            "SELECT academic_year_id FROM cloud_promotions "
+            "WHERE school_id='a' AND id='inf1'"
+        ).fetchone()[0])
+
+    def test_closed_year_blocks_new_promotion_without_losing_history(self):
+        revision = self.db.execute(
+            "SELECT last_revision FROM cloud_academic_years "
+            "WHERE school_id='a' AND id='year-a'"
+        ).fetchone()[0]
+        self.db.execute(
+            """INSERT INTO cloud_academic_year_events
+               (school_id,operation_id,academic_year_id,actor_user_id,device_id,
+                label,start_date,end_date,status,expected_revision,request_sha256)
+               VALUES('a','close-year','year-a','secretary','pc',
+                      '2026-2027','2026-09-01','2027-07-31','closed',?,?)""",
+            (revision, HASH),
+        )
+        with self.assertRaisesRegex(sqlite3.IntegrityError,
+                                    "cloud_promotion_invalid_year"):
+            self.put()
+        self.assertEqual(0, self.db.execute(
+            "SELECT COUNT(*) FROM cloud_promotions WHERE school_id='a'"
+        ).fetchone()[0])
+
+    def test_school_year_label_is_immutable(self):
+        rev = self.db.execute(
+            "SELECT last_revision FROM cloud_academic_years "
+            "WHERE school_id='a' AND id='year-a'"
+        ).fetchone()[0]
+        with self.assertRaisesRegex(sqlite3.IntegrityError,
+                                    "cloud_year_identity_immutable"):
+            self.db.execute(
+                """INSERT INTO cloud_academic_year_events
+                   (school_id,operation_id,academic_year_id,actor_user_id,device_id,
+                    label,start_date,end_date,status,expected_revision,request_sha256)
+                   VALUES('a','rename-year','year-a','secretary','pc',
+                          '2027-2028','2027-09-01','2028-07-31','open',?,?)""",
+                (rev, HASH),
+            )
 
     def test_unique_codes_and_immutable_events(self):
         self.put()
