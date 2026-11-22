@@ -169,10 +169,10 @@ public sealed class CentralAcademicCatalogReplicaTests
                 calls++;
                 if (calls == 1)
                     return Task.FromResult(Json(
-                        "{\\"events\\":[{\\"revision\\":1,\\"academic_year_id\\":\\"" +
-                        YearId + "\\",\\"label\\":12}],\\"next\\":1,\\"has_more\\":false}"));
-                return Task.FromResult(Json("{\\"events\\":[" + YearEvent(1, YearId) +
-                    "],\\"next\\":1,\\"has_more\\":false}"));
+                        "{\"events\":[{\"revision\":1,\"academic_year_id\":\"" +
+                        YearId + "\",\"label\":12}],\"next\":1,\"has_more\":false}"));
+                return Task.FromResult(Json("{\"events\":[" + YearEvent(1, YearId) +
+                    "],\"next\":1,\"has_more\":false}"));
             });
             using var replica = new CentralAcademicCatalogReplica(store, store.User,
                 School, Origin, CentralAcademicCatalogKind.Years, handler);
