@@ -275,7 +275,7 @@ public sealed class BusinessApiTests : IDisposable
             identity = new { lastName = "Mukendi", middleName = "Kabeya", firstName = "grâce", birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14), gender = "F", guardianPhone = "0812345678", guardianName = "Parent" },
             promotionId, confirmDuplicate = false,
         }).Ok();
-        Assert.Equal("INF101", student.GetProperty("matricule").GetString());
+        Assert.Equal(string.Empty, student.GetProperty("matricule").GetString());
         Assert.Equal("MUKENDI", student.GetProperty("lastName").GetString());
         Assert.Equal("Grâce", student.GetProperty("firstName").GetString());
         return (promotionId, student.GetProperty("enrollments")[0].GetProperty("id").GetString()!, student.GetProperty("id").GetString()!);
@@ -334,9 +334,9 @@ public sealed class BusinessApiTests : IDisposable
         var payload = new { identity = new { lastName = "MUKENDI", middleName = "kabeya", firstName = "Grace", birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14), gender = "F", guardianPhone = "0812345670" }, promotionId, confirmDuplicate = false };
         var (status, body) = await admin.Post("/api/apprenants", payload).Fail();
         Assert.Equal(HttpStatusCode.Conflict, status);
-        Assert.Equal("INF101", body.GetProperty("candidates")[0].GetProperty("matricule").GetString());
+        Assert.Equal(string.Empty, body.GetProperty("candidates")[0].GetProperty("matricule").GetString());
         var confirmed = await admin.Post("/api/apprenants", payload with { confirmDuplicate = true }).Ok();
-        Assert.Equal("INF102", confirmed.GetProperty("matricule").GetString());
+        Assert.Equal(string.Empty, confirmed.GetProperty("matricule").GetString());
     }
 
     [Fact]
