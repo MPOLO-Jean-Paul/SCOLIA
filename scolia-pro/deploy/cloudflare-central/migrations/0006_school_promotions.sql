@@ -55,6 +55,18 @@ BEGIN
     SELECT RAISE(ABORT, 'cloud_year_stale_revision');
 END;
 
+-- Une annee ne peut pas etre rebaptisee apres creation : les promotions
+-- historiques conservent leur rattachement.
+CREATE TRIGGER IF NOT EXISTS cloud_year_identity_immutable
+BEFORE INSERT ON cloud_academic_year_events
+FOR EACH ROW
+WHEN EXISTS (
+    SELECT 1 FROM cloud_academic_years
+    WHERE school_id=NEW.school_id AND id=NEW.academic_year_id
+      AND label<>NEW.label
+)
+BEGIN SELECT RAISE(ABORT, 'cloud_year_identity_immutable'); END;
+
 CREATE TRIGGER IF NOT EXISTS cloud_year_event_applied
 AFTER INSERT ON cloud_academic_year_events
 FOR EACH ROW
@@ -149,6 +161,18 @@ WHEN NEW.expected_revision != COALESCE(
 BEGIN
     SELECT RAISE(ABORT, 'cloud_promotion_stale_revision');
 END;
+
+-- Interdit de changer l'annee d'une promotion existante : creer une
+-- nouvelle promotion pour l'annee suivante, comme le client natif.
+CREATE TRIGGER IF NOT EXISTS cloud_promotion_year_immutable
+BEFORE INSERT ON cloud_promotion_events
+FOR EACH ROW
+WHEN EXISTS (
+    SELECT 1 FROM cloud_promotions
+    WHERE school_id=NEW.school_id AND id=NEW.promotion_id
+      AND academic_year_id<>NEW.academic_year_id
+)
+BEGIN SELECT RAISE(ABORT, 'cloud_promotion_year_immutable'); END;
 
 CREATE TRIGGER IF NOT EXISTS cloud_promotion_requires_open_year
 BEFORE INSERT ON cloud_promotion_events
