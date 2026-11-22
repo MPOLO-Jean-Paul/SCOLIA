@@ -152,6 +152,33 @@ test("validation des dates calendaires et de l'annee scolaire", async () => {
   assert.equal(f.calls.length, 0);
 });
 
+test("une annee courte native peut se terminer dans la premiere annee civile", async () => {
+  const f = fakeD1();
+  const short = { ...original, end_date: "2026-11-30" };
+  const result = await call(f.DB, "POST", "/v1/catalog/years", short);
+  assert.equal(result.status, 201);
+  assert.equal(f.events[0].end_date, "2026-11-30");
+});
+
+test("une annee cloturee ne peut pas etre rouverte", async () => {
+  const f = fakeD1();
+  await call(f.DB, "POST", "/v1/catalog/years", original);
+  const close = await call(f.DB, "POST", "/v1/catalog/years", {
+    ...original,
+    operation_id: "126a91b5-171c-4340-94a2-ea237ce9d632",
+    status: "closed", expected_revision: 1,
+  });
+  assert.equal(close.status, 201);
+  const reopen = await call(f.DB, "POST", "/v1/catalog/years", {
+    ...original,
+    operation_id: "129a7390-dd81-435d-a95d-f1ac445e7ffd",
+    expected_revision: 2,
+  });
+  assert.equal(reopen.status, 409);
+  assert.equal((await reopen.json()).error, "academic_year_closed");
+  assert.equal(f.events.length, 2);
+});
+
 test("enseignement en lecture seulement, isolation et limites des curseurs", async () => {
   const f = fakeD1();
   const teacher = { ...actor, role: "enseignant", sub: "teacher" };
