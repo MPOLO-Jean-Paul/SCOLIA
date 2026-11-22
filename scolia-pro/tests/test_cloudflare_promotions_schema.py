@@ -186,6 +186,34 @@ class SchoolPromotionsD1Tests(unittest.TestCase):
             "SELECT COUNT(*) FROM cloud_promotions WHERE school_id='a'"
         ).fetchone()[0])
 
+    def test_closed_year_cannot_be_reopened(self):
+        revision = self.db.execute(
+            "SELECT last_revision FROM cloud_academic_years "
+            "WHERE school_id='a' AND id='year-a'"
+        ).fetchone()[0]
+        self.db.execute(
+            """INSERT INTO cloud_academic_year_events
+               (school_id,operation_id,academic_year_id,actor_user_id,device_id,
+                label,start_date,end_date,status,expected_revision,request_sha256)
+               VALUES('a','close-year','year-a','secretary','pc',
+                      '2026-2027','2026-09-01','2027-07-31','closed',?,?)""",
+            (revision, HASH),
+        )
+        revision = self.db.execute(
+            "SELECT last_revision FROM cloud_academic_years "
+            "WHERE school_id='a' AND id='year-a'"
+        ).fetchone()[0]
+        with self.assertRaisesRegex(sqlite3.IntegrityError,
+                                    "cloud_year_closed_immutable"):
+            self.db.execute(
+                """INSERT INTO cloud_academic_year_events
+                   (school_id,operation_id,academic_year_id,actor_user_id,device_id,
+                    label,start_date,end_date,status,expected_revision,request_sha256)
+                   VALUES('a','reopen-year','year-a','secretary','pc',
+                          '2026-2027','2026-09-01','2027-07-31','open',?,?)""",
+                (revision, HASH),
+            )
+
     def test_school_year_label_is_immutable(self):
         rev = self.db.execute(
             "SELECT last_revision FROM cloud_academic_years "
