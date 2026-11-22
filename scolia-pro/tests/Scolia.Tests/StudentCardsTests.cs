@@ -47,6 +47,30 @@ public sealed class StudentCardRulesTests
     }
 
     [Fact]
+    public void Chaque_promotion_a_une_couleur_unique_y_compris_dans_une_meme_filiere()
+    {
+        var promotions = new[] { "ACC1", "ACC2", "ACC3", "INF1", "INF2", "INF3" };
+        var bands = StudentCardRules.PromotionBandColors(promotions);
+        Assert.Equal(6, bands.Count);
+        Assert.Equal(6, bands.Values.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.NotEqual(bands["ACC1"], bands["ACC2"]);
+        Assert.NotEqual(bands["INF1"], bands["INF3"]);
+        Assert.Equal(bands.OrderBy(x => x.Key).Select(x => x.Value),
+            StudentCardRules.PromotionBandColors(promotions.Reverse())
+                .OrderBy(x => x.Key).Select(x => x.Value));
+        Assert.All(bands.Values, color => Assert.Matches("^#[0-9A-F]{6}$", color));
+    }
+
+    [Fact]
+    public void Palette_extensible_ne_repete_pas_la_bande_apres_douze_promotions()
+    {
+        var promotions = Enumerable.Range(1, 60).Select(i => $"CL{i:00}").ToList();
+        var bands = StudentCardRules.PromotionBandColors(promotions);
+        Assert.Equal(60, bands.Count);
+        Assert.Equal(60, bands.Values.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+    }
+
+    [Fact]
     public void Only_active_students_are_eligible_unless_left_ones_are_requested()
     {
         Assert.True(StudentCardRules.Eligible(EnrollmentStatus.Actif, includeLeft: false));
@@ -108,6 +132,10 @@ public sealed class StudentCardsApiTests : IDisposable
             identity = new { lastName, middleName = "Kabeya", firstName = "Grace", birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14), gender = "F", guardianPhone = "0812345678", guardianName = "Parent" },
             promotionId, confirmDuplicate = false,
         }).Ok();
+        // Une carte n'affiche jamais le matricule technique : elle requiert
+        // le code deja attribue dans le registre de deliberation.
+        await admin.Post("/api/deliberation/codes/attribution",
+            new { promotionId }).Ok();
         return student.GetProperty("enrollments")[0].GetProperty("id").GetString()!;
     }
 
