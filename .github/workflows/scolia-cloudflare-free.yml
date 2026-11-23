@@ -58,8 +58,27 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Vérifier immédiatement le Worker lui-même, indépendamment du DNS du domaine.
           curl --fail --silent --show-error --retry 3 --retry-delay 5 --max-time 25 \
-            https://relay.jp-services.org/health -o /tmp/scolia-cloudflare-health.json
+            https://scolia-pro-relay.jeanpaulmpolo242.workers.dev/health -o /tmp/scolia-cloudflare-origin-health.json
+          node -e 'const fs=require("fs"); const data=JSON.parse(fs.readFileSync("/tmp/scolia-cloudflare-origin-health.json", "utf8"));if(data.provider!=="cloudflare"||data.protocol!==1||data.service!=="SCOLIA relais")process.exit(1)'
+
+          # Le domaine personnalisé peut nécessiter un délai DNS/TLS après wrangler deploy.
+          # Ne pas accepter un déploiement comme sain tant que le domaine public est inaccessible.
+          ready=0
+          for attempt in {1..18}; do
+            if curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
+              https://relay.jp-services.org/health -o /tmp/scolia-cloudflare-health.json; then
+              ready=1
+              break
+            fi
+            echo "Domaine relay.jp-services.org pas encore accessible (essai ${attempt}/18)."
+            if [[ "$attempt" -lt 18 ]]; then sleep 10; fi
+          done
+          if [[ "$ready" -ne 1 ]]; then
+            echo "::error::Worker publié mais domaine relay.jp-services.org inaccessible. Vérifier le domaine personnalisé dans Cloudflare > Workers & Pages > scolia-pro-relay > Settings > Domains & Routes, puis la zone DNS jp-services.org."
+            exit 1
+          fi
           node -e 'const fs=require("fs"); const data=JSON.parse(fs.readFileSync("/tmp/scolia-cloudflare-health.json", "utf8"));if(data.provider!=="cloudflare"||data.protocol!==1||data.service!=="SCOLIA relais")process.exit(1)'
           code="$(curl --silent --show-error --output /dev/null --max-time 20 --write-out '%{http_code}' https://relay.jp-services.org/v1/client/0000000000000000000000000000000000000000000000000000000000000000 || true)"
           if [[ "$code" == "200" || "$code" == "101" ]]; then
