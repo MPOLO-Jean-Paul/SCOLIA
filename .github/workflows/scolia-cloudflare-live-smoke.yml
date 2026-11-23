@@ -1,0 +1,72 @@
+name: SCOLIA Cloudflare - test reel WSS sans donnees scolaires
+
+on:
+  push:
+    paths:
+      - '.github/workflows/scolia-cloudflare-live-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scolia-cloudflare-live-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    name: Jumelage et reconnexion sur le vrai relais Cloudflare
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: scolia-pro
+    env:
+      DOTNET_NOLOGO: 'true'
+      DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          ref: release/direct-apk-scolia-pro-20261103
+      - uses: actions/setup-dotnet@v5
+        id: dotnet
+        continue-on-error: true
+        with:
+          global-json-file: scolia-pro/global.json
+      - name: Installer .NET si necessaire
+        if: steps.dotnet.outcome == 'failure'
+        run: bash scripts/installer-dotnet.sh
+      - name: Tester le jumelage et la reprise WSS Cloudflare en conditions reseau reelles
+        env:
+          SCOLIA_RELAY_URL: 'wss://relay.jp-services.org/'
+        run: >-
+          dotnet test tests/Scolia.Tests/Scolia.Tests.csproj
+          -c Release -f net10.0
+          --filter "FullyQualifiedName~ExternalRelayTests.Hosting_login_pairing_and_quick_reconnection_through_the_real_relay"
+          --logger "trx;LogFileName=cloudflare-real-wss.trx"
+      - name: Verifier sans Internet les garanties locales des inscriptions et paiements
+        run: >-
+          dotnet test tests/Scolia.Tests/Scolia.Tests.csproj
+          -c Release -f net10.0 --no-build
+          --filter "FullyQualifiedName~RemoteSyncTests.Offline_registration_survives_host_interruption_and_is_applied_once_on_reconnection|FullyQualifiedName~RemoteSyncTests.Payment_survives_lost_http_replay_cache_without_duplicate_receipt_or_amount"
+          --logger "trx;LogFileName=offline-finance.trx"
+      - name: Resumer les limites de la validation
+        if: success()
+        shell: bash
+        run: |
+          {
+            echo '## SCOLIA : validation reseau et local-first'
+            echo '- WSS Cloudflare : session hote temporaire, appairage, connexion et reprise verifies.'
+            echo '- SQLite de test : operations hors ligne et idempotence de paiement verifiees.'
+            echo '- Aucun dossier scolaire de production charge dans Cloudflare.'
+            echo '- Tests sur les appareils physiques Windows et Android encore necessaires.'
+            echo '- D1 et R2 restent un chantier distinct : aucune migration de donnees.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Cloudflare_WSS_Diagnostics
+          path: scolia-pro/tests/Scolia.Tests/TestResults/
+          if-no-files-found: ignore
+          retention-days: 7
