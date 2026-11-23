@@ -1,5 +1,5 @@
 # SCOLIA Console (JP-Services) : application native Avalonia 12, Android et Windows.
-# - push : artefacts PREVIEW et preversion GitHub clairement identifiee.
+# - push : verification/compilation seulement, aucune PREVIEW distribuee automatiquement.
 # - dispatch sans option : compilation, tests Worker et emulateur seulement (rien de publie) ;
 #   avec publish_preview=true : preversion GitHub en plus.
 # - dispatch ou workflow_call avec publish_release=true : version officielle signee sur le canal
@@ -83,19 +83,22 @@ jobs:
           dotnet publish 'scolia-pro/owner-app/avalonia/Desktop/Scolia.Owner.Desktop.csproj' -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o "$env:RUNNER_TEMP/owner-avalonia-publish"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           if (-not (Test-Path "$env:RUNNER_TEMP/owner-avalonia-publish/SCOLIA-Console.exe")) { throw "Fichier EXE Avalonia absent" }
-      - name: Signer l'executable (Authenticode, uniquement si le certificat est configure)
+      - name: Signer l'executable (Authenticode requis en production)
         shell: pwsh
         working-directory: scolia-pro
         env:
           SCOLIA_WINDOWS_SIGNING_PFX: ${{ secrets.SCOLIA_WINDOWS_SIGNING_PFX }}
           SCOLIA_WINDOWS_SIGNING_PASSWORD: ${{ secrets.SCOLIA_WINDOWS_SIGNING_PASSWORD }}
           SCOLIA_WINDOWS_CERT_THUMBPRINT: ${{ vars.SCOLIA_WINDOWS_CERT_THUMBPRINT }}
+          PUBLISH_OFFICIAL: ${{ inputs.publish_release }}
         run: |
           $ErrorActionPreference = 'Stop'
           if (-not $env:SCOLIA_WINDOWS_SIGNING_PFX -or -not $env:SCOLIA_WINDOWS_SIGNING_PASSWORD) {
-            Write-Host '::notice::Certificat Authenticode absent : SCOLIA-Console.exe reste non signe (avertissement SmartScreen possible).'
+            if ($env:PUBLISH_OFFICIAL -eq 'true') { throw 'Production refusee : certificat Authenticode Windows absent.' }
+            Write-Host '::notice::PREVIEW seulement : certificat Authenticode Windows absent.'
             exit 0
           }
+          if ($env:PUBLISH_OFFICIAL -eq 'true' -and -not $env:SCOLIA_WINDOWS_CERT_THUMBPRINT) { throw 'Production refusee : empreinte SCOLIA_WINDOWS_CERT_THUMBPRINT absente.' }
           & ./scripts/windows/signer-windows.ps1 -Files @("$env:RUNNER_TEMP/owner-avalonia-publish/SCOLIA-Console.exe")
           if ($LASTEXITCODE -ne 0) { throw 'Echec de la signature Authenticode' }
       - name: Installer Inno Setup si necessaire
@@ -118,16 +121,21 @@ jobs:
           $expected = "SCOLIA_Console_Setup_$($env:OWNER_VERSION)_Windows_x64.exe"
           $file = Get-Item "installer-output/$expected"
           if (-not $file -or $file.Length -lt 100000) { throw "Installateur invalide : $expected" }
-      - name: Signer l'installateur (Authenticode, uniquement si le certificat est configure)
+      - name: Signer l'installateur (Authenticode requis en production)
         shell: pwsh
         working-directory: scolia-pro
         env:
           SCOLIA_WINDOWS_SIGNING_PFX: ${{ secrets.SCOLIA_WINDOWS_SIGNING_PFX }}
           SCOLIA_WINDOWS_SIGNING_PASSWORD: ${{ secrets.SCOLIA_WINDOWS_SIGNING_PASSWORD }}
           SCOLIA_WINDOWS_CERT_THUMBPRINT: ${{ vars.SCOLIA_WINDOWS_CERT_THUMBPRINT }}
+          PUBLISH_OFFICIAL: ${{ inputs.publish_release }}
         run: |
           $ErrorActionPreference = 'Stop'
-          if (-not $env:SCOLIA_WINDOWS_SIGNING_PFX -or -not $env:SCOLIA_WINDOWS_SIGNING_PASSWORD) { exit 0 }
+          if (-not $env:SCOLIA_WINDOWS_SIGNING_PFX -or -not $env:SCOLIA_WINDOWS_SIGNING_PASSWORD) {
+            if ($env:PUBLISH_OFFICIAL -eq 'true') { throw 'Production refusee : certificat Authenticode Windows absent.' }
+            exit 0
+          }
+          if ($env:PUBLISH_OFFICIAL -eq 'true' -and -not $env:SCOLIA_WINDOWS_CERT_THUMBPRINT) { throw 'Production refusee : empreinte du certificat Windows absente.' }
           & ./scripts/windows/signer-windows.ps1 -Files @("owner-app/avalonia/Desktop/installer-output/SCOLIA_Console_Setup_$($env:OWNER_VERSION)_Windows_x64.exe")
           if ($LASTEXITCODE -ne 0) { throw 'Echec de la signature de l installateur' }
       - name: Empreinte SHA-256 de l'installateur
@@ -220,6 +228,7 @@ jobs:
       OWNER_ADMIN_KEYSTORE_PASSWORD: ${{ secrets.OWNER_ADMIN_KEYSTORE_PASSWORD }}
       OWNER_ADMIN_KEY_ALIAS: ${{ secrets.OWNER_ADMIN_KEY_ALIAS }}
       OWNER_ADMIN_KEY_PASSWORD: ${{ secrets.OWNER_ADMIN_KEY_PASSWORD }}
+      OWNER_ADMIN_CERT_SHA256: ${{ vars.OWNER_ADMIN_CERT_SHA256 }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -300,6 +309,18 @@ jobs:
           certs="$("$tools/apksigner" verify --print-certs "$target")"
           if grep -qi 'Android Debug' <<<"$certs"; then
             echo '::error::APK signe avec un certificat de debogage : publication refusee.'
+            exit 1
+          fi
+          # L'empreinte publique fixee une fois a la premiere release empeche une rotation
+          # accidentelle de cle, qui rendrait les mises a jour Android impossibles.
+          if [[ ! "${OWNER_ADMIN_CERT_SHA256:-}" =~ ^[[:xdigit:]]{64}$ ]]; then
+            echo '::error::Configurer vars.OWNER_ADMIN_CERT_SHA256 (64 caracteres hexadecimaux) depuis le keystore Admin permanent.'
+            exit 1
+          fi
+          actual_cert="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' <<<"$certs" | head -n 1 | tr '[:upper:]' '[:lower:]')"
+          expected_cert="$(tr '[:upper:]' '[:lower:]' <<<"$OWNER_ADMIN_CERT_SHA256")"
+          if [[ -z "$actual_cert" || "$actual_cert" != "$expected_cert" ]]; then
+            echo '::error::La signature Android ne correspond pas au certificat officiel immuable de SCOLIA Console. Publication refusee.'
             exit 1
           fi
           # Seul le SHA-256 du certificat est affiche : il est public par nature et permet
@@ -440,8 +461,8 @@ jobs:
 
   preview:
     name: Publier pilote Avalonia Android + Windows (PREVIEW)
-    # Push sur la branche surveillee : preversion automatique. Lancement manuel : seulement si demande.
-    if: inputs.publish_release != true && (github.event_name == 'push' || inputs.publish_preview == true)
+    # Jamais de preversion automatique : publication test uniquement sur demande explicite.
+    if: inputs.publish_release != true && inputs.publish_preview == true
     needs: [android, windows, smoke-android, console-tests, native-tests]
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -484,7 +505,7 @@ jobs:
             --notes "PREVERSION DE TEST UNIQUEMENT. Pilote natif Avalonia 12 partage entre Android et Windows, sans WebView. Les fonctions sensibles ouvrent la console Cloudflare Access dans le navigateur systeme afin de respecter la MFA. APK Android : paquet ${ANDROID_PREVIEW_PACKAGE} signe par un certificat de test ; il ne recoit PAS les mises a jour officielles. EXE Windows : non signe Authenticode sauf certificat configure. Canal JP-Services independant des versions SCOLIA des etablissements."
 
   release:
-    name: Publier la version officielle SCOLIA Console (Android signe + Windows)
+    name: Publier la version officielle SCOLIA Console (Android + Windows signes)
     if: inputs.publish_release == true
     needs: [windows, android-release, smoke-android, console-tests, native-tests]
     runs-on: ubuntu-latest
@@ -531,7 +552,7 @@ jobs:
           gh release create "$RELEASE_TAG" "$apk" "$apk.sha256" "$setup" "$setup.sha256" \
             --repo "$GITHUB_REPOSITORY" --target "$SOURCE_SHA" \
             --title "SCOLIA Console ${OWNER_VERSION} - JP-Services Admin (Android et Windows)" \
-            --notes "Console administrateur JP-Services, canal autonome scolia-owner-v (independant des versions SCOLIA Pro des etablissements). Android : paquet ${ANDROID_PACKAGE}, signe avec le certificat Admin permanent ; les mises a jour futures exigent la meme cle. Windows : installateur SCOLIA Console autonome (x64). Authentification Cloudflare Access + MFA puis jeton proprietaire obligatoires : aucun secret n'est integre aux binaires. Verifier les empreintes .sha256 avant installation."
+            --notes "Console administrateur JP-Services, canal autonome scolia-owner-v (independant des versions SCOLIA Pro des etablissements). Android : paquet ${ANDROID_PACKAGE}, signe avec le certificat Admin permanent ; les mises a jour futures exigent la meme cle. Windows : installateur SCOLIA Console autonome (x64) signe Authenticode. Authentification Cloudflare Access + MFA puis jeton proprietaire obligatoires : aucun secret n'est integre aux binaires. Verifier les empreintes .sha256 avant installation."
           gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,assets
       - name: Resume
         shell: bash
