@@ -66,6 +66,7 @@ public sealed class SponsorshipService(IAppDbContext db, IWriteGate gate, IAudit
         var sponsors = await db.Sponsorships.AsNoTracking().Include(s => s.Lines)
             .Where(s => ids.Contains(s.Id)).ToDictionaryAsync(s => s.Id, ct);
         var map = await accounts.ComputeAsync(year.Id, rows.Select(r => r.EnrollmentId).Distinct().ToList(), null, ct);
+        var codes = await AnonymousDisplay.CodesAsync(db, rows.Select(r => r.EnrollmentId), ct);
         return rows.Select(r =>
         {
             var sponsor = sponsors[r.SponsorshipId];
@@ -78,7 +79,7 @@ public sealed class SponsorshipService(IAppDbContext db, IWriteGate gate, IAudit
                     ? Math.Max(0m, f.Amount - paid.GetValueOrDefault(f.Id))
                     : Math.Min(f.Amount, configured);
             });
-            return new SponsorshipListItem(r.SponsorshipId, r.EnrollmentId, r.Matricule,
+            return new SponsorshipListItem(r.SponsorshipId, r.EnrollmentId, AnonymousDisplay.Of(codes, r.EnrollmentId),
                 $"{r.LastName} {r.MiddleName} {r.FirstName}", r.Code, r.SponsorName, r.Reason,
                 r.EffectiveFrom, r.IsActive, amount, Label(sponsor.Mode), sponsor.MonthlyAmount);
         }).ToList();

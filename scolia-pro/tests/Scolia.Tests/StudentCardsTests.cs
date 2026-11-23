@@ -264,6 +264,46 @@ public sealed class StudentCardsApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Ecrans_administratifs_affichent_le_code_anonyme_et_jamais_la_reference_technique()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await PromotionAsync(admin);
+        var student = await admin.Post("/api/apprenants", new
+        {
+            identity = new { lastName = "KABILA", middleName = "MBUYI", firstName = "Josue", gender = "M",
+                birthDate = new DateOnly(2007, 5, 2), birthPlace = "Kinshasa", guardianPhone = "0812345670", guardianName = "Parent" },
+            promotionId = promotion, confirmDuplicate = false,
+        }).Ok();
+        var enrollmentId = student.GetProperty("enrollments")[0].GetProperty("id").GetString()!;
+        var today = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
+
+        async Task<string> AttendanceMatricule() =>
+            (await admin.GetAsync($"/api/scolarite/presences?promotionId={promotion}&date={today}").Ok())
+                .GetProperty("rows").EnumerateArray().Single().GetProperty("matricule").GetString()!;
+        async Task<string> BatchMatricule() =>
+            (await admin.GetAsync($"/api/paiements/lot/candidats?promotionId={promotion}").Ok())
+                .EnumerateArray().Single().GetProperty("matricule").GetString()!;
+
+        // Avant l'attribution : la mention, jamais la référence technique INF101.
+        Assert.Equal("À ATTRIBUER", await AttendanceMatricule());
+        Assert.Equal("À ATTRIBUER", await BatchMatricule());
+
+        await admin.Post("/api/deliberation/codes/attribution", new { promotionId = promotion }).Ok();
+        await admin.Put($"/api/deliberation/codes/{enrollmentId}",
+            new { code = "itm-26-zz99", reason = "Code officiel de l'etablissement" }).Ok();
+
+        // Après : le code est repris automatiquement dans chaque écran administratif.
+        Assert.Equal("ITM-26-ZZ99", await AttendanceMatricule());
+        Assert.Equal("ITM-26-ZZ99", await BatchMatricule());
+        var monthly = await admin.GetAsync("/api/rapports/suivi-mensuel").Ok();
+        Assert.Contains(monthly.GetProperty("rows").EnumerateArray(),
+            r => r.GetProperty("matricule").GetString() == "ITM-26-ZZ99");
+        // Le compte financier garde sa référence technique, rattachée aux reçus.
+        var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
+        Assert.StartsWith("INF1", account.GetProperty("matricule").GetString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Export_returns_a_pdf_and_records_the_batch()
     {
         var admin = await app.InstalledAdmin();

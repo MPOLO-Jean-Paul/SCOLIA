@@ -104,7 +104,9 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
                               join s in db.Students.AsNoTracking() on r.StudentId equals s.Id
                               where r.Status == OperationStatus.Valide && r.Date <= day
                                     && (r.Date > lastDate || (r.Date == lastDate && r.CreatedAtUtc > closedAt))
-                              select new { r.Date, r.Number, Label = s.Matricule + " " + s.LastName + " " + s.FirstName, r.Method, r.Amount }).ToListAsync(ct);
+                              select new { r.Date, r.Number, r.EnrollmentId, Name = s.LastName + " " + s.FirstName, r.Method, r.Amount }).ToListAsync(ct);
+        // Mouvements de caisse : l'apprenant est désigné par son code anonyme, jamais par la référence technique.
+        var receiptCodes = await AnonymousDisplay.CodesAsync(db, receipts.Select(r => r.EnrollmentId), ct);
         var expenses = await db.Expenses.AsNoTracking().Where(e => e.Status == OperationStatus.Valide && e.Date <= day
                 && (e.Date > lastDate || (e.Date == lastDate && e.CreatedAtUtc > closedAt)))
             .Select(e => new { e.Date, e.Number, Label = e.Category + " · " + e.Beneficiary, e.Method, e.Amount }).ToListAsync(ct);
@@ -113,7 +115,8 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
             : receipts.Any(r => r.Date == last.Date) || expenses.Any(e => e.Date == last.Date) || day == last.Date ? last.Date : last.Date.AddDays(1);
         var cashIn = receipts.Where(r => r.Method == PaymentMethod.Especes).Sum(r => r.Amount);
         var cashOut = expenses.Where(e => e.Method == PaymentMethod.Especes).Sum(e => e.Amount);
-        var movements = receipts.Select(r => new CashMovementDto(r.Date, "Recette", r.Number, r.Label, Labels.Of(r.Method), r.Amount, 0))
+        var movements = receipts.Select(r => new CashMovementDto(r.Date, "Recette", r.Number,
+                AnonymousDisplay.Of(receiptCodes, r.EnrollmentId) + " " + r.Name, Labels.Of(r.Method), r.Amount, 0))
             .Concat(expenses.Select(e => new CashMovementDto(e.Date, "Dépense", e.Number, e.Label, Labels.Of(e.Method), 0, e.Amount)))
             .OrderBy(m => m.Date).ThenBy(m => m.Number).ToList();
         return new CashSituationDto(last is null ? (movements.Count > 0 ? movements[0].Date : day) : start, day, opening, cashIn, cashOut,

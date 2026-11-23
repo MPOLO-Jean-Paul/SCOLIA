@@ -173,7 +173,7 @@ public sealed class CardsPage : PageViewModel
                 c.DuplicateMatricule ? "Code anonyme répété" :
                 !c.Eligible ? $"Exclu : {c.Status}" :
                 // Imprimable : la rubrique MATRICULE reste vide jusqu'à la génération des codes.
-                !c.HasAnonymousCode ? "Sans code anonyme : rubrique vide" : string.Empty;
+                !c.HasAnonymousCode ? "Sans code (rubrique vide)" : string.Empty;
             var row = new CardRowVm(c, diagnostic, SelectionChanged)
             {
                 Selected = c.Eligible && c.IdentityComplete && !c.DuplicateMatricule && selectedCardIds.Contains(c.EnrollmentId),

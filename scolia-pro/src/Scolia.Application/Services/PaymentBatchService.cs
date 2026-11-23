@@ -24,11 +24,14 @@ public sealed class PaymentBatchService(IAppDbContext db, IWriteGate gate, IAudi
         var year = await YearContext.CurrentAsync(db, ct);
         var map = await accounts.ComputeAsync(year.Id, null, null, ct);
         var terms = TextKey.Normalize(search).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var codes = await AnonymousDisplay.CodesAsync(db, map.Values.Select(a => a.Enrollment.Id), ct);
         return map.Values
             .Where(a => a.Account.Balance > 0 && (promotionId is null || a.Promotion.Id == promotionId))
-            .Where(a => terms.All(t => a.Enrollment.Student!.SearchText.Contains(t, StringComparison.Ordinal)))
+            // Recherche par nom ou par code anonyme.
+            .Where(a => terms.All(t => a.Enrollment.Student!.SearchText.Contains(t, StringComparison.Ordinal)
+                || TextKey.Normalize(AnonymousDisplay.Of(codes, a.Enrollment.Id)).Contains(t, StringComparison.Ordinal)))
             .OrderBy(a => a.Promotion.Code).ThenBy(a => a.Enrollment.Student!.LastName).ThenBy(a => a.Enrollment.Student!.FirstName)
-            .Select(a => new BatchCandidateDto(a.Enrollment.Id, a.Enrollment.Student!.Matricule, a.Enrollment.Student.FullName, a.Promotion.Code,
+            .Select(a => new BatchCandidateDto(a.Enrollment.Id, AnonymousDisplay.Of(codes, a.Enrollment.Id), a.Enrollment.Student!.FullName, a.Promotion.Code,
                 a.Account.Balance, a.Account.Overdue,
                 a.Account.Lines.Where(l => l.Kind == FeeKind.Mensualite && l.Remaining > 0)
                     .OrderBy(l => l.DueDate).ThenBy(l => l.Order)
@@ -130,7 +133,9 @@ public sealed class PaymentBatchService(IAppDbContext db, IWriteGate gate, IAudi
     private async Task<(string Matricule, string Name)> IdentityAsync(Guid enrollmentId, CancellationToken ct)
     {
         var enrollment = await db.Enrollments.AsNoTracking().Include(e => e.Student).FirstOrDefaultAsync(e => e.Id == enrollmentId, ct);
-        return enrollment?.Student is null ? ("?", "Inscription introuvable") : (enrollment.Student.Matricule, enrollment.Student.FullName);
+        if (enrollment?.Student is null) return ("?", "Inscription introuvable");
+        var codes = await AnonymousDisplay.CodesAsync(db, [enrollmentId], ct);
+        return (AnonymousDisplay.Of(codes, enrollmentId), enrollment.Student.FullName);
     }
 }
 

@@ -95,6 +95,14 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
 
     private sealed record EnrolledStudent(Guid EnrollmentId, string Matricule, string FullName, DateOnly EnrolledOn);
 
+    /// <summary>Apprenants de la promotion présentés par leur code anonyme (présences et leurs bilans).</summary>
+    private async Task<List<EnrolledStudent>> StudentsWithCodesAsync(Guid promotionId, CancellationToken ct)
+    {
+        var students = await StudentsOfAsync(promotionId, ct);
+        var codes = await AnonymousDisplay.CodesAsync(db, students.Select(s => s.EnrollmentId), ct);
+        return students.Select(s => s with { Matricule = AnonymousDisplay.Of(codes, s.EnrollmentId) }).ToList();
+    }
+
     private async Task<List<EnrolledStudent>> StudentsOfAsync(Guid promotionId, CancellationToken ct) =>
         (await (from e in db.Enrollments.AsNoTracking()
                 join s in db.Students.AsNoTracking() on e.StudentId equals s.Id
@@ -151,7 +159,7 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
     // ---------- Présences ----------
     public async Task<AttendanceSheetDto> AttendanceSheetAsync(Guid promotionId, DateOnly date, CancellationToken ct = default)
     {
-        var students = await StudentsOfAsync(promotionId, ct);
+        var students = await StudentsWithCodesAsync(promotionId, ct);
         var ids = students.Select(s => s.EnrollmentId).ToList();
         var records = await db.Attendance.AsNoTracking().Where(a => a.Date == date && ids.Contains(a.EnrollmentId)).ToDictionaryAsync(a => a.EnrollmentId, ct);
         var confirmed = await db.CourseDays.AsNoTracking().AnyAsync(c => c.PromotionId == promotionId && c.Date == date, ct);
@@ -232,7 +240,7 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
 
     public async Task<IReadOnlyList<AttendanceSummary>> AttendanceSummaryAsync(Guid promotionId, DateOnly from, DateOnly to, CancellationToken ct = default)
     {
-        var students = await StudentsOfAsync(promotionId, ct);
+        var students = await StudentsWithCodesAsync(promotionId, ct);
         var timeline = await TimelineAsync(promotionId, students, from, to, ct);
         return students.Select(s =>
         {
@@ -250,7 +258,7 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
     /// <summary>Apprenants à traiter : absences non justifiées atteignant le seuil, ou jours consécutifs absents.</summary>
     public async Task<IReadOnlyList<AttendanceAlertDto>> AttendanceAlertsAsync(Guid promotionId, DateOnly from, DateOnly to, CancellationToken ct = default)
     {
-        var students = await StudentsOfAsync(promotionId, ct);
+        var students = await StudentsWithCodesAsync(promotionId, ct);
         var timeline = await TimelineAsync(promotionId, students, from, to, ct);
         var today = clock.Today;
         var alerts = new List<AttendanceAlertDto>();
@@ -323,7 +331,9 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
                 orderby i.Date descending
                 select new IncidentDto(i.Id, e.Id, s.Matricule, s.LastName + " " + s.MiddleName + " " + s.FirstName, p.Code, i.Date, i.Category, i.Description, i.Sanction,
                     i.Severity.ToString(), i.RecordedByName);
-        return await q.Take(500).ToListAsync(ct);
+        var incidents = await q.Take(500).ToListAsync(ct);
+        var codes = await AnonymousDisplay.CodesAsync(db, incidents.Select(x => x.EnrollmentId), ct);
+        return incidents.Select(x => x with { Matricule = AnonymousDisplay.Of(codes, x.EnrollmentId) }).ToList();
     }
 
     public Task<IncidentDto> CreateIncidentAsync(IncidentCreate input, CancellationToken ct = default) => gate.RunAsync(async () =>

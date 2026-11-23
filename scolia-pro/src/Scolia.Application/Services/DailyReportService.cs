@@ -53,7 +53,8 @@ public sealed class DailyReportService(IAppDbContext db, AccountService accounts
                               join p in db.Promotions.AsNoTracking() on e.PromotionId equals p.Id
                               where e.AcademicYearId == year.Id && e.EnrolledOn == day
                               orderby p.Code, s.LastName
-                              select new { s.Matricule, s.LastName, s.MiddleName, s.FirstName, p.Code }).ToListAsync(ct);
+                              select new { EnrollmentId = e.Id, s.LastName, s.MiddleName, s.FirstName, p.Code }).ToListAsync(ct);
+        var enrolledCodes = await AnonymousDisplay.CodesAsync(db, enrolled.Select(e => e.EnrollmentId), ct);
         var map = await accounts.ComputeAsync(year.Id, null, day, ct);
         static string Name(string last, string middle, string first) => string.Join(' ', new[] { last, middle, first }.Where(x => x.Length > 0));
 
@@ -101,7 +102,7 @@ public sealed class DailyReportService(IAppDbContext db, AccountService accounts
                 expenses.Count > 0 ? ["Total", "", "", M(spent)] : null,
                 "Aucune dépense ce jour."),
             new("Nouvelles inscriptions", ["Matricule", "Apprenant", "Promotion"],
-                enrolled.Select(e => (IReadOnlyList<string>)[e.Matricule, Name(e.LastName, e.MiddleName, e.FirstName), e.Code]).ToList(),
+                enrolled.Select(e => (IReadOnlyList<string>)[AnonymousDisplay.Of(enrolledCodes, e.EnrollmentId), Name(e.LastName, e.MiddleName, e.FirstName), e.Code]).ToList(),
                 null, "Aucune inscription ce jour."),
         };
 
