@@ -34,6 +34,7 @@ public sealed class NationalExamService(IAppDbContext db, IWriteGate gate, IAudi
             .Where(e => ids.Contains(e.PromotionId) && e.AcademicYearId == year.Id && e.Status == EnrollmentStatus.Actif)
             .ToListAsync(ct);
         var enrollmentIds = enrollments.Select(e => e.Id).ToList();
+        var shownCodes = await AnonymousDisplay.CodesAsync(db, enrollmentIds, ct);
         var results = await db.NationalExamResults.AsNoTracking()
             .Where(r => r.Exam == target && enrollmentIds.Contains(r.EnrollmentId))
             .ToDictionaryAsync(r => r.EnrollmentId, ct);
@@ -43,7 +44,7 @@ public sealed class NationalExamService(IAppDbContext db, IWriteGate gate, IAudi
             {
                 var s = e.Student!;
                 results.TryGetValue(e.Id, out var r);
-                return new NationalExamCandidateDto(e.Id, names[e.PromotionId], s.Matricule, s.FullName,
+                return new NationalExamCandidateDto(e.Id, names[e.PromotionId], AnonymousDisplay.Of(shownCodes, e.Id), s.FullName,
                     s.Gender == Gender.F ? "F" : s.Gender == Gender.M ? "M" : "", s.BirthDate, s.BirthPlace,
                     r?.Passed, r?.Percent, r?.Reference);
             }).ToList();

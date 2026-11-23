@@ -246,10 +246,9 @@ public sealed class StudentCardsApiTests : IDisposable
         Assert.Contains(search.GetProperty("items").EnumerateArray(),
             item => item.GetProperty("matricule").GetString() == "ITM-26-AB12");
 
-        // La reference des comptes financiers n'est jamais remplacee.
+        // Le compte financier affiche lui aussi le code anonyme ; la référence technique reste interne.
         var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
-        Assert.StartsWith("INF1", account.GetProperty("matricule").GetString(),
-            StringComparison.Ordinal);
+        Assert.Equal("ITM-26-AB12", account.GetProperty("matricule").GetString());
 
         using var response = await admin.Post("/api/cartes/export",
             new { enrollmentIds = new[] { enrollmentId }, month = 9,
@@ -264,7 +263,7 @@ public sealed class StudentCardsApiTests : IDisposable
     }
 
     [Fact]
-    public async Task Ecrans_administratifs_affichent_le_code_anonyme_et_jamais_la_reference_technique()
+    public async Task Tous_les_ecrans_affichent_le_code_anonyme_et_jamais_la_reference_technique()
     {
         var admin = await app.InstalledAdmin();
         var promotion = await PromotionAsync(admin);
@@ -298,9 +297,9 @@ public sealed class StudentCardsApiTests : IDisposable
         var monthly = await admin.GetAsync("/api/rapports/suivi-mensuel").Ok();
         Assert.Contains(monthly.GetProperty("rows").EnumerateArray(),
             r => r.GetProperty("matricule").GetString() == "ITM-26-ZZ99");
-        // Le compte financier garde sa référence technique, rattachée aux reçus.
+        // Code anonyme partout : compte financier et liste des reçus compris.
         var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
-        Assert.StartsWith("INF1", account.GetProperty("matricule").GetString(), StringComparison.Ordinal);
+        Assert.Equal("ITM-26-ZZ99", account.GetProperty("matricule").GetString());
     }
 
     [Fact]

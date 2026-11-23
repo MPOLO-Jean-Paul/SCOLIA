@@ -35,11 +35,12 @@ public sealed class StudentAccountService(IAppDbContext db, IWriteGate gate, IAu
         var accounts = (await db.Users.AsNoTracking().Where(u => u.Role == Role.Etudiant && u.StudentId != null && ids.Contains(u.StudentId.Value))
             .ToListAsync(ct)).GroupBy(u => u.StudentId!.Value)
             .ToDictionary(g => g.Key, g => g.OrderByDescending(u => u.IsActive).First());
+        var shownCodes = await AnonymousDisplay.CodesAsync(db, rows.Select(r => r.Id), ct);
         return rows.OrderBy(r => r.Promotion).ThenBy(r => r.Student.FullName, StringComparer.CurrentCultureIgnoreCase)
             .Select(r =>
             {
                 accounts.TryGetValue(r.Student.Id, out var u);
-                return new StudentAccountDto(r.Student.Id, r.Id, r.Student.Matricule, r.Student.FullName, r.Promotion,
+                return new StudentAccountDto(r.Student.Id, r.Id, AnonymousDisplay.Of(shownCodes, r.Id), r.Student.FullName, r.Promotion,
                     u?.Id, u?.UserName, u?.IsActive ?? false, u?.MustChangePassword ?? false, u?.LastLoginUtc);
             }).ToList();
     }
@@ -187,7 +188,10 @@ public sealed class StudentPortalService(IAppDbContext db, ICurrentUser user, Lm
                 promotion.Students.Count, mine with { Jury = null, JuryReason = null }));
         }
         var debts = (await results.DebtsAsync(me.Id, ct)).ToList();
-        return new StudentPortalDto(me.FullName, me.Matricule, list, debts,
+        var lastEnrollment = await db.Enrollments.AsNoTracking().Where(e => e.StudentId == me.Id)
+            .OrderByDescending(e => e.EnrolledOn).Select(e => (Guid?)e.Id).FirstOrDefaultAsync(ct);
+        var myCode = lastEnrollment is { } lastId ? AnonymousDisplay.Of(await AnonymousDisplay.CodesAsync(db, [lastId], ct), lastId) : AnonymousDisplay.Pending;
+        return new StudentPortalDto(me.FullName, myCode, list, debts,
             list.Count == 0 ? "Aucun résultat n'est encore publié par le jury pour vos inscriptions." : null);
     }
 

@@ -36,7 +36,7 @@ public sealed class EpstDeliberationService(IAppDbContext db, IWriteGate gate, I
     public async Task<EpstDeliberationDto> GetAsync(Guid promotionId, CancellationToken ct = default)
     {
         var (c, d, decisions, marks) = await LoadAsync(promotionId, false, ct);
-        return ToDto(c, d, decisions, marks);
+        return ToDto(c, d, decisions, marks, await CodesOf(c, ct));
     }
 
     /// <summary>Palmarès et procès-verbal : disponibles après la clôture de la première session.</summary>
@@ -46,11 +46,15 @@ public sealed class EpstDeliberationService(IAppDbContext db, IWriteGate gate, I
         if (d is null || d.Status == EpstSessionStatus.Ouverte)
             throw new DomainException("deliberationEpst", "Le palmarès est publié après la clôture de la première session.");
         return new EpstPalmaresPrintDto(c.School.Name, c.School.Address, c.School.City, c.School.CardMinistry,
-            c.School.CardDivision, c.School.Logo, c.Cycle.Name, ToDto(c, d, decisions, marks));
+            c.School.CardDivision, c.School.Logo, c.Cycle.Name, ToDto(c, d, decisions, marks, await CodesOf(c, ct)));
     }
 
+    /// <summary>Codes anonymes affichés dans la colonne « Matricule » de la classe.</summary>
+    private Task<IReadOnlyDictionary<Guid, string>> CodesOf(EpstResultsService.Computation c, CancellationToken ct) =>
+        AnonymousDisplay.CodesAsync(db, c.Enrollments.Select(x => x.Id), ct);
+
     private static EpstDeliberationDto ToDto(EpstResultsService.Computation c, EpstDeliberation? d,
-        IReadOnlyList<EpstDecision> decisions, IReadOnlyList<EpstRepechageMark> marks)
+        IReadOnlyList<EpstDecision> decisions, IReadOnlyList<EpstRepechageMark> marks, IReadOnlyDictionary<Guid, string> shownCodes)
     {
         var byEnrollment = c.Enrollments.ToDictionary(e => e.Id);
         var open = d is null || d.Status == EpstSessionStatus.Ouverte;
@@ -69,7 +73,7 @@ public sealed class EpstDeliberationService(IAppDbContext db, IWriteGate gate, I
                 var mark = marks.FirstOrDefault(m => m.EnrollmentId == p.EnrollmentId && m.SubjectId == id);
                 return new EpstRepechageLineDto(id, subject.Name, subject.Percent, mark?.Score, mark?.MaxScore);
             }).ToList();
-            return new EpstDecisionDto(e.Id, e.Student!.Matricule, e.Student.FullName,
+            return new EpstDecisionDto(e.Id, AnonymousDisplay.Of(shownCodes, e.Id), e.Student!.FullName,
                 open ? p.Percent : stored?.Percent ?? p.Percent,
                 c.Regulation.ShowRank ? (open ? p.Rank : stored?.Rank ?? p.Rank) : null,
                 p.FailedSubjects, p.MissingCells,
@@ -130,7 +134,7 @@ public sealed class EpstDeliberationService(IAppDbContext db, IWriteGate gate, I
                 ? $"{c.Classroom.Name} : décision du jury retirée, retour au calcul."
                 : $"{c.Classroom.Name} : jury « {EpstDeliberationRules.Label(jury.Value)} » — {decision.JuryReason}");
         await db.SaveChangesAsync(ct);
-        return ToDto(c, d, decisions, marks);
+        return ToDto(c, d, decisions, marks, await CodesOf(c, ct));
     }, ct);
 
     /// <summary>
@@ -181,7 +185,7 @@ public sealed class EpstDeliberationService(IAppDbContext db, IWriteGate gate, I
         audit.Record("deliberationEpst.premiereSession", "Promotion", c.Classroom.Id.ToString(),
             $"{c.Classroom.Name} {c.Year.Label} : première session clôturée par {actor}. " + Counts(decisions));
         await db.SaveChangesAsync(ct);
-        return ToDto(c, d, decisions, marks);
+        return ToDto(c, d, decisions, marks, await CodesOf(c, ct));
     }, ct);
 
     public Task<EpstDeliberationDto> SaveRepechageAsync(Guid promotionId, Guid enrollmentId, EpstRepechageInput input,
@@ -213,7 +217,7 @@ public sealed class EpstDeliberationService(IAppDbContext db, IWriteGate gate, I
         audit.Record("deliberationEpst.repechage", "DecisionCycle", enrollmentId.ToString(),
             $"{c.Classroom.Name} : points de repêchage saisis ({(input.Marks ?? []).Count} branche(s)).");
         await db.SaveChangesAsync(ct);
-        return ToDto(c, d, decisions, marks);
+        return ToDto(c, d, decisions, marks, await CodesOf(c, ct));
     }, ct);
 
     /// <summary>Clôture le repêchage : issue définitive de chaque élève de la classe.</summary>
@@ -239,7 +243,7 @@ public sealed class EpstDeliberationService(IAppDbContext db, IWriteGate gate, I
         audit.Record("deliberationEpst.cloture", "Promotion", c.Classroom.Id.ToString(),
             $"{c.Classroom.Name} {c.Year.Label} : repêchage clôturé par {d.ClosedBy}. " + Counts(decisions));
         await db.SaveChangesAsync(ct);
-        return ToDto(c, d, decisions, marks);
+        return ToDto(c, d, decisions, marks, await CodesOf(c, ct));
     }, ct);
 
     private static void Finalize(EpstDeliberation d, IEnumerable<EpstDecision> decisions, string actor,

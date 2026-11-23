@@ -223,6 +223,7 @@ public sealed class CurriculumTeachingService(IAppDbContext db, IWriteGate gate,
         }
         catch (DomainException e) { lockReason = e.Message; }
         var current = entries.Where(e => e.EvaluationCode == evaluation).ToList();
+        var shownCodes = await AnonymousDisplay.CodesAsync(db, enrollments.Select(x => x.Id), ct);
         var first = current.FirstOrDefault();
         return new EpstMarkSheetDto(subject.Id, subject.Name, classroom.Name, period.Id, period.Code, period.IsExam,
             evaluation, first?.Title ?? (period.IsExam ? "Examen" : "Interrogation"),
@@ -230,7 +231,7 @@ public sealed class CurriculumTeachingService(IAppDbContext db, IWriteGate gate,
             lockReason is null, lockReason,
             entries.Select(e => e.EvaluationCode).Distinct().Order().ToList(),
             enrollments.OrderBy(e => e.Student!.FullName, StringComparer.CurrentCultureIgnoreCase)
-                .Select(e => new EpstMarkSheetLineDto(e.Id, e.Student!.Matricule, e.Student.FullName,
+                .Select(e => new EpstMarkSheetLineDto(e.Id, AnonymousDisplay.Of(shownCodes, e.Id), e.Student!.FullName,
                     current.FirstOrDefault(a => a.EnrollmentId == e.Id)?.Score)).ToList());
     }
 

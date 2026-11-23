@@ -165,12 +165,13 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
         var student = await db.Students.AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == context.Enrollment.StudentId, ct)
             ?? throw new NotFoundException("Dossier de l'élève introuvable.");
+        var shownCodes = await AnonymousDisplay.CodesAsync(db, [enrollmentId], ct);
         return new SchoolCycleBulletinPrintDto(
             context.School.Name,
             context.School.Address,
             context.School.City,
             student.FullName,
-            student.Matricule,
+            AnonymousDisplay.Of(shownCodes, enrollmentId),
             preview,
             context.School.Logo);
     }

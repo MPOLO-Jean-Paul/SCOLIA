@@ -372,7 +372,14 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         foreach (var key in keys)
         {
             var students = await db.Students.AsNoTracking().Where(s => s.IdentityKey == key).ToListAsync(ct);
-            result.Add(students.Select(s => new DuplicateCandidate(s.Id, s.Matricule, s.FullName, null)).ToList());
+            var ids = students.Select(s => s.Id).ToList();
+            // Chaque dossier est présenté par le code anonyme de sa dernière inscription.
+            var latest = (await db.Enrollments.AsNoTracking().Where(e => ids.Contains(e.StudentId))
+                    .Select(e => new { e.StudentId, e.Id, e.EnrolledOn }).ToListAsync(ct))
+                .GroupBy(e => e.StudentId).ToDictionary(g => g.Key, g => g.OrderByDescending(e => e.EnrolledOn).First().Id);
+            var codes = await AnonymousDisplay.CodesAsync(db, latest.Values, ct);
+            result.Add(students.Select(s => new DuplicateCandidate(s.Id,
+                latest.TryGetValue(s.Id, out var e) ? AnonymousDisplay.Of(codes, e) : AnonymousDisplay.Pending, s.FullName, null)).ToList());
         }
         return result;
     }
@@ -418,6 +425,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
                              && decision.Final != null
                          select new { decision.EnrollmentId, Final = decision.Final!.Value })
             .ToDictionaryAsync(x => x.EnrollmentId, x => x.Final, ct);
+        var planCodes = await AnonymousDisplay.CodesAsync(db, map.Values.Select(x => x.Enrollment.Id), ct);
         return map.Values.Where(x => x.Enrollment.Status == EnrollmentStatus.Actif && !already.Contains(x.Enrollment.StudentId))
             .OrderBy(x => x.Promotion.Code).ThenBy(x => x.Enrollment.Student!.LastName)
             .Select(x =>
@@ -431,8 +439,8 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
                 var next = stays ? x.Promotion.Code : ExpectedPromotionCode(x.Promotion);
                 // Une classe existante mais désactivée exige une décision du secrétariat.
                 bool available = !targetPromotions.Any(p => p.Code == next && !p.IsActive);
-                return new ReEnrollmentPlanItem(x.Enrollment.StudentId, x.Enrollment.Student!.Matricule,
-                    x.Enrollment.Student.FullName, x.Promotion.Code, next, x.Account.Balance, available,
+                return new ReEnrollmentPlanItem(x.Enrollment.StudentId, AnonymousDisplay.Of(planCodes, x.Enrollment.Id),
+                    x.Enrollment.Student!.FullName, x.Promotion.Code, next, x.Account.Balance, available,
                     decided is { } outcome ? Domain.Deliberation.DeliberationEngine.Label(outcome)
                         : school is { } epstOutcome ? EpstDeliberationRules.Label(epstOutcome)
                         : university is { } lmdOutcome ? LmdResultsCalculator.Label(lmdOutcome) : null);

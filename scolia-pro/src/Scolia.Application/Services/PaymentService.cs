@@ -148,7 +148,9 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         // une correction du dossier se répercute donc aussi sur les reçus déjà enregistrés.
         var payerName = r.PayerName ?? student.GuardianName;
         var payerPhone = r.PayerPhone ?? student.GuardianPhone;
-        return new ReceiptDto(r.Id, r.Number, r.VerificationCode, r.Date, r.StudentId, student.Matricule, student.FullName, info.Code, info.Label, r.Amount,
+        // Le reçu désigne l'apprenant par son code anonyme ; la référence technique reste interne au versement.
+        var code = AnonymousDisplay.Of(await AnonymousDisplay.CodesAsync(db, [r.EnrollmentId], ct), r.EnrollmentId);
+        return new ReceiptDto(r.Id, r.Number, r.VerificationCode, r.Date, r.StudentId, code, student.FullName, info.Code, info.Label, r.Amount,
             Labels.Of(r.Method), r.Reference, payerName, payerPhone, r.Note, r.CashierName, r.Status == OperationStatus.Valide ? "Valide" : "Annulé",
             r.CancelledAtUtc, r.CancelledBy, r.CancellationReason, allocations, r.CreatedAtUtc);
     }
@@ -178,10 +180,12 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var validAmounts = await query.Where(x => x.r.Status == OperationStatus.Valide).Select(x => x.r.Amount).ToListAsync(ct);
         var pageSize = Math.Clamp(q.PageSize, 1, 1000);
         var page = Math.Max(1, q.Page);
-        var rows = await query.OrderByDescending(x => x.r.Date).ThenByDescending(x => x.r.Number).Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(x => new ReceiptSummaryRow(x.r.Id, x.r.Number, x.r.Date, x.s.Matricule, x.s.LastName + " " + x.s.MiddleName + " " + x.s.FirstName, x.p.Code,
-                x.r.Amount, x.r.Method, x.r.Status, x.r.CashierName, x.r.Reference))
+        var found = await query.OrderByDescending(x => x.r.Date).ThenByDescending(x => x.r.Number).Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(x => new { Row = new ReceiptSummaryRow(x.r.Id, x.r.Number, x.r.Date, string.Empty, x.s.LastName + " " + x.s.MiddleName + " " + x.s.FirstName, x.p.Code,
+                x.r.Amount, x.r.Method, x.r.Status, x.r.CashierName, x.r.Reference), x.r.EnrollmentId })
             .ToListAsync(ct);
+        var receiptCodes = await AnonymousDisplay.CodesAsync(db, found.Select(x => x.EnrollmentId), ct);
+        var rows = found.Select(x => x.Row with { Matricule = AnonymousDisplay.Of(receiptCodes, x.EnrollmentId) }).ToList();
         return new PagedResult<ReceiptSummaryRow>(rows, total, page, pageSize, validAmounts.Sum());
     }
 

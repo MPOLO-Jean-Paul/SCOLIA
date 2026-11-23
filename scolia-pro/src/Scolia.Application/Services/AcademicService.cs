@@ -54,7 +54,7 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
     {
         var a = await db.Assessments.AsNoTracking().FirstOrDefaultAsync(x => x.Id == assessmentId, ct) ?? throw new NotFoundException("Évaluation introuvable.");
         var course = await db.Courses.AsNoTracking().FirstAsync(c => c.Id == a.CourseId, ct);
-        var students = await StudentsOfAsync(course.PromotionId, ct);
+        var students = await StudentsWithCodesAsync(course.PromotionId, ct);
         var grades = await db.Grades.AsNoTracking().Where(g => g.AssessmentId == assessmentId).ToDictionaryAsync(g => g.EnrollmentId, ct);
         var rows = students.Select(s => new GradeRow(s.EnrollmentId, s.Matricule, s.FullName, grades.GetValueOrDefault(s.EnrollmentId)?.Score, grades.GetValueOrDefault(s.EnrollmentId)?.Comment)).ToList();
         return new GradeSheetDto(ToDto(a, rows.Count(r => r.Score != null)), rows);
@@ -95,7 +95,7 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
 
     private sealed record EnrolledStudent(Guid EnrollmentId, string Matricule, string FullName, DateOnly EnrolledOn);
 
-    /// <summary>Apprenants de la promotion présentés par leur code anonyme (présences et leurs bilans).</summary>
+    /// <summary>Apprenants de la promotion présentés par leur code anonyme (notes, résultats, bulletins, présences).</summary>
     private async Task<List<EnrolledStudent>> StudentsWithCodesAsync(Guid promotionId, CancellationToken ct)
     {
         var students = await StudentsOfAsync(promotionId, ct);
@@ -120,7 +120,7 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
         var assessments = await db.Assessments.AsNoTracking().Where(a => courseIds.Contains(a.CourseId) && (term == null || a.Term == term)).ToListAsync(ct);
         var assessmentIds = assessments.Select(a => a.Id).ToList();
         var grades = await db.Grades.AsNoTracking().Where(g => assessmentIds.Contains(g.AssessmentId)).ToListAsync(ct);
-        var students = await StudentsOfAsync(promotionId, ct);
+        var students = await StudentsWithCodesAsync(promotionId, ct);
         var gradeMap = grades.ToDictionary(g => (g.AssessmentId, g.EnrollmentId));
         var rows = students.Select(s =>
         {

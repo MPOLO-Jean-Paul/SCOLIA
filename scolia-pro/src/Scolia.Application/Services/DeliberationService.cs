@@ -411,7 +411,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
                 Mark(MarkKind.CoteS1), Mark(MarkKind.CoteS2), Mark(MarkKind.Appui), Mark(MarkKind.Jury)), period, settings.SupportEnabled);
             // La correspondance code ↔ nom est confidentielle : elle n'est montrée qu'au jury.
             var code = anonymous || user.HasPermission(Permissions.DeliberationManage) ? codes.GetValueOrDefault(s.EnrollmentId) : null;
-            return new MarkRowDto(s.EnrollmentId, code, anonymous ? null : s.Matricule, anonymous ? null : s.FullName, Mark(kind),
+            return new MarkRowDto(s.EnrollmentId, code, anonymous ? null : AnonymousDisplay.Of(codes, s.EnrollmentId), anonymous ? null : s.FullName, Mark(kind),
                 result.Base, result.Graded ? result.Points : null, result.Failed);
         });
         var list = (anonymous ? rows.OrderBy(r => r.Code ?? "~", StringComparer.Ordinal) : rows).ToList();
@@ -1252,6 +1252,8 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         }
         var courseIds = courses.Select(c => c.Id).ToList();
         var ids = students.Select(s => s.EnrollmentId).ToList();
+        // Colonne « Matricule » des procès-verbaux : le code anonyme actif de chaque apprenant.
+        var shown = await AnonymousDisplay.CodesAsync(db, ids, ct);
         var marks = (await db.CourseMarks.AsNoTracking().Where(m => courseIds.Contains(m.CourseId) && ids.Contains(m.EnrollmentId)).ToListAsync(ct))
             .ToDictionary(m => (m.EnrollmentId, m.CourseId, m.Kind), m => m.Value);
 
@@ -1282,7 +1284,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             DeliberationRowDto row;
             if (frozen.TryGetValue(s.EnrollmentId, out var f))
             {
-                row = new DeliberationRowDto(s.EnrollmentId, f.Code.Length == 0 || !user.HasPermission(Permissions.DeliberationManage) ? null : f.Code, f.Matricule, f.StudentName, f.Points, f.MaxPoints, f.Percent, f.Missing, f.FailedCourses,
+                row = new DeliberationRowDto(s.EnrollmentId, f.Code.Length == 0 || !user.HasPermission(Permissions.DeliberationManage) ? null : f.Code, f.Code.Length > 0 ? f.Code : AnonymousDisplay.Of(shown, s.EnrollmentId), f.StudentName, f.Points, f.MaxPoints, f.Percent, f.Missing, f.FailedCourses,
                     DeliberationEngine.Label(f.Computed), DeliberationEngine.DecisionLabel(f.Computed, f.Final, f.Reason is not null), jury is null ? null : DeliberationEngine.Label(jury.Outcome),
                     f.Reason, f.Mention, f.Rank, false, GradeOf(f.Final, f.Percent, f.FailedCourses), TotalsOf(s.EnrollmentId));
                 computed[s.EnrollmentId] = f.Computed;
@@ -1293,7 +1295,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
                 var final = DeliberationEngine.Final(result.Outcome, jury?.Outcome, closing);
                 var near = result.Outcome != Outcome.Admis && jury is null
                     && (result.Missing == 1 || (result.Missing == 0 && result.Percent >= settings.PassPercent - 5));
-                row = new DeliberationRowDto(s.EnrollmentId, codes.GetValueOrDefault(s.EnrollmentId), s.Matricule, s.FullName, result.Points, result.Max, result.Percent,
+                row = new DeliberationRowDto(s.EnrollmentId, codes.GetValueOrDefault(s.EnrollmentId), AnonymousDisplay.Of(shown, s.EnrollmentId), s.FullName, result.Points, result.Max, result.Percent,
                     result.Missing, result.Failed, DeliberationEngine.Label(result.Outcome), DeliberationEngine.DecisionLabel(result.Outcome, final, jury is not null),
                     jury is null ? null : DeliberationEngine.Label(jury.Outcome), jury?.Reason, result.Mention, ranks.TryGetValue(s.EnrollmentId, out var rank) ? rank : null, near,
                     GradeOf(final, result.Percent, result.Failed), TotalsOf(s.EnrollmentId));

@@ -78,10 +78,14 @@ public sealed class LmdResultsService(IAppDbContext db, IWriteGate gate, IAuditL
     public async Task<LmdPromotionResultsDto> ResultsAsync(Guid promotionId, string? stage, CancellationToken ct = default)
     {
         var c = await LoadAsync(promotionId, false, ct);
-        return Results(c, stage);
+        return Results(c, stage, await CodesOf(c, ct));
     }
 
-    private LmdPromotionResultsDto Results(Context c, string? stage)
+    /// <summary>Codes anonymes affichés dans la colonne « Matricule » de la promotion.</summary>
+    private Task<IReadOnlyDictionary<Guid, string>> CodesOf(Context c, CancellationToken ct) =>
+        AnonymousDisplay.CodesAsync(db, c.Enrollments.Select(x => x.Id), ct);
+
+    private LmdPromotionResultsDto Results(Context c, string? stage, IReadOnlyDictionary<Guid, string> shownCodes)
     {
         var status = StatusOf(c);
         stage ??= status switch
@@ -120,7 +124,7 @@ public sealed class LmdResultsService(IAppDbContext db, IWriteGate gate, IAuditL
                 "Definitif" when status == LmdSessionStatus.Cloturee && d?.Final is { } f => LmdResultsCalculator.Label(f),
                 _ => null,
             };
-            return new LmdStudentLineDto(e.Id, e.StudentId, e.Student!.Matricule, e.Student.FullName,
+            return new LmdStudentLineDto(e.Id, e.StudentId, AnonymousDisplay.Of(shownCodes, e.Id), e.Student!.FullName,
                 Semester(r.S1), Semester(r.S2), r.Average, r.CreditsAcquired, r.CreditsPlanned, r.Complete,
                 stage == "S1" ? RankBy(results, r, x => x.S1.Average) : r.Rank,
                 computed, jury?.ToString(), reason, decision,
@@ -160,8 +164,9 @@ public sealed class LmdResultsService(IAppDbContext db, IWriteGate gate, IAuditL
         try { LmdDeliberationRules.EnsureMarkEditable(StatusOf(c), element.Semester, session); }
         catch (DomainException e) { lockReason = e.Message; }
         var eligible = Eligible(c, session, ue.Id);
+        var shownCodes = await AnonymousDisplay.CodesAsync(db, c.Enrollments.Select(x => x.Id), ct);
         var lines = c.Enrollments.OrderBy(e => e.Student!.FullName, StringComparer.CurrentCultureIgnoreCase)
-            .Select(e => new LmdMarkLineDto(e.Id, e.Student!.Matricule, e.Student.FullName,
+            .Select(e => new LmdMarkLineDto(e.Id, AnonymousDisplay.Of(shownCodes, e.Id), e.Student!.FullName,
                 c.Marks.FirstOrDefault(m => m.EnrollmentId == e.Id && m.ElementId == element.Id && m.Session == session)?.Score,
                 lockReason is null && eligible.Contains(e.Id)))
             .ToList();
@@ -282,7 +287,7 @@ public sealed class LmdResultsService(IAppDbContext db, IWriteGate gate, IAuditL
         audit.Record("lmd.s1.publie", "Promotion", c.Promotion.Id.ToString(),
             $"{c.Promotion.Name} {c.Year.Label} : résultats partiels du premier semestre publiés par {Actor}.");
         await db.SaveChangesAsync(ct);
-        return Results(WithDeliberation(c, d), "S1");
+        return Results(WithDeliberation(c, d), "S1", await CodesOf(c, ct));
     }, ct);
 
     /// <summary>Décision motivée du jury : avant la première session, puis après la deuxième.</summary>
@@ -323,7 +328,7 @@ public sealed class LmdResultsService(IAppDbContext db, IWriteGate gate, IAuditL
             $"{c.Promotion.Name} ({(final ? "deuxième session" : "première session")}) : " +
             (jury is null ? "décision du jury retirée." : $"{LmdResultsCalculator.Label(jury.Value)} — {input.Reason!.Trim()}"));
         await db.SaveChangesAsync(ct);
-        return Results(WithDeliberation(c, d), final ? "Definitif" : "PremiereSession");
+        return Results(WithDeliberation(c, d), final ? "Definitif" : "PremiereSession", await CodesOf(c, ct));
     }, ct);
 
     /// <summary>
@@ -364,7 +369,7 @@ public sealed class LmdResultsService(IAppDbContext db, IWriteGate gate, IAuditL
         audit.Record("lmd.premiereSession", "Promotion", c.Promotion.Id.ToString(),
             $"{c.Promotion.Name} {c.Year.Label} : première session clôturée par {Actor}. " + Counts(c.Decisions, x => x.FirstOutcome));
         await db.SaveChangesAsync(ct);
-        return Results(WithDeliberation(c, d), d.Status == LmdSessionStatus.Cloturee ? "Definitif" : "PremiereSession");
+        return Results(WithDeliberation(c, d), d.Status == LmdSessionStatus.Cloturee ? "Definitif" : "PremiereSession", await CodesOf(c, ct));
     }, ct);
 
     /// <summary>Clôture la deuxième session : décisions définitives, dettes créées pour les admis avec dettes.</summary>
@@ -388,7 +393,7 @@ public sealed class LmdResultsService(IAppDbContext db, IWriteGate gate, IAuditL
         audit.Record("lmd.cloture", "Promotion", c.Promotion.Id.ToString(),
             $"{c.Promotion.Name} {c.Year.Label} : deuxième session clôturée par {Actor}. " + Counts(c.Decisions, x => x.Final));
         await db.SaveChangesAsync(ct);
-        return Results(WithDeliberation(c, d), "Definitif");
+        return Results(WithDeliberation(c, d), "Definitif", await CodesOf(c, ct));
     }, ct);
 
     private async Task FinalizeAsync(Context c, LmdDeliberation d, IReadOnlyList<LmdStudentResult> results, CancellationToken ct)
@@ -431,8 +436,14 @@ public sealed class LmdResultsService(IAppDbContext db, IWriteGate gate, IAuditL
                     where studentId == null || x.StudentId == studentId
                     select new { x, s, y.Label };
         var rows = await query.ToListAsync(ct);
+        var studentIds = rows.Select(r => r.s.Id).Distinct().ToList();
+        var latest = await db.Enrollments.AsNoTracking().Where(e => studentIds.Contains(e.StudentId))
+            .OrderByDescending(e => e.EnrolledOn).Select(e => new { e.StudentId, e.Id }).ToListAsync(ct);
+        var latestByStudent = latest.GroupBy(e => e.StudentId).ToDictionary(g => g.Key, g => g.First().Id);
+        var shownCodes = await AnonymousDisplay.CodesAsync(db, latestByStudent.Values, ct);
         return rows.OrderBy(r => r.s.LastName).ThenBy(r => r.x.UeCode)
-            .Select(r => new LmdDebtDto(r.x.Id, r.s.Id, r.s.Matricule, r.s.FullName, r.Label, r.x.UeCode, r.x.UeName,
+            .Select(r => new LmdDebtDto(r.x.Id, r.s.Id,
+                latestByStudent.TryGetValue(r.s.Id, out var enrollment) ? AnonymousDisplay.Of(shownCodes, enrollment) : AnonymousDisplay.Pending, r.s.FullName, r.Label, r.x.UeCode, r.x.UeName,
                 r.x.Semester, r.x.Credits, r.x.ClearedMark, r.x.ClearedBy, r.x.ClearedAtUtc)).ToList();
     }
 
@@ -466,7 +477,7 @@ public sealed class LmdResultsService(IAppDbContext db, IWriteGate gate, IAuditL
     {
         var c = await LoadAsync(promotionId, false, ct);
         var status = StatusOf(c);
-        var results = Results(c, stage);
+        var results = Results(c, stage, await CodesOf(c, ct));
         var published = results.Stage switch
         {
             "S1" => status >= LmdSessionStatus.S1Publie,

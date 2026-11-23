@@ -304,9 +304,21 @@ public sealed class SearchService(IAppDbContext db)
         var terms = TextKey.Normalize(text).Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (terms.Length == 0) return [];
         var students = db.Students.AsNoTracking().AsQueryable();
-        foreach (var term in terms) { var t = term; students = students.Where(s => s.SearchText.Contains(t)); }
-        var hits = (await students.OrderBy(s => s.LastName).Take(8).ToListAsync(ct))
-            .Select(s => new SearchHit("Apprenant", $"{s.FullName}", $"Matricule {s.Matricule}", $"/apprenants/{s.Id}")).ToList();
+        foreach (var term in terms)
+        {
+            var t = term;
+            // Nom, ou code anonyme actif d'une inscription de l'apprenant.
+            students = students.Where(s => s.SearchText.Contains(t) || db.AnonymousCodes.Any(c => c.IsActive && c.Code.Contains(t)
+                && db.Enrollments.Any(e => e.Id == c.EnrollmentId && e.StudentId == s.Id)));
+        }
+        var found = await students.OrderBy(s => s.LastName).Take(8).ToListAsync(ct);
+        var foundIds = found.Select(s => s.Id).ToList();
+        var latest = (await db.Enrollments.AsNoTracking().Where(e => foundIds.Contains(e.StudentId))
+                .Select(e => new { e.StudentId, e.Id, e.EnrolledOn }).ToListAsync(ct))
+            .GroupBy(e => e.StudentId).ToDictionary(g => g.Key, g => g.OrderByDescending(e => e.EnrolledOn).First().Id);
+        var codes = await AnonymousDisplay.CodesAsync(db, latest.Values, ct);
+        var hits = found.Select(s => new SearchHit("Apprenant", $"{s.FullName}",
+            $"Matricule {(latest.TryGetValue(s.Id, out var e) ? AnonymousDisplay.Of(codes, e) : AnonymousDisplay.Pending)}", $"/apprenants/{s.Id}")).ToList();
         var number = string.Join(' ', terms);
         var receipts = await db.Receipts.AsNoTracking().Where(r => r.Number.Contains(number)).OrderByDescending(r => r.Date).Take(5)
             .Select(r => new { r.Id, r.Number, r.Date, r.Amount }).ToListAsync(ct);

@@ -37,10 +37,11 @@ public sealed class DailyReportService(IAppDbContext db, AccountService accounts
                               orderby r.Number
                               select new
                               {
-                                  r.Number, r.Amount, r.Method, r.Status, r.CashierName, r.StudentId, PromotionId = p.Id, p.Code,
+                                  r.Number, r.Amount, r.Method, r.Status, r.CashierName, r.StudentId, r.EnrollmentId, PromotionId = p.Id, p.Code,
                                   s.Matricule, s.LastName, s.MiddleName, s.FirstName,
                               }).ToListAsync(ct);
         var valid = receipts.Where(r => r.Status == OperationStatus.Valide).ToList();
+        var receiptCodes = await AnonymousDisplay.CodesAsync(db, receipts.Select(r => r.EnrollmentId), ct);
         var expenses = await db.Expenses.AsNoTracking().Where(e => e.Date == day && e.Status == OperationStatus.Valide)
             .OrderBy(e => e.Number).Select(e => new { e.Number, e.Category, e.Beneficiary, e.Amount }).ToListAsync(ct);
         var closed = await db.CashClosings.AsNoTracking().AnyAsync(c => c.Date == day, ct);
@@ -93,7 +94,7 @@ public sealed class DailyReportService(IAppDbContext db, AccountService accounts
                 valid.Count > 0 ? ["Total", valid.Count.ToString(), M(collected)] : null,
                 "Aucun encaissement ce jour."),
             new("Détail des reçus", ["N°", "Apprenant", "Promotion", "Mode", "Caissier", "État", "Montant"],
-                receipts.Select(r => (IReadOnlyList<string>)[r.Number, $"{r.Matricule} · {Name(r.LastName, r.MiddleName, r.FirstName)}", r.Code,
+                receipts.Select(r => (IReadOnlyList<string>)[r.Number, $"{AnonymousDisplay.Of(receiptCodes, r.EnrollmentId)} · {Name(r.LastName, r.MiddleName, r.FirstName)}", r.Code,
                     Labels.Of(r.Method), r.CashierName, r.Status == OperationStatus.Valide ? "Valide" : "Annulé", M(r.Amount)]).ToList(),
                 receipts.Count > 0 ? ["Total valide", "", "", "", "", "", M(collected)] : null,
                 "Aucun reçu ce jour."),

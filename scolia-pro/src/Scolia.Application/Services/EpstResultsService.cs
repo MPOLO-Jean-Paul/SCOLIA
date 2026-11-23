@@ -93,11 +93,12 @@ public sealed class EpstResultsService(IAppDbContext db, IClock clock)
 
         static EpstCellDto Cell(EpstCell c) => new(c.Points, c.Max);
         var byId = enrollments.ToDictionary(e => e.Id);
+        var shownCodes = await AnonymousDisplay.CodesAsync(db, enrollments.Select(x => x.Id), ct);
         var pupils = result.Pupils.Select(p =>
         {
             var e = byId[p.EnrollmentId];
             var s = e.Student!;
-            return new EpstPupilResultDto(e.Id, s.Id, s.Matricule, s.FullName,
+            return new EpstPupilResultDto(e.Id, s.Id, AnonymousDisplay.Of(shownCodes, e.Id), s.FullName,
                 p.Subjects.Select(x => new EpstSubjectLineDto(x.SubjectId, x.Code, x.Name,
                     x.Periods.Select(Cell).ToList(), x.Terms.Select(Cell).ToList(),
                     x.Total, x.Max, x.Percent, x.Failed)).ToList(),

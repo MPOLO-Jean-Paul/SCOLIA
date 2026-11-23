@@ -122,13 +122,15 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
                 all.Count(x => Aging.Bucket(x.Account.OldestOverdueDate, today) == b)))
             .ToList();
 
-        var latest = await (from r in db.Receipts.AsNoTracking()
+        var latestRows = await (from r in db.Receipts.AsNoTracking()
                             join s in db.Students.AsNoTracking() on r.StudentId equals s.Id
                             where r.AcademicYearId == year.Id
                             // Les plus récents par date du reçu : une reprise de données saisie après coup ne passe pas devant.
                             orderby r.Date descending, r.CreatedAtUtc descending, r.Number descending
-                            select new ReceiptSummaryDto(r.Id, r.Number, r.Date, r.Amount, r.Method.ToString(), r.Status == OperationStatus.Valide ? "Valide" : "Annulé",
-                                r.CashierName, s.Matricule + " · " + s.LastName + " " + s.FirstName)).Take(8).ToListAsync(ct);
+                            select new { Row = new ReceiptSummaryDto(r.Id, r.Number, r.Date, r.Amount, r.Method.ToString(), r.Status == OperationStatus.Valide ? "Valide" : "Annulé",
+                                r.CashierName, s.LastName + " " + s.FirstName), r.EnrollmentId }).Take(8).ToListAsync(ct);
+        var latestCodes = await AnonymousDisplay.CodesAsync(db, latestRows.Select(x => x.EnrollmentId), ct);
+        var latest = latestRows.Select(x => x.Row with { Allocations = AnonymousDisplay.Of(latestCodes, x.EnrollmentId) + " · " + x.Row.Allocations }).ToList();
         latest = latest.Select(r => r with { Method = Labels.Of(Enum.Parse<PaymentMethod>(r.Method)) }).ToList();
 
         return new DashboardDto(year.Label, active.Count, active.Count(x => x.Enrollment.EnrolledOn >= monthStart),
@@ -219,7 +221,7 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
                 var s = x.Enrollment.Student!;
                 return new DebtorDto(s.Id, x.Enrollment.Id, AnonymousDisplay.Of(codes, x.Enrollment.Id), s.FullName, x.Promotion.Code, x.Account.Balance, x.Account.Overdue, x.Account.OverdueCount,
                     string.Join(", ", x.Account.Lines.Where(l => l.IsOverdue).Select(l => l.Label)), Aging.Bucket(x.Account.OldestOverdueDate, today),
-                    s.GuardianName, s.ParentPhone, Reminders.WhatsApp(school, s, x.Account), Reminders.Sms(school, s, x.Account),
+                    s.GuardianName, s.ParentPhone, Reminders.WhatsApp(school, s, x.Account, AnonymousDisplay.Of(codes, x.Enrollment.Id)), Reminders.Sms(school, s, x.Account, AnonymousDisplay.Of(codes, x.Enrollment.Id)),
                     CoverageText.Of(x.Coverage));
             }).ToList();
     }
@@ -408,7 +410,8 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
             var status = x.Entry.IsSponsored ? "Pris en charge" : Status(line);
             return new MonthlyRowDto(s.Id, x.Entry.Enrollment.Id, AnonymousDisplay.Of(monthlyCodes, x.Entry.Enrollment.Id), s.FullName, x.Entry.Promotion.Code, line.Net, line.Paid, line.Remaining,
                 status, receipt?.Number, receipt?.Date, s.ParentPhone,
-                Reminders.MonthWhatsApp(school, s, Name(period), line.Remaining), Reminders.MonthSms(school, s, Name(period), line.Remaining),
+                Reminders.MonthWhatsApp(school, s, Name(period), line.Remaining, AnonymousDisplay.Of(monthlyCodes, x.Entry.Enrollment.Id)),
+                Reminders.MonthSms(school, s, Name(period), line.Remaining, AnonymousDisplay.Of(monthlyCodes, x.Entry.Enrollment.Id)),
                 CoverageText.Of(x.Entry.Coverage));
         }).OrderBy(r => r.PromotionCode).ThenBy(r => r.Status == "Pris en charge").ThenBy(r => r.FullName).ToList();
 
