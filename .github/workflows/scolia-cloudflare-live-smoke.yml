@@ -51,6 +51,12 @@ jobs:
           -c Release -f net10.0 --no-build
           --filter "FullyQualifiedName~RemoteSyncTests.Offline_registration_survives_host_interruption_and_is_applied_once_on_reconnection|FullyQualifiedName~RemoteSyncTests.Payment_survives_lost_http_replay_cache_without_duplicate_receipt_or_amount"
           --logger "trx;LogFileName=offline-finance.trx"
+      - name: Verifier le journal D1 chiffre et la releve SQLite en simulation securisee
+        run: >-
+          dotnet test tests/Scolia.Tests/Scolia.Tests.csproj
+          -c Release -f net10.0 --no-build
+          --filter "FullyQualifiedName~CloudContinuityTests.Automatic_D1_sync_retries_the_same_encrypted_manifest_after_a_lost_ack|FullyQualifiedName~CloudContinuityTests.Operations_deposited_during_an_outage_are_applied_once_as_their_author|FullyQualifiedName~CloudContinuityTests.Online_backup_is_encrypted_by_the_school_and_recoverable_with_the_recovery_code"
+          --logger "trx;LogFileName=d1-sqlite-simule.trx"
       - name: Resumer les limites de la validation
         if: success()
         shell: bash
@@ -61,7 +67,8 @@ jobs:
             echo '- SQLite de test : operations hors ligne et idempotence de paiement verifiees.'
             echo '- Aucun dossier scolaire de production charge dans Cloudflare.'
             echo '- Tests sur les appareils physiques Windows et Android encore necessaires.'
-            echo '- D1 et R2 restent un chantier distinct : aucune migration de donnees.'
+            echo '- D1/R2 : journal chiffre et sauvegarde/releve valides sur simulateur seulement.'
+            echo '- D1 de production : aucun jumelage ni transfert de donnees reales.'
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
