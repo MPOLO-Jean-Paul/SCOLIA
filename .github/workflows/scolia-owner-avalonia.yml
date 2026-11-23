@@ -9,7 +9,9 @@ name: SCOLIA Console natif Avalonia - Android et Windows
 
 on:
   push:
-    branches: [feature/jp-services-admin-server-discovery-20261109]
+    # La branche de distribution compile aussi une PREVIEW de la console native.
+    # Une release officielle exige toujours le workflow manuel et la signature permanente.
+    branches: [feature/jp-services-admin-server-discovery-20261109, release/direct-apk-scolia-pro-20261103]
     paths:
       - 'scolia-pro/owner-app/avalonia/**'
       - 'scolia-pro/deploy/owner-console/**'
