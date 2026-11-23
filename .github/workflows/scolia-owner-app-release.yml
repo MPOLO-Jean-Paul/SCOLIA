@@ -20,8 +20,8 @@ permissions:
 jobs:
   publication:
     if: github.ref == 'refs/heads/main' && github.actor == 'MPOLO-Jean-Paul' && inputs.publish_release == true
-    uses: MPOLO-Jean-Paul/SCOLIA/.github/workflows/scolia-owner-avalonia.yml@87c8fd5c4776d1941c27995059f98fb1eb573f04
+    uses: MPOLO-Jean-Paul/SCOLIA/.github/workflows/scolia-owner-avalonia.yml@f08d980981705120b4d65000d370b77f990ccbbd
     with:
       publish_release: true
-      source_sha: 87c8fd5c4776d1941c27995059f98fb1eb573f04
+      source_sha: f08d980981705120b4d65000d370b77f990ccbbd
     secrets: inherit
