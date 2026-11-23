@@ -46,10 +46,10 @@ Une réponse correcte de `/health` **ne prouve pas à elle seule** que les conne
 ## 3. Essai sur SCOLIA Pro
 
 1. **Conserver Render actif.** Avant toute modification du relais, sauvegarder la base de l'établissement et vérifier les écritures hors ligne en attente.
-2. Sur **l'appareil serveur principal**, dans **Réseau et activité → Réglages avancés**, renseigner l'adresse Cloudflare sous forme WSS : `wss://scolia-pro-relay.<votre-sous-domaine>.workers.dev/` (le protocole WSS et la barre finale sont requis).
-3. Cliquer sur **Activer ou vérifier Internet** (« Activer ou vérifier Render » dans les versions 1.2.35 et antérieures). Le code de connexion accepte une adresse de relais WSS personnalisée.
-4. La modification du fournisseur **renouvelle la liaison chiffrée** : générer un **nouveau QR SCOLIA** sur l'appareil serveur pour les téléphones et PC qui doivent rejoindre ce nouveau chemin. Les anciens codes Render ne doivent pas servir à autoriser un nouvel appareil Cloudflare.
-5. Sur l'autre appareil, scanner le QR officiel une seule fois. Tester l'accès sur le même Wi-Fi, puis désactiver le Wi-Fi du téléphone pour passer sur Orange/Airtel/Vodacom. Vérifier la reconnexion automatique après fermeture/réouverture, la révocation d'un appareil et la synchronisation après une courte coupure.
+2. Depuis SCOLIA Pro **1.2.90**, Cloudflare est proposé par défaut sous `wss://relay.jp-services.org/` et Render reste le secours sous `wss://scolia-pro-relay.onrender.com/`. L'appareil principal peut confirmer cette configuration depuis **Réseau et activité → Réglages avancés → Activer ou vérifier Internet**. Les serveurs sous licence gérée doivent d'abord obtenir l'approbation du nouveau fournisseur depuis la console propriétaire.
+3. Le changement de fournisseur ne fait **pas** tourner les clés de salle ou de jumelage : les appareils autorisés conservent leurs droits, et les anciens liens Render restent compatibles avec le secours. Seule une révocation explicite retire un appareil.
+4. Pour **un nouvel appareil**, générer un QR SCOLIA depuis le serveur principal après sa configuration, puis scanner l'invitation officielle une seule fois. Les anciennes invitations expirées et les autorisations révoquées ne sont jamais réactivées.
+5. Tester l'accès sur le même Wi-Fi, puis passer le téléphone en 4G (Orange/Airtel/Vodacom). Vérifier la connexion à Cloudflare, la reprise via Render, la reconnexion après fermeture/réouverture, la révocation d'un appareil et la synchronisation après une courte coupure.
 6. Tester l'ordinateur serveur arrêté : les clients doivent afficher leur état hors ligne correctement, **sans fausse confirmation d'encaissement**.
 7. Ne désactiver Render qu'après réussite des essais réels Android–Windows, y compris les paiements.
 
