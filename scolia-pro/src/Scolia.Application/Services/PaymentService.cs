@@ -208,7 +208,7 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var school = await YearContext.SchoolAsync(db, ct);
         var full = await db.Receipts.AsNoTracking().FirstAsync(r => r.Id == id, ct);
         var account = await accounts.ForEnrollmentAsync(full.EnrollmentId, null, ct);
-        return documents.Receipt(new ReceiptDocument(Header(school), receipt.Number, receipt.Date, receipt.StudentName, receipt.Matricule, receipt.PromotionCode,
+        return documents.Receipt(new ReceiptDocument(Header(school), receipt.Number, receipt.Date, receipt.StudentName, AnonymousDisplay.Printed(receipt.Matricule), receipt.PromotionCode,
             receipt.AcademicYear, receipt.Amount, FrenchNumbers.Amount(receipt.Amount, FrenchNumbers.CurrencyName(school.CurrencyCode)), receipt.Method,
             receipt.Reference, receipt.PayerName, receipt.Cashier, receipt.Allocations.Select(a => (a.Label, a.Amount)).ToList(), account.Account.Balance,
             $"{verificationBaseUrl.TrimEnd('/')}/verifier/{receipt.VerificationCode}", receipt.Status != "Valide", receipt.CancellationReason));
@@ -218,7 +218,7 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     {
         var school = await YearContext.SchoolAsync(db, ct);
         var dto = await accounts.AccountDtoAsync(enrollmentId, ct);
-        return documents.Statement(new StatementDocument(Header(school), dto.FullName, dto.Matricule, dto.PromotionCode, dto.AcademicYear, clock.Today,
+        return documents.Statement(new StatementDocument(Header(school), dto.FullName, AnonymousDisplay.Printed(dto.Matricule), dto.PromotionCode, dto.AcademicYear, clock.Today,
             dto.Lines, dto.Receipts, dto.TotalNet, dto.TotalPaid, dto.Balance, dto.Overdue));
     }
 

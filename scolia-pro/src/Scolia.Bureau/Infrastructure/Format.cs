@@ -7,6 +7,22 @@ public static class Format
 {
     private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
 
+    /// <summary>Vrai si l'apprenant a un code anonyme (le serveur envoie « À ATTRIBUER » sinon).</summary>
+    public static bool HasCode(string? matricule) =>
+        !string.IsNullOrWhiteSpace(matricule) && matricule != "À ATTRIBUER" && matricule != "—";
+
+    /// <summary>« Nom · CODE », ou le nom seul tant que le code n'est pas attribué.</summary>
+    public static string NameAndCode(string name, string? matricule) => HasCode(matricule) ? $"{name} · {matricule}" : name;
+
+    /// <summary>« CODE · Nom », ou le nom seul tant que le code n'est pas attribué.</summary>
+    public static string CodeAndName(string? matricule, string name) => HasCode(matricule) ? $"{matricule} · {name}" : name;
+
+    /// <summary>Sous-titre fait des seules informations connues, séparées par « · ».</summary>
+    public static string Line(params string?[] parts) => string.Join(" · ", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
+
+    /// <summary>« Matricule CODE », ou rien tant que le code n'est pas attribué.</summary>
+    public static string? CodeLabel(string? matricule) => HasCode(matricule) ? $"Matricule {matricule}" : null;
+
     public static string Money(decimal value, string symbol) => $"{value.ToString("N0", Fr)} {symbol}";
 
     public static string Amount(decimal value) => value.ToString("N0", Fr);

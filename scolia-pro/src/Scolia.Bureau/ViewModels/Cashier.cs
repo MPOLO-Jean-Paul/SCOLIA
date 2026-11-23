@@ -345,7 +345,7 @@ public sealed class CashierPage : PageViewModel
             var active = detail.Enrollments.FirstOrDefault(e => e.Status == "Actif") ?? (detail.Enrollments.Count > 0 ? detail.Enrollments[0] : null);
             if (active is not null)
             {
-                await ChooseAsync(new PayerRow(active.Id, detail.Id, $"{detail.Matricule} · {Format.FullName(detail.LastName, detail.MiddleName, detail.FirstName)}", active.PromotionCode));
+                await ChooseAsync(new PayerRow(active.Id, detail.Id, Format.CodeAndName(detail.Matricule, Format.FullName(detail.LastName, detail.MiddleName, detail.FirstName)), active.PromotionCode));
                 Selected = null;
             }
         }
@@ -387,7 +387,7 @@ public sealed class CashierPage : PageViewModel
                 return;
             }
             foreach (var s in page.Items.Take(12))
-                Results.Add(new PayerRow(s.EnrollmentId, s.Id, $"{s.Matricule} · {Format.FullName(s.LastName, s.MiddleName, s.FirstName)}",
+                Results.Add(new PayerRow(s.EnrollmentId, s.Id, Format.CodeAndName(s.Matricule, Format.FullName(s.LastName, s.MiddleName, s.FirstName)),
                     $"{s.PromotionCode ?? "sans promotion"} · {Labels.Status(s.Status ?? string.Empty)}"));
             SearchStatus = page.Items.Count == 0 ? $"Aucun {Shell.StudentTerms.Singular} trouvé dans les données disponibles."
                 : local is { Complete: false } ? "Recherche limitée aux dossiers téléchargés ; préparation hors ligne incomplète."
@@ -503,7 +503,7 @@ public sealed class CashierPage : PageViewModel
         Raise(nameof(TotalCaption));
         Raise(nameof(HasSelection));
         StudentName = account.FullName;
-        StudentInfo = $"Matricule {account.Matricule} · {account.PromotionCode} · {account.AcademicYear}";
+        StudentInfo = Format.Line(Format.CodeLabel(account.Matricule), account.PromotionCode, account.AcademicYear);
         Balance = Money(account.Balance);
         Overdue = Money(account.Overdue);
         OverdueBrush = ThemeBrush.Get(account.Overdue > 0 ? "ToneRed" : "ToneGreen");
@@ -981,7 +981,7 @@ public sealed class ReceiptDetailPage : PageViewModel
 
         Details.Clear();
         Details.Add(new InfoLine("Date", Format.Date(receipt.Date)));
-        Details.Add(new InfoLine(Shell.StudentTerms.SingularTitle, $"{receipt.StudentName} · {receipt.Matricule}"));
+        Details.Add(new InfoLine(Shell.StudentTerms.SingularTitle, Format.NameAndCode(receipt.StudentName, receipt.Matricule)));
         Details.Add(new InfoLine("Promotion", $"{receipt.PromotionCode} · {receipt.AcademicYear}"));
         Details.Add(new InfoLine("Montant", Money(receipt.Amount)));
         Details.Add(new InfoLine("Mode", Labels.Method(receipt.Method) + (receipt.Reference is null ? string.Empty : $" · réf. {receipt.Reference}")));

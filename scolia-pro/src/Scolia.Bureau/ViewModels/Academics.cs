@@ -484,7 +484,7 @@ public sealed class AttendancePage : PageViewModel
         {
             Message = alerts.Count == 0
                 ? $"Aucun {Shell.StudentTerms.Singular} ne dépasse les seuils."
-                : string.Join(Environment.NewLine, alerts.Select(a => $"{a.Matricule} · {a.FullName} : {a.UnjustifiedAbsences} absence(s) non justifiée(s), {a.LongestRun} jour(s) consécutif(s)")),
+                : string.Join(Environment.NewLine, alerts.Select(a => $"{Infrastructure.Format.CodeAndName(a.Matricule, a.FullName)} : {a.UnjustifiedAbsences} absence(s) non justifiée(s), {a.LongestRun} jour(s) consécutif(s)")),
             SubmitText = "Fermer",
             ShowCancel = false,
         };

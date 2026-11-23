@@ -323,7 +323,7 @@ public static class Choices
     public static ChoiceItem Promotion(PromotionDto p) => new(p.Id.ToString(), $"{p.Code} · {p.Name}");
 
     public static ChoiceItem Student(StudentListItem s) =>
-        new(s.EnrollmentId?.ToString() ?? string.Empty, $"{s.Matricule} · {Infrastructure.Format.FullName(s.LastName, s.MiddleName, s.FirstName)}");
+        new(s.EnrollmentId?.ToString() ?? string.Empty, Infrastructure.Format.CodeAndName(s.Matricule, Infrastructure.Format.FullName(s.LastName, s.MiddleName, s.FirstName)));
 
     public static IReadOnlyList<ChoiceItem> Categories(IEnumerable<string> names) =>
         names.Select(n => new ChoiceItem(n, n)).ToList();

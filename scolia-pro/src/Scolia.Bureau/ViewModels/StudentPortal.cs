@@ -61,7 +61,7 @@ public sealed class StudentAccountsPage : PageViewModel
     private async Task ShowCodesAsync(IReadOnlyList<StudentCredentialsDto> codes)
     {
         if (codes.Count == 0) { Shell.Notify("Tous les étudiants de la sélection ont déjà un accès actif."); return; }
-        var text = string.Join("\n", codes.Select(c => $"{c.Matricule} · {c.FullName} — identifiant {c.UserName}, code {c.ProvisionalCode}"));
+        var text = string.Join("\n", codes.Select(c => $"{Infrastructure.Format.CodeAndName(c.Matricule, c.FullName)} — identifiant {c.UserName}, code {c.ProvisionalCode}"));
         await Shell.Confirm("Codes provisoires à remettre",
             text + "\n\nCes codes ne seront plus affichés. Chaque étudiant choisit son propre code à la première connexion.", "J'ai noté les codes");
         await RefreshAsync();
@@ -157,7 +157,7 @@ public sealed class StudentResultsPage : PageViewModel
             Notice = portal?.Notice ?? "Aucun résultat publié.";
             Summary = string.Empty;
             Decision = string.Empty;
-            subtitle = portal is null ? string.Empty : $"{portal.FullName} · {portal.Matricule}";
+            subtitle = portal is null ? string.Empty : Infrastructure.Format.NameAndCode(portal.FullName, portal.Matricule);
             Raise(nameof(Subtitle));
             return;
         }

@@ -80,7 +80,7 @@ public sealed class AnonymousCodesPage : PageViewModel
     private async Task ChangeAsync(bool manual)
     {
         if (Selected is not { } row) return;
-        var form = new FormViewModel(manual ? "Code officiel" : "Nouveau code", $"{row.FullName} · {row.Matricule}. Un code remplacé n'est plus jamais attribué cette année.", async f =>
+        var form = new FormViewModel(manual ? "Code officiel" : "Nouveau code", $"{Infrastructure.Format.NameAndCode(row.FullName, row.Matricule)}. Un code remplacé n'est plus jamais attribué cette année.", async f =>
         {
             await Shell.Api.SendAsync(HttpMethod.Put, $"api/deliberation/codes/{row.EnrollmentId}", new
             {
@@ -798,7 +798,7 @@ public sealed class DeliberationPage : PageViewModel
             lines = lines.Append(string.Empty).Append($"TOTAL 1 (épreuves) {t.Total1:0.##}/{t.Total1Max:0.##} · SOUS-TOTAL 1 (cours) {t.Subtotal1:0.##}/{t.Subtotal1Max:0.##} · "
                 + $"SOUS-TOTAL 2 (blocs) {t.Subtotal2:0.##}/{t.Subtotal2Max:0.##} · TOTAL 2 {t.Total2:0.##}/{t.Total2Max:0.##} · TOTAL GÉNÉRAL {t.General:0.##}/{t.GeneralMax:0.##}"
                 + (r.Grade is { } g ? $" · code {g}" : string.Empty));
-        var form = new FormViewModel($"{r.FullName} · {r.Matricule}", $"{detail.Promotion} · {detail.Period} · {r.Percent:0.##} % · mention {r.Mention} · {r.Decision}", _ => Task.FromResult(true))
+        var form = new FormViewModel(Infrastructure.Format.NameAndCode(r.FullName, r.Matricule), $"{detail.Promotion} · {detail.Period} · {r.Percent:0.##} % · mention {r.Mention} · {r.Decision}", _ => Task.FromResult(true))
         {
             Message = string.Join(Environment.NewLine, lines) + (r.JuryReason is null ? string.Empty : $"{Environment.NewLine}{Environment.NewLine}Décision du jury : {r.JuryReason}"),
             SubmitText = "Fermer",

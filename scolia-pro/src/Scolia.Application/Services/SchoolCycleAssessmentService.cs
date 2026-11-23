@@ -171,7 +171,7 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
             context.School.Address,
             context.School.City,
             student.FullName,
-            AnonymousDisplay.Of(shownCodes, enrollmentId),
+            AnonymousDisplay.Printed(AnonymousDisplay.Of(shownCodes, enrollmentId)),
             preview,
             context.School.Logo);
     }

@@ -17,7 +17,8 @@ public static class QuickView
         var currency = shell.Session?.CurrencySymbol ?? string.Empty;
         var lines = new List<string>
         {
-            $"Matricule {student.Matricule}" + (enrollment is null ? " · sans inscription" : $" · {enrollment.PromotionCode} · {Labels.Status(enrollment.Status)}"),
+            enrollment is null ? Format.Line(Format.CodeLabel(student.Matricule), "sans inscription")
+                : Format.Line(Format.CodeLabel(student.Matricule), enrollment.PromotionCode, Labels.Status(enrollment.Status)),
             $"Parent : {(string.IsNullOrWhiteSpace(student.GuardianName) ? "non renseigné" : student.GuardianName)}"
                 + $" · {student.GuardianPhone ?? student.GuardianPhone2 ?? "sans contact"}",
         };

@@ -31,6 +31,10 @@ public static class AnonymousDisplay
     public static string Label(IReadOnlyDictionary<Guid, string> codes, Guid enrollmentId, string name) =>
         codes.TryGetValue(enrollmentId, out var code) && !string.IsNullOrWhiteSpace(code) ? $"{code} · {name}" : name;
 
+    /// <summary>Valeur imprimée sur un document officiel : le code, ou une rubrique vide tant qu'il n'est pas attribué.</summary>
+    public static string Printed(string? matricule) =>
+        string.IsNullOrWhiteSpace(matricule) || matricule == Pending ? string.Empty : matricule;
+
     /// <summary>Code actif de l'inscription, ou la mention « À ATTRIBUER ».</summary>
     public static string Of(IReadOnlyDictionary<Guid, string> codes, Guid enrollmentId) =>
         codes.TryGetValue(enrollmentId, out var code) && !string.IsNullOrWhiteSpace(code) ? code : Pending;

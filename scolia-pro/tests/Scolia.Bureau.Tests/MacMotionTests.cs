@@ -75,4 +75,16 @@ public sealed class MacMotionTests
         Assert.Contains("r[\"FsBase\"] = 14.0 * k;", prefs, StringComparison.Ordinal);
         Assert.Contains("NavSelectedBrush", prefs, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Le_code_absent_n_encombre_jamais_un_sous_titre()
+    {
+        Assert.Equal("KABILA Josué", Format.NameAndCode("KABILA Josué", "À ATTRIBUER"));
+        Assert.Equal("KABILA Josué · ITM-26-ZZ99", Format.NameAndCode("KABILA Josué", "ITM-26-ZZ99"));
+        Assert.Equal("ITM-26-ZZ99 · KABILA Josué", Format.CodeAndName("ITM-26-ZZ99", "KABILA Josué"));
+        Assert.Equal("KABILA Josué", Format.CodeAndName("—", "KABILA Josué"));
+        Assert.Null(Format.CodeLabel("À ATTRIBUER"));
+        Assert.Equal("ACC1 · Actif", Format.Line(Format.CodeLabel("À ATTRIBUER"), "ACC1", "Actif"));
+        Assert.Equal("Matricule ITM-26-ZZ99 · ACC1", Format.Line(Format.CodeLabel("ITM-26-ZZ99"), "ACC1", null));
+    }
 }

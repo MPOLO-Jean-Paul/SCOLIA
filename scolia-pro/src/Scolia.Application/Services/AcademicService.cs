@@ -152,7 +152,7 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
         var promotion = await db.Promotions.AsNoTracking().FirstAsync(p => p.Id == promotionId, ct);
         var year = await db.AcademicYears.AsNoTracking().FirstAsync(y => y.Id == promotion.AcademicYearId, ct);
         var lines = results.Courses.Select((c, i) => (c, results.Coefficients[i], row.CourseAverages[i], 20m)).ToList();
-        return documents.ReportCard(new ReportCardDocument(PaymentService.Header(school), row.FullName, row.Matricule, results.Promotion + (term is null ? "" : $" · Période {term}"),
+        return documents.ReportCard(new ReportCardDocument(PaymentService.Header(school), row.FullName, AnonymousDisplay.Printed(row.Matricule), results.Promotion + (term is null ? "" : $" · Période {term}"),
             year.Label, lines, row.Average, row.Rank, results.Rows.Count, row.Decision));
     }
 

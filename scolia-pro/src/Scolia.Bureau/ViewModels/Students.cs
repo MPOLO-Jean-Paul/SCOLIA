@@ -470,7 +470,7 @@ public sealed class StudentDetailPage : PageViewModel
         student = await Shell.Api.GetAsync<StudentDto>($"api/apprenants/{studentId}");
         enrollment = student.Enrollments.FirstOrDefault(e => e.Status == "Actif") ?? (student.Enrollments.Count > 0 ? student.Enrollments[0] : null);
         title = Format.FullName(student.LastName, student.MiddleName, student.FirstName);
-        subtitle = $"Matricule {student.Matricule} · {enrollment?.PromotionCode ?? "sans promotion"} · {Labels.Status(enrollment?.Status ?? "")}";
+        subtitle = Format.Line(Format.CodeLabel(student.Matricule), enrollment?.PromotionCode ?? "sans promotion", Labels.Status(enrollment?.Status ?? ""));
         Raise(nameof(Title));
         Raise(nameof(Subtitle));
 
@@ -773,7 +773,7 @@ public static class StudentForms
 
     public static async Task<bool> EditAsync(ShellViewModel shell, StudentDto s)
     {
-        var form = new FormViewModel($"Modifier {shell.StudentTerms.Elided}", $"Matricule {s.Matricule}", async f =>
+        var form = new FormViewModel($"Modifier {shell.StudentTerms.Elided}", Format.CodeLabel(s.Matricule) ?? Format.FullName(s.LastName, s.MiddleName, s.FirstName), async f =>
         {
             try
             {
