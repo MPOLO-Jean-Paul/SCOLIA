@@ -424,6 +424,10 @@ Aucune clé ni identifiant temporaire n'est communiqué à la console ; aucune c
 <div style="overflow-x:auto"><table><thead><tr><th>Nom</th><th>Fournisseur</th><th>Adresse TURN</th><th>Préparation</th></tr></thead>
 <tbody id="turnRows"></tbody></table></div>
 <h3>Relais WSS SCOLIA (synchronisés depuis Cloudflare D1)</h3>
+<p class="info">Cloudflare est le fournisseur recommandé pour les nouvelles liaisons. Render reste un relais de secours.
+Pour un établissement déjà activé, toute nouvelle révision exige l'accord explicite du responsable scolaire.</p>
+<div class="toolbar"><button id="relayCloudflarePrimary" class="secondary">Utiliser Cloudflare comme relais principal</button></div>
+<p class="info">Cette action modifie uniquement le catalogue WSS propriétaire : aucune donnée scolaire ou clé de jumelage n'est déplacée.</p>
 <p class="info">Les relais enregistrés se chargent automatiquement. Un ajout manuel est toujours possible si nécessaire.</p>
 <p class="info">Configurer des adresses WSS publiques sans publier de clés sur GitHub.
 Un nouveau relais reste désactivé ; chaque école doit approuver le changement.
@@ -662,6 +666,33 @@ $("netlifyTest").onclick=async()=>{
    $("r2Secret").value="";$("r2Key").value="";$("storageNotice").textContent="";$("storageStatus").textContent="";
    $("workspace").hidden=true;$("auth").hidden=false;
  };
+$("relayCloudflarePrimary").onclick=async()=>{
+ const preferredUrl="wss://relay.jp-services.org/";
+ if(!confirm("Définir Cloudflare comme relais WSS principal pour SCOLIA ? Render demeure le secours applicatif. Chaque établissement déjà configuré devra approuver la nouvelle révision. Aucune donnée ni clé scolaire ne sera modifiée."))return;
+ const button=$("relayCloudflarePrimary");
+ button.disabled=true;
+ try{
+   const catalogue=await request("/api/v1/owner/relays");
+   let chosen=(catalogue.relays||[]).find(item=>item.url===preferredUrl);
+   if(chosen?.state==="active"){
+     $("relayNotice").textContent="Cloudflare est déjà le relais principal. Aucune approbation scolaire n'a été réinitialisée.";
+     return;
+   }
+   // Si le relais existe déjà, conserver son ID et ses informations de révision.
+   if(!chosen){
+     const created=await request("/api/v1/owner/relays","POST",{
+       label:"SCOLIA Cloudflare (principal)",endpoint_wss:preferredUrl
+     });
+     chosen={id:created.id,state:created.state};
+   }
+   const active=await request("/api/v1/owner/relays/"+chosen.id,"PATCH",{state:"active"});
+   $("relayNotice").textContent="Cloudflare est le relais principal du catalogue. "+
+     "Les écoles doivent approuver cette révision avant le changement. "+active.notice;
+   await reload();
+ }catch(e){
+   $("relayNotice").textContent="Configuration Cloudflare non appliquée : "+e.message;
+ }finally{button.disabled=false;}
+};
 $("relayCreate").onclick=async()=>{
  try {
    const created=await request("/api/v1/owner/relays","POST",{
