@@ -228,6 +228,7 @@ jobs:
       OWNER_ADMIN_KEYSTORE_PASSWORD: ${{ secrets.OWNER_ADMIN_KEYSTORE_PASSWORD }}
       OWNER_ADMIN_KEY_ALIAS: ${{ secrets.OWNER_ADMIN_KEY_ALIAS }}
       OWNER_ADMIN_KEY_PASSWORD: ${{ secrets.OWNER_ADMIN_KEY_PASSWORD }}
+      OWNER_ADMIN_CERT_SHA256: ${{ vars.OWNER_ADMIN_CERT_SHA256 }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -308,6 +309,18 @@ jobs:
           certs="$("$tools/apksigner" verify --print-certs "$target")"
           if grep -qi 'Android Debug' <<<"$certs"; then
             echo '::error::APK signe avec un certificat de debogage : publication refusee.'
+            exit 1
+          fi
+          # L'empreinte publique fixee une fois a la premiere release empeche une rotation
+          # accidentelle de cle, qui rendrait les mises a jour Android impossibles.
+          if [[ ! "${OWNER_ADMIN_CERT_SHA256:-}" =~ ^[[:xdigit:]]{64}$ ]]; then
+            echo '::error::Configurer vars.OWNER_ADMIN_CERT_SHA256 (64 caracteres hexadecimaux) depuis le keystore Admin permanent.'
+            exit 1
+          fi
+          actual_cert="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' <<<"$certs" | head -n 1 | tr '[:upper:]' '[:lower:]')"
+          expected_cert="$(tr '[:upper:]' '[:lower:]' <<<"$OWNER_ADMIN_CERT_SHA256")"
+          if [[ -z "$actual_cert" || "$actual_cert" != "$expected_cert" ]]; then
+            echo '::error::La signature Android ne correspond pas au certificat officiel immuable de SCOLIA Console. Publication refusee.'
             exit 1
           fi
           # Seul le SHA-256 du certificat est affiche : il est public par nature et permet
