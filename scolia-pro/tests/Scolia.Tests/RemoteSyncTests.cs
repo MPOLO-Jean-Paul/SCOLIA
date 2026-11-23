@@ -63,6 +63,31 @@ public sealed class RemoteSyncTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Cloudflare_principal_indisponible_bascule_vers_le_secours_sans_nouveau_jumelage()
+    {
+        // Un point WSS local injoignable simule une panne du relais principal.
+        // Le relais de secours local existant heberge la meme salle et la meme cle.
+        var invitation = RemoteLink.Parse(link.Invitation());
+        var preferred = invitation with
+        {
+            Relay = "wss://127.0.0.1:1/",
+            BackupRelay = link.Relay,
+        };
+        preferred.Validate();
+        Assert.Equal(invitation.Room, preferred.Room);
+        Assert.Equal(invitation.ClientToken, preferred.ClientToken);
+        Assert.Equal(invitation.Key, preferred.Key);
+        Assert.Equal(invitation.VirtualServer, preferred.VirtualServer);
+        using var phone = Phone(preferred);
+        Assert.True(await phone.IsRunningAsync());
+        // Le relais de secours transmet la session apres la panne du principal.
+        await PairPhoneAsync(phone);
+        var session = await phone.LoginAsync("admin", "Scolia2026!");
+        Assert.Equal("admin", session.UserName);
+        Assert.True(await phone.IsRunningAsync());
+    }
+
+    [Fact]
     public async Task Existing_two_roles_and_server_permissions_are_preserved_through_relay()
     {
         var user = await secretary.Post("/api/utilisateurs", new { userName = "compta", displayName = "Comptabilité", role = "Comptabilite", password = "Provisoire1" }).Ok();
