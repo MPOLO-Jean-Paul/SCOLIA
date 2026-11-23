@@ -38,12 +38,12 @@ public sealed class RenderRemoteLinkTests
     public void Deux_relais_pour_une_salle_ne_changent_ni_les_cles_ni_les_appareils()
     {
         var primary = "wss://scolia-pro-relay.example.workers.dev/";
-        var host = RemoteLink.Create(primary) with { BackupRelay = RemoteLink.DefaultRelay };
+        var host = RemoteLink.Create(primary) with { BackupRelay = RemoteLink.RenderRelay };
         host.Validate();
         var cloudflarePhone = RemoteLink.Parse(host.Invitation());
-        var renderPhone = cloudflarePhone.Via(RemoteLink.DefaultRelay);
+        var renderPhone = cloudflarePhone.Via(RemoteLink.RenderRelay);
 
-        Assert.Equal(RemoteLink.DefaultRelay, cloudflarePhone.EffectiveBackupRelay);
+        Assert.Equal(RemoteLink.RenderRelay, cloudflarePhone.EffectiveBackupRelay);
         Assert.Equal(host.Room, renderPhone.Room);
         Assert.Equal(host.ClientToken, renderPhone.ClientToken);
         Assert.Equal(host.Key, renderPhone.Key);
