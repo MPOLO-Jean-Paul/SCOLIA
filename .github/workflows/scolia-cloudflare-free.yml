@@ -58,10 +58,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Vérifier immédiatement le Worker lui-même, indépendamment du DNS du domaine.
-          curl --fail --silent --show-error --retry 3 --retry-delay 5 --max-time 25 \
-            https://scolia-pro-relay.jeanpaulmpolo242.workers.dev/health -o /tmp/scolia-cloudflare-origin-health.json
-          node -e 'const fs=require("fs"); const data=JSON.parse(fs.readFileSync("/tmp/scolia-cloudflare-origin-health.json", "utf8"));if(data.provider!=="cloudflare"||data.protocol!==1||data.service!=="SCOLIA relais")process.exit(1)'
+          # Diagnostic du domaine workers.dev seulement : il peut etre protege par
+          # Cloudflare Access sans que cela prouve une panne du domaine officiel.
+          worker_http="$(curl --silent --show-error --connect-timeout 5 --max-time 20 \
+            --output /tmp/scolia-cloudflare-origin-health.json --write-out '%{http_code}' \
+            https://scolia-pro-relay.jeanpaulmpolo242.workers.dev/health || true)"
+          case "$worker_http" in
+            200)
+              node -e 'const fs=require("fs"); const data=JSON.parse(fs.readFileSync("/tmp/scolia-cloudflare-origin-health.json", "utf8"));if(data.provider!=="cloudflare"||data.protocol!==1||data.service!=="SCOLIA relais")process.exit(1)'
+              ;;
+            403)
+              echo "::warning::workers.dev retourne HTTP 403 (Cloudflare Access ou regle de protection possible). Le domaine officiel reste obligatoire."
+              ;;
+            *)
+              echo "::warning::workers.dev retourne HTTP ${worker_http:-indisponible}; verifier le domaine officiel pour confirmer la disponibilite."
+              ;;
+          esac
 
           # Le domaine personnalisé peut nécessiter un délai DNS/TLS après wrangler deploy.
           # Ne pas accepter un déploiement comme sain tant que le domaine public est inaccessible.
