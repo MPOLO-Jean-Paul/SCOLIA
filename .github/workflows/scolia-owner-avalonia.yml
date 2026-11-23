@@ -549,11 +549,46 @@ jobs:
             echo "::error::La version $RELEASE_TAG existe deja. Augmenter les numeros de version."
             exit 1
           fi
-          gh release create "$RELEASE_TAG" "$apk" "$apk.sha256" "$setup" "$setup.sha256" \
-            --repo "$GITHUB_REPOSITORY" --target "$SOURCE_SHA" \
+          # Comme la distribution SCOLIA Client de la PR #18 : ne jamais laisser une
+          # release incomplete visible par les verificateurs de mises a jour.
+          # Une release existante est IMMUTABLE (et jamais ecrasee/clobber).
+          gh release create "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" --target "$SOURCE_SHA" --draft \
             --title "SCOLIA Console ${OWNER_VERSION} - JP-Services Admin (Android et Windows)" \
             --notes "Console administrateur JP-Services, canal autonome scolia-owner-v (independant des versions SCOLIA Pro des etablissements). Android : paquet ${ANDROID_PACKAGE}, signe avec le certificat Admin permanent ; les mises a jour futures exigent la meme cle. Windows : installateur SCOLIA Console autonome (x64) signe Authenticode. Authentification Cloudflare Access + MFA puis jeton proprietaire obligatoires : aucun secret n'est integre aux binaires. Verifier les empreintes .sha256 avant installation."
-          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,assets
+          state="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft')"
+          if [[ "$state" != "true" ]]; then
+            echo "::error::Publication refusee : release non brouillon."
+            exit 1
+          fi
+          for file in "$apk" "$apk.sha256" "$setup" "$setup.sha256"; do
+            ok=false
+            for attempt in 1 2 3; do
+              if gh release upload "$RELEASE_TAG" "$file" --repo "$GITHUB_REPOSITORY"; then
+                ok=true
+                break
+              fi
+              sleep "$((attempt * 4))"
+            done
+            if [[ "$ok" != true ]]; then
+              echo "::error::Fichier non charge : $file. Brouillon conserve ; ne pas publier."
+              exit 1
+            fi
+          done
+          files="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+          count="$(printf '%s\n' "$files" | sed '/^$/d' | wc -l | tr -d ' ')"
+          if [[ "$count" != "4" ]]; then
+            echo "::error::La release doit comporter exactement quatre artefacts verifies."
+            exit 1
+          fi
+          for expected in "$(basename "$apk")" "$(basename "$apk.sha256")" "$(basename "$setup")" "$(basename "$setup.sha256")"; do
+            if ! grep -Fxq "$expected" <<< "$files"; then
+              echo "::error::Artefact manquant : $expected."
+              exit 1
+            fi
+          done
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,isDraft,assets
       - name: Resume
         shell: bash
         run: |
