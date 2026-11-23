@@ -1,5 +1,5 @@
 # Initialise, sur l'ordinateur du proprietaire, la premiere cle permanente SCOLIA Console.
-# IMPORTANT : ne jamais executer cette operation dans GitHub Actions ni dans le depot clone.
+# IMPORTANT : executer le script localement, jamais dans GitHub Actions, et stocker la cle HORS du depot.
 # Ne pas relancer pour une mise a jour : reutiliser le MEME fichier JKS prive.
 [CmdletBinding()]
 param(
