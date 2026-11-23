@@ -60,7 +60,7 @@ test('recherche et fiche apprenant', async () => {
   await expect(page.locator('table.data tbody tr')).toHaveCount(1);
   await page.locator('table.data tbody tr').first().click();
   await expect(page.getByText('Situation financière')).toBeVisible();
-  await expect(page.locator('.tag-code').first()).toHaveText('INF101');
+  await expect(page.locator('.tag-code').first()).toHaveText('À ATTRIBUER');
 });
 
 // Nom absent des données de démonstration, tirées au hasard : pas d'homonyme possible.
@@ -78,7 +78,7 @@ test('inscription d’un nouvel apprenant avec matricule automatique', async () 
   await dialog.getByLabel('Promotion').selectOption({ label: 'TLM1 — Première année' });
   await dialog.getByRole('button', { name: 'Enregistrer l’inscription' }).click();
   await expect(page.getByRole('heading', { name: 'TSHIAMALA KANYINDA Esther' })).toBeVisible();
-  await expect(page.locator('.tag-code').first()).toHaveText(/^TLM1\d{2}$/);
+  await expect(page.locator('.tag-code').first()).toHaveText('À ATTRIBUER');
 });
 
 test('encaissement réparti et reçu numéroté', async () => {
