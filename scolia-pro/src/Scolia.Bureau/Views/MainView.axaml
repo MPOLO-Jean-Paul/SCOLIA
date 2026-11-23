@@ -316,7 +316,7 @@
       <Grid.RenderTransform><TranslateTransform /></Grid.RenderTransform>
 
       <!-- Ordinateur : bandeau bleu, volet, page et barre d'état -->
-      <Grid x:Name="DesktopArea" ColumnDefinitions="Auto,*" RowDefinitions="Auto,*,Auto" IsVisible="{Binding !Phone}">
+      <Grid x:Name="DesktopArea" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,*,Auto" IsVisible="{Binding !Phone}">
 
       <!-- Bandeau bleu ciel sur toute la largeur : volet, flèches, titre de la page, recherche, actions, réseau, compte, menu -->
       <Border Grid.Row="0" Grid.ColumnSpan="2" Classes="pagebar appheader" x:Name="PageBar">
@@ -450,7 +450,38 @@
         </Grid>
       </Border>
 
-      <Border Grid.Row="1" Grid.Column="0" Classes="sidebar" Width="250" Margin="8,8,0,8" IsVisible="{Binding SidebarShown}">
+
+      <!-- Onglet de travail actif à la manière d'un lecteur de documents :
+           vue uniquement, aucune incidence sur les PDF et leurs modèles. -->
+      <Border Grid.Row="1" Grid.ColumnSpan="2" Background="{DynamicResource ToolbarBrush}"
+              BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1"
+              IsVisible="{Binding HasPage}">
+        <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="14,5,14,0" ColumnSpacing="12">
+          <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center" Margin="0,0,6,4">
+            <mi:MaterialIcon Kind="ViewDashboardOutline" Width="17" Height="17" Foreground="{DynamicResource MutedBrush}" />
+            <TextBlock Text="Espace de travail" Classes="muted" VerticalAlignment="Center" FontSize="12" />
+          </StackPanel>
+          <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}"
+                  BorderBrush="{DynamicResource LineBrush}" BorderThickness="1,1,1,0"
+                  CornerRadius="10,10,0,0" Padding="13,8,13,9" MinWidth="155">
+            <StackPanel Orientation="Horizontal" Spacing="9">
+              <mi:MaterialIcon Kind="{Binding CurrentIcon}" Width="18" Height="18"
+                               Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Current.Title}" FontWeight="SemiBold" VerticalAlignment="Center"
+                         MaxWidth="250" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </Border>
+          <Button Grid.Column="3" Classes="quiet" Command="{Binding ReloadCommand}" ToolTip.Tip="Actualiser les données de la page"
+                  MinHeight="32" VerticalAlignment="Center" Margin="0,0,0,4">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <mi:MaterialIcon Kind="Refresh" Width="16" Height="16" />
+              <TextBlock Text="Actualiser" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </Grid>
+      </Border>
+
+      <Border Grid.Row="2" Grid.Column="0" Classes="sidebar" Width="250" Margin="8,8,0,8" IsVisible="{Binding SidebarShown}">
         <DockPanel>
           <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="10,12,10,6">
             <!-- En tête du volet : le logo SCOLIA et le nom de l'établissement. Le logo de l'école est pour les documents. -->
@@ -517,7 +548,7 @@
       </Border>
 
       <!-- Contenu de la page -->
-      <Grid Grid.Row="1" Grid.Column="1" IsVisible="{Binding HasPage}">
+      <Grid Grid.Row="2" Grid.Column="1" IsVisible="{Binding HasPage}">
         <!-- Sur téléphone, la page entière défile ; sur l'ordinateur, chaque page garde sa hauteur et ses tableaux défilent -->
         <ScrollViewer x:Name="PageScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="{Binding PageScroll}">
           <TransitioningContentControl x:Name="PageHost" Content="{Binding DesktopPage}" IsTransitionReversed="{Binding NavigatingBack}"
@@ -553,10 +584,10 @@
           </StackPanel>
         </Button>
       </Grid>
-      <ProgressBar Grid.Row="1" Grid.Column="1" IsIndeterminate="True" IsVisible="{Binding Current.Busy}" VerticalAlignment="Top" Height="2" MinHeight="2" />
+      <ProgressBar Grid.Row="2" Grid.Column="1" IsIndeterminate="True" IsVisible="{Binding Current.Busy}" VerticalAlignment="Top" Height="2" MinHeight="2" />
 
       <!-- Barre d'état : statut, serveur, zoom -->
-      <Border x:Name="DesktopStatusBar" Grid.Row="2" Grid.ColumnSpan="2" Classes="statusbar" IsVisible="{Binding ShowStatusBar}">
+      <Border x:Name="DesktopStatusBar" Grid.Row="3" Grid.ColumnSpan="2" Classes="statusbar" IsVisible="{Binding ShowStatusBar}">
         <Grid ColumnDefinitions="Auto,*,Auto,Auto">
           <TextBlock Text="{Binding Status}" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="460"
                      Margin="0,0,16,0" ToolTip.Tip="{Binding Status}" />
@@ -604,9 +635,9 @@
       </Border>
 
       <!-- Résultats de la barre du haut : un clic ailleurs les referme, comme le menu de recherche de Windows -->
-      <Border x:Name="HeaderFinderCatcher" Grid.Row="1" Grid.RowSpan="2" Grid.ColumnSpan="2" Background="Transparent"
+      <Border x:Name="HeaderFinderCatcher" Grid.Row="2" Grid.RowSpan="2" Grid.ColumnSpan="2" Background="Transparent"
               IsVisible="{Binding HeaderFinderOpen}" PointerPressed="OnHeaderFinderOutside" />
-      <Border x:Name="HeaderFinderDrop" Grid.RowSpan="3" Grid.ColumnSpan="2" Classes="finderdrop" IsVisible="{Binding HeaderFinderOpen}"
+      <Border x:Name="HeaderFinderDrop" Grid.RowSpan="4" Grid.ColumnSpan="2" Classes="finderdrop" IsVisible="{Binding HeaderFinderOpen}"
               HorizontalAlignment="Left" VerticalAlignment="Top" KeyDown="OnHeaderFinderDropKeyDown">
         <views:SearchResultsView DataContext="{Binding HeaderFinder}" />
       </Border>
