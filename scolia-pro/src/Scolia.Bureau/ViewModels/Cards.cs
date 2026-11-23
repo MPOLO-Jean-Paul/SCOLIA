@@ -61,6 +61,11 @@ public sealed class CardsPage : PageViewModel
     // Conserve le lot sélectionné lorsque l'on filtre ou parcourt plusieurs promotions.
     private readonly HashSet<Guid> selectedCardIds = [];
     public int SelectedCount => selectedCardIds.Count;
+    // Les commandes de la barre d'outils sont les mêmes que celles du ruban.
+    // Aucun changement apporté au moteur PDF/Word ni au modèle de carte.
+    public RelayCommand SelectAllCards { get; }
+    public RelayCommand ClearSelectedCards { get; }
+
     private bool generatorChecked;
     private string generatorStatus = "Vérification du moteur de cartes de l'établissement…";
     public string GeneratorStatus { get => generatorStatus; private set => Set(ref generatorStatus, value); }
@@ -84,6 +89,8 @@ public sealed class CardsPage : PageViewModel
 
     public CardsPage(ShellViewModel shell) : base(shell)
     {
+        SelectAllCards = new RelayCommand(() => SetAll(true));
+        ClearSelectedCards = new RelayCommand(() => SetAll(false));
         var today = DateTime.Today;
         month = MonthChoices[today.Month - 1];
         year = YearChoices()[1];
