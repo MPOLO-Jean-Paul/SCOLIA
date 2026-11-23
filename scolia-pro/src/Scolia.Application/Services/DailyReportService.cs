@@ -94,7 +94,7 @@ public sealed class DailyReportService(IAppDbContext db, AccountService accounts
                 valid.Count > 0 ? ["Total", valid.Count.ToString(), M(collected)] : null,
                 "Aucun encaissement ce jour."),
             new("Détail des reçus", ["N°", "Apprenant", "Promotion", "Mode", "Caissier", "État", "Montant"],
-                receipts.Select(r => (IReadOnlyList<string>)[r.Number, $"{AnonymousDisplay.Of(receiptCodes, r.EnrollmentId)} · {Name(r.LastName, r.MiddleName, r.FirstName)}", r.Code,
+                receipts.Select(r => (IReadOnlyList<string>)[r.Number, AnonymousDisplay.Label(receiptCodes, r.EnrollmentId, Name(r.LastName, r.MiddleName, r.FirstName)), r.Code,
                     Labels.Of(r.Method), r.CashierName, r.Status == OperationStatus.Valide ? "Valide" : "Annulé", M(r.Amount)]).ToList(),
                 receipts.Count > 0 ? ["Total valide", "", "", "", "", "", M(collected)] : null,
                 "Aucun reçu ce jour."),

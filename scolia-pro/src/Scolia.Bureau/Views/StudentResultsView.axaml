@@ -8,7 +8,7 @@
       <StackPanel Spacing="6">
         <StackPanel Classes="field">
           <TextBlock Text="Année et promotion" Classes="fieldlabel" />
-          <ComboBox MinWidth="280" ItemsSource="{Binding Years}" SelectedItem="{Binding Year}" />
+          <ComboBox MinWidth="280" HorizontalAlignment="Stretch" MaxWidth="480" ItemsSource="{Binding Years}" SelectedItem="{Binding Year}" />
         </StackPanel>
         <TextBlock Text="{Binding Summary}" FontWeight="SemiBold" TextWrapping="Wrap" />
         <TextBlock Text="{Binding Decision}" FontWeight="Bold" FontSize="{DynamicResource FsHeading}" TextWrapping="Wrap" IsVisible="{Binding HasDecision}" />

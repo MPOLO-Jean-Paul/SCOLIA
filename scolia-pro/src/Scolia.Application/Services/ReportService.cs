@@ -130,7 +130,7 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
                             select new { Row = new ReceiptSummaryDto(r.Id, r.Number, r.Date, r.Amount, r.Method.ToString(), r.Status == OperationStatus.Valide ? "Valide" : "Annulé",
                                 r.CashierName, s.LastName + " " + s.FirstName), r.EnrollmentId }).Take(8).ToListAsync(ct);
         var latestCodes = await AnonymousDisplay.CodesAsync(db, latestRows.Select(x => x.EnrollmentId), ct);
-        var latest = latestRows.Select(x => x.Row with { Allocations = AnonymousDisplay.Of(latestCodes, x.EnrollmentId) + " · " + x.Row.Allocations }).ToList();
+        var latest = latestRows.Select(x => x.Row with { Allocations = AnonymousDisplay.Label(latestCodes, x.EnrollmentId, x.Row.Allocations ?? string.Empty) }).ToList();
         latest = latest.Select(r => r with { Method = Labels.Of(Enum.Parse<PaymentMethod>(r.Method)) }).ToList();
 
         return new DashboardDto(year.Label, active.Count, active.Count(x => x.Enrollment.EnrolledOn >= monthStart),

@@ -8,7 +8,7 @@
       <TextBlock TextWrapping="Wrap" Classes="muted"
                  Text="SCOLIA propose les usages de la RDC. Relisez chaque règle avec les instructions de l'année, modifiez-la si besoin, puis validez : les bulletins, procès-verbaux et décisions officiels exigent un règlement validé." />
     </Border>
-    <ListBox Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}">
+    <ListBox Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" Background="Transparent">
       <ListBox.ItemTemplate>
         <DataTemplate>
           <Border Classes="phonegroup" Padding="14,12" Margin="0,0,0,6">
@@ -28,5 +28,9 @@
         </DataTemplate>
       </ListBox.ItemTemplate>
     </ListBox>
+    <!-- Aucune règle à relire (par exemple pour un institut technique médical) : un message clair plutôt qu'une zone vide. -->
+    <c:EmptyState Grid.Row="1" Icon="ScaleBalance" Title="Aucune règle à valider"
+                  Hint="Ce type d'établissement garde ses paramètres de délibération habituels (Délibération › Paramètres)."
+                  IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

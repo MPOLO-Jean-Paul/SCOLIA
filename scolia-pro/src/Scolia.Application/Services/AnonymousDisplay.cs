@@ -27,6 +27,10 @@ public static class AnonymousDisplay
         return rows.GroupBy(r => r.EnrollmentId).ToDictionary(g => g.Key, g => g.First().Code);
     }
 
+    /// <summary>Libellé « CODE · Nom » ; sans code attribué, le nom seul (jamais « À ATTRIBUER Nom »).</summary>
+    public static string Label(IReadOnlyDictionary<Guid, string> codes, Guid enrollmentId, string name) =>
+        codes.TryGetValue(enrollmentId, out var code) && !string.IsNullOrWhiteSpace(code) ? $"{code} · {name}" : name;
+
     /// <summary>Code actif de l'inscription, ou la mention « À ATTRIBUER ».</summary>
     public static string Of(IReadOnlyDictionary<Guid, string> codes, Guid enrollmentId) =>
         codes.TryGetValue(enrollmentId, out var code) && !string.IsNullOrWhiteSpace(code) ? code : Pending;

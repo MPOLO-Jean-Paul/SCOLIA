@@ -116,7 +116,7 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         var cashIn = receipts.Where(r => r.Method == PaymentMethod.Especes).Sum(r => r.Amount);
         var cashOut = expenses.Where(e => e.Method == PaymentMethod.Especes).Sum(e => e.Amount);
         var movements = receipts.Select(r => new CashMovementDto(r.Date, "Recette", r.Number,
-                AnonymousDisplay.Of(receiptCodes, r.EnrollmentId) + " " + r.Name, Labels.Of(r.Method), r.Amount, 0))
+                AnonymousDisplay.Label(receiptCodes, r.EnrollmentId, r.Name), Labels.Of(r.Method), r.Amount, 0))
             .Concat(expenses.Select(e => new CashMovementDto(e.Date, "Dépense", e.Number, e.Label, Labels.Of(e.Method), 0, e.Amount)))
             .OrderBy(m => m.Date).ThenBy(m => m.Number).ToList();
         return new CashSituationDto(last is null ? (movements.Count > 0 ? movements[0].Date : day) : start, day, opening, cashIn, cashOut,
