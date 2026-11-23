@@ -24,7 +24,7 @@ public sealed class RemoteConnectionViewModel : Observable
 {
     private readonly ShellViewModel shell;
     private string relay = RemoteLink.DefaultRelay;
-    private string backupRelay = RemoteLink.DefaultRelay;
+    private string backupRelay = RemoteLink.RenderRelay;
     private string invitation = string.Empty;
     private string message = string.Empty;
     /// <param name="prepareInvitation">Vrai dans « Réseau et activité » : une invitation de compte est préparée à l'ouverture.</param>
@@ -35,6 +35,19 @@ public sealed class RemoteConnectionViewModel : Observable
         {
             relay = current.Link.Relay;
             backupRelay = current.Link.EffectiveBackupRelay ?? string.Empty;
+            // Proposer Cloudflare au responsable utilisant encore Render, sans changer
+            // silencieusement l'hote, les invitations ou les preferences gerees par licence.
+            // La transition n'est appliquee qu'apres validation d'« Activer / verifier ».
+            if (current.Host &&
+                string.Equals(current.Link.Relay, RemoteLink.RenderRelay, StringComparison.OrdinalIgnoreCase) &&
+                (string.IsNullOrWhiteSpace(current.Link.BackupRelay) ||
+                 string.Equals(current.Link.BackupRelay, RemoteLink.CloudflareRelay, StringComparison.OrdinalIgnoreCase)))
+            {
+                relay = RemoteLink.CloudflareRelay;
+                backupRelay = RemoteLink.RenderRelay;
+                Message = "Cloudflare est prêt comme relais principal ; validez l'accès Internet pour l'activer. "
+                    + "Render restera le secours. Les comptes, appareils et clés existants ne changent pas.";
+            }
             if (prepareInvitation && current.Host && current.Enabled) _ = PrepareInvitationAsync(current.Link);
         }
         Enable = new AsyncCommand(EnableAsync);

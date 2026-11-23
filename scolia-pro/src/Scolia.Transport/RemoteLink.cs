@@ -8,17 +8,26 @@ namespace Scolia.Transport;
 public sealed record RemoteLink(string Relay, string Room, string ClientToken, string Key, DateTime ExpiresUtc, string? HostToken = null)
 {
     public const string Prefix = "scolia-link:v1:";
-    /// <summary>Relais institutionnel, configuré une seule fois. Remplaçable dans Réseau et activité.</summary>
-    public const string DefaultRelay = "wss://scolia-pro-relay.onrender.com/";
+    /// <summary>Cloudflare est le relais SCOLIA prioritaire pour les nouvelles liaisons.</summary>
+    public const string CloudflareRelay = "wss://relay.jp-services.org/";
+    /// <summary>Render reste disponible comme secours, sans base scolaire distante.</summary>
+    public const string RenderRelay = "wss://scolia-pro-relay.onrender.com/";
+    public const string DefaultRelay = CloudflareRelay;
     /// <summary>Durée historique des invitations (migration) ; les appareils restent liés jusqu'à révocation.</summary>
     public const int LinkValidityDays = 365;
     /// <summary>Second relais optionnel ; la salle et les clés de chiffrement restent identiques.</summary>
     public string? BackupRelay { get; init; }
 
-    /// <summary>Les liaisons Cloudflare déjà enregistrées peuvent essayer Render sans nouveau QR.</summary>
+    /// <summary>
+    /// Les nouvelles salles Cloudflare utilisent Render en secours sans changer de clés.
+    /// Les anciennes salles Render restent sur leur fournisseur approuvé jusqu'au changement
+    /// explicite du responsable (la console propriétaire peut imposer sa propre approbation).
+    /// Un ancien relais Cloudflare personnalisé conserve également le secours Render.
+    /// </summary>
     public string? EffectiveBackupRelay => !string.IsNullOrWhiteSpace(BackupRelay) ? BackupRelay
-        : !string.Equals(Relay, DefaultRelay, StringComparison.OrdinalIgnoreCase) &&
-          !new Uri(Relay).IsLoopback ? DefaultRelay : null;
+        : string.Equals(Relay, CloudflareRelay, StringComparison.OrdinalIgnoreCase) ? RenderRelay
+        : string.Equals(Relay, RenderRelay, StringComparison.OrdinalIgnoreCase) ||
+          new Uri(Relay).IsLoopback ? null : RenderRelay;
 
     /// <summary>Autre chemin réseau vers la MEME salle chiffrée, sans renouvellement de clé.</summary>
     public RemoteLink Via(string relay) => (this with { Relay = relay, BackupRelay = null }).Validate();

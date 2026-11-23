@@ -2,15 +2,17 @@ using Scolia.Transport;
 
 namespace Scolia.Bureau.Tests;
 
-/// <summary>Un réseau privé n'est pas obligatoire pour rejoindre le relais Render.</summary>
+/// <summary>Cloudflare prioritaire et Render de secours sans modifier les droits des appareils.</summary>
 public sealed class RenderRemoteLinkTests
 {
     [Fact]
-    public void Le_relais_Render_est_pret_sans_edition_manuelle_de_l_adresse()
+    public void Le_relais_Cloudflare_est_prioritaire_et_Render_secours_automatique()
     {
         var link = RemoteLink.Create(RemoteLink.DefaultRelay);
+        Assert.Equal(RemoteLink.CloudflareRelay, link.Relay);
+        Assert.Equal(RemoteLink.RenderRelay, link.EffectiveBackupRelay);
         Assert.Equal("wss", new Uri(link.Relay).Scheme);
-        Assert.Equal("scolia-pro-relay.onrender.com", new Uri(link.Relay).Host);
+        Assert.Equal("relay.jp-services.org", new Uri(link.Relay).Host);
         Assert.True(link.ExpiresUtc > DateTime.UtcNow.AddDays(360));
         Assert.False(RemoteLink.Parse(link.Invitation()).CanHost);
         Assert.Equal(link.Room, RemoteLink.Parse(link.Invitation()).Room);
@@ -54,10 +56,29 @@ public sealed class RenderRemoteLinkTests
     public void Ancien_jumelage_Cloudflare_peut_utiliser_Render_sans_rotation()
     {
         var oldCloudflare = RemoteLink.Create("wss://ancien-relay.example.workers.dev/");
-        Assert.Equal(RemoteLink.DefaultRelay, RemoteLink.Parse(oldCloudflare.Invitation()).EffectiveBackupRelay);
-        var backup = oldCloudflare.Via(RemoteLink.DefaultRelay);
+        Assert.Equal(RemoteLink.RenderRelay, RemoteLink.Parse(oldCloudflare.Invitation()).EffectiveBackupRelay);
+        var backup = oldCloudflare.Via(RemoteLink.RenderRelay);
         Assert.Equal(oldCloudflare.Room, backup.Room);
         Assert.Equal(oldCloudflare.Key, backup.Key);
+    }
+
+    [Fact]
+    public void Ancien_jumelage_Render_ne_change_jamais_de_cles_ni_de_fournisseur_sans_accord()
+    {
+        var oldRender = RemoteLink.Create(RemoteLink.RenderRelay);
+        var phone = RemoteLink.Parse(oldRender.Invitation());
+        Assert.Equal(RemoteLink.RenderRelay, phone.Relay);
+        Assert.Null(phone.EffectiveBackupRelay);
+        Assert.Null(phone.HostToken);
+
+        var approved = oldRender with { Relay = RemoteLink.CloudflareRelay, BackupRelay = RemoteLink.RenderRelay };
+        approved.Validate();
+        Assert.Equal(oldRender.Room, approved.Room);
+        Assert.Equal(oldRender.ClientToken, approved.ClientToken);
+        Assert.Equal(oldRender.Key, approved.Key);
+        Assert.Equal(oldRender.VirtualServer, approved.VirtualServer);
+        Assert.Equal(RemoteLink.RenderRelay, RemoteLink.Parse(approved.Invitation()).EffectiveBackupRelay);
+        Assert.Equal(RemoteLink.RenderRelay, RemoteLink.Parse(approved.Invitation()).Via(RemoteLink.RenderRelay).Relay);
     }
 
     [Fact]
