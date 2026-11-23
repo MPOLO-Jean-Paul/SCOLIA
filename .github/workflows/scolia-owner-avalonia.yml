@@ -317,10 +317,17 @@ jobs:
             echo '::error::Configurer vars.OWNER_ADMIN_CERT_SHA256 (64 caracteres hexadecimaux) depuis le keystore Admin permanent.'
             exit 1
           fi
-          actual_cert="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' <<<"$certs" | head -n 1 | tr '[:upper:]' '[:lower:]')"
-          expected_cert="$(tr '[:upper:]' '[:lower:]' <<<"$OWNER_ADMIN_CERT_SHA256")"
-          if [[ -z "$actual_cert" || "$actual_cert" != "$expected_cert" ]]; then
-            echo '::error::La signature Android ne correspond pas au certificat officiel immuable de SCOLIA Console. Publication refusee.'
+          # Meme controle que le client SCOLIA (PR #18) : lire le certificat
+          # reel de l'APK signe, compatible avec plusieurs versions d'apksigner.
+          mapfile -t signed_digests < <(printf '%s\n' "$certs" |
+            awk -F 'certificate SHA-256 digest:[[:space:]]*' '/Signer/ && NF == 2 {
+              digest = $2
+              gsub(/[[:space:]:]/, "", digest)
+              print tolower(digest)
+            }' | sort -u)
+          expected_cert="$(printf '%s' "$OWNER_ADMIN_CERT_SHA256" | tr '[:upper:]' '[:lower:]')"
+          if [[ "${#signed_digests[@]}" -ne 1 || "${signed_digests[0]:-}" != "$expected_cert" ]]; then
+            echo '::error::La signature Android de l APK ne correspond pas au certificat immuable SCOLIA Console. Publication refusee.'
             exit 1
           fi
           # Seul le SHA-256 du certificat est affiche : il est public par nature et permet
@@ -549,11 +556,23 @@ jobs:
             echo "::error::La version $RELEASE_TAG existe deja. Augmenter les numeros de version."
             exit 1
           fi
+          # Meme strategie de publication que la PR #18 client :
+          # faire entrer les quatre fichiers verifies dans un brouillon, et
+          # ne rendre visible la version qu'une fois les quatre presents.
           gh release create "$RELEASE_TAG" "$apk" "$apk.sha256" "$setup" "$setup.sha256" \
-            --repo "$GITHUB_REPOSITORY" --target "$SOURCE_SHA" \
+            --repo "$GITHUB_REPOSITORY" --target "$SOURCE_SHA" --draft \
             --title "SCOLIA Console ${OWNER_VERSION} - JP-Services Admin (Android et Windows)" \
             --notes "Console administrateur JP-Services, canal autonome scolia-owner-v (independant des versions SCOLIA Pro des etablissements). Android : paquet ${ANDROID_PACKAGE}, signe avec le certificat Admin permanent ; les mises a jour futures exigent la meme cle. Windows : installateur SCOLIA Console autonome (x64) signe Authenticode. Authentification Cloudflare Access + MFA puis jeton proprietaire obligatoires : aucun secret n'est integre aux binaires. Verifier les empreintes .sha256 avant installation."
-          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,assets
+          names="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+          for expected_file in "$(basename "$apk")" "$(basename "$apk.sha256")" "$(basename "$setup")" "$(basename "$setup.sha256")"; do
+            if ! grep -Fxq "$expected_file" <<<"$names"; then
+              echo "::error::Release incomplete. Brouillon conserve : fichier absent $expected_file"
+              exit 1
+            fi
+          done
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,isDraft,assets \
+            --jq '{url,isDraft,files:[.assets[].name]}'
       - name: Resume
         shell: bash
         run: |
