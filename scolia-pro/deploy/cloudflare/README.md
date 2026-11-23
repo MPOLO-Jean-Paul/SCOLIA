@@ -51,7 +51,7 @@ Une réponse correcte de `/health` **ne prouve pas à elle seule** que les conne
 4. Pour **un nouvel appareil**, générer un QR SCOLIA depuis le serveur principal après sa configuration, puis scanner l'invitation officielle une seule fois. Les anciennes invitations expirées et les autorisations révoquées ne sont jamais réactivées.
 5. Tester l'accès sur le même Wi-Fi, puis passer le téléphone en 4G (Orange/Airtel/Vodacom). Vérifier la connexion à Cloudflare, la reprise via Render, la reconnexion après fermeture/réouverture, la révocation d'un appareil et la synchronisation après une courte coupure.
 6. Tester l'ordinateur serveur arrêté : les clients doivent afficher leur état hors ligne correctement, **sans fausse confirmation d'encaissement**.
-7. Ne désactiver Render qu'après réussite des essais réels Android–Windows, y compris les paiements.
+7. **Conserver Render activé comme secours** après les essais Android–Windows : le désactiver supprimerait le basculement automatique en cas de panne Cloudflare.
 
 ## 4. Coût et limites
 
