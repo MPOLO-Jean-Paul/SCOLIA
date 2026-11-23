@@ -11,8 +11,55 @@ using Scolia.Bureau.Ribbon;
 
 namespace Scolia.Bureau.ViewModels;
 
-/// <summary>Sauvegarde de la base, avec sa taille et sa date.</summary>
-public sealed record BackupRowVm(string Name, string Created, string Size, BackupDto Source);
+/// <summary>Sauvegarde de la base : son type en clair, sa date, son âge et sa taille ; le nom du fichier reste accessible.</summary>
+public sealed record BackupRowVm(string Name, string Created, string Size, BackupDto Source)
+{
+    /// <summary>Type lisible, déduit du nom du fichier (« scolia-AAAAMMJJ-HHMMSS-motif.db »).</summary>
+    public string Kind => KindOf(Name);
+    /// <summary>Âge de la copie : « il y a 2 h », « hier »…</summary>
+    public string Age => BackupText.Age(Source.CreatedUtc, DateTime.UtcNow);
+    /// <summary>Icône du type : automatique, manuelle, de sécurité ou importée.</summary>
+    public MaterialIconKind Icon => Name.Contains("-automatique", StringComparison.Ordinal) ? MaterialIconKind.CalendarSync
+        : Name.Contains("-manuelle", StringComparison.Ordinal) ? MaterialIconKind.ContentSaveOutline
+        : Name.Contains("-importee", StringComparison.Ordinal) ? MaterialIconKind.FileImportOutline
+        : MaterialIconKind.ShieldCheckOutline;
+
+    public static string KindOf(string name)
+    {
+        string[] parts = name.Replace(".db", string.Empty, StringComparison.Ordinal).Split('-');
+        var reason = parts.Length >= 4 ? parts[3] : string.Empty;
+        return reason switch
+        {
+            "manuelle" => "Sauvegarde manuelle",
+            "automatique" => "Sauvegarde automatique",
+            "avantrestauration" => "Avant une restauration",
+            "avantmiseajour" => "Avant une mise à jour",
+            "avantcloture" => "Avant une clôture",
+            "avanteffacementapprenants" => "Avant l'effacement de dossiers",
+            "avanteffacementpaiements" => "Avant l'effacement de paiements",
+            "importee" => "Sauvegarde importée",
+            _ => "Sauvegarde de sécurité",
+        };
+    }
+}
+
+/// <summary>Textes de l'état des sauvegardes.</summary>
+public static class BackupText
+{
+    /// <summary>Âge court et naturel d'une date passée.</summary>
+    public static string Age(DateTime createdUtc, DateTime nowUtc)
+    {
+        var age = nowUtc - createdUtc;
+        if (age < TimeSpan.FromMinutes(1)) return "à l'instant";
+        if (age < TimeSpan.FromHours(1)) return $"il y a {(int)age.TotalMinutes} min";
+        if (age < TimeSpan.FromHours(24)) return $"il y a {(int)age.TotalHours} h";
+        if (age < TimeSpan.FromHours(48)) return "hier";
+        return $"il y a {(int)age.TotalDays} jours";
+    }
+
+    /// <summary>Une copie de moins de 26 heures : la protection quotidienne est à jour.</summary>
+    public static bool IsFresh(DateTime? lastUtc, DateTime nowUtc) => lastUtc is { } last && nowUtc - last < TimeSpan.FromHours(26);
+}
 
 /// <summary>Données et sauvegardes : sauvegardes, restauration, contrôle d'intégrité et import du classeur V79.</summary>
 public sealed class DataPage : PageViewModel
@@ -46,6 +93,18 @@ public sealed class DataPage : PageViewModel
     public override MaterialIconKind Glyph => MaterialIconKind.DatabaseExportOutline;
 
     public ObservableCollection<BackupRowVm> Items { get; } = [];
+
+    private string statusTitle = "Aucune sauvegarde";
+    private string statusDetail = "Créez la première sauvegarde pour protéger les données de l'établissement.";
+    private bool fresh;
+    /// <summary>État de la protection, en une phrase : « Vos données sont protégées ».</summary>
+    public string StatusTitle { get => statusTitle; private set => Set(ref statusTitle, value); }
+    /// <summary>Dernière copie, rythme automatique et nombre de copies conservées.</summary>
+    public string StatusDetail { get => statusDetail; private set => Set(ref statusDetail, value); }
+    /// <summary>Vrai si la dernière copie a moins de 26 heures.</summary>
+    public bool Fresh { get => fresh; private set { if (Set(ref fresh, value)) { Raise(nameof(StatusIcon)); Raise(nameof(StatusBrush)); } } }
+    public MaterialIconKind StatusIcon => Fresh ? MaterialIconKind.ShieldCheck : MaterialIconKind.ShieldAlertOutline;
+    public IBrush StatusBrush => ThemeBrush.Get(Fresh ? "ToneGreen" : "ToneOrange");
     public BackupRowVm? Selected { get => selected; set => Set(ref selected, value); }
 
     public override async Task LoadAsync()
@@ -56,6 +115,15 @@ public sealed class DataPage : PageViewModel
             Items.Add(new BackupRowVm(b.Name, Format.DateTime(b.CreatedUtc), Size(b.SizeBytes), b));
         subtitle = $"{Format.Count(backups.Count, "sauvegarde", "sauvegardes")} · gardées 30 jours";
         Raise(nameof(Subtitle));
+        var latest = backups.OrderByDescending(b => b.CreatedUtc).FirstOrDefault();
+        var now = DateTime.UtcNow;
+        Fresh = BackupText.IsFresh(latest?.CreatedUtc, now);
+        StatusTitle = latest is null ? "Aucune sauvegarde"
+            : Fresh ? "Vos données sont protégées" : "Sauvegarde à refaire";
+        StatusDetail = latest is null
+            ? "Créez la première sauvegarde pour protéger les données de l'établissement."
+            : $"Dernière copie {BackupText.Age(latest.CreatedUtc, now)} ({BackupRowVm.KindOf(latest.Name).ToLowerInvariant()}, {Size(latest.SizeBytes)}) · "
+              + $"copie automatique chaque jour · {Format.Count(backups.Count, "copie conservée", "copies conservées")} 30 jours";
     }
 
     private static string Size(long bytes) => bytes >= 1_048_576

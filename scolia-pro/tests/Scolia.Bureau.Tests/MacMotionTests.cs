@@ -87,4 +87,22 @@ public sealed class MacMotionTests
         Assert.Equal("ACC1 · Actif", Format.Line(Format.CodeLabel("À ATTRIBUER"), "ACC1", "Actif"));
         Assert.Equal("Matricule ITM-26-ZZ99 · ACC1", Format.Line(Format.CodeLabel("ITM-26-ZZ99"), "ACC1", null));
     }
+
+    [Fact]
+    public void Les_sauvegardes_se_lisent_comme_un_historique()
+    {
+        Assert.Equal("Sauvegarde manuelle", Scolia.Bureau.ViewModels.BackupRowVm.KindOf("scolia-20261122-205410-manuelle.db"));
+        Assert.Equal("Sauvegarde automatique", Scolia.Bureau.ViewModels.BackupRowVm.KindOf("scolia-20261122-164610-automatique.db"));
+        Assert.Equal("Avant une restauration", Scolia.Bureau.ViewModels.BackupRowVm.KindOf("scolia-20261122-164610-avantrestauration.db"));
+        Assert.Equal("Sauvegarde importée", Scolia.Bureau.ViewModels.BackupRowVm.KindOf("scolia-20261122-164610-importee-0a1b.db"));
+        var now = new DateTime(2026, 11, 23, 12, 0, 0, DateTimeKind.Utc);
+        Assert.Equal("il y a 5 min", Scolia.Bureau.ViewModels.BackupText.Age(now.AddMinutes(-5), now));
+        Assert.Equal("il y a 3 h", Scolia.Bureau.ViewModels.BackupText.Age(now.AddHours(-3), now));
+        Assert.Equal("hier", Scolia.Bureau.ViewModels.BackupText.Age(now.AddHours(-30), now));
+        Assert.Equal("il y a 4 jours", Scolia.Bureau.ViewModels.BackupText.Age(now.AddDays(-4), now));
+        // Protection à jour : une copie de moins de 26 heures ; sinon, l'état passe à l'orange.
+        Assert.True(Scolia.Bureau.ViewModels.BackupText.IsFresh(now.AddHours(-20), now));
+        Assert.False(Scolia.Bureau.ViewModels.BackupText.IsFresh(now.AddHours(-30), now));
+        Assert.False(Scolia.Bureau.ViewModels.BackupText.IsFresh(null, now));
+    }
 }
