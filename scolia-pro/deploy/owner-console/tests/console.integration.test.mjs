@@ -197,6 +197,22 @@ test("Désactiver un relais inactif ne coupe jamais le relais actif", async t =>
   assert.equal((await app.request("/api/v1/server/relay-settings","GET",null,school.body.school_token)).body.remote_relay_enabled,false);
 });
 
+test("Console : action Cloudflare principal visible seulement apres authentification Access", async t => {
+  const app=setup();
+  t.after(()=>app.sqlite.close());
+  const permitted=await worker.fetch(new Request(HOST+"/console"),app.env,
+    {access:{aud:app.env.OWNER_ACCESS_AUD}});
+  assert.equal(permitted.status,200);
+  const page=await permitted.text();
+  assert.match(page,/id="relayCloudflarePrimary"/);
+  assert.match(page,/wss:\/\/relay\.jp-services\.org\//);
+  assert.match(page,/Chaque établissement déjà configuré devra approuver/);
+  assert.equal((await app.owner("/api/v1/owner/relays")).body.relays.length,0,
+    "Afficher la console ne doit jamais changer le catalogue D1");
+  const denied=await worker.fetch(new Request(HOST+"/console"),app.env,undefined);
+  assert.equal(denied.status,403);
+});
+
 test("Accès propriétaire refusé sans secret et origine tierce bloquée", async t => {
   const app = setup();
   t.after(() => app.sqlite.close());

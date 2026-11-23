@@ -42,6 +42,16 @@ Tableau de bord dans la console JP‑Services :
 
 **Cette logique doit passer des tests intégrés avant d'être distribuée à des établissements.** Une restriction commerciale ne doit jamais supprimer leurs données ni empêcher l'export et l'accès aux archives.
 
+## Configuration du relais Cloudflare principal (1.2.90)
+
+Dans **SCOLIA Console → Relais Internet**, le bouton **« Utiliser Cloudflare comme relais principal »** prépare ou réutilise le fournisseur `wss://relay.jp-services.org/`, puis l'active **uniquement après confirmation du propriétaire authentifié** (Cloudflare Access + jeton propriétaire).
+
+- Si Cloudflare est déjà actif, l'action est sans effet : aucune révision supplémentaire.
+- Si Render ou un autre relais est actif, son ancienne entrée est conservée mais désactivée dans le catalogue ; les installations ayant déjà approuvé un autre fournisseur ne changent **pas** automatiquement de connexion.
+- Chaque école doit approuver la nouvelle révision dans son serveur principal SCOLIA. Les anciens QR et jetons sont conservés ; Render reste le secours applicatif pour les liaisons Cloudflare.
+- Cette commande ne migre ni SQLite, ni R2, ni les manifestes D1 et n'ouvre aucun accès administrateur aux données d'une école.
+- La console **déployée** doit d'abord inclure cette nouvelle interface. Publier via le workflow propriétaire sécurisé `scolia-owner-production.yml` en utilisant ses secrets existants (environnement `scolia-owner-production`, distinct de `scolia-cloudflare-free`). Ne jamais copier ces secrets dans une conversation.
+
 ## Configuration et sécurité des relais
 La console gère les adresses de fournisseurs WSS (jamais les clés dans le dépôt). Les établissements voient uniquement Activer/Désactiver l'accès Internet. Un changement de fournisseur requiert l'approbation du responsable scolaire, avec révision. La liaison Wi-Fi locale demeure utilisable, et la licence est suivie indépendamment de ce bouton.
 
