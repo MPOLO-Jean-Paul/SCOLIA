@@ -65,12 +65,14 @@
           infra:Adaptive.StackBelow="850" infra:Adaptive.StackedRows="Auto,Auto">
       <Border Grid.Column="0" Classes="card" Padding="12">
         <Grid RowDefinitions="Auto,*" RowSpacing="8">
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" MinHeight="64" infra:Adaptive.StackBelow="580">
+          <!-- En fenetre etroite, le titre et les actions occupent deux lignes mesurees :
+               ne pas utiliser Adaptive.StackBelow ici (risque de recouvrement). -->
+          <StackPanel Spacing="6">
             <StackPanel Spacing="3">
               <TextBlock Text="Sélection des cartes" FontWeight="SemiBold" FontSize="16" />
               <TextBlock Text="Cochez les participants de chaque promotion." Classes="muted" FontSize="12" />
             </StackPanel>
-            <WrapPanel Grid.Column="1" VerticalAlignment="Center">
+            <WrapPanel VerticalAlignment="Center">
               <Button Classes="quiet" Command="{Binding SelectAllCards}" ToolTip.Tip="Cocher les cartes eligibles visibles">
                 <StackPanel Orientation="Horizontal" Spacing="5">
                   <mi:MaterialIcon Kind="CheckboxMultipleMarked" Width="16" Height="16" />
@@ -84,7 +86,7 @@
                 </StackPanel>
               </Button>
             </WrapPanel>
-          </Grid>
+          </StackPanel>
           <DataGrid Grid.Row="1" MinHeight="160" ItemsSource="{Binding Rows}" IsVisible="{Binding NotPhone}" AutoGenerateColumns="False" CanUserSortColumns="True">
       <DataGrid.Columns>
         <DataGridCheckBoxColumn Header="Carte" Binding="{Binding Selected}" Width="Auto" MinWidth="70" infra:GridPriority.Level="1" />
