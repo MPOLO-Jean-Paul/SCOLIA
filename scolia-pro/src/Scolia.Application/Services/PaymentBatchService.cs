@@ -92,9 +92,13 @@ public sealed class PaymentBatchService(IAppDbContext db, IWriteGate gate, IAudi
             {
                 // Un envoi déjà traité renvoie son reçu : les mois sont alors déjà réglés et ne seraient plus planifiables.
                 var previous = key is null ? null : await db.Receipts.AsNoTracking().Where(r => r.IdempotencyKey == key)
-                    .Select(r => new { r.Id, r.Number, r.Amount }).FirstOrDefaultAsync(ct);
+                    .Select(r => new { r.Id, r.Number, r.Amount, r.EnrollmentId }).FirstOrDefaultAsync(ct);
                 if (previous is not null)
                 {
+                    // Le poste a peut-être réordonné les lignes en renvoyant le lot.
+                    // Ne jamais présenter le reçu d'un autre apprenant comme un paiement réussi.
+                    if (previous.EnrollmentId != item.EnrollmentId)
+                        throw new DomainException("lot", "Le lot a changé depuis son premier envoi : rechargez les lignes avant de recommencer.");
                     if (!processedEnrollments.Add(item.EnrollmentId))
                     {
                         lines.Add(new BatchPaymentLineDto(item.EnrollmentId, matricule, name, false, null, null, 0,
