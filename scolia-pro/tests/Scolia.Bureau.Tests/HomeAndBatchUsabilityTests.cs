@@ -40,6 +40,24 @@ public sealed class HomeAndBatchUsabilityTests
     }
 
     [Fact]
+    public void Les_parametres_mobile_gardent_les_selections_et_les_curseurs_adaptatifs()
+    {
+        var nodes = XDocument.Load(ViewFile("Views/SettingsView.axaml")).Descendants().ToArray();
+        foreach (var (source, selection) in new[] { ("Years", "SelectedYear"), ("Categories", "SelectedCategory") })
+        {
+            Assert.Contains(nodes, x => x.Name.LocalName == "ListBox" &&
+                (string?)x.Attribute("ItemsSource") == "{Binding " + source + "}" &&
+                (string?)x.Attribute("SelectedItem") == "{Binding " + selection + "}" &&
+                (string?)x.Attribute("IsVisible") == "{Binding Phone}");
+            Assert.Contains(nodes, x => x.Name.LocalName == "DataGrid" &&
+                (string?)x.Attribute("ItemsSource") == "{Binding " + source + "}" &&
+                (string?)x.Attribute("SelectedItem") == "{Binding " + selection + "}" &&
+                (string?)x.Attribute("IsVisible") == "{Binding NotPhone}");
+        }
+        Assert.All(nodes.Where(x => x.Name.LocalName == "Slider"), x => Assert.Null(x.Attribute("Width")));
+    }
+
+    [Fact]
     public void Les_listes_metier_mobile_evitent_les_tableaux_larges()
     {
         foreach (var (view, command) in new[]
