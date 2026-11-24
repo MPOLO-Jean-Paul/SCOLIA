@@ -72,4 +72,27 @@ public sealed class UpdateCompletionPolicyTests
     {
         Assert.Equal(expected, UpdateCompletionPolicy.AlreadyInstalled(downloaded, installed));
     }
+
+    [Theory]
+    [InlineData("1.2.91", "1.2.90", "1.2.91", false)]
+    [InlineData("1.2.92", "1.2.90", "1.2.91", true)]
+    [InlineData("1.2.91", "1.2.90", "1.2.90", true)]
+    [InlineData("1.2.92", "1.2.92", "1.2.92", false)]
+    [InlineData("invalide", "1.2.90", "1.2.91", false)]
+    public void UpdateCheckUsesHighestInstalledAndBundledVersion(
+        string candidate, string androidVersion, string bundledVersion, bool expected)
+    {
+        Assert.Equal(expected, UpdateCompletionPolicy.IsReleaseNewer(candidate, androidVersion, bundledVersion));
+    }
+
+    [Theory]
+    [InlineData("1.2.91", "1.2.90", "1.2.91", true)]
+    [InlineData("1.2.92", "1.2.90", "1.2.91", false)]
+    [InlineData("1.2.90", "1.2.91", "1.2.91", true)]
+    public void DownloadIsCleanedAfterInstallEvenWithOldAndroidVersionName(
+        string downloaded, string androidVersion, string bundledVersion, bool expected)
+    {
+        Assert.Equal(expected, UpdateCompletionPolicy.AlreadyInstalled(
+            downloaded, androidVersion, bundledVersion));
+    }
 }
