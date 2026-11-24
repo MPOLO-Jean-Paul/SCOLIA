@@ -19,20 +19,24 @@ public sealed class HomeAndBatchUsabilityTests
     }
 
     [Fact]
-    public void L_accueil_garde_des_indicateurs_et_actions_adaptatifs()
+    public void L_accueil_PowerBI_garde_indicateurs_et_actions_adaptatifs()
     {
         var doc = XDocument.Load(ViewFile("Views/HomeView.axaml"));
         var nodes = doc.Descendants().ToArray();
-        var kpiGrid = nodes.FirstOrDefault(x => x.Name.LocalName == "UniformGrid"
-            && x.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "205"));
-        Assert.NotNull(kpiGrid);
+        Assert.Contains(nodes, x => x.Name.LocalName == "UniformGrid"
+            && x.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "190"));
         Assert.Contains(nodes, x => x.Name.LocalName == "ItemsControl"
-            && x.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value.Contains("QuickActions")) &&
-            x.Attributes().Any(a => a.Name.LocalName == "Grid.Column" && a.Value == "2"));
+            && (string?)x.Attribute("ItemsSource") == "{Binding QuickActions}");
         Assert.Contains(nodes, x => x.Name.LocalName == "ItemsControl"
-            && x.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value.Contains("AllToolGroups")));
+            && (string?)x.Attribute("ItemsSource") == "{Binding MoreTools}");
+        Assert.Contains(nodes, x => x.Name.LocalName == "ItemsControl"
+            && (string?)x.Attribute("ItemsSource") == "{Binding AllToolGroups}");
         Assert.Contains(nodes, x => x.Name.LocalName == "Grid"
-            && x.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "760"));
+            && x.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "820"));
+        Assert.Contains(nodes, x => x.Name.LocalName == "Button"
+            && (string?)x.Attribute("Command") == "{Binding Network}");
+        Assert.Contains(nodes, x => x.Name.LocalName == "TextBlock"
+            && (string?)x.Attribute("Text") == "Indicateurs de l'établissement");
     }
 
     [Fact]
