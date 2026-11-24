@@ -1888,6 +1888,8 @@ if (args.Length > 3 && args[3] == "cartes-ui")
         if (page.SelectedCount != 0)
             throw new InvalidOperationException("Tout décocher n'a pas vidé la sélection.");
         page.SelectAllCards.Execute(null);
+        // La notification temporaire de sélection ne doit pas masquer les champs de la capture.
+        Wait(Task.Delay(TimeSpan.FromMilliseconds(4300)));
         window.UpdateLayout();
         Save(window, $"cartes-interface-{(Preferences.MobileLayout ? "mobile" : "bureau")}-{width}x{height}.png");
     }
