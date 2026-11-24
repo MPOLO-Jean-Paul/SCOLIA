@@ -2,10 +2,18 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Scolia.Bureau.Controls"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.ReceiptsView">
   <Grid RowDefinitions="Auto,*">
-    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
-      <WrapPanel>
+    <!-- Surface Fluent Windows 11 : commandes hiérarchisées et filtres flexibles. -->
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,12" Padding="14,12" CornerRadius="{DynamicResource RadiusCard}">
+      <StackPanel Spacing="9">
+        <StackPanel Orientation="Horizontal" Spacing="9">
+          <mi:MaterialIcon Kind="ReceiptTextOutline" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" />
+          <TextBlock Text="Journal des encaissements" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </StackPanel>
+        <TextBlock Text="Recherchez par reçu, apprenant, date ou mode de règlement." Classes="muted" TextWrapping="Wrap" />
+        <WrapPanel>
         <StackPanel Classes="field pagesearch">
           <TextBlock Text="Rechercher" Classes="fieldlabel" />
           <TextBox Classes="search clearButton" Width="260" Text="{Binding Search}" PlaceholderText="N° de reçu, matricule, nom" />
@@ -30,7 +38,8 @@
           <TextBlock Text="Promotion" Classes="fieldlabel" />
           <ComboBox Width="220" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
         </StackPanel>
-      </WrapPanel>
+        </WrapPanel>
+      </StackPanel>
     </Border>
     <DataGrid x:Name="ReceiptGrid" Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
               AutoGenerateColumns="False" IsReadOnly="True">
