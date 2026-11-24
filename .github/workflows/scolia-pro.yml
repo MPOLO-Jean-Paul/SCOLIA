@@ -71,6 +71,22 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      - name: Identite de connexion - compte reconnu et cercles superposes
+        env:
+          SCOLIA_ASTUCES: '0'
+        run: |
+          SCOLIA_MOBILE=0 SCOLIA_TAILLE=1280x820 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/identite-connexion/windows http://127.0.0.1:5293/ inutilise identite-connexion
+          SCOLIA_MOBILE=1 SCOLIA_TAILLE=390x740 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/identite-connexion/android http://127.0.0.1:5293/ inutilise identite-connexion
+          SCOLIA_MOBILE=1 SCOLIA_TAILLE=390x740 SCOLIA_CAPTURE_DARK=1 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/identite-connexion/android-sombre http://127.0.0.1:5293/ inutilise identite-connexion
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Identite_Connexion_Windows_Android
+          path: scolia-pro/artifacts/identite-connexion/
+          if-no-files-found: ignore
+          retention-days: 14
+
       # Premier accueil : captures natives autonomes, Windows et téléphone.
       - name: Premiere configuration - profils et cycles scolaires
         env:
