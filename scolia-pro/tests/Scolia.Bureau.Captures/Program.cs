@@ -202,15 +202,26 @@ if (args.Length > 3 && args[3] == "premiere-configuration")
     shell.Setup.SchoolName = "Complexe scolaire de démonstration";
     shell.Setup.ShortName = "CSD";
     Save(window, "02-configuration-complexe.png");
+    VerifySetupFooter("SetupNextButton");
     if (!shell.Setup.IsStepOne || shell.Setup.ValidateStepOne() is not null)
         throw new InvalidOperationException("Le complexe choisi ne peut pas être configuré.");
     shell.Setup.Step = 2;
     Save(window, "03-comptes-securite.png");
+    VerifySetupFooter("SetupFinishButton");
     shell.Setup.Back.Execute(null);
     shell.Setup.Back.Execute(null);
     Save(window, "04-retour-accueil.png");
     if (!shell.Setup.IsChoosingInstitution)
         throw new InvalidOperationException("Le retour au choix du type a échoué.");
+    void VerifySetupFooter(string name)
+    {
+        var button = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == name && b.IsEffectivelyVisible);
+        if (button.TransformToVisual(window) is not { } matrix)
+            throw new InvalidOperationException($"Commande de configuration non visible : {name}.");
+        var bounds = new Rect(button.Bounds.Size).TransformToAABB(matrix);
+        if (bounds.Width <= 0 || bounds.Height <= 0 || bounds.Top < 0 || bounds.Bottom > window.Bounds.Height + 1)
+            throw new InvalidOperationException($"Commande de configuration hors fenêtre : {name}.");
+    }
     window.Close();
     return;
 }
