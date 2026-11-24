@@ -85,7 +85,7 @@
               </Button>
             </WrapPanel>
           </Grid>
-          <DataGrid Grid.Row="1" MinHeight="300" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" CanUserSortColumns="True">
+          <DataGrid Grid.Row="1" MinHeight="300" ItemsSource="{Binding Rows}" IsVisible="{Binding NotPhone}" AutoGenerateColumns="False" CanUserSortColumns="True">
       <DataGrid.Columns>
         <DataGridCheckBoxColumn Header="Carte" Binding="{Binding Selected}" Width="Auto" MinWidth="70" infra:GridPriority.Level="1" />
         <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="122" infra:GridPriority.Level="1" />
@@ -95,6 +95,32 @@
         <DataGridTextColumn Header="Diagnostic" Binding="{Binding Diagnostic}" IsReadOnly="True" Width="*" MinWidth="200" infra:GridPriority.Level="1" />
       </DataGrid.Columns>
     </DataGrid>
+          <!-- Android : cartes de sélection adaptatives, aucun tableau à défilement horizontal. -->
+          <ScrollViewer Grid.Row="1" IsVisible="{Binding Phone}" HorizontalScrollBarVisibility="Disabled"
+                        VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Rows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}"
+                          BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                      <CheckBox IsChecked="{Binding Selected, Mode=TwoWay}" VerticalAlignment="Top"
+                                ToolTip.Tip="Inclure cette carte dans le lot" />
+                      <StackPanel Grid.Column="1" Spacing="5">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <TextBlock Text="{Binding Promotion}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding Matricule}" Classes="muted" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Status}" Classes="muted" />
+                        <TextBlock Text="{Binding Diagnostic}" Classes="muted" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
           <c:EmptyState Grid.Row="1" Icon="CardAccountDetailsOutline" Title="{infra:Terms 'Aucun apprenant pour ces critères'}" Hint="Changez de promotion ou incluez les sortis et suspendus." IsVisible="{Binding !Rows.Count}" />
         </Grid>
       </Border>
