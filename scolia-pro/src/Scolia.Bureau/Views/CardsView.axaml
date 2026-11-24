@@ -65,7 +65,7 @@
           infra:Adaptive.StackBelow="850" infra:Adaptive.StackedRows="Auto,Auto">
       <Border Grid.Column="0" Classes="card" Padding="12">
         <Grid RowDefinitions="Auto,*" RowSpacing="8">
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" infra:Adaptive.StackBelow="580">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" MinHeight="64" infra:Adaptive.StackBelow="580">
             <StackPanel Spacing="3">
               <TextBlock Text="Sélection des cartes" FontWeight="SemiBold" FontSize="16" />
               <TextBlock Text="Cochez les participants de chaque promotion." Classes="muted" FontSize="12" />
@@ -85,7 +85,7 @@
               </Button>
             </WrapPanel>
           </Grid>
-          <DataGrid Grid.Row="1" MinHeight="300" ItemsSource="{Binding Rows}" IsVisible="{Binding NotPhone}" AutoGenerateColumns="False" CanUserSortColumns="True">
+          <DataGrid Grid.Row="1" MinHeight="160" ItemsSource="{Binding Rows}" IsVisible="{Binding NotPhone}" AutoGenerateColumns="False" CanUserSortColumns="True">
       <DataGrid.Columns>
         <DataGridCheckBoxColumn Header="Carte" Binding="{Binding Selected}" Width="Auto" MinWidth="70" infra:GridPriority.Level="1" />
         <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="122" infra:GridPriority.Level="1" />
