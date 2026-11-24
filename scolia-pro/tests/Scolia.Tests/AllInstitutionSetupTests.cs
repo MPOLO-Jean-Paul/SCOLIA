@@ -11,9 +11,9 @@ public sealed class AllInstitutionSetupTests : IDisposable
     private readonly ScoliaApp app = new();
     public void Dispose() => app.Dispose();
 
-    private static object Configuration(string type, string governance) => new
+    private static object Configuration(string type, string governance, IReadOnlyList<string>? initialSchoolCycles = null) => new
     {
-        institutionType = type, governance,
+        institutionType = type, governance, initialSchoolCycles,
         schoolName = "Établissement de test",
         shortName = "TEST", phone = "0810000000",
         city = "Lubumbashi", currencyCode = "CDF", currencySymbol = "FC",
@@ -22,6 +22,38 @@ public sealed class AllInstitutionSetupTests : IDisposable
         adminUserName = "admin", adminDisplayName = "Secrétariat",
         adminPassword = "Scolia2026!", loadDemoData = false,
     };
+
+    [Fact]
+    public async Task Complexe_can_configure_selected_cycles_during_installation_without_charging_fees()
+    {
+        var admin = app.Client();
+        await admin.Post("/api/installation", Configuration("ComplexeScolaire", "Prive",
+            ["Maternelle", "Secondaire"])).Ok();
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ScoliaDbContext>();
+        Assert.Equal(2, await db.SchoolCycles.CountAsync());
+        Assert.Contains(await db.SchoolCycles.ToListAsync(), c => c.Kind == SchoolCycleKind.Maternelle);
+        Assert.Contains(await db.SchoolCycles.ToListAsync(), c => c.Kind == SchoolCycleKind.Secondaire);
+        Assert.All(await db.SchoolCycleFeePolicies.ToListAsync(), p =>
+        {
+            Assert.False(p.ChargeMonthlyTuition);
+            Assert.Equal(0m, p.MonthlyAmount);
+        });
+        Assert.Empty(await db.FeeItems.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Complexe_refuses_one_cycle_without_partial_installation()
+    {
+        var admin = app.Client();
+        var (status, _) = await admin.Post("/api/installation",
+            Configuration("ComplexeScolaire", "Prive", ["Primaire"])).Fail();
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, status);
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ScoliaDbContext>();
+        Assert.Empty(await db.Schools.ToListAsync());
+        Assert.Empty(await db.Users.ToListAsync());
+    }
 
     [Theory]
     [InlineData("Primaire")]

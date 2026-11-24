@@ -172,6 +172,15 @@
             <StackPanel Classes="field"><TextBlock Text="Régime de l'établissement" /><ComboBox ItemsSource="{Binding GovernanceTypes}" SelectedItem="{Binding Governance}" HorizontalAlignment="Stretch" /></StackPanel>
             <TextBlock Text="Public : aucun frais sans base réglementaire vérifiée." Classes="muted" TextWrapping="Wrap" />
           </StackPanel></Border>
+          <Border IsVisible="{Binding IsComplexSchool}" Background="{DynamicResource Surface2Brush}" CornerRadius="8" Padding="12">
+  <StackPanel Spacing="6">
+    <TextBlock Text="Cycles du complexe scolaire" FontWeight="SemiBold" TextWrapping="Wrap" />
+    <TextBlock Text="Sélectionnez au moins deux cycles. Aucun tarif n'est créé automatiquement." Classes="muted" TextWrapping="Wrap" />
+    <CheckBox IsChecked="{Binding IncludeMaternelle}" Content="Maternelle" />
+    <CheckBox IsChecked="{Binding IncludePrimaire}" Content="Primaire" />
+    <CheckBox IsChecked="{Binding IncludeSecondaire}" Content="Secondaire" />
+  </StackPanel>
+</Border>
           <Border Classes="card">
             <StackPanel Spacing="10">
               <Grid ColumnDefinitions="Auto,*">
@@ -210,7 +219,7 @@
             </StackPanel>
           </Border>
 
-          <Border Classes="card">
+          <Border Classes="card" IsVisible="{Binding ShowPromotionEditor}">
             <StackPanel Spacing="10">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="1">

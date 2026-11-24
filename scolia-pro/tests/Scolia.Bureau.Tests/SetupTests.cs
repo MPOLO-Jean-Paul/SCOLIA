@@ -44,6 +44,20 @@ public class SetupTests
     }
 
     [Fact]
+    public void Complexe_exige_deux_cycles_au_minimum()
+    {
+        var wizard = NewWizard();
+        wizard.SelectInstitution.Execute("ComplexeScolaire");
+        Assert.True(wizard.IsComplexSchool);
+        Assert.False(wizard.ShowPromotionEditor);
+        Assert.Contains("deux cycles", wizard.ValidateStepOne(), StringComparison.Ordinal);
+        wizard.IncludePrimaire = true;
+        Assert.NotNull(wizard.ValidateStepOne());
+        wizard.IncludeSecondaire = true;
+        Assert.Null(wizard.ValidateStepOne());
+    }
+
+    [Fact]
     public void Donnees_de_demo_reservees_au_profil_itm_prive()
     {
         var wizard = NewWizard();

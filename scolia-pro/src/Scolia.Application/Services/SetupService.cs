@@ -69,9 +69,9 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
         var year = SchoolService.BuildYear(input.YearLabel, input.StartMonth, count, input.LastOnTimeDay + 1);
         year.IsCurrent = true;
         db.AcademicYears.Add(year);
-        // Les écoles à cycle unique disposent de leur cycle dès la première installation.
-        // Pour les complexes, les deux ou trois cycles sont choisis dans Paramètres > Cycles scolaires :
-        // aucun cycle supposé et aucun tarif imposé ni mensualité facturée.
+        // Le nouvel assistant peut déclarer les cycles du complexe dès l'installation.
+        // Un ancien client sans ce champ conserve le parcours Paramètres > Cycles scolaires.
+        // Aucun tarif n'est imposé ni mensualité facturée.
         SchoolCycleKind? initialCycle = institutionType switch
         {
             InstitutionProfiles.Maternelle => SchoolCycleKind.Maternelle,
@@ -79,10 +79,26 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
             InstitutionProfiles.Secondaire => SchoolCycleKind.Secondaire,
             _ => null,
         };
+        var initialCycles = new List<SchoolCycle>();
         if (initialCycle is { } kind)
+            initialCycles.Add(new SchoolCycle { SchoolId = school.Id, Kind = kind, Name = kind.ToString() });
+        if (input.InitialSchoolCycles is not null)
         {
-            var cycle = new SchoolCycle { SchoolId = school.Id, Kind = kind, Name = kind.ToString() };
-            SchoolCycleRules.ValidateOffering(school, [cycle]);
+            if (institutionType != InstitutionProfiles.ComplexeScolaire)
+                throw new DomainException("cycleScolaire", "Le choix de plusieurs cycles est réservé au complexe scolaire.");
+            foreach (var code in input.InitialSchoolCycles)
+            {
+                if (!Enum.TryParse<SchoolCycleKind>(code, false, out var selected) ||
+                    !Enum.IsDefined(selected) || selected.ToString() != code)
+                    throw new DomainException("cycleScolaire", "Cycle scolaire inconnu.");
+                initialCycles.Add(new SchoolCycle { SchoolId = school.Id, Kind = selected, Name = code });
+            }
+            SchoolCycleRules.ValidateOffering(school, initialCycles);
+        }
+        else if (initialCycle is not null)
+            SchoolCycleRules.ValidateOffering(school, initialCycles);
+        foreach (var cycle in initialCycles)
+        {
             db.SchoolCycles.Add(cycle);
             db.SchoolCycleFeePolicies.Add(new SchoolCycleFeePolicy
             {

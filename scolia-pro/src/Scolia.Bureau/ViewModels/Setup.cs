@@ -197,7 +197,7 @@ public sealed class SetupViewModel : Observable
             if (!Set(ref institutionType, value)) return;
             if (!CanLoadDemo) LoadDemo = false;
             Raise(nameof(CurrencyLine)); Raise(nameof(ProfileLabel)); Raise(nameof(ProfileHint));
-            Raise(nameof(PromotionHeading)); Raise(nameof(FeeHeading)); Raise(nameof(CanLoadDemo));
+            Raise(nameof(PromotionHeading)); Raise(nameof(FeeHeading)); Raise(nameof(CanLoadDemo)); Raise(nameof(IsComplexSchool)); Raise(nameof(ShowPromotionEditor));
         }
     }
 
@@ -216,10 +216,24 @@ public sealed class SetupViewModel : Observable
     {
         InstitutionProfiles.ItmIm => "Apprenants, sections et promotions médicales. Calendrier annuel.",
         InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire or InstitutionProfiles.Secondaire => "Élèves et classes du cycle choisi. Calendrier scolaire annuel.",
-        InstitutionProfiles.ComplexeScolaire => "Plusieurs cycles : après installation, choisissez les cycles actifs dans Paramètres avant de créer les classes.",
+        InstitutionProfiles.ComplexeScolaire => "Choisissez deux ou trois cycles ci-dessous. Les classes seront rattachées à leur cycle après installation.",
         InstitutionProfiles.SuperieurLmd => "Étudiants et formations supérieures. Les paramètres pédagogiques LMD se définissent ensuite dans Paramètres.",
         _ => string.Empty,
     };
+    public bool IsComplexSchool => InstitutionType?.Value == InstitutionProfiles.ComplexeScolaire;
+    public bool ShowPromotionEditor => !IsComplexSchool || Promotions.Any(p => !p.IsBlank);
+    private bool includeMaternelle;
+    private bool includePrimaire;
+    private bool includeSecondaire;
+    public bool IncludeMaternelle { get => includeMaternelle; set => Set(ref includeMaternelle, value); }
+    public bool IncludePrimaire { get => includePrimaire; set => Set(ref includePrimaire, value); }
+    public bool IncludeSecondaire { get => includeSecondaire; set => Set(ref includeSecondaire, value); }
+    private IReadOnlyList<string> SelectedCycles() => new[]
+    {
+        IncludeMaternelle ? InstitutionProfiles.Maternelle : null,
+        IncludePrimaire ? InstitutionProfiles.Primaire : null,
+        IncludeSecondaire ? InstitutionProfiles.Secondaire : null,
+    }.OfType<string>().ToArray();
     public string PromotionHeading => InstitutionType?.Value is InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire
         or InstitutionProfiles.Secondaire or InstitutionProfiles.ComplexeScolaire ? "Classes" : "Promotions";
     public string FeeHeading => InstitutionType?.Value == InstitutionProfiles.SuperieurLmd ? "Mensualité (USD)" : "Mensualité (FC)";
@@ -453,6 +467,8 @@ public sealed class SetupViewModel : Observable
     {
         if (InstitutionType is null || !InstitutionProfiles.IsEnabled(InstitutionType.Value))
             return "Choisissez un type d'établissement reconnu.";
+        if (IsComplexSchool && SelectedCycles().Count < 2)
+            return "Choisissez au moins deux cycles pour le complexe scolaire.";
         if (Governance?.Value is not ("Prive" or "Public"))
             return "Choisissez le régime privé ou public de l'établissement.";
         if (LoadDemo && (InstitutionType.Value != InstitutionProfiles.ItmIm || Governance.Value != "Prive"))
@@ -475,7 +491,7 @@ public sealed class SetupViewModel : Observable
         var rank = 0;
         if (InstitutionType.Value == InstitutionProfiles.ComplexeScolaire &&
             Promotions.Any(p => !p.IsBlank))
-            return "Pour un complexe scolaire, installez d'abord l'établissement, choisissez ses cycles dans Paramètres > Cycles scolaires, puis créez les classes dans le cycle correspondant.";
+            return "Pour un complexe scolaire, retirez les promotions saisies avant le changement de profil. Les classes seront créées dans leur cycle après l'installation.";
         foreach (var p in Promotions)
         {
             rank++;
@@ -584,6 +600,7 @@ public sealed class SetupViewModel : Observable
         {
             institutionType = InstitutionType.Value,
             governance = Governance.Value,
+            initialSchoolCycles = IsComplexSchool ? SelectedCycles() : null,
             schoolName = SchoolName.Trim(),
             shortName = ShortName.Trim(),
             motto = Motto.Trim() is { Length: > 0 } motto ? motto : null,

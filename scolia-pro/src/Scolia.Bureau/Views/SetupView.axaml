@@ -268,6 +268,15 @@
               <TextBlock Text="Public : les frais ne sont pas activés sans base réglementaire vérifiée. Les bulletins pédagogiques demeurent non officiels jusqu'à validation des modèles applicables."
                          Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
 
+              <Border IsVisible="{Binding IsComplexSchool}" Background="{DynamicResource Surface2Brush}" CornerRadius="8" Padding="12">
+  <StackPanel Spacing="6">
+    <TextBlock Text="Cycles du complexe scolaire" FontWeight="SemiBold" TextWrapping="Wrap" />
+    <TextBlock Text="Sélectionnez au moins deux cycles. Aucun tarif n'est créé automatiquement." Classes="muted" TextWrapping="Wrap" />
+    <CheckBox IsChecked="{Binding IncludeMaternelle}" Content="Maternelle" />
+    <CheckBox IsChecked="{Binding IncludePrimaire}" Content="Primaire" />
+    <CheckBox IsChecked="{Binding IncludeSecondaire}" Content="Secondaire" />
+  </StackPanel>
+</Border>
               <!-- Calendrier scolaire : choix explicites du début, de la fin et du dernier jour autorisé. -->
               <StackPanel Spacing="10">
                 <TextBlock Text="Année scolaire et paiements" Classes="section" />
@@ -300,7 +309,7 @@
               </StackPanel>
 
               <!-- Promotions : un code de 4 caractères et la mensualité ; la liste défile au-delà de trois -->
-              <StackPanel Spacing="8">
+              <StackPanel Spacing="8" IsVisible="{Binding ShowPromotionEditor}">
                 <Grid ColumnDefinitions="*,Auto">
                   <StackPanel Spacing="1">
                     <TextBlock Text="{Binding PromotionHeading}" Classes="section" />
