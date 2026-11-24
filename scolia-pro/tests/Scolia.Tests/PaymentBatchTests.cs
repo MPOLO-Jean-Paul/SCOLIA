@@ -279,4 +279,32 @@ public sealed class PaymentBatchTests : IDisposable
         var account = await admin.GetAsync($"/api/inscriptions/{enrollment}/compte").Ok();
         Assert.Equal(0m, account.GetProperty("totalPaid").GetDecimal());
     }
+
+    [Fact]
+    public async Task Receipt_payer_remains_the_original_guardian_after_the_student_profile_changes()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await PromotionAsync(admin);
+        var enrollment = await EnrollmentAsync(admin, promotion, "MUKENDI");
+        var month = await MonthIdsAsync(admin, enrollment, 1);
+        var created = await admin.Post("/api/paiements", new
+        {
+            enrollmentId = enrollment, amount = 55000m, method = "Especes", feeItemIds = month,
+            idempotencyKey = "receipt-payer-snapshot"
+        }).Ok();
+        var receiptId = created.GetProperty("id").GetString();
+        Assert.Equal("Parent", created.GetProperty("payerName").GetString());
+
+        var students = await admin.GetAsync("/api/apprenants?q=MUKENDI").Ok();
+        var studentId = students.GetProperty("items")[0].GetProperty("id").GetString();
+        await admin.Put($"/api/apprenants/{studentId}", new
+        {
+            lastName = "MUKENDI", middleName = "KABEYA", firstName = "Grace",
+            gender = "F", birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14),
+            guardianPhone = "0812345678", guardianName = "Autre parent"
+        }).Ok();
+
+        var saved = await admin.GetAsync($"/api/paiements/{receiptId}").Ok();
+        Assert.Equal("Parent", saved.GetProperty("payerName").GetString());
+    }
 }
