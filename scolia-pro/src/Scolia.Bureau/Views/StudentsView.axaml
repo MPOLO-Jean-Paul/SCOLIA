@@ -28,14 +28,14 @@
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
           <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
             <mi:MaterialIcon Kind="AccountGroupOutline" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" />
-            <TextBlock Text="Registre des apprenants" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
           </StackPanel>
           <TextBlock Grid.Column="1" Text="{Binding PageText}" Classes="muted" VerticalAlignment="Center" />
         </Grid>
         <WrapPanel>
           <StackPanel Classes="field pagesearch">
             <TextBlock Text="Rechercher" Classes="fieldlabel" />
-            <TextBox Classes="search clearButton" Width="300" Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un matricule" />
+            <TextBox Classes="search clearButton" Width="300" Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un code anonyme" />
           </StackPanel>
           <StackPanel Classes="field">
             <TextBlock Text="Promotion" Classes="fieldlabel" />
