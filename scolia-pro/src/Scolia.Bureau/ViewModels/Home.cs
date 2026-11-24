@@ -57,6 +57,7 @@ public sealed class HomePage : PageViewModel
             Raise(nameof(AllToolsLabel));
             Raise(nameof(AllToolGroups));
         });
+        PropertyChanged += (_, e) => { if (e.PropertyName == nameof(Busy)) Raise(nameof(OverviewUnavailable)); };
         BuildTools();
     }
 
@@ -109,7 +110,8 @@ public sealed class HomePage : PageViewModel
             if (Set(ref overviewAvailable, value)) Raise(nameof(OverviewUnavailable));
         }
     }
-    public bool OverviewUnavailable => CanReadOverview && !OverviewAvailable && !Busy;
+    private bool overviewAttempted;
+    public bool OverviewUnavailable => overviewAttempted && CanReadOverview && !OverviewAvailable && !Busy;
     private bool dailyDetailsAvailable;
     public bool DailyDetailsAvailable
     {
@@ -155,10 +157,12 @@ public sealed class HomePage : PageViewModel
         // Hors connexion, l'absence de copie locale ne doit pas empêcher
         // l'ouverture de l'accueil ni produire des chiffres inventés.
         DashboardDto d;
+        overviewAttempted = true;
         try { d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord"); }
         catch (OfflineException)
         {
             OverviewAvailable = false;
+            Raise(nameof(OverviewUnavailable));
             DailyDetailsAvailable = false;
             Kpis.Clear();
             Tasks.Clear();
