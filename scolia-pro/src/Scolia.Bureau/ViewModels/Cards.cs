@@ -61,6 +61,11 @@ public sealed class CardsPage : PageViewModel
     // Conserve le lot sélectionné lorsque l'on filtre ou parcourt plusieurs promotions.
     private readonly HashSet<Guid> selectedCardIds = [];
     public int SelectedCount => selectedCardIds.Count;
+    // Les commandes de la barre d'outils sont les mêmes que celles du ruban.
+    // Aucun changement apporté au moteur PDF/Word ni au modèle de carte.
+    public RelayCommand SelectAllCards { get; }
+    public RelayCommand ClearSelectedCards { get; }
+
     private bool generatorChecked;
     private string generatorStatus = "Vérification du moteur de cartes de l'établissement…";
     public string GeneratorStatus { get => generatorStatus; private set => Set(ref generatorStatus, value); }
@@ -84,6 +89,8 @@ public sealed class CardsPage : PageViewModel
 
     public CardsPage(ShellViewModel shell) : base(shell)
     {
+        SelectAllCards = new RelayCommand(() => SetAll(true));
+        ClearSelectedCards = new RelayCommand(() => SetAll(false));
         var today = DateTime.Today;
         month = MonthChoices[today.Month - 1];
         year = YearChoices()[1];
@@ -182,10 +189,14 @@ public sealed class CardsPage : PageViewModel
         }
         // Sous-titre court : il tient sur deux lignes d'un téléphone. Le nombre d'apprenants n'est rappelé que s'il diffère.
         var printable = Rows.Count(r => r.Selectable);
-        subtitle = (printable == Rows.Count
-            ? Format.Count(printable, "carte à imprimer", "cartes à imprimer")
-            : $"{Format.Count(printable, "carte à imprimer", "cartes à imprimer")} sur {Rows.Count}")
-            + $" · {Month?.Label} {Year?.Value}";
+        // Sous-titre sur deux lignes courtes pour les téléphones étroits (320-360 px).
+        // Sur Windows, conserver la formulation détaillée.
+        subtitle = Phone
+            ? $"{printable}/{Rows.Count} cartes{Environment.NewLine}{Month?.Label} {Year?.Value}"
+            : (printable == Rows.Count
+                ? Format.Count(printable, "carte à imprimer", "cartes à imprimer")
+                : $"{Format.Count(printable, "carte à imprimer", "cartes à imprimer")} sur {Rows.Count}")
+                + $" · {Month?.Label} {Year?.Value}";
         Raise(nameof(Subtitle));
     }
 

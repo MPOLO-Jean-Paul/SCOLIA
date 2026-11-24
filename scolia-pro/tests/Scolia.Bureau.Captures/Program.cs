@@ -1853,6 +1853,71 @@ if (Environment.GetEnvironmentVariable("SCOLIA_ASSISTANT") == "1")
     Save(window, "00-assistant-etape-2.png");
     return;
 }
+// Revue visuelle autonome des interfaces de préparation : uniquement des comptes et candidats fictifs.
+// Aucune ouverture de base réelle, aucune requête vers Cloudflare et aucun export scolaire.
+if (args.Length > 3 && args[3] == "cartes-ui")
+{
+    using var localFixture = new LayoutServer { DemoCards = true };
+    api.Retarget(localFixture.Address);
+    prefs.Animations = false;
+    var opening = ShellViewModel.MinimumOpening;
+    ShellViewModel.MinimumOpening = TimeSpan.Zero;
+    try
+    {
+        Wait(shell.OpenSessionAsync(new SessionDto(Guid.NewGuid(), "test-cartes", "Agent de démonstration",
+            "Secrétaire", "Secretariat", [Scolia.Bureau.Ribbon.Perm.StudentsRead, Scolia.Bureau.Ribbon.Perm.StudentsWrite],
+            false, "Établissement fictif", "Test", "2026-2027", "FC", "+243")));
+    }
+    finally { ShellViewModel.MinimumOpening = opening; }
+    shell.Sync.Stop();
+
+    var sizes = Preferences.MobileLayout
+        ? new[] { (360, 720), (412, 892) }
+        : new[] { (760, 520), (1024, 600), (1366, 768), (1920, 1080) };
+    foreach (var (width, height) in sizes)
+    {
+        window.Width = width;
+        window.Height = height;
+        Wait(shell.Open(() => new CardsPage(shell)));
+        if (shell.Current is not CardsPage page || page.Rows.Count != 3)
+            throw new InvalidOperationException("La préparation des cartes de démonstration n'est pas chargée.");
+        page.SelectAllCards.Execute(null);
+        if (page.SelectedCount != 2)
+            throw new InvalidOperationException("Seules les deux cartes éligibles doivent être cochées.");
+        page.ClearSelectedCards.Execute(null);
+        if (page.SelectedCount != 0)
+            throw new InvalidOperationException("Tout décocher n'a pas vidé la sélection.");
+        page.SelectAllCards.Execute(null);
+        // La notification temporaire de sélection ne doit pas masquer les champs de la capture.
+        Wait(Task.Delay(TimeSpan.FromMilliseconds(4300)));
+        window.UpdateLayout();
+        Save(window, $"cartes-interface-{(Preferences.MobileLayout ? "mobile" : "bureau")}-{width}x{height}.png");
+
+        if (!Preferences.MobileLayout)
+        {
+            var cardsView = window.GetVisualDescendants().OfType<CardsView>()
+                .First(view => view.IsEffectivelyVisible);
+            var hint = cardsView.GetVisualDescendants().OfType<TextBlock>()
+                .First(text => text.Text == "Cochez les participants de chaque promotion.");
+            var table = cardsView.GetVisualDescendants().OfType<DataGrid>()
+                .First(grid => grid.IsEffectivelyVisible);
+            if (hint.TransformToVisual(window) is not { } hintTransform ||
+                table.TransformToVisual(window) is not { } tableTransform ||
+                new Rect(hint.Bounds.Size).TransformToAABB(hintTransform).Bottom >=
+                new Rect(table.Bounds.Size).TransformToAABB(tableTransform).Top)
+                throw new InvalidOperationException($"Cartes {width}x{height} : le texte de sélection chevauche le tableau.");
+        }
+    }
+    if (Preferences.MobileLayout)
+    {
+        var report = Path.Combine(output, "debordements.txt");
+        if (!File.Exists(report) || File.ReadAllLines(report).Any(line => line.StartsWith("  ", StringComparison.Ordinal)))
+            throw new InvalidOperationException("Cartes Android : du texte dépasse ou est tronqué sur un petit écran.");
+    }
+    Console.WriteLine("OK : interface des cartes, sélection et absence de chevauchement validées.");
+    return;
+}
+
 shell.Login.SchoolName = Result(api.GetAsync<SetupStatusDto>("api/installation")).SchoolName ?? string.Empty;
 Wait(shell.RefreshLogoAsync());
 Save(window, "01-connexion.png");
@@ -3090,6 +3155,7 @@ sealed class LayoutServer : IDisposable
     private readonly System.Net.HttpListener listener = new();
     public Uri Address { get; }
     public AccountDto? PaymentAccount { get; set; }
+    public bool DemoCards { get; set; }
     public int PaymentCount { get; private set; }
     public TaskCompletionSource? HoldPayment { get; set; }
     public TaskCompletionSource? HoldStudents { get; set; }
@@ -3127,7 +3193,23 @@ sealed class LayoutServer : IDisposable
             // Un serveur de test disponible doit répondre à la sonde réelle.
             // Sinon la détection accélérée signale à tort une panne réseau
             // et empêche le chargement du compte pendant les captures.
-            object? result = path == "/api/sante" ? new { status = "ok" } : null;
+            object? result = path == "/api/sante"
+                ? (DemoCards
+                    ? new { status = "ok", version = "1.2.90", cardGenerator = Scolia.Domain.Students.CardGeneratorManifest.Id }
+                    : (object)new { status = "ok" })
+                : null;
+            if (DemoCards && path == "/api/etablissement/promotions")
+                result = Array.Empty<PromotionDto>();
+            if (DemoCards && path == "/api/cartes/candidats")
+                result = new[]
+                {
+                    new CardCandidateDto(Guid.Parse("00000000-0000-0000-0000-000000000101"),
+                        "DEMO01", "MOYO MUKENDI Alice", "INF1", "Actif", true, true, false),
+                    new CardCandidateDto(Guid.Parse("00000000-0000-0000-0000-000000000102"),
+                        "", "KABILA KASONGO Cédric", "ACC2", "Actif", true, true, false),
+                    new CardCandidateDto(Guid.Parse("00000000-0000-0000-0000-000000000103"),
+                        "", "ÉLÈVE DE TEST NON ÉLIGIBLE", "INF3", "Suspendu", false, true, false),
+                };
             if (PaymentAccount is { } account)
             {
                 if (path == $"/api/inscriptions/{account.EnrollmentId}/compte") result = account;

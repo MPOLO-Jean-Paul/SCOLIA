@@ -368,6 +368,7 @@ public sealed class ShellViewModel : Observable
             Raise(nameof(NavigatingBack));
             Raise(nameof(DesktopPage));
             Raise(nameof(PhonePage));
+            Raise(nameof(PageScroll));
             HeaderSearch.PageChanged();
             Raise(nameof(ContextSearchAvailable));
             Raise(nameof(ContextSearchPlaceholder));
@@ -2087,9 +2088,15 @@ public sealed class ShellViewModel : Observable
         ShowSheet(page.Heading, page.Subtitle, page.HeaderActions.Where(a => !a.Row).Select(a => (a.Label, a.Icon, a.Command, a.Danger, a.IsPrimary)));
     }
 
-    /// <summary>Défilement de la page entière : sur téléphone seulement.</summary>
+    /// <summary>
+    /// Les pages bureautiques defilent dans leurs tableaux. La preparation des cartes,
+    /// avec ses filtres et son panneau d'impression, peut toutefois depasser une petite
+    /// fenetre Windows : permettre son defilement sans toucher aux autres rubriques.
+    /// </summary>
     public Avalonia.Controls.Primitives.ScrollBarVisibility PageScroll =>
-        phone ? Avalonia.Controls.Primitives.ScrollBarVisibility.Auto : Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled;
+        phone || Current is CardsPage
+            ? Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
+            : Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled;
 
     /// <summary>La barre d'état suit la préférence, sauf sur un téléphone où la place manque.</summary>
     public bool ShowStatusBar => Prefs.StatusBar && !phone;

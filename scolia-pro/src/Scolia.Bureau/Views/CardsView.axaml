@@ -2,10 +2,37 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Scolia.Bureau.Controls"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.CardsView">
-  <Grid RowDefinitions="Auto,Auto,*">
-    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
-      <WrapPanel>
+  <!-- Espace de preparation type lecteur de documents ; moteur de cartes existant inchange. -->
+  <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+    <Border Grid.Row="0" Classes="band" Padding="15,12" CornerRadius="14">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" infra:Adaptive.StackBelow="630">
+        <StackPanel Spacing="4">
+          <StackPanel Orientation="Horizontal" Spacing="9">
+            <mi:MaterialIcon Kind="CardAccountDetailsOutline" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" />
+            <TextBlock Text="Cartes d'accès aux examens" FontSize="18" FontWeight="SemiBold" />
+          </StackPanel>
+          <TextBlock Text="Sélectionnez les participants puis générez le document officiel sans modifier le modèle imprimé."
+                     Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+        <Border Grid.Column="1" CornerRadius="11" Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" Padding="12,7"
+                VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="{Binding SelectedCount}" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
+            <TextBlock Text="carte(s) choisie(s)" Classes="muted" VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
+      </Grid>
+    </Border>
+    <Border Grid.Row="1" Classes="card" Padding="15,12">
+      <StackPanel Spacing="10">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <mi:MaterialIcon Kind="FilterOutline" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" />
+          <TextBlock Text="Filtres et paramètres du lot" FontSize="15" FontWeight="SemiBold" />
+        </StackPanel>
+        <WrapPanel>
         <StackPanel Classes="field">
           <TextBlock Text="Promotion" Classes="fieldlabel" />
           <ComboBox Width="230" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
@@ -32,21 +59,35 @@
         </StackPanel>
         <CheckBox Content="Sortis et suspendus" IsChecked="{Binding IncludeLeft}" VerticalAlignment="Bottom" Margin="0,0,12,12" />
       </WrapPanel>
-    </Border>
-    <!-- Taille réelle pour porte-badge : la consigne reste visible avant l'export. -->
-    <Border Grid.Row="1" Classes="card" Padding="12,8" Margin="0,0,0,10">
-      <StackPanel Spacing="3">
-        <TextBlock Text="Porte-badge standard : 85,60 × 53,98 mm · 8 cartes par A4" FontWeight="SemiBold" TextWrapping="Wrap" />
-        <TextBlock Text="Imprimer à 100 % (taille réelle), sans ajustement ni mise à l'échelle. Vérifiez le porte-badge avec une première carte." Classes="muted" TextWrapping="Wrap" />
-        <TextBlock Text="Le cachet de l'établissement n'est pas imprimé : apposez votre cachet original à la main sur chaque carte. La bande du bas porte la couleur de la filière." Classes="muted" TextWrapping="Wrap" />
-        <StackPanel Orientation="Horizontal" Spacing="6">
-          <TextBlock Text="{infra:Terms 'Apprenants dans le lot :'}" Classes="muted" />
-          <TextBlock Text="{Binding SelectedCount}" FontWeight="SemiBold" />
-        </StackPanel>
-        <TextBlock Text="{Binding GeneratorStatus}" Classes="muted" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
-    <DataGrid Grid.Row="2" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" CanUserSortColumns="True">
+    <Grid Grid.Row="2" ColumnDefinitions="*,290" ColumnSpacing="12"
+          infra:Adaptive.StackBelow="850" infra:Adaptive.StackedRows="Auto,Auto">
+      <Border Grid.Column="0" Classes="card" Padding="12">
+        <Grid RowDefinitions="Auto,*" RowSpacing="8">
+          <!-- En fenetre etroite, le titre et les actions occupent deux lignes mesurees :
+               ne pas utiliser Adaptive.StackBelow ici (risque de recouvrement). -->
+          <StackPanel Spacing="6">
+            <StackPanel Spacing="3">
+              <TextBlock Text="Sélection des cartes" FontWeight="SemiBold" FontSize="16" />
+              <TextBlock Text="Cochez les participants de chaque promotion." Classes="muted" FontSize="12" />
+            </StackPanel>
+            <WrapPanel VerticalAlignment="Center">
+              <Button Classes="quiet" Command="{Binding SelectAllCards}" ToolTip.Tip="Cocher les cartes eligibles visibles">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <mi:MaterialIcon Kind="CheckboxMultipleMarked" Width="16" Height="16" />
+                  <TextBlock Text="Tout cocher" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Button Classes="quiet" Command="{Binding ClearSelectedCards}" ToolTip.Tip="Vider tout le lot selectionne">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <mi:MaterialIcon Kind="CheckboxMultipleBlank" Width="16" Height="16" />
+                  <TextBlock Text="Tout décocher" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </WrapPanel>
+          </StackPanel>
+          <DataGrid Grid.Row="1" MinHeight="160" ItemsSource="{Binding Rows}" IsVisible="{Binding NotPhone}" AutoGenerateColumns="False" CanUserSortColumns="True">
       <DataGrid.Columns>
         <DataGridCheckBoxColumn Header="Carte" Binding="{Binding Selected}" Width="Auto" MinWidth="70" infra:GridPriority.Level="1" />
         <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="122" infra:GridPriority.Level="1" />
@@ -56,6 +97,70 @@
         <DataGridTextColumn Header="Diagnostic" Binding="{Binding Diagnostic}" IsReadOnly="True" Width="*" MinWidth="200" infra:GridPriority.Level="1" />
       </DataGrid.Columns>
     </DataGrid>
-    <c:EmptyState Grid.Row="2" Icon="CardAccountDetailsOutline" Title="{infra:Terms 'Aucun apprenant pour ces critères'}" Hint="Changez de promotion ou incluez les sortis et suspendus." IsVisible="{Binding !Rows.Count}" />
+          <!-- Android : cartes de sélection adaptatives, aucun tableau à défilement horizontal. -->
+          <ScrollViewer Grid.Row="1" IsVisible="{Binding Phone}" HorizontalScrollBarVisibility="Disabled"
+                        VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Rows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}"
+                          BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                      <CheckBox IsChecked="{Binding Selected, Mode=TwoWay}" IsEnabled="{Binding Selectable}"
+                                AutomationProperties.Name="{Binding Name}" VerticalAlignment="Top"
+                                ToolTip.Tip="Inclure cette carte dans le lot" />
+                      <StackPanel Grid.Column="1" Spacing="5">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <TextBlock Text="{Binding Promotion}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding Matricule}" Classes="muted" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Status}" Classes="muted" />
+                        <TextBlock Text="{Binding Diagnostic}" Classes="muted" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+          <c:EmptyState Grid.Row="1" Icon="CardAccountDetailsOutline" Title="{infra:Terms 'Aucun apprenant pour ces critères'}" Hint="Changez de promotion ou incluez les sortis et suspendus." IsVisible="{Binding !Rows.Count}" />
+        </Grid>
+      </Border>
+      <Border Grid.Column="1" Classes="card" Padding="15">
+        <StackPanel Spacing="11">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="FilePdfBox" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" />
+            <TextBlock Text="Document d'impression" FontWeight="SemiBold" FontSize="16" />
+          </StackPanel>
+          <TextBlock Text="Modèle officiel conservé" FontWeight="SemiBold" />
+          <TextBlock Text="Les logos, le QR code, les informations, les bandes de couleur et les repères de découpe restent ceux du générateur existant."
+                     Classes="muted" TextWrapping="Wrap" />
+          <Border Background="{DynamicResource Surface2Brush}" CornerRadius="12" Padding="11">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Taille du porte-badge" FontWeight="SemiBold" />
+              <TextBlock Text="85,60 × 53,98 mm" />
+              <TextBlock Text="8 cartes par page A4" />
+              <TextBlock Text="Impression à 100 % (taille réelle), sans ajustement."
+                         Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <TextBlock Text="Contrôle du générateur" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding GeneratorStatus}" Classes="muted" TextWrapping="Wrap" />
+          <TextBlock Text="Le cachet de l'établissement est à apposer manuellement sur chaque carte."
+                     Classes="muted" TextWrapping="Wrap" />
+          <Button Classes="primary" Command="{Binding PrimaryAction.Command}" IsVisible="{Binding HasPrimaryAction}"
+                  ToolTip.Tip="Exporter le lot avec le generateur SCOLIA existant"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="FilePdfBox" Width="18" Height="18" />
+              <TextBlock Text="Exporter les cartes" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <TextBlock Text="Après export, le document s'ouvre dans le lecteur PDF ou Word installé."
+                     Classes="muted" TextWrapping="Wrap" FontSize="12" />
+        </StackPanel>
+      </Border>
+    </Grid>
   </Grid>
 </UserControl>
