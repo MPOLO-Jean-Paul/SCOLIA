@@ -2,6 +2,7 @@ using System.Net;
 using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Scolia.Application.Abstractions;
 using Scolia.Domain.Finance;
 using Scolia.Infrastructure.Persistence;
 
@@ -54,6 +55,9 @@ public sealed class ReceiptsExportPaginationTests : IDisposable
                     Method = PaymentMethod.Especes
                 });
             }
+            // Les données fictives du test respectent le même garde-fou d'audit que la production.
+            var audit = scope.ServiceProvider.GetRequiredService<IAuditLog>();
+            audit.RecordAs("test-export", "TestSeed", "Receipt", null, "Insertion de 1001 reçus fictifs pour tester la pagination.");
             await db.SaveChangesAsync();
         }
 
