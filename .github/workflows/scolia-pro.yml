@@ -57,6 +57,24 @@ jobs:
           dotnet build Scolia.sln -c Release
           dotnet build tests/Scolia.Bureau.Captures -c Release
 
+      # Revue UI des cartes : donnees fictives, moteur d'export reel non touche.
+      # Les captures sont seulement celles des ecrans, jamais les PDF scolaires.
+      - name: Cartes - mise en page desktop et mobile sans modifier le modele
+        env:
+          SCOLIA_ASTUCES: '0'
+        run: |
+          for layout in 0 1; do
+            SCOLIA_MOBILE="$layout" dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/cartes-ui/$layout http://127.0.0.1:5293/ Scolia2026! cartes-ui
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Pro_Cartes_Interfaces_Windows_Android
+          path: scolia-pro/artifacts/cartes-ui/
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Relais longue distance (publication autonome Linux)
         run: dotnet publish src/Scolia.Relay -c Release --no-restore -o artifacts/relais
 
@@ -121,24 +139,6 @@ jobs:
         with:
           name: SCOLIA_Pro_Desktop_Interfaces
           path: scolia-pro/artifacts/bureau/
-          if-no-files-found: ignore
-          retention-days: 7
-
-      # Revue UI des cartes : donnees fictives, moteur d'export reel non touche.
-      # Les captures sont seulement celles des ecrans, jamais les PDF scolaires.
-      - name: Cartes - mise en page desktop et mobile sans modifier le modele
-        env:
-          SCOLIA_ASTUCES: '0'
-        run: |
-          for layout in 0 1; do
-            SCOLIA_MOBILE="$layout" dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/cartes-ui/$layout http://127.0.0.1:5293/ Scolia2026! cartes-ui
-          done
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: SCOLIA_Pro_Cartes_Interfaces_Windows_Android
-          path: scolia-pro/artifacts/cartes-ui/
           if-no-files-found: ignore
           retention-days: 7
 
