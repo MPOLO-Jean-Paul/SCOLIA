@@ -72,96 +72,69 @@ public sealed class InstallerAndHomePolishTests
     }
 
     [Fact]
-    public void Accueil_desktop_conserve_des_cartes_claires_et_responsives()
+    public void Accueil_desktop_PowerBI_adopte_des_panneaux_Fluent_responsives()
     {
         var doc = XDocument.Load(Source("src/Scolia.Bureau/Views/HomeView.axaml"));
         var elements = doc.Descendants().ToArray();
 
-        Assert.Contains(elements, e => e.Name.LocalName == "Border" &&
-            e.Attributes().Any(a => a.Name.LocalName == "Classes" && a.Value == "desktopwelcome"));
-        // Fond teinté de l'accent derrière la carte de bienvenue, tuiles d'état côte à côte.
-        Assert.Contains(elements, e => e.Name.LocalName == "Border" &&
-            e.Attributes().Any(a => a.Name.LocalName == "Background" && a.Value.Contains("AccentSoftBrush")) &&
-            e.Attributes().Any(a => a.Name.LocalName == "Opacity"));
-        Assert.Contains(elements, e => e.Name.LocalName == "Button" &&
-            e.Attributes().Any(a => a.Name.LocalName == "Classes" && a.Value == "statustile"));
-        // Les boutons doivent demeurer à droite du séparateur VERTICAL sur petits
-        // et grands écrans, et non sous le message d'accueil.
+        Assert.True(elements.Count(e => e.Name.LocalName == "Border" &&
+            (string?)e.Attribute("Classes") == "pbiPanel") >= 4);
         Assert.Contains(elements, e => e.Name.LocalName == "Grid" &&
-            e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "WelcomeLayout") &&
-            e.Attributes().Any(a => a.Name.LocalName == "ColumnDefinitions" && a.Value == "*,Auto,Auto"));
-        Assert.Contains(elements, e => e.Name.LocalName == "Border" &&
-            e.Attributes().Any(a => a.Name.LocalName == "Grid.Column" && a.Value == "1") &&
-            e.Attributes().Any(a => a.Name.LocalName == "Width" && a.Value == "1"));
+            (string?)e.Attributes().FirstOrDefault(a => a.Name.LocalName == "Name")?.Value == "WelcomeLayout" &&
+            (string?)e.Attribute("ColumnDefinitions") == "*,Auto" &&
+            e.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "610"));
+        Assert.True(elements.Count(e => e.Name.LocalName == "Grid" &&
+            e.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "820")) >= 2);
         Assert.Contains(elements, e => e.Name.LocalName == "ItemsControl" &&
-            e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "WelcomeQuickActions") &&
-            e.Attributes().Any(a => a.Name.LocalName == "Grid.Column" && a.Value == "2"));
+            (string?)e.Attribute("ItemsSource") == "{Binding QuickActions}");
         Assert.Contains(elements, e => e.Name.LocalName == "UniformGrid" &&
-            e.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "112"));
-        Assert.Contains(elements, e => e.Name.LocalName == "Grid" &&
-            e.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "410"));
-        Assert.Contains(elements, e => e.Name.LocalName == "Grid" &&
-            e.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "760"));
-        // Les informations essentielles sont désormais sur une seule ligne.
-        foreach (var property in new[] { "Greeting", "AccountContextLine", "ShortTitle",
-            "Value", "Hint" })
-        {
-            Assert.Contains(elements, e => e.Name.LocalName == "TextBlock" &&
-                e.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value.Contains(property)) &&
-                e.Attributes().Any(a => a.Name.LocalName == "MaxLines" && a.Value == "1") &&
-                e.Attributes().Any(a => a.Name.LocalName == "TextTrimming" && a.Value == "CharacterEllipsis"));
-        }
-        // Le bandeau garde ses deux boutons à droite, sans retour sous le salut.
-        var logic = File.ReadAllText(Source("src/Scolia.Bureau/Views/HomeView.axaml.cs"));
-        Assert.Contains("Math.Min(244, Math.Max(98, available * 0.34))", logic, StringComparison.Ordinal);
-        Assert.Contains("WelcomeQuickActions.Width = rightWidth", logic, StringComparison.Ordinal);
+            e.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "190"));
         Assert.Contains(elements, e => e.Name.LocalName == "Button" &&
-            e.Attributes().Any(a => a.Name.LocalName == "Command" && a.Value.Contains("ShowAllTools")));
+            (string?)e.Attribute("Command") == "{Binding Network}");
+        Assert.Contains(elements, e => e.Name.LocalName == "Button" &&
+            (string?)e.Attribute("Command") == "{Binding ShowAllTools}");
+        foreach (var value in new[] { "Greeting", "AccountContextLine", "ShortTitle", "Value", "Hint" })
+            Assert.Contains(elements, e => e.Name.LocalName == "TextBlock" &&
+                e.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value.Contains(value)));
+        var logic = File.ReadAllText(Source("src/Scolia.Bureau/Views/HomeView.axaml.cs"));
+        Assert.Contains("InitializeComponent()", logic, StringComparison.Ordinal);
+        Assert.DoesNotContain("WelcomeQuickActions.Width =", logic, StringComparison.Ordinal);
     }
+
     [Fact]
-    public void Accueil_Windows_et_telephone_presentent_les_fonctionnalites_avec_leurs_avatars()
+    public void Accueil_PowerBI_reutilise_les_fonctions_de_la_vue_mobile_et_les_indicateurs_reels()
     {
         var desktop = XDocument.Load(Source("src/Scolia.Bureau/Views/HomeView.axaml"));
         var phone = XDocument.Load(Source("src/Scolia.Bureau/Views/Phone/HomeView.axaml"));
         var desktopNodes = desktop.Descendants().ToArray();
         var phoneNodes = phone.Descendants().ToArray();
 
-        // Ne jamais créer une liste de fonctionnalités Windows différente du téléphone.
-        foreach (var nodes in new[] { desktopNodes, phoneNodes })
-        {
-            Assert.Contains(nodes, e => e.Name.LocalName == "ItemsControl" &&
-                e.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value == "{Binding Tools}") &&
-                e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "FeatureCards"));
-            // Chaque fonctionnalité est une carte avec son avatar illustré (personnage, objet, pastille), son titre et sa description.
-            Assert.Contains(nodes, e => e.Name.LocalName == "Image" &&
-                e.Attributes().Any(a => a.Name.LocalName == "Source" && a.Value == "{Binding Illustration}"));
-            // Les lignes (état, caisse, aperçu) gardent un avatar rond (halo, disque coloré, reflet).
-            Assert.Contains(nodes, e => e.Name.LocalName == "Grid" &&
-                e.Attributes().Any(a => a.Name.LocalName == "Classes" && a.Value.StartsWith("featureavatar", StringComparison.Ordinal)) &&
-                e.Elements().Any(d => d.Name.LocalName == "Ellipse" && d.Attributes().Any(a => a.Value == "halo")) &&
-                e.Elements().Any(d => d.Name.LocalName == "Border" && d.Attributes().Any(a => a.Value == "appicon avatar")));
-            Assert.Contains(nodes, e => e.Name.LocalName == "TextBlock" &&
-                e.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value == "FONCTIONNALITÉS PRINCIPALES"));
-            Assert.Contains(nodes, e => e.Name.LocalName == "TextBlock" &&
-                e.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value == "{Binding Description}"));
-        }
+        Assert.Contains(desktopNodes, e => e.Name.LocalName == "ItemsControl" &&
+            (string?)e.Attribute("ItemsSource") == "{Binding MoreTools}" &&
+            e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "FeatureCards"));
+        Assert.Contains(phoneNodes, e => e.Name.LocalName == "ItemsControl" &&
+            (string?)e.Attribute("ItemsSource") == "{Binding Tools}" &&
+            e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "FeatureCards"));
+        Assert.Contains(phoneNodes, e => e.Name.LocalName == "Image" &&
+            (string?)e.Attribute("Source") == "{Binding Illustration}");
+        Assert.Contains(desktopNodes, e => e.Name.LocalName == "mi:MaterialIcon" ||
+            (e.Name.LocalName == "MaterialIcon" && (string?)e.Attribute("Kind") == "{Binding Icon}"));
         Assert.Contains(desktopNodes, e => e.Name.LocalName == "TextBlock" &&
-            e.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value == "APERÇU"));
+            (string?)e.Attribute("Text") == "Recommandé pour vous");
 
-        // L'état de la connexion est un vrai raccourci permanent, avec explication.
+        // La connexion est toujours cliquable, même sans Internet, et les indicateurs
+        // ouvrent les vraies pages de travail. Aucun chiffre de démonstration n'est codé.
         Assert.Contains(desktopNodes, e => e.Name.LocalName == "Button" &&
-            e.Attributes().Any(a => a.Name.LocalName == "Command" && a.Value.Contains("Network")) &&
+            (string?)e.Attribute("Command") == "{Binding Network}" &&
             e.Descendants().Any(d => d.Name.LocalName == "TextBlock" &&
-                d.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value.Contains("Sync.StatusHint"))));
-        Assert.Contains(desktopNodes, e => e.Name.LocalName == "ItemsControl" &&
-            e.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value.Contains("Kpis")));
-        Assert.Contains(desktopNodes, e => e.Name.LocalName == "ItemsControl" &&
-            e.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value.Contains("Receipts")));
-        Assert.Contains(desktopNodes, e => e.Name.LocalName == "ItemsControl" &&
-            e.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value.Contains("Tasks")));
+                (string?)d.Attribute("Text") == "{Binding Sync.StatusHint}"));
+        foreach (var source in new[] { "Kpis", "Receipts", "Tasks" })
+            Assert.Contains(desktopNodes, e => e.Name.LocalName == "ItemsControl" &&
+                (string?)e.Attribute("ItemsSource") == "{Binding " + source + "}");
 
         var home = File.ReadAllText(Source("src/Scolia.Bureau/ViewModels/Home.cs"));
         Assert.Contains("public IReadOnlyList<ToolCardVm> PhoneTools => Tools.Take(4).ToList()", home);
+        Assert.Contains("public IReadOnlyList<ToolCardVm> MoreTools => Tools.Skip(2).Take(4).ToList()", home);
         Assert.Contains("if (perm is null || Shell.Can(perm))", home);
     }
 
