@@ -66,6 +66,8 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
                 // Une clé identifie un encaissement précis, pas simplement une requête HTTP.
                 // Un autre poste ne peut pas la réutiliser pour une personne ou un montant différent.
                 var requestedItems = input.FeeItemIds?.ToHashSet() ?? [];
+                if (existing.Status != OperationStatus.Valide)
+                    throw new ConflictException("Ce reçu a été annulé. Créez un nouvel encaissement avec une autre référence.");
                 if (existing.EnrollmentId != input.EnrollmentId || existing.Amount != input.Amount
                     || existing.Method != ParseMethod(input.Method)
                     || (input.Date.HasValue && existing.Date != input.Date.Value)
