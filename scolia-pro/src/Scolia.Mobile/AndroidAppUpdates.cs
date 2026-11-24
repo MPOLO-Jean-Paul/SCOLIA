@@ -440,13 +440,12 @@ public static class AndroidAppUpdates
 
     private static bool IsNewer(Context context, string candidate)
     {
-        var v = Version.TryParse(candidate, out var parsed) ? parsed : null;
         var installedName = context.PackageManager?.GetPackageInfo(context.PackageName!, 0)?.VersionName;
-        // Quelques constructeurs renvoient un VersionName non standard :
-        // repli sur la version embarquée dans SCOLIA, pas sur une valeur inconnue.
-        var installed = Version.TryParse(installedName, out var current) ? current
-            : Version.TryParse(Scolia.Bureau.Infrastructure.AboutInfo.Version, out var bundled) ? bundled : null;
-        return v is not null && installed is not null && v.CompareTo(installed) > 0;
+        // La distribution Android 1.2.91 a conservé par erreur « 1.2.90 » comme
+        // versionName. L'assembly contient le bon numéro : ne jamais proposer
+        // la même mise à jour en boucle lorsque le code installé est déjà récent.
+        return UpdateCompletionPolicy.IsReleaseNewer(
+            candidate, installedName, Scolia.Bureau.Infrastructure.AboutInfo.Version);
     }
 
     private static Release? Deserialize(string? json)
@@ -577,7 +576,8 @@ public static class AndroidAppUpdates
         if (id <= 0) return false;
         var pendingVersion = pref.GetString(DownloadVersionKey, null);
         var installedVersion = activity.PackageManager?.GetPackageInfo(activity.PackageName!, 0)?.VersionName;
-        if (UpdateCompletionPolicy.AlreadyInstalled(pendingVersion, installedVersion))
+        if (UpdateCompletionPolicy.AlreadyInstalled(pendingVersion, installedVersion,
+            Scolia.Bureau.Infrastructure.AboutInfo.Version))
         {
             var cachedFile = UpdatePath(activity, pref.GetString(FileNameKey, "") ?? "");
             if (cachedFile is not null)
