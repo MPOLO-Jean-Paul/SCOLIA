@@ -1853,6 +1853,48 @@ if (Environment.GetEnvironmentVariable("SCOLIA_ASSISTANT") == "1")
     Save(window, "00-assistant-etape-2.png");
     return;
 }
+// Revue visuelle autonome des interfaces de préparation : uniquement des comptes et candidats fictifs.
+// Aucune ouverture de base réelle, aucune requête vers Cloudflare et aucun export scolaire.
+if (args.Length > 3 && args[3] == "cartes-ui")
+{
+    using var localFixture = new LayoutServer { DemoCards = true };
+    api.Retarget(localFixture.Address);
+    prefs.Animations = false;
+    var opening = ShellViewModel.MinimumOpening;
+    ShellViewModel.MinimumOpening = TimeSpan.Zero;
+    try
+    {
+        Wait(shell.OpenSessionAsync(new SessionDto(Guid.NewGuid(), "test-cartes", "Agent de démonstration",
+            "Secrétaire", "Secretariat", [Scolia.Bureau.Ribbon.Perm.StudentsRead, Scolia.Bureau.Ribbon.Perm.StudentsWrite],
+            false, "Établissement fictif", "Test", "2026-2027", "FC", "+243")));
+    }
+    finally { ShellViewModel.MinimumOpening = opening; }
+    shell.Sync.Stop();
+
+    var sizes = Preferences.MobileLayout
+        ? new[] { (360, 720), (412, 892) }
+        : new[] { (760, 520), (1024, 600), (1366, 768), (1920, 1080) };
+    foreach (var (width, height) in sizes)
+    {
+        window.Width = width;
+        window.Height = height;
+        Wait(shell.Open(() => new CardsPage(shell)));
+        if (shell.Current is not CardsPage page || page.Rows.Count != 3)
+            throw new InvalidOperationException("La préparation des cartes de démonstration n'est pas chargée.");
+        page.SelectAllCards.Execute(null);
+        if (page.SelectedCount != 2)
+            throw new InvalidOperationException("Seules les deux cartes éligibles doivent être cochées.");
+        page.ClearSelectedCards.Execute(null);
+        if (page.SelectedCount != 0)
+            throw new InvalidOperationException("Tout décocher n'a pas vidé la sélection.");
+        page.SelectAllCards.Execute(null);
+        window.UpdateLayout();
+        Save(window, $"cartes-interface-{(Preferences.MobileLayout ? "mobile" : "bureau")}-{width}x{height}.png");
+    }
+    Console.WriteLine("OK : contrôles de l'interface des cartes et des commandes de sélection.");
+    return;
+}
+
 shell.Login.SchoolName = Result(api.GetAsync<SetupStatusDto>("api/installation")).SchoolName ?? string.Empty;
 Wait(shell.RefreshLogoAsync());
 Save(window, "01-connexion.png");
@@ -1905,48 +1947,6 @@ if (args.Length > 3 && args[3] == "visite")
             Console.WriteLine($"VISITE {type.Name} : {ex.GetBaseException().Message}");
         }
     }
-    return;
-}
-
-// Revue visuelle autonome des interfaces de préparation : uniquement des comptes et candidats fictifs.
-// Aucune ouverture de base réelle, aucune requête vers Cloudflare et aucun export scolaire.
-if (args.Length > 3 && args[3] == "cartes-ui")
-{
-    using var localFixture = new LayoutServer { DemoCards = true };
-    api.Retarget(localFixture.Address);
-    prefs.Animations = false;
-    var opening = ShellViewModel.MinimumOpening;
-    ShellViewModel.MinimumOpening = TimeSpan.Zero;
-    try
-    {
-        Wait(shell.OpenSessionAsync(new SessionDto(Guid.NewGuid(), "test-cartes", "Agent de démonstration",
-            "Secrétaire", "Secretariat", [Scolia.Bureau.Ribbon.Perm.StudentsRead, Scolia.Bureau.Ribbon.Perm.StudentsWrite],
-            false, "Établissement fictif", "Test", "2026-2027", "FC", "+243")));
-    }
-    finally { ShellViewModel.MinimumOpening = opening; }
-    shell.Sync.Stop();
-
-    var sizes = Preferences.MobileLayout
-        ? new[] { (360, 720), (412, 892) }
-        : new[] { (760, 520), (1024, 600), (1366, 768), (1920, 1080) };
-    foreach (var (width, height) in sizes)
-    {
-        window.Width = width;
-        window.Height = height;
-        Wait(shell.Open(() => new CardsPage(shell)));
-        if (shell.Current is not CardsPage page || page.Rows.Count != 3)
-            throw new InvalidOperationException("La préparation des cartes de démonstration n'est pas chargée.");
-        page.SelectAllCards.Execute(null);
-        if (page.SelectedCount != 2)
-            throw new InvalidOperationException("Seules les deux cartes éligibles doivent être cochées.");
-        page.ClearSelectedCards.Execute(null);
-        if (page.SelectedCount != 0)
-            throw new InvalidOperationException("Tout décocher n'a pas vidé la sélection.");
-        page.SelectAllCards.Execute(null);
-        window.UpdateLayout();
-        Save(window, $"cartes-interface-{(Preferences.MobileLayout ? "mobile" : "bureau")}-{width}x{height}.png");
-    }
-    Console.WriteLine("OK : contrôles de l'interface des cartes et des commandes de sélection.");
     return;
 }
 
