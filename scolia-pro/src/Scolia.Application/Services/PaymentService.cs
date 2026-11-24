@@ -59,8 +59,21 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     {
         if (!string.IsNullOrWhiteSpace(input.IdempotencyKey))
         {
-            var existing = await db.Receipts.AsNoTracking().Where(r => r.IdempotencyKey == input.IdempotencyKey).Select(r => (Guid?)r.Id).FirstOrDefaultAsync(ct);
-            if (existing is not null) return await GetAsync(existing.Value, ct);
+            var existing = await db.Receipts.AsNoTracking().Include(r => r.Allocations)
+                .FirstOrDefaultAsync(r => r.IdempotencyKey == input.IdempotencyKey, ct);
+            if (existing is not null)
+            {
+                // Une clé identifie un encaissement précis, pas simplement une requête HTTP.
+                // Un autre poste ne peut pas la réutiliser pour une personne ou un montant différent.
+                var requestedItems = input.FeeItemIds?.ToHashSet() ?? [];
+                if (existing.EnrollmentId != input.EnrollmentId || existing.Amount != input.Amount
+                    || existing.Method != ParseMethod(input.Method)
+                    || (input.Date.HasValue && existing.Date != input.Date.Value)
+                    || !string.Equals(Clean(existing.Reference), Clean(input.Reference), StringComparison.Ordinal)
+                    || existing.Allocations.Any(a => !requestedItems.Contains(a.FeeItemId)))
+                    throw new ConflictException("Cette référence d'encaissement a déjà servi pour un paiement différent. Actualisez la caisse avant de recommencer.");
+                return await GetAsync(existing.Id, ct);
+            }
         }
         var school = await YearContext.SchoolAsync(db, ct);
         var method = ParseMethod(input.Method);
