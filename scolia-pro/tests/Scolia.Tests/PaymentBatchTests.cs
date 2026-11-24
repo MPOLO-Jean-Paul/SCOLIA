@@ -231,4 +231,52 @@ public sealed class PaymentBatchTests : IDisposable
         Assert.Equal(55000m, paidFirst.GetProperty("totalPaid").GetDecimal());
         Assert.Equal(55000m, paidSecond.GetProperty("totalPaid").GetDecimal());
     }
+
+    [Fact]
+    public async Task Replayed_batch_cannot_silently_replace_the_selected_month()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await PromotionAsync(admin);
+        var enrollment = await EnrollmentAsync(admin, promotion, "MUKENDI");
+        var months = await MonthIdsAsync(admin, enrollment, 2);
+        const string key = "batch-months-must-match";
+
+        var original = await admin.Post("/api/paiements/lot", new
+        {
+            items = new[] { Item(enrollment, months.Take(1)) }, idempotencyKey = key
+        }).Ok();
+        Assert.Equal(1, original.GetProperty("succeeded").GetInt32());
+
+        var changed = await admin.Post("/api/paiements/lot", new
+        {
+            items = new[] { Item(enrollment, months.Skip(1)) }, idempotencyKey = key
+        }).Ok();
+        Assert.Equal(0, changed.GetProperty("succeeded").GetInt32());
+        Assert.Equal(1, changed.GetProperty("failed").GetInt32());
+        var account = await admin.GetAsync($"/api/inscriptions/{enrollment}/compte").Ok();
+        Assert.Equal(55000m, account.GetProperty("totalPaid").GetDecimal());
+    }
+
+    [Fact]
+    public async Task Cancelled_receipt_is_not_reported_as_a_successful_idempotent_payment()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await PromotionAsync(admin);
+        var enrollment = await EnrollmentAsync(admin, promotion, "MUKENDI");
+        var months = await MonthIdsAsync(admin, enrollment, 1);
+        var request = new
+        {
+            enrollmentId = enrollment, amount = 55000m, method = "Especes",
+            feeItemIds = months, idempotencyKey = "cancelled-payment-retry"
+        };
+
+        var receipt = await admin.Post("/api/paiements", request).Ok();
+        await admin.Post($"/api/paiements/{receipt.GetProperty("id").GetString()}/annulation",
+            new { reason = "Erreur d'encaissement" }).Ok();
+
+        var (status, _) = await admin.Post("/api/paiements", request).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, status);
+        var account = await admin.GetAsync($"/api/inscriptions/{enrollment}/compte").Ok();
+        Assert.Equal(0m, account.GetProperty("totalPaid").GetDecimal());
+    }
 }
