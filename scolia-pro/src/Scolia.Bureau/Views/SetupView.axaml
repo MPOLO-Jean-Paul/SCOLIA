@@ -26,20 +26,20 @@
       <Setter Property="Height" Value="28" />
       <Setter Property="CornerRadius" Value="14" />
       <Setter Property="BorderThickness" Value="1.5" />
-      <Setter Property="BorderBrush" Value="#9DBDF0" />
-      <Setter Property="Background" Value="White" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     </Style>
     <Style Selector="Border.stepdot.on">
-      <Setter Property="Background" Value="#1769E6" />
-      <Setter Property="BorderBrush" Value="#1769E6" />
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     </Style>
     <Style Selector="Border.stepdot > TextBlock">
-      <Setter Property="Foreground" Value="#1769E6" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
-    <Style Selector="Border.stepdot.on > TextBlock"><Setter Property="Foreground" Value="White" /></Style>
+    <Style Selector="Border.stepdot.on > TextBlock"><Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" /></Style>
     <!-- Champs et boutons arrondis du style iOS, comme la page de connexion. -->
     <Style Selector="TextBox.w11"><Setter Property="MinHeight" Value="40" /><Setter Property="CornerRadius" Value="10" /></Style>
     <Style Selector="ComboBox"><Setter Property="MinHeight" Value="40" /><Setter Property="CornerRadius" Value="10" /></Style>
@@ -64,14 +64,8 @@
 
   <!-- Première installation, style iOS clair comme la connexion : un bandeau doux à gauche, le formulaire à droite.
        Tout tient sur un écran de 1366 × 768 sans défiler ; une fenêtre plus petite garde le défilement. -->
-  <Grid x:Name="SetupRoot">
-    <Grid.Background>
-      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Offset="0" Color="#D9E7FF" />
-        <GradientStop Offset="0.48" Color="#BAD2FA" />
-        <GradientStop Offset="1" Color="#9CBDEE" />
-      </LinearGradientBrush>
-    </Grid.Background>
+  <Grid x:Name="SetupRoot" Background="{DynamicResource SurfaceBrush}">
+    
     <!-- Accueil de première utilisation : langage visuel de l'espace de travail Power BI. -->
     <Grid IsVisible="{Binding IsChoosingInstitution}" Background="{DynamicResource SurfaceBrush}" ColumnDefinitions="Auto,*">
       <Border Classes="setupband" Background="{DynamicResource GroupBrush}" Padding="24,30" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,1,0">
@@ -148,50 +142,45 @@
         <Grid ColumnDefinitions="Auto,*">
 
           <!-- Bandeau : marque, étapes, aide, sur un fond bleu très clair -->
-          <Border Classes="setupband" BorderThickness="0">
-            <Border.Background>
-              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                <GradientStop Offset="0" Color="#B8D0F5" />
-                <GradientStop Offset="1" Color="#D9E7FF" />
-              </LinearGradientBrush>
-            </Border.Background>
+          <Border Classes="setupband" Background="{DynamicResource GroupBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,1,0">
+            
             <Grid RowDefinitions="Auto,*,Auto" Margin="26,28,24,22">
               <StackPanel Spacing="14">
-                <Border Width="58" Height="58" CornerRadius="18" Background="White" HorizontalAlignment="Left"
-                        BorderBrush="#D6E2F5" BorderThickness="1" BoxShadow="0 8 20 0 #160D459B">
+                <Border Width="58" Height="58" CornerRadius="18" Background="{DynamicResource SurfaceBrush}" HorizontalAlignment="Left"
+                        BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" BoxShadow="0 8 20 0 #160D459B">
                   <Image Source="{DynamicResource ScoliaMark}" Width="36" Height="36" />
                 </Border>
                 <StackPanel Spacing="4">
-                  <TextBlock Text="Bienvenue dans SCOLIA Pro" Foreground="#102A52" FontSize="22" FontWeight="Bold" TextWrapping="Wrap" />
-                  <TextBlock Text="Trois étapes pour préparer votre établissement sur ce poste." Foreground="#41618D" TextWrapping="Wrap" />
+                  <TextBlock Text="Bienvenue dans SCOLIA Pro" Foreground="{DynamicResource TextBrush}" FontSize="22" FontWeight="Bold" TextWrapping="Wrap" />
+                  <TextBlock Text="Trois étapes pour préparer votre établissement sur ce poste." Foreground="{DynamicResource Text2Brush}" TextWrapping="Wrap" />
                 </StackPanel>
               </StackPanel>
 
               <StackPanel Grid.Row="1" Spacing="18" Margin="0,34,0,0">
-                <StackPanel Spacing="4"><TextBlock Text="1 · Type choisi" Foreground="#16396D" FontWeight="SemiBold" /><TextBlock Text="{Binding ProfileLabel}" Foreground="#41618D" TextWrapping="Wrap" /></StackPanel>
+                <StackPanel Spacing="4"><TextBlock Text="1 · Type choisi" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" /><TextBlock Text="{Binding ProfileLabel}" Foreground="{DynamicResource Text2Brush}" TextWrapping="Wrap" /></StackPanel>
                 <Grid ColumnDefinitions="Auto,*">
                   <Border Classes="stepdot" Classes.on="{Binding IsStepOne}"><TextBlock Text="2" /></Border>
                   <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="1">
-                    <TextBlock Text="Établissement" Foreground="#16396D" FontWeight="SemiBold" />
-                    <TextBlock Text="Nom, logo, année, promotions" Foreground="#5B7AA6" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                    <TextBlock Text="Établissement" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" />
+                    <TextBlock Text="Nom, logo, année, promotions" Foreground="{DynamicResource Text2Brush}" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
                 <Grid ColumnDefinitions="Auto,*">
                   <Border Classes="stepdot" Classes.on="{Binding IsStepTwo}"><TextBlock Text="3" /></Border>
                   <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="1">
-                    <TextBlock Text="Comptes" Foreground="#16396D" FontWeight="SemiBold" />
-                    <TextBlock Text="Secrétariat et comptabilité" Foreground="#5B7AA6" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                    <TextBlock Text="Comptes" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" />
+                    <TextBlock Text="Secrétariat et comptabilité" Foreground="{DynamicResource Text2Brush}" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
               </StackPanel>
 
-              <Border Grid.Row="2" Background="White" BorderBrush="#D6E2F5" BorderThickness="1" CornerRadius="16" Padding="14,12">
+              <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="16" Padding="14,12">
                 <StackPanel Spacing="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <mi:MaterialIcon Kind="InformationOutline" Width="16" Height="16" Foreground="#1769E6" />
-                    <TextBlock Text="Paramètres modifiables" Foreground="#16396D" FontWeight="SemiBold" />
+                    <mi:MaterialIcon Kind="InformationOutline" Width="16" Height="16" Foreground="{DynamicResource AccentBrush}" />
+                    <TextBlock Text="Paramètres modifiables" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" />
                   </StackPanel>
-                  <TextBlock Foreground="#41618D" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
+                  <TextBlock Foreground="{DynamicResource Text2Brush}" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
                              Text="Le profil pédagogique est fixé lors de l’installation. Les autres paramètres restent modifiables ensuite." />
                 </StackPanel>
               </Border>

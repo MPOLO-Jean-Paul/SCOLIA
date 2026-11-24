@@ -187,6 +187,33 @@ if (Environment.GetEnvironmentVariable("SCOLIA_MICA") == "1" && window.Content i
 }
 // Barre de titre de Windows dessinée par SCOLIA : simulée ici, la fenêtre sans écran n'a pas celle du système.
 if (!Preferences.MobileLayout && Environment.GetEnvironmentVariable("SCOLIA_BARRE_TITRE") != "0" && window.Content is Scolia.Bureau.Views.MainView main) main.ShowTitleBar(32);
+// Premier accueil et assistant : captures autonomes, sans établissement ni réseau.
+if (args.Length > 3 && args[3] == "premiere-configuration")
+{
+    shell.ApplyInstallationStatus(configured: false);
+    shell.Setup.YearLabel = "2026 - 2027";
+    Save(window, "01-accueil-types.png");
+    var choices = window.GetVisualDescendants().OfType<Button>()
+        .Where(b => b.IsEffectivelyVisible && b.Classes.Contains("profileChoice")).ToArray();
+    if (choices.Length != 6) throw new InvalidOperationException($"Six profils attendus, {choices.Length} trouvés.");
+    shell.Setup.SelectInstitution.Execute("ComplexeScolaire");
+    shell.Setup.IncludeMaternelle = true;
+    shell.Setup.IncludePrimaire = true;
+    shell.Setup.SchoolName = "Complexe scolaire de démonstration";
+    shell.Setup.ShortName = "CSD";
+    Save(window, "02-configuration-complexe.png");
+    if (!shell.Setup.IsStepOne || shell.Setup.ValidateStepOne() is not null)
+        throw new InvalidOperationException("Le complexe choisi ne peut pas être configuré.");
+    shell.Setup.Step = 2;
+    Save(window, "03-comptes-securite.png");
+    shell.Setup.Back.Execute(null);
+    shell.Setup.Back.Execute(null);
+    Save(window, "04-retour-accueil.png");
+    if (!shell.Setup.IsChoosingInstitution)
+        throw new InvalidOperationException("Le retour au choix du type a échoué.");
+    window.Close();
+    return;
+}
 // Parcours de caisse autonome : aucune écriture sur les données d'un établissement.
 int VerifyPayments(LayoutServer fixture, bool mobile)
 {
