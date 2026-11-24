@@ -65,6 +65,25 @@ public sealed class NativeEntryAndTeacherVisualTests
     }
 
     [Fact]
+    public void Connexion_regroupe_logo_et_avatar_dans_un_embleme_unique()
+    {
+        var view = Load("Views/LoginView.axaml");
+        var emblem = Assert.Single(view.Descendants(), e =>
+            e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "ScoliaAccountEmblem"));
+        Assert.Contains(emblem.Descendants(), e =>
+            e.Name.LocalName == "Image" && (string?)e.Attribute("Source") == "{DynamicResource ScoliaMark}");
+        Assert.Contains(emblem.Descendants(), e =>
+            e.Name.LocalName == "TextBlock" && ((string?)e.Attribute("Text"))?.Contains("TextCase.Initials", StringComparison.Ordinal) == true);
+        Assert.Single(emblem.Descendants(), e =>
+            e.Name.LocalName == "Border" && (string?)e.Attribute("Classes") == "badge");
+        var original = Assert.Single(view.Descendants(), e =>
+            e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "IosAccountAvatar"));
+        Assert.DoesNotContain(original.Descendants(), e => e.Name.LocalName == "Grid");
+        Assert.Contains(view.Descendants(), e =>
+            e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "StandaloneBrand"));
+    }
+
+    [Fact]
     public void L_enseignant_partage_l_accueil_et_les_actions_du_secretariat()
     {
         var teacher = Load("Views/TeacherHomeView.axaml");

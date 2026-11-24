@@ -116,6 +116,14 @@ public partial class LoginView : UserControl
             subscribedLogin.PropertyChanged += OnLoginChanged;
             subscribedLogin.RefreshBiometrics();
         }
+        RefreshIdentity();
+    }
+
+    private void RefreshIdentity()
+    {
+        var combined = subscribedLogin is { HasRememberedAccount: true, ShowManualCredentials: true, RecoveryOpen: false };
+        CombinedIdentity.IsVisible = combined;
+        StandaloneBrand.IsVisible = !combined;
     }
 
     private void ReleaseLogin()
@@ -135,7 +143,13 @@ public partial class LoginView : UserControl
         if (args.PropertyName is nameof(LoginViewModel.RecoveryOpen)
             or nameof(LoginViewModel.ShowManualCredentials)
             or nameof(LoginViewModel.HasRememberedAccount))
-            Dispatcher.UIThread.Post(FocusRelevantField, DispatcherPriority.Background);
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                RefreshIdentity();
+                FocusRelevantField();
+            }, DispatcherPriority.Background);
+        }
     }
 
     /// <summary>Respecte le compte déjà reconnu et n'ouvre pas le clavier mobile sans geste de l'utilisateur.</summary>
