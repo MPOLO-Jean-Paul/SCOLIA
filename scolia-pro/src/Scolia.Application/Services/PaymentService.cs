@@ -113,8 +113,10 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             Amount = total,
             Method = method,
             Reference = Clean(input.Reference),
-            PayerName = Clean(input.PayerName),
-            PayerPhone = IdentityRules.NormalizePhone(input.PayerPhone),
+            // Figé à la date de l'encaissement : modifier plus tard les parents
+            // dans le dossier ne doit pas réécrire les informations du reçu.
+            PayerName = Clean(input.PayerName) ?? Clean(data.Enrollment.Student?.GuardianName),
+            PayerPhone = IdentityRules.NormalizePhone(input.PayerPhone) ?? data.Enrollment.Student?.GuardianPhone,
             Note = Clean(input.Note),
             CashierName = user.Name,
             IdempotencyKey = Clean(input.IdempotencyKey),
@@ -159,8 +161,8 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var labels = await db.FeeItems.AsNoTracking().Where(f => itemIds.Contains(f.Id)).ToDictionaryAsync(f => f.Id, f => (f.Label, f.DueDate), ct);
         var allocations = r.Allocations.OrderBy(a => labels.GetValueOrDefault(a.FeeItemId).DueDate)
             .Select(a => new AllocationPreview(a.FeeItemId, labels.GetValueOrDefault(a.FeeItemId).Label ?? "?", a.Amount, 0)).ToList();
-        // Le versement garde le payeur saisi à l'époque. À défaut, le reçu montre le tuteur actuel de l'apprenant :
-        // une correction du dossier se répercute donc aussi sur les reçus déjà enregistrés.
+        // Les nouveaux versements mémorisent le payeur au moment de l'encaissement.
+        // Sur les reçus historiques sans payeur enregistré, conserver la compatibilité avec le tuteur actuel.
         var payerName = r.PayerName ?? student.GuardianName;
         var payerPhone = r.PayerPhone ?? student.GuardianPhone;
         // Le reçu désigne l'apprenant par son code anonyme ; la référence technique reste interne au versement.
