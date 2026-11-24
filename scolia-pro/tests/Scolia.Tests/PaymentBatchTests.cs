@@ -199,4 +199,36 @@ public sealed class PaymentBatchTests : IDisposable
         var account = await admin.GetAsync($"/api/inscriptions/{second}/compte").Ok();
         Assert.Equal(0m, account.GetProperty("totalPaid").GetDecimal());
     }
+
+    [Fact]
+    public async Task Reordered_batch_does_not_assign_a_receipt_to_the_wrong_student()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await PromotionAsync(admin);
+        var first = await EnrollmentAsync(admin, promotion, "MUKENDI");
+        var second = await EnrollmentAsync(admin, promotion, "NGANDU");
+        var firstMonths = await MonthIdsAsync(admin, first, 1);
+        var secondMonths = await MonthIdsAsync(admin, second, 1);
+        const string key = "batch-ordered-audit-001";
+
+        var original = await admin.Post("/api/paiements/lot", new
+        {
+            items = new[] { Item(first, firstMonths), Item(second, secondMonths) }, idempotencyKey = key
+        }).Ok();
+        Assert.Equal(2, original.GetProperty("succeeded").GetInt32());
+
+        var swapped = await admin.Post("/api/paiements/lot", new
+        {
+            items = new[] { Item(second, secondMonths), Item(first, firstMonths) }, idempotencyKey = key
+        }).Ok();
+        Assert.Equal(0, swapped.GetProperty("succeeded").GetInt32());
+        Assert.Equal(2, swapped.GetProperty("failed").GetInt32());
+        Assert.All(swapped.GetProperty("lines").EnumerateArray(),
+            line => Assert.Contains("changé", line.GetProperty("error").GetString(), StringComparison.OrdinalIgnoreCase));
+
+        var paidFirst = await admin.GetAsync($"/api/inscriptions/{first}/compte").Ok();
+        var paidSecond = await admin.GetAsync($"/api/inscriptions/{second}/compte").Ok();
+        Assert.Equal(55000m, paidFirst.GetProperty("totalPaid").GetDecimal());
+        Assert.Equal(55000m, paidSecond.GetProperty("totalPaid").GetDecimal());
+    }
 }
