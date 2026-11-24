@@ -51,8 +51,18 @@ public sealed class StudentBusinessRulesTests : IDisposable
         }).Ok();
         // Sans attribution officielle du code anonyme, aucun matricule factice n'est affiché.
         Assert.Equal(string.Empty, student.GetProperty("matricule").GetString());
+        var lastPage = await admin.GetAsync("/api/apprenants?taille=1&page=999").Ok();
+        Assert.Equal(1, lastPage.GetProperty("page").GetInt32());
+        Assert.Single(lastPage.GetProperty("items").EnumerateArray());
+        Assert.Equal(string.Empty, lastPage.GetProperty("items")[0].GetProperty("matricule").GetString());
 
         var enrollmentId = student.GetProperty("enrollments")[0].GetProperty("id").GetString();
+        var (futureStatusDate, _) = await admin.Put($"/api/inscriptions/{enrollmentId}/statut", new
+        {
+            status = "Sorti", reason = "Transfert",
+            date = DateOnly.FromDateTime(DateTime.Today.AddDays(1))
+        }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, futureStatusDate);
         var (changeStatus, _) = await admin.Put($"/api/inscriptions/{enrollmentId}/promotion",
             new { promotionId = disabledId }).Fail();
         Assert.Equal(HttpStatusCode.BadRequest, changeStatus);
