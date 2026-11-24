@@ -156,9 +156,16 @@ public sealed class CashierPage : PageViewModel
                 : search.Trim().Length < 2 ? "Encore un caractère : nom ou matricule, deux caractères au moins."
                 : "Recherche en cours…";
             searchTimer?.Stop();
-            searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Shell.Api.IsOnline ? 300 : 75) };
-            searchTimer.Tick += async (_, _) => { searchTimer?.Stop(); await Shell.Run(SearchAsync); };
-            searchTimer.Start();
+            var scheduled = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Shell.Api.IsOnline ? 300 : 75) };
+            searchTimer = scheduled;
+            scheduled.Tick += async (_, _) =>
+            {
+                scheduled.Stop();
+                if (!ReferenceEquals(searchTimer, scheduled)) return;
+                searchTimer = null;
+                await Shell.Run(SearchAsync);
+            };
+            scheduled.Start();
         }
     }
 
@@ -272,6 +279,7 @@ public sealed class CashierPage : PageViewModel
     private void SchedulePreview()
     {
         previewTimer?.Stop();
+        previewTimer = null;
         previewValid = false;
         previewVersion++;
         previewing = HasValidAmount;
@@ -282,9 +290,16 @@ public sealed class CashierPage : PageViewModel
             BalanceAfter = string.Empty;
             return;
         }
-        previewTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Shell.Api.IsOnline ? 150 : 25) };
-        previewTimer.Tick += async (_, _) => { previewTimer?.Stop(); await Shell.Run(PreviewAsync); };
-        previewTimer.Start();
+        var scheduled = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Shell.Api.IsOnline ? 150 : 25) };
+        previewTimer = scheduled;
+        scheduled.Tick += async (_, _) =>
+        {
+            scheduled.Stop();
+            if (!ReferenceEquals(previewTimer, scheduled)) return;
+            previewTimer = null;
+            await Shell.Run(PreviewAsync);
+        };
+        scheduled.Start();
     }
 
     private List<Guid> SelectedIds() => Months.Where(m => m.IsSelected).Select(m => m.Id).ToList();
@@ -810,6 +825,12 @@ public sealed class ReceiptsPage : PageViewModel
 
     public ReceiptsPage(ShellViewModel shell) : base(shell)
     {
+        OpenReceiptOnPhone = new RelayCommand<ReceiptRowVm>(row =>
+        {
+            if (row is null) return;
+            Selected = row;
+            _ = Shell.Run(OpenSelectedAsync);
+        });
         if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell)), primary: true);
         Action("Ouvrir le reçu", MaterialIconKind.ReceiptText, OpenSelectedAsync, open: true);
         Action("Excel", MaterialIconKind.FileExcel, () => ExportAsync("xlsx"));
@@ -828,6 +849,7 @@ public sealed class ReceiptsPage : PageViewModel
     public override MaterialIconKind Glyph => MaterialIconKind.ReceiptTextOutline;
 
     public ObservableCollection<ReceiptRowVm> Items { get; } = [];
+    public RelayCommand<ReceiptRowVm> OpenReceiptOnPhone { get; }
     public IReadOnlyList<ChoiceItem> Methods { get; } = new[] { new ChoiceItem(string.Empty, "Tous les modes") }.Concat(Labels.Methods).ToList();
     public IReadOnlyList<ChoiceItem> Statuses { get; } =
         [new(string.Empty, "Tous les statuts"), new("Valide", "Validé"),
@@ -841,9 +863,16 @@ public sealed class ReceiptsPage : PageViewModel
         {
             if (!Set(ref search, value)) return;
             timer?.Stop();
-            timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
-            timer.Tick += async (_, _) => { timer?.Stop(); await Shell.Run(RefreshAsync); };
-            timer.Start();
+            var scheduled = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Shell.Api.IsOnline ? 300 : 75) };
+            timer = scheduled;
+            scheduled.Tick += async (_, _) =>
+            {
+                scheduled.Stop();
+                if (!ReferenceEquals(timer, scheduled)) return;
+                timer = null;
+                await Shell.Run(RefreshAsync);
+            };
+            scheduled.Start();
         }
     }
 

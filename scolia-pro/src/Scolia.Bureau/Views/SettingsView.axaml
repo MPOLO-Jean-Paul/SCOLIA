@@ -32,7 +32,7 @@
     <Style Selector="Button.settingsentry">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="CornerRadius" Value="8" />
       <Setter Property="MinHeight" Value="60" />
       <Setter Property="Padding" Value="14,8" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -53,16 +53,16 @@
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Margin" Value="0,0,0,8" />
     </Style>
     <Style Selector="Button.sectionrow:pointerover, Button.sectionrow:pressed">
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
   </UserControl.Styles>
-  <Grid ColumnDefinitions="240,*" infra:Adaptive.StackBelow="760">
+  <Grid ColumnDefinitions="224,*" ColumnSpacing="14" infra:Adaptive.StackBelow="760">
     <!-- Rubriques : l'établissement, puis les réglages de ce poste -->
-    <Border Classes="card" Grid.Column="0" Margin="0,0,16,0" Padding="6,10" VerticalAlignment="Top" IsVisible="{Binding NotPhone}">
+    <Border Classes="card" Grid.Column="0" Padding="6,10" VerticalAlignment="Top" IsVisible="{Binding NotPhone}">
       <StackPanel Spacing="4">
         <TextBlock Text="ÉTABLISSEMENT" Classes="caption" Margin="10,0,0,2" IsVisible="{Binding HasSchoolSections}" />
         <ListBox Classes="side" ItemsSource="{Binding SchoolSections}" SelectedItem="{Binding SchoolSection}" Background="Transparent" BorderThickness="0" IsVisible="{Binding HasSchoolSections}">
@@ -89,7 +89,7 @@
       </StackPanel>
     </Border>
 
-    <ScrollViewer Grid.Column="1">
+    <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled">
       <StackPanel Spacing="14" Margin="0,0,6,12">
         <!-- Android : un écran de rubriques indépendant, pas un long formulaire ni une liste déroulante. -->
         <StackPanel IsVisible="{Binding MobileCategoriesVisible}" Spacing="12">
@@ -108,7 +108,7 @@
                         <Border Classes="appicon medium" Background="{Binding Brush}">
                           <mi:MaterialIcon Kind="{Binding Icon}" />
                         </Border>
-                        <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
                         <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
                                          VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
                       </Grid>
@@ -131,7 +131,7 @@
                         <Border Classes="appicon medium" Background="{Binding Brush}">
                           <mi:MaterialIcon Kind="{Binding Icon}" />
                         </Border>
-                        <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
                         <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
                                          VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
                       </Grid>
@@ -156,7 +156,7 @@
         <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,4">
           <Border Classes="appicon large" Background="{Binding Section.Brush}" VerticalAlignment="Center"><mi:MaterialIcon Kind="{Binding Section.Icon}" /></Border>
           <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
-            <TextBlock Text="{Binding SectionTitle}" FontSize="{DynamicResource FsTitle}" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding SectionTitle}" FontSize="{DynamicResource FsTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
             <TextBlock Text="{Binding SectionHint}" Classes="muted" TextWrapping="Wrap" />
           </StackPanel>
         </Grid>
@@ -193,35 +193,35 @@
                   <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneIndigo}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneIndigo}"><mi:MaterialIcon Kind="OfficeBuildingOutline" /></Border><Ellipse Classes="sheen" /></Grid>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="Éditeur" Classes="muted" FontSize="{DynamicResource FsSmall}" />
-                    <TextBlock Text="{Binding AboutModel.Publisher}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding AboutModel.Publisher}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
                 <Grid ColumnDefinitions="Auto,*" Margin="0,7">
                   <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneBlue}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="AccountTie" /></Border><Ellipse Classes="sheen" /></Grid>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="Développement" Classes="muted" FontSize="{DynamicResource FsSmall}" />
-                    <TextBlock Text="{Binding AboutModel.Developer}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding AboutModel.Developer}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
                 <Grid ColumnDefinitions="Auto,*" Margin="0,7">
                   <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneGreen}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneGreen}"><mi:MaterialIcon Kind="Whatsapp" /></Border><Ellipse Classes="sheen" /></Grid>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="Téléphone et WhatsApp" Classes="muted" FontSize="{DynamicResource FsSmall}" />
-                    <TextBlock Text="{Binding AboutModel.Phone}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding AboutModel.Phone}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
                 <Grid ColumnDefinitions="Auto,*" Margin="0,7">
                   <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneOrange}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneOrange}"><mi:MaterialIcon Kind="EmailOutline" /></Border><Ellipse Classes="sheen" /></Grid>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="E-mail" Classes="muted" FontSize="{DynamicResource FsSmall}" />
-                    <TextBlock Text="{Binding AboutModel.Email}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding AboutModel.Email}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
                 <Grid ColumnDefinitions="Auto,*" Margin="0,7">
                   <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneTeal}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneTeal}"><mi:MaterialIcon Kind="Web" /></Border><Ellipse Classes="sheen" /></Grid>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="Site Internet" Classes="muted" FontSize="{DynamicResource FsSmall}" />
-                    <TextBlock Text="{Binding AboutModel.Website}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding AboutModel.Website}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
               </StackPanel>
@@ -309,14 +309,14 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                         IsVisible="{Binding HasSelectedYear}">
                   <StackPanel Spacing="4">
                     <TextBlock Text="{Binding SelectedYearTitle}" FontWeight="SemiBold" />
-                    <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                       <mi:MaterialIcon Kind="CalendarMonthOutline" Width="16" Height="16" Foreground="{DynamicResource AccentBrush}" />
-                      <TextBlock Text="{Binding SelectedYear.Months}" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Grid.Column="1" Text="{Binding SelectedYear.Months}" TextWrapping="Wrap" />
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                       <mi:MaterialIcon Kind="ClockAlertOutline" Width="16" Height="16" Foreground="{DynamicResource ToneOrange}" />
-                      <TextBlock Text="{Binding SelectedYear.Deadline}" TextWrapping="Wrap" />
-                    </StackPanel>
+                      <TextBlock Grid.Column="1" Text="{Binding SelectedYear.Deadline}" TextWrapping="Wrap" />
+                    </Grid>
                   </StackPanel>
                 </Border>
               </StackPanel>
@@ -328,7 +328,21 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <TextBlock Text="Modifier les mois et la date limite" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
               </StackPanel>
             </Button>
-            <DataGrid ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420">
+            <ListBox ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear}" IsVisible="{Binding Phone}" Background="Transparent" BorderThickness="0">
+              <ListBox.ItemTemplate><DataTemplate>
+                <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="8,10">
+                  <StackPanel Spacing="5">
+                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Period}" Classes="muted" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" TextWrapping="Wrap" />
+                    <TextBlock Text="Année courante" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsCurrent}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Months}" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Deadline}" Classes="muted" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate></ListBox.ItemTemplate>
+            </ListBox>
+            <DataGrid ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420" IsVisible="{Binding NotPhone}" infra:GridPriority.Adaptive="True">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Année" Binding="{Binding Label}" Width="Auto" MinWidth="130" />
                 <DataGridTextColumn Header="Période" Binding="{Binding Period}" Width="*" MinWidth="250" />
@@ -426,7 +440,20 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
         <!-- Catégories de frais : inscription, examen, tenue… avec leur montant -->
         <Border Classes="card" IsVisible="{Binding IsFees}">
           <StackPanel Spacing="8">
-            <DataGrid ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420">
+            <ListBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" IsVisible="{Binding Phone}" Background="Transparent" BorderThickness="0">
+              <ListBox.ItemTemplate><DataTemplate>
+                <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="8,10">
+                  <StackPanel Spacing="5">
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Amount}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding DueDate}" Classes="muted" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Promotions}" Classes="muted" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Active}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate></ListBox.ItemTemplate>
+            </ListBox>
+            <DataGrid ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420" IsVisible="{Binding NotPhone}" infra:GridPriority.Adaptive="True">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Catégorie" Binding="{Binding Name}" Width="*" MinWidth="160" />
                 <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="120" />
@@ -577,7 +604,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
             </Border>
             <Border Classes="card" Padding="16,4">
               <StackPanel>
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Quadrillage des tableaux" />
                   <TextBlock Text="Une ligne fine entre les lignes des listes." Classes="muted" TextWrapping="Wrap" />
@@ -591,28 +618,28 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
           <StackPanel Spacing="14" IsVisible="{Binding IsText}">
             <Border Classes="card" Padding="16,4">
               <StackPanel>
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Police" />
                   <TextBlock Text="{Binding FontHint}" Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding Fonts}" SelectedItem="{Binding Font}" MinWidth="200" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Fonts}" SelectedItem="{Binding Font}" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Taille du texte" />
                   <TextBlock Text="De 80 à 160 %. Les listes et les boutons suivent." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <Grid Grid.Column="1" ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" MinWidth="100" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center">
                   <TextBlock Text="A" FontSize="12" VerticalAlignment="Center" />
-                  <Slider Minimum="0.8" Maximum="1.6" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding TextScale, Mode=TwoWay}" Width="200" VerticalAlignment="Center" />
-                  <TextBlock Text="A" FontSize="20" VerticalAlignment="Center" />
-                  <TextBlock Text="{Binding TextScaleLabel}" MinWidth="48" TextAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold" />
-                </StackPanel>
+                  <Slider Grid.Column="1" Minimum="0.8" Maximum="1.6" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding TextScale, Mode=TwoWay}" MinWidth="0" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="A" FontSize="20" VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding TextScaleLabel}" TextAlignment="Right" FontWeight="SemiBold" />
+                </Grid>
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Densité compacte" />
                   <TextBlock Text="Lignes et boutons plus serrés, pour voir plus de données à la fois." Classes="muted" TextWrapping="Wrap" />
@@ -625,7 +652,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
               <StackPanel Spacing="6">
                 <TextBlock Text="Aperçu" Classes="muted" />
                 <TextBlock Text="{Binding PreviewSchool}" FontSize="{DynamicResource FsTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                <TextBlock Text="Reçu RC-2026-000124 · 55 000 FC · mensualité d'octobre" />
+                <TextBlock Text="Reçu RC-2026-000124 · 55 000 FC · mensualité d'octobre" TextWrapping="Wrap" />
                 <TextBlock Text="Le texte de toute l'interface s'affiche ainsi." Classes="muted" />
               </StackPanel>
             </Border>
@@ -634,15 +661,15 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
           <StackPanel Spacing="14" IsVisible="{Binding IsWindows}">
             <Border Classes="card" Padding="16,4">
               <StackPanel>
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Au lancement" />
                   <TextBlock Text="Taille de la fenêtre une fois connecté." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding StartupModes}" SelectedItem="{Binding Startup}" MinWidth="200" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding StartupModes}" SelectedItem="{Binding Startup}" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Volet latéral" />
                   <TextBlock Text="La liste des pages à gauche." Classes="muted" TextWrapping="Wrap" />
@@ -650,7 +677,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Sidebar}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Ruban réduit" />
                   <TextBlock Text="Le ruban ne montre que ses onglets ; un clic l'ouvre." Classes="muted" TextWrapping="Wrap" />
@@ -658,7 +685,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.RibbonCollapsed}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Barre d'état" />
                   <TextBlock Text="En bas : compte connecté, serveur et zoom." Classes="muted" TextWrapping="Wrap" />
@@ -666,7 +693,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.StatusBar}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Info-bulles" />
                   <TextBlock Text="La description d'une commande au survol." Classes="muted" TextWrapping="Wrap" />
@@ -680,7 +707,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
           <StackPanel Spacing="14" IsVisible="{Binding IsAnimations}">
             <Border Classes="card" Padding="16,4">
               <StackPanel>
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Animations" />
                   <TextBlock Text="Fondus et glissements à l'ouverture des fenêtres et des boîtes. Coupées, l'interface change d'un coup." Classes="muted" TextWrapping="Wrap" />
@@ -688,7 +715,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Animations}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Transition entre les pages" />
                   <TextBlock Text="Un fondu court quand on passe d'une page à l'autre." Classes="muted" TextWrapping="Wrap" />
@@ -696,20 +723,20 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.PageTransitions}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Vitesse des transitions" />
                   <TextBlock Text="Rapide pour un poste lent, douce pour plus de confort." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding Speeds}" SelectedItem="{Binding Speed}" MinWidth="200" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Speeds}" SelectedItem="{Binding Speed}" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Écran d'ouverture" />
                   <TextBlock Text="Durée de la roue entre la connexion et l'accueil." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding OpeningDurations}" SelectedItem="{Binding OpeningDuration}" MinWidth="200" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding OpeningDurations}" SelectedItem="{Binding OpeningDuration}" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
               </Grid>
               </StackPanel>
             </Border>
@@ -718,7 +745,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
           <StackPanel Spacing="14" IsVisible="{Binding IsSounds}">
             <Border Classes="card" Padding="16,4">
               <StackPanel>
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Sons" />
                   <TextBlock Text="Coupés, SCOLIA reste silencieux." Classes="muted" TextWrapping="Wrap" />
@@ -726,31 +753,31 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Sounds}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" IsEnabled="{Binding Prefs.Sounds}">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420" IsEnabled="{Binding Prefs.Sounds}">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Volume" />
                   <TextBlock Text="{Binding VolumeHint}" Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <Grid Grid.Column="1" ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" MinWidth="100" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center">
                   <mi:MaterialIcon Kind="VolumeLow" Width="18" Height="18" />
-                  <Slider Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding Volume, Mode=TwoWay}" Width="200" VerticalAlignment="Center" />
-                  <mi:MaterialIcon Kind="VolumeHigh" Width="18" Height="18" />
-                  <TextBlock Text="{Binding VolumeLabel}" MinWidth="44" TextAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold" />
-                </StackPanel>
+                  <Slider Grid.Column="1" Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding Volume, Mode=TwoWay}" MinWidth="0" VerticalAlignment="Center" />
+                  <mi:MaterialIcon Grid.Column="2" Kind="VolumeHigh" Width="18" Height="18" />
+                  <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding VolumeLabel}" TextAlignment="Right" FontWeight="SemiBold" />
+                </Grid>
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Style des sons" />
                   <TextBlock Text="{Binding SoundStyleHint}" Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding SoundStyles}" SelectedItem="{Binding SoundStyle}" MinWidth="200" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding SoundStyles}" SelectedItem="{Binding SoundStyle}" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
               </Grid>
               </StackPanel>
             </Border>
             <Border Classes="card" Padding="16,4" IsEnabled="{Binding Prefs.Sounds}">
               <StackPanel>
-              <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow" infra:Adaptive.StackBelow="500">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Action réussie" />
                   <TextBlock Text="Un enregistrement, un encaissement, une validation." Classes="muted" TextWrapping="Wrap" />
@@ -761,7 +788,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundSuccess}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow" infra:Adaptive.StackBelow="500">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Erreur" />
                   <TextBlock Text="Un champ à corriger, un refus du serveur." Classes="muted" TextWrapping="Wrap" />
@@ -772,7 +799,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundError}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow" infra:Adaptive.StackBelow="500">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Message" />
                   <TextBlock Text="Les messages discrets en bas de la fenêtre." Classes="muted" TextWrapping="Wrap" />
@@ -783,7 +810,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundNotify}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow" infra:Adaptive.StackBelow="500">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Ouverture" />
                   <TextBlock Text="La fin de l'écran d'ouverture, à la connexion." Classes="muted" TextWrapping="Wrap" />
@@ -800,7 +827,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
             <TextBlock Text="Notifications" Classes="muted" FontWeight="SemiBold" Margin="4,6,0,-6" />
             <Border Classes="card" Padding="16,4">
               <StackPanel>
-              <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow">
+              <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow" infra:Adaptive.StackBelow="500">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Bannières des autres postes" />
                   <TextBlock Text="En haut de l'écran ; sur le téléphone, aussi quand SCOLIA est en arrière-plan." Classes="muted" TextWrapping="Wrap" />
@@ -811,7 +838,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.Alerts}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" IsEnabled="{Binding Prefs.Alerts}">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420" IsEnabled="{Binding Prefs.Alerts}">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Encaissements" />
                   <TextBlock Text="Nouveau reçu, lot de paiements ou reçu annulé." Classes="muted" TextWrapping="Wrap" />
@@ -819,7 +846,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.AlertPayments}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" IsEnabled="{Binding Prefs.Alerts}">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420" IsEnabled="{Binding Prefs.Alerts}">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Sauvegardes" />
                   <TextBlock Text="Sauvegarde manuelle ou automatique faite sur l'ordinateur principal." Classes="muted" TextWrapping="Wrap" />
@@ -827,7 +854,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.AlertBackups}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
               <Border Classes="prefsep" />
-              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" IsEnabled="{Binding Prefs.Alerts}">
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420" IsEnabled="{Binding Prefs.Alerts}">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Rapport journalier" />
                   <TextBlock Text="Le PDF du jour est prêt, à l'heure programmée." Classes="muted" TextWrapping="Wrap" />

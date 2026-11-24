@@ -242,7 +242,7 @@
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
         <StackPanel VerticalAlignment="Center" Spacing="1">
           <TextBlock Text="{Binding PhonePage.Sticky.Title}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
-          <TextBlock Text="{Binding PhonePage.Sticky.Value}" FontSize="20" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+          <TextBlock Text="{Binding PhonePage.Sticky.Value}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" />
           <TextBlock Text="{Binding PhonePage.Sticky.Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2"
                      IsVisible="{Binding PhonePage.Sticky.HasDetail, FallbackValue=False}" />
         </StackPanel>
@@ -382,7 +382,7 @@
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Button Classes="phonetab" Classes.selected="{Binding IsSelected}" Command="{Binding Open}">
+              <Button Classes="phonetab" Classes.selected="{Binding IsSelected}" Command="{Binding Open}" AutomationProperties.Name="{Binding Label}" ToolTip.Tip="{Binding Label}">
                 <StackPanel Spacing="3" HorizontalAlignment="Center">
                   <Border Classes="tabicon" Classes.selected="{Binding IsSelected}">
                     <mi:MaterialIcon Kind="{Binding Icon}" Width="21" Height="21" HorizontalAlignment="Center" VerticalAlignment="Center" />

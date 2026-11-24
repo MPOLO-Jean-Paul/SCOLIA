@@ -4,6 +4,21 @@
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.ReceiptsView">
+  <UserControl.Styles>
+    <Style Selector="Button.receiptcard">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="12" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+    <Style Selector="Button.receiptcard:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+  </UserControl.Styles>
   <Grid RowDefinitions="Auto,*">
     <!-- Surface Fluent Windows 11 : commandes hiérarchisées et filtres flexibles. -->
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,12" Padding="14,12" CornerRadius="{DynamicResource RadiusCard}">
@@ -13,7 +28,7 @@
           <TextBlock Text="Journal des encaissements" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
         </StackPanel>
         <TextBlock Text="Recherchez par reçu, apprenant, date ou mode de règlement." Classes="muted" TextWrapping="Wrap" />
-        <WrapPanel>
+        <WrapPanel IsVisible="{Binding NotPhone}">
         <StackPanel Classes="field pagesearch">
           <TextBlock Text="Rechercher" Classes="fieldlabel" />
           <TextBox Classes="search clearButton" Width="260" Text="{Binding Search}" PlaceholderText="N° de reçu, matricule, nom" />
@@ -39,10 +54,57 @@
           <ComboBox Width="220" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
         </StackPanel>
         </WrapPanel>
+        <Expander Header="Filtres des reçus" IsVisible="{Binding Phone}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" IsExpanded="False">
+          <StackPanel Spacing="10" Margin="0,8,0,0">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Du" Classes="fieldlabel" />
+                <CalendarDatePicker Classes="w11" PlaceholderText="Début" SelectedDateFormat="Short" HorizontalAlignment="Stretch" SelectedDate="{Binding From}" />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Au" Classes="fieldlabel" />
+                <CalendarDatePicker Classes="w11" PlaceholderText="Fin" SelectedDateFormat="Short" HorizontalAlignment="Stretch" SelectedDate="{Binding To}" />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Mode de paiement" Classes="fieldlabel" />
+                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding Methods}" SelectedItem="{Binding Method}" />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Statut" Classes="fieldlabel" />
+                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding Statuses}" SelectedItem="{Binding Status}" />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Promotion" Classes="fieldlabel" />
+                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+              </StackPanel>
+          </StackPanel>
+        </Expander>
       </StackPanel>
     </Border>
+    <ItemsControl Grid.Row="1" ItemsSource="{Binding Items}" IsVisible="{Binding Phone}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <Button Classes="receiptcard" Command="{Binding $parent[ItemsControl].DataContext.OpenReceiptOnPhone}" CommandParameter="{Binding}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <StackPanel Spacing="5">
+                <TextBlock Text="{Binding Student}" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Number}" FontWeight="Medium" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Date}" Classes="muted" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Promotion}" Classes="muted" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Amount}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7">
+                  <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" />
+                </Grid>
+                <TextBlock Text="{Binding Method}" Classes="muted" TextWrapping="Wrap" />
+              </StackPanel>
+              <mi:MaterialIcon Grid.Column="1" Kind="ChevronRight" Foreground="{DynamicResource AccentBrush}" Width="20" Height="20" VerticalAlignment="Center" />
+            </Grid>
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
     <DataGrid x:Name="ReceiptGrid" Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
-              AutoGenerateColumns="False" IsReadOnly="True">
+              AutoGenerateColumns="False" IsReadOnly="True" IsVisible="{Binding NotPhone}" infra:GridPriority.Adaptive="True">
       <DataGrid.Columns>
         <DataGridTextColumn Header="N° de reçu" Binding="{Binding Number}" Width="Auto" MinWidth="150" />
         <DataGridTextColumn infra:GridPriority.Level="2" Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="120" />

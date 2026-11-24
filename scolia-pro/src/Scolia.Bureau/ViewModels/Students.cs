@@ -326,18 +326,23 @@ public sealed class StudentsPage : PageViewModel
     private void ScheduleSearch()
     {
         debounce?.Stop();
-        debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Shell.Api.IsOnline ? 300 : 75) };
-        debounce.Tick += async (_, _) =>
+        var scheduled = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Shell.Api.IsOnline ? 300 : 75) };
+        debounce = scheduled;
+        scheduled.Tick += async (_, _) =>
         {
-            debounce?.Stop();
+            scheduled.Stop();
+            if (!ReferenceEquals(debounce, scheduled)) return;
+            debounce = null;
             page = 1;
             await RefreshAsync();
         };
-        debounce.Start();
+        scheduled.Start();
     }
 
     private void ApplyFilter()
     {
+        debounce?.Stop();
+        debounce = null;
         page = 1;
         _ = RefreshAsync();
     }

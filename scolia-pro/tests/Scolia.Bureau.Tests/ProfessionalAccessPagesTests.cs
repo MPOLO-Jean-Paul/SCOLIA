@@ -206,8 +206,11 @@ public sealed class ProfessionalAccessPagesTests
         Assert.Contains("if (Platform.IsMobile || PhoneLayout.Active) return;", reveal, StringComparison.Ordinal);
         var home = File.ReadAllText(Source("Views/Phone/HomeView.axaml"));
         Assert.DoesNotContain("BoxShadow", home, StringComparison.Ordinal);
-        // Les listes de l'accueil reprennent les avatars illustrés des cartes.
-        Assert.Contains("Classes=\"rowillustration\"", home, StringComparison.Ordinal);
+        // L'accueil Fluent privilégie les pictogrammes légers et les commandes réelles.
+        Assert.Contains("Classes=\"workrow\"", home, StringComparison.Ordinal);
+        Assert.Contains("Kind=\"{Binding Icon}\"", home, StringComparison.Ordinal);
+        Assert.Contains("ItemsSource=\"{Binding QuickActions}\"", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("Classes=\"rowillustration\"", home, StringComparison.Ordinal);
         Assert.DoesNotContain("featureavatar mini\"><Ellipse Classes=\"halo\" Fill=\"{Binding Brush}", home, StringComparison.Ordinal);
         // La vue d'un écran n'est cherchée par réflexion qu'une fois.
         Assert.Contains("ConcurrentDictionary", File.ReadAllText(Source("Views/ViewLocator.cs")), StringComparison.Ordinal);

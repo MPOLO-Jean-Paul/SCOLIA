@@ -113,10 +113,19 @@ public sealed class InstallerAndHomePolishTests
             (string?)e.Attribute("ItemsSource") == "{Binding MoreTools}" &&
             e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "FeatureCards"));
         Assert.Contains(phoneNodes, e => e.Name.LocalName == "ItemsControl" &&
-            (string?)e.Attribute("ItemsSource") == "{Binding Tools}" &&
+            (string?)e.Attribute("ItemsSource") == "{Binding MoreTools}" &&
             e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "FeatureCards"));
-        Assert.Contains(phoneNodes, e => e.Name.LocalName == "Image" &&
-            (string?)e.Attribute("Source") == "{Binding Illustration}");
+        Assert.Contains(phoneNodes, e => e.Name.LocalName == "ItemsControl" &&
+            (string?)e.Attribute("ItemsSource") == "{Binding QuickActions}");
+        Assert.Contains(phoneNodes, e => e.Name.LocalName == "MaterialIcon" &&
+            (string?)e.Attribute("Kind") == "{Binding Icon}");
+        Assert.Contains(phoneNodes, e => e.Name.LocalName == "ItemsControl" &&
+            (string?)e.Attribute("ItemsSource") == "{Binding AllToolGroups}");
+        foreach (var nodes in new[] { desktopNodes, phoneNodes })
+        {
+            Assert.Contains(nodes, e => (string?)e.Attribute("IsVisible") == "{Binding OverviewUnavailable}");
+            Assert.Contains(nodes, e => (string?)e.Attribute("IsVisible") == "{Binding OverviewAvailable}");
+        }
         Assert.Contains(desktopNodes, e => e.Name.LocalName == "mi:MaterialIcon" ||
             (e.Name.LocalName == "MaterialIcon" && (string?)e.Attribute("Kind") == "{Binding Icon}"));
         Assert.Contains(desktopNodes, e => e.Name.LocalName == "TextBlock" &&

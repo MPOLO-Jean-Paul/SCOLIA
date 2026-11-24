@@ -31,9 +31,9 @@
     <Style Selector="TextBlock.late"><Setter Property="Foreground" Value="{DynamicResource ToneRed}" /></Style>
   </UserControl.Styles>
   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-  <Grid ColumnDefinitions="2*,3*" infra:Adaptive.StackBelow="1000">
+  <Grid ColumnDefinitions="2*,3*" ColumnSpacing="12" infra:Adaptive.StackBelow="1000">
     <!-- Gauche : recherche de l'apprenant, puis saisie du versement -->
-    <StackPanel Grid.Column="0" Spacing="12" Margin="0,0,16,0">
+    <StackPanel Grid.Column="0" Spacing="12">
       <Border Classes="card">
         <StackPanel Spacing="8">
           <TextBlock Text="{infra:Terms '1. Apprenant'}" Classes="heading" />
@@ -126,7 +126,7 @@
                           <TextBlock Text="{Binding Deadline}" IsVisible="{Binding HasDeadline}" FontSize="{DynamicResource FsSmall}"
                                      Classes="muted" Classes.late="{Binding Overdue}" TextWrapping="Wrap" />
                         </StackPanel>
-                        <TextBlock Grid.Column="1" Text="{Binding AmountText}" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right" />
+                        <TextBlock Grid.Column="1" Text="{Binding AmountText}" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right" TextWrapping="Wrap" />
                       </Grid>
                     </CheckBox>
                   </Border>
@@ -194,11 +194,26 @@
       <!-- Répartition calculée en direct sur les échéances -->
       <Border Classes="card" IsVisible="{Binding ShowPayment}">
         <StackPanel Spacing="8">
-          <Grid ColumnDefinitions="*,Auto">
+          <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="400">
             <TextBlock Text="Répartition" Classes="heading" />
             <TextBlock Grid.Column="1" Text="{Binding BalanceAfter}" Classes="muted" TextWrapping="Wrap" />
           </Grid>
-          <DataGrid ItemsSource="{Binding Allocations}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260">
+          <ItemsControl ItemsSource="{Binding Allocations}" IsVisible="{Binding Phone}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="4,8">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8" infra:Adaptive.StackBelow="230">
+                      <StackPanel Spacing="2"><TextBlock Text="Imputé" Classes="caption" /><TextBlock Text="{Binding Amount}" FontWeight="SemiBold" TextWrapping="Wrap" /></StackPanel>
+                      <StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Reste après" Classes="caption" /><TextBlock Text="{Binding Remaining}" TextWrapping="Wrap" /></StackPanel>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <DataGrid ItemsSource="{Binding Allocations}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260" IsVisible="{Binding NotPhone}">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" MinWidth="140" />
               <DataGridTextColumn Header="Imputé" Binding="{Binding Amount}" Width="Auto" MinWidth="140" />

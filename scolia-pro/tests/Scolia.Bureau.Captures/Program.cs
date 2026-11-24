@@ -1956,7 +1956,8 @@ if (args.Length > 3 && args[3] == "accueil-powerbi")
     }
     finally { ShellViewModel.MinimumOpening = opening; }
     shell.Sync.Stop();
-    foreach (var (width, height) in new[] { (1024, 720), (1366, 768), (1600, 900), (1920, 1080) })
+    var homeSizes = Preferences.MobileLayout ? new[] { (320, 568), (360, 740), (412, 892) } : new[] { (1024, 720), (1366, 768), (1600, 900), (1920, 1080) };
+    foreach (var (width, height) in homeSizes)
     {
         window.Width = width;
         window.Height = height;
@@ -1967,13 +1968,17 @@ if (args.Length > 3 && args[3] == "accueil-powerbi")
             throw new InvalidOperationException($"Accueil Power BI {width}x{height} : indicateurs ou commandes absents.");
         window.UpdateLayout();
         Save(window, $"accueil-powerbi-{width}x{height}-clair.png");
+        home.ShowAllTools.Execute(null);
+        window.UpdateLayout();
+        Save(window, $"accueil-powerbi-{width}x{height}-catalogue.png");
+        home.ShowAllTools.Execute(null);
     }
-    window.Width = 1600;
-    window.Height = 900;
+    window.Width = Preferences.MobileLayout ? 390 : 1600;
+    window.Height = Preferences.MobileLayout ? 740 : 900;
     prefs.Theme = "dark";
     Wait(shell.Open(() => new HomePage(shell)));
     window.UpdateLayout();
-    Save(window, "accueil-powerbi-1600x900-sombre.png");
+    Save(window, $"accueil-powerbi-{window.Width}x{window.Height}-sombre.png");
     Console.WriteLine("OK : accueil Power BI Windows 11, commandes, indicateurs et thèmes vérifiés.");
     shell.Sync.Stop();
     window.Close();

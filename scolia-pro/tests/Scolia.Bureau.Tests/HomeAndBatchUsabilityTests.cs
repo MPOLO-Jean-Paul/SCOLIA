@@ -40,6 +40,71 @@ public sealed class HomeAndBatchUsabilityTests
     }
 
     [Fact]
+    public void Une_recherche_differee_ne_peut_pas_arreter_un_minuteur_plus_recent()
+    {
+        var students = File.ReadAllText(ViewFile("ViewModels/Students.cs"));
+        var cashier = File.ReadAllText(ViewFile("ViewModels/Cashier.cs"));
+        Assert.Contains("if (!ReferenceEquals(debounce, scheduled)) return;", students);
+        foreach (var field in new[] { "searchTimer", "previewTimer", "timer" })
+            Assert.Contains($"if (!ReferenceEquals({field}, scheduled)) return;", cashier);
+    }
+
+    [Fact]
+    public void Les_parametres_mobile_gardent_les_selections_et_les_curseurs_adaptatifs()
+    {
+        var nodes = XDocument.Load(ViewFile("Views/SettingsView.axaml")).Descendants().ToArray();
+        foreach (var (source, selection) in new[] { ("Years", "SelectedYear"), ("Categories", "SelectedCategory") })
+        {
+            Assert.Contains(nodes, x => x.Name.LocalName == "ListBox" &&
+                (string?)x.Attribute("ItemsSource") == "{Binding " + source + "}" &&
+                (string?)x.Attribute("SelectedItem") == "{Binding " + selection + "}" &&
+                (string?)x.Attribute("IsVisible") == "{Binding Phone}");
+            Assert.Contains(nodes, x => x.Name.LocalName == "DataGrid" &&
+                (string?)x.Attribute("ItemsSource") == "{Binding " + source + "}" &&
+                (string?)x.Attribute("SelectedItem") == "{Binding " + selection + "}" &&
+                (string?)x.Attribute("IsVisible") == "{Binding NotPhone}");
+        }
+        Assert.All(nodes.Where(x => x.Name.LocalName == "Slider"), x => Assert.Null(x.Attribute("Width")));
+    }
+
+    [Fact]
+    public void Les_listes_metier_mobile_evitent_les_tableaux_larges()
+    {
+        foreach (var (view, command) in new[]
+        {
+            ("Views/StudentsView.axaml", "OpenStudentOnPhone"),
+            ("Views/ReceiptsView.axaml", "OpenReceiptOnPhone")
+        })
+        {
+            var nodes = XDocument.Load(ViewFile(view)).Descendants().ToArray();
+            Assert.Contains(nodes, x => x.Name.LocalName == "Expander" && (string?)x.Attribute("IsVisible") == "{Binding Phone}");
+            Assert.Contains(nodes, x => x.Name.LocalName == "DataGrid" && (string?)x.Attribute("IsVisible") == "{Binding NotPhone}");
+            Assert.Contains(nodes, x => x.Name.LocalName == "Button" && ((string?)x.Attribute("Command"))?.Contains(command) == true);
+        }
+        var cash = XDocument.Load(ViewFile("Views/CashierView.axaml")).Descendants();
+        Assert.Contains(cash, x => x.Name.LocalName == "ItemsControl" && (string?)x.Attribute("ItemsSource") == "{Binding Allocations}" &&
+            (string?)x.Attribute("IsVisible") == "{Binding Phone}");
+    }
+
+    [Fact]
+    public void Les_rapports_adaptent_filtres_et_formats_a_la_largeur()
+    {
+        foreach (var view in new[] { "Views/ReportsView.axaml", "Views/Phone/ReportsView.axaml" })
+        {
+            var nodes = XDocument.Load(ViewFile(view)).Descendants().ToArray();
+            Assert.Contains(nodes, x => x.Name.LocalName == "Grid" &&
+                x.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal)));
+            Assert.Contains(nodes, x => x.Name.LocalName == "Button" &&
+                (string?)x.Attribute("Command") == "{Binding Run}");
+        }
+        var phone = XDocument.Load(ViewFile("Views/Phone/ReportsView.axaml"));
+        Assert.All(phone.Descendants().Where(x => x.Name.LocalName is "CalendarDatePicker" or "ComboBox"),
+            x => Assert.Null(x.Attribute("Width")));
+        Assert.Contains(phone.Descendants(), x => x.Name.LocalName == "UniformGrid" &&
+            x.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal)));
+    }
+
+    [Fact]
     public void Afficher_tous_les_outils_est_une_vraie_action_interactive()
     {
         using var api = new ScoliaClient(new Uri("http://localhost:5080/"));

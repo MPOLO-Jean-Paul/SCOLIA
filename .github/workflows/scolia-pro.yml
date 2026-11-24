@@ -61,7 +61,9 @@ jobs:
       - name: Accueil Power BI - Windows 11 (formats et themes)
         env:
           SCOLIA_ASTUCES: '0'
-        run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/accueil-powerbi http://127.0.0.1:5293/ Scolia2026! accueil-powerbi
+        run: |
+          SCOLIA_MOBILE=0 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/accueil-powerbi/windows http://127.0.0.1:5293/ Scolia2026! accueil-powerbi
+          SCOLIA_MOBILE=1 SCOLIA_TAILLE=390x740 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/accueil-powerbi/android http://127.0.0.1:5293/ Scolia2026! accueil-powerbi
 
       - uses: actions/upload-artifact@v4
         if: always()

@@ -19,7 +19,7 @@
       <Setter Property="Width" Value="48" />
       <Setter Property="Height" Value="48" />
       <Setter Property="Padding" Value="0" />
-      <Setter Property="CornerRadius" Value="24" />
+      <Setter Property="CornerRadius" Value="8" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
@@ -33,9 +33,9 @@
 
     <!-- Onglets du bas : icône et libellé, l'onglet actif en couleur -->
     <Style Selector="Border.tabicon">
-      <Setter Property="Width" Value="52" />
+      <Setter Property="Width" Value="42" />
       <Setter Property="Height" Value="28" />
-      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="CornerRadius" Value="8" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="Background" Value="Transparent" />
       <!-- Indicateur de navigation Material : couleur animée, sans modifier sa géométrie. -->
@@ -72,7 +72,7 @@
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="0,1,0,0" />
-      <Setter Property="Padding" Value="0,4,0,4" />
+      <Setter Property="Padding" Value="2,4,2,4" />
     </Style>
     <Style Selector="Button.phonetab">
       <Setter Property="Background" Value="Transparent" />
@@ -95,6 +95,9 @@
     </Style>
     <Style Selector="Button.phonetab.selected">
       <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="Button.phonetab:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.phoneicon:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
     <Style Selector="Button.phonetab TextBlock">
       <Setter Property="FontSize" Value="11" />
@@ -125,7 +128,7 @@
     </Style>
     <Style Selector="Border.phoneblockcard">
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="CornerRadius" Value="10" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="ClipToBounds" Value="True" />
