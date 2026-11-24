@@ -282,11 +282,22 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
     public async Task<TableDocument> ReceiptsTableAsync(PaymentService payments, ReceiptQuery q, CancellationToken ct = default)
     {
         var school = await YearContext.SchoolAsync(db, ct);
-        var page = await payments.ListAsync(q with { Page = 1, PageSize = 1000 }, ct);
+        const int pageSize = 1000;
+        var page = await payments.ListAsync(q with { Page = 1, PageSize = pageSize }, ct);
+        var receipts = new List<ReceiptSummaryRow>(page.Items);
+        // L'écran est paginé, mais son export doit contenir TOUS les reçus filtrés :
+        // l'ancienne implémentation perdait silencieusement les lignes après 1 000.
+        for (var number = 2; receipts.Count < page.Total; number++)
+        {
+            ct.ThrowIfCancellationRequested();
+            var next = await payments.ListAsync(q with { Page = number, PageSize = pageSize }, ct);
+            if (next.Items.Count == 0) break;
+            receipts.AddRange(next.Items);
+        }
         var period = q.From is null && q.To is null ? "Toutes dates" : $"Du {q.From:dd/MM/yyyy} au {q.To:dd/MM/yyyy}";
-        return new TableDocument(PaymentService.Header(school), "Journal des encaissements", $"{period} · {page.Total} reçu(s)",
+        return new TableDocument(PaymentService.Header(school), "Journal des encaissements", $"{period} · {receipts.Count} reçu(s)",
             ["Date", "N° reçu", "Matricule", "Apprenant", "Promotion", "Mode", "Référence", "Statut", "Montant"],
-            page.Items.Select(r => (IReadOnlyList<string>)[r.Date.ToString("dd/MM/yyyy"), r.Number, r.Matricule, r.StudentName, r.PromotionCode, r.Method, r.Reference ?? "", r.Status,
+            receipts.Select(r => (IReadOnlyList<string>)[r.Date.ToString("dd/MM/yyyy"), r.Number, r.Matricule, r.StudentName, r.PromotionCode, r.Method, r.Reference ?? "", r.Status,
                 Money.Display(r.Amount, school.CurrencySymbol)]).ToList(),
             ["", "", "", "", "", "", "", "Total valide", Money.Display(page.Sum ?? 0, school.CurrencySymbol)], Landscape: true);
     }
