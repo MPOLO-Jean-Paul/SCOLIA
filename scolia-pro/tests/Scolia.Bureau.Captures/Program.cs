@@ -15,7 +15,7 @@ using Scolia.Bureau.Views;
 var output = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
 var server = new Uri(args.Length > 1 ? args[1] : "http://localhost:5293/");
 var password = args.Length > 2 ? args[2] : "Scolia2026!";
-var dark = args.Length > 3 && args[3] == "sombre";
+var dark = (args.Length > 3 && args[3] == "sombre") || Environment.GetEnvironmentVariable("SCOLIA_CAPTURE_DARK") == "1";
 Directory.CreateDirectory(output);
 
 Scolia.Bureau.Program.BuildAvaloniaApp()
@@ -187,6 +187,48 @@ if (Environment.GetEnvironmentVariable("SCOLIA_MICA") == "1" && window.Content i
 }
 // Barre de titre de Windows dessinée par SCOLIA : simulée ici, la fenêtre sans écran n'a pas celle du système.
 if (!Preferences.MobileLayout && Environment.GetEnvironmentVariable("SCOLIA_BARRE_TITRE") != "0" && window.Content is Scolia.Bureau.Views.MainView main) main.ShowTitleBar(32);
+// Emblème de connexion : compte de démonstration, aucune authentification ni appel à un établissement.
+if (args.Length > 3 && args[3] == "identite-connexion")
+{
+    shell.Login.SchoolName = "Institut technique médical de démonstration";
+    shell.Login.RememberAccount("secretariat");
+    Save(window, "01-connexion-compte-reconnu.png");
+    Control NamedIdentity(string name) => window.GetVisualDescendants().OfType<Control>()
+        .Single(c => c.Name == name);
+    var combined = NamedIdentity("CombinedIdentity");
+    var standalone = NamedIdentity("StandaloneBrand");
+    if (!combined.IsEffectivelyVisible || standalone.IsEffectivelyVisible)
+        throw new InvalidOperationException("Le compte reconnu doit afficher seulement l'emblème combiné.");
+    var brand = NamedIdentity("IdentityBrandCircle");
+    var account = NamedIdentity("IdentityAccountCircle");
+    if (brand.IsEffectivelyVisible && account.IsEffectivelyVisible)
+    {
+        Rect BoundsInWindow(Control control) => control.TransformToVisual(window) is { } matrix
+            ? new Rect(control.Bounds.Size).TransformToAABB(matrix) : default;
+        var a = BoundsInWindow(brand);
+        var b = BoundsInWindow(account);
+        var overlap = Math.Min(a.Right, b.Right) - Math.Max(a.Left, b.Left);
+        Console.WriteLine($"Emblème : marque {a}, compte {b}, intersection horizontale {overlap:0.##} px");
+        if (overlap <= 0 || overlap > 30 || b.Left <= a.Left ||
+            Math.Abs(a.Width - a.Height) > 1 || Math.Abs(b.Width - b.Height) > 1 ||
+            a.Left < -1 || b.Right > window.Bounds.Width + 1)
+            throw new InvalidOperationException("Les deux cercles doivent rester distincts, superposés et dans la fenêtre.");
+    }
+    else if (Preferences.MobileLayout && window.Bounds.Height >= AuthLayout.MicroHeight + 40)
+        throw new InvalidOperationException("Emblème invisible sur un téléphone de hauteur suffisante.");
+    shell.Login.ToggleRecoveryHelp.Execute(null);
+    Save(window, "02-recuperation.png");
+    if (combined.IsEffectivelyVisible || !standalone.IsEffectivelyVisible)
+        throw new InvalidOperationException("La récupération doit afficher le logo seul.");
+    shell.Login.ToggleRecoveryHelp.Execute(null);
+    shell.Login.ChangeAccount.Execute(null);
+    Save(window, "03-nouveau-compte.png");
+    if (combined.IsEffectivelyVisible || !standalone.IsEffectivelyVisible)
+        throw new InvalidOperationException("Le nouveau compte doit afficher le logo seul.");
+    window.Close();
+    return;
+}
+
 // Premier accueil et assistant : captures autonomes, sans établissement ni réseau.
 if (args.Length > 3 && args[3] == "premiere-configuration")
 {

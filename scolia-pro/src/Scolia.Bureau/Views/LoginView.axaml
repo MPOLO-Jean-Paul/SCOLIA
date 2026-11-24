@@ -340,9 +340,35 @@
           <StackPanel Spacing="14">
             <!-- En-tête : logo, application et établissement, sans phrase d'introduction -->
             <StackPanel Spacing="6" HorizontalAlignment="Stretch" Margin="0,0,0,6">
-              <Border Classes="authlogo">
-                <Image Source="{DynamicResource ScoliaMark}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-              </Border>
+              <Panel x:Name="StandaloneBrand">
+                <Border Classes="authlogo">
+                  <Image Source="{DynamicResource ScoliaMark}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+              </Panel>
+              <!-- Identité commune : deux cercles décalés, contours indépendants,
+                   une seule silhouette. Le logo ne masque pas les initiales. -->
+              <Panel x:Name="CombinedIdentity" IsVisible="False">
+                <Grid x:Name="ScoliaAccountEmblem" Classes="authidentity" ClipToBounds="False">
+                  <Border x:Name="IdentityBrandCircle" Classes="identitybrand" HorizontalAlignment="Left"
+                          VerticalAlignment="Top" AutomationProperties.Name="SCOLIA Pro">
+                    <Image Source="{DynamicResource ScoliaMark}" Width="34" Height="34"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <Grid x:Name="IdentityAccountCircle" Classes="authavatar identityaccount"
+                        HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                    <Ellipse Classes="halo" />
+                    <Ellipse Classes="ring" />
+                    <Border Classes="disc">
+                      <TextBlock Text="{Binding UserName, Converter={x:Static infra:TextCase.Initials}}" />
+                    </Border>
+                    <Border Classes="badge" ToolTip.Tip="Compte enregistré sur cet appareil"
+                            AutomationProperties.Name="Compte enregistré sur cet appareil">
+                      <mi:MaterialIcon Kind="Check" Width="12" Height="12" Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                  </Grid>
+                </Grid>
+              </Panel>
               <TextBlock Classes="authtitle" Text="{Binding PageTitle}" />
               <TextBlock x:Name="IosSchoolHeading" Classes="authsubtitle" Text="{Binding TitleText}" />
             </StackPanel>
@@ -378,20 +404,9 @@
 
             <StackPanel Spacing="12" IsVisible="{Binding ShowManualCredentials}">
               <StackPanel Spacing="12" IsVisible="{Binding !RecoveryOpen}">
-                <!-- Compte reconnu : avatar aux initiales et nom -->
-                <StackPanel x:Name="IosAccountAvatar" Spacing="6" HorizontalAlignment="Center"
+                <!-- Le symbole du compte est désormais intégré au logo dans l'en-tête. -->
+                <StackPanel x:Name="IosAccountAvatar" HorizontalAlignment="Center"
                             IsVisible="{Binding HasRememberedAccount}">
-                  <Grid Classes="authavatar">
-                    <Ellipse Classes="halo" />
-                    <Ellipse Classes="ring" />
-                    <Border Classes="disc">
-                      <TextBlock Text="{Binding UserName, Converter={x:Static infra:TextCase.Initials}}" />
-                    </Border>
-                    <Border Classes="badge" ToolTip.Tip="Compte enregistré sur cet appareil">
-                      <mi:MaterialIcon Kind="Check" Width="12" Height="12" Foreground="White"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
-                  </Grid>
                   <TextBlock Text="{Binding UserName}" FontSize="17" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}"
                              TextTrimming="CharacterEllipsis" TextAlignment="Center" />
                 </StackPanel>
