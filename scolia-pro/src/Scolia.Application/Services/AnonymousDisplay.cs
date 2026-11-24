@@ -35,7 +35,7 @@ public static class AnonymousDisplay
     public static string Printed(string? matricule) =>
         string.IsNullOrWhiteSpace(matricule) || matricule == Pending ? string.Empty : matricule;
 
-    /// <summary>Code actif de l'inscription, ou la mention « À ATTRIBUER ».</summary>
+    /// <summary>Code actif de l'inscription, ou champ vide jusqu'à l'attribution officielle.</summary>
     public static string Of(IReadOnlyDictionary<Guid, string> codes, Guid enrollmentId) =>
-        codes.TryGetValue(enrollmentId, out var code) && !string.IsNullOrWhiteSpace(code) ? code : Pending;
+        codes.TryGetValue(enrollmentId, out var code) && !string.IsNullOrWhiteSpace(code) ? code : string.Empty;
 }
