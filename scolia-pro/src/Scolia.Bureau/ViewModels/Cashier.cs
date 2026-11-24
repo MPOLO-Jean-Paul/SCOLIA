@@ -810,6 +810,12 @@ public sealed class ReceiptsPage : PageViewModel
 
     public ReceiptsPage(ShellViewModel shell) : base(shell)
     {
+        OpenReceiptOnPhone = new RelayCommand<ReceiptRowVm>(row =>
+        {
+            if (row is null) return;
+            Selected = row;
+            _ = Shell.Run(OpenSelectedAsync);
+        });
         if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell)), primary: true);
         Action("Ouvrir le reçu", MaterialIconKind.ReceiptText, OpenSelectedAsync, open: true);
         Action("Excel", MaterialIconKind.FileExcel, () => ExportAsync("xlsx"));
@@ -828,6 +834,7 @@ public sealed class ReceiptsPage : PageViewModel
     public override MaterialIconKind Glyph => MaterialIconKind.ReceiptTextOutline;
 
     public ObservableCollection<ReceiptRowVm> Items { get; } = [];
+    public RelayCommand<ReceiptRowVm> OpenReceiptOnPhone { get; }
     public IReadOnlyList<ChoiceItem> Methods { get; } = new[] { new ChoiceItem(string.Empty, "Tous les modes") }.Concat(Labels.Methods).ToList();
     public IReadOnlyList<ChoiceItem> Statuses { get; } =
         [new(string.Empty, "Tous les statuts"), new("Valide", "Validé"),

@@ -40,6 +40,25 @@ public sealed class HomeAndBatchUsabilityTests
     }
 
     [Fact]
+    public void Les_listes_metier_mobile_evitent_les_tableaux_larges()
+    {
+        foreach (var (view, command) in new[]
+        {
+            ("Views/StudentsView.axaml", "OpenStudentOnPhone"),
+            ("Views/ReceiptsView.axaml", "OpenReceiptOnPhone")
+        })
+        {
+            var nodes = XDocument.Load(ViewFile(view)).Descendants().ToArray();
+            Assert.Contains(nodes, x => x.Name.LocalName == "Expander" && (string?)x.Attribute("IsVisible") == "{Binding Phone}");
+            Assert.Contains(nodes, x => x.Name.LocalName == "DataGrid" && (string?)x.Attribute("IsVisible") == "{Binding NotPhone}");
+            Assert.Contains(nodes, x => x.Name.LocalName == "Button" && ((string?)x.Attribute("Command"))?.Contains(command) == true);
+        }
+        var cash = XDocument.Load(ViewFile("Views/CashierView.axaml")).Descendants();
+        Assert.Contains(cash, x => x.Name.LocalName == "ItemsControl" && (string?)x.Attribute("ItemsSource") == "{Binding Allocations}" &&
+            (string?)x.Attribute("IsVisible") == "{Binding Phone}");
+    }
+
+    [Fact]
     public void Les_rapports_adaptent_filtres_et_formats_a_la_largeur()
     {
         foreach (var view in new[] { "Views/ReportsView.axaml", "Views/Phone/ReportsView.axaml" })

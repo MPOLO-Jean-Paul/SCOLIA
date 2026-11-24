@@ -16,8 +16,8 @@
     <!-- Sur Android : présentation des configurations, sans minimum desktop ni débordement horizontal. -->
     <Style Selector="LayoutTransformControl.phone Border.sheet">
       <Setter Property="MinWidth" Value="0" />
-      <Setter Property="CornerRadius" Value="20" />
-      <Setter Property="BoxShadow" Value="0 6 22 0 #16000000" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet Grid.formheader">
       <Setter Property="Margin" Value="16,16,12,0" />
@@ -125,11 +125,11 @@
 
       <!-- Actions : Annuler puis le bouton principal, alignés à droite -->
       <Panel Classes="formfooter" Grid.Row="3" Margin="20,12,20,16">
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12" IsVisible="{Binding CanSubmit}">
-          <Button Classes="formaction" Content="{Binding CancelText}" Command="{Binding Cancel}" IsVisible="{Binding ShowCancel}" IsEnabled="{Binding !Busy}" MinWidth="96" />
-          <Button Classes="formaction" Content="{Binding SubmitText}" Command="{Binding Submit}" IsEnabled="{Binding !Busy}" MinWidth="96"
-                  Classes.primary="{Binding !Danger}" Classes.danger="{Binding Danger}" />
-        </StackPanel>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="8" infra:Adaptive.StackBelow="290" IsVisible="{Binding CanSubmit}">
+          <Button Classes="formaction" Content="{Binding CancelText}" Command="{Binding Cancel}" IsVisible="{Binding ShowCancel}" IsEnabled="{Binding !Busy}" HorizontalAlignment="Stretch" />
+          <Button Grid.Column="1" Classes="formaction" Command="{Binding Submit}" IsEnabled="{Binding !Busy}" HorizontalAlignment="Stretch"
+                  Classes.primary="{Binding !Danger}" Classes.danger="{Binding Danger}"><TextBlock Text="{Binding SubmitText}" TextWrapping="Wrap" TextAlignment="Center" /></Button>
+        </Grid>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" IsVisible="{Binding !CanSubmit}">
           <Button Classes="primary formaction" Content="{Binding CancelText}" Command="{Binding Cancel}" MinWidth="96" />
         </StackPanel>

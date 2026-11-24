@@ -9,11 +9,11 @@
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Padding" Value="14,12" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-      <Setter Property="MinHeight" Value="102" />
+      <Setter Property="MinHeight" Value="88" />
       <Setter Property="Margin" Value="0,0,0,9" />
     </Style>
     <Style Selector="Button.studentcard:pointerover, Button.studentcard:pressed">
@@ -32,7 +32,7 @@
           </StackPanel>
           <TextBlock Grid.Column="1" Text="{Binding PageText}" Classes="muted" VerticalAlignment="Center" />
         </Grid>
-        <WrapPanel>
+        <WrapPanel IsVisible="{Binding NotPhone}">
           <StackPanel Classes="field pagesearch">
             <TextBlock Text="Rechercher" Classes="fieldlabel" />
             <TextBox Classes="search clearButton" Width="300" Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un code anonyme" />
@@ -70,6 +70,35 @@
             </StackPanel>
           </Button>
         </WrapPanel>
+        <Expander Header="Filtres de la liste" IsVisible="{Binding Phone}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" IsExpanded="False">
+          <StackPanel Spacing="10" Margin="0,8,0,0">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Promotion" Classes="fieldlabel" />
+                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+              </StackPanel>
+              <StackPanel Spacing="4" IsVisible="{Binding HasSections}">
+                <TextBlock Text="Section" Classes="fieldlabel" />
+                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding Sections}" SelectedItem="{Binding SectionChoice}" />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Statut" Classes="fieldlabel" />
+                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding StatusChoices}" SelectedItem="{Binding Status}" />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Sexe" Classes="fieldlabel" />
+                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding GenderChoices}" SelectedItem="{Binding Gender}" />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Paiement" Classes="fieldlabel" />
+                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding PaymentChoices}" SelectedItem="{Binding Payment}" />
+              </StackPanel>
+              <StackPanel Spacing="4" IsVisible="{Binding HasMonthFilter}">
+                <TextBlock Text="Mois" Classes="fieldlabel" />
+                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding Months}" SelectedItem="{Binding Month}" />
+              </StackPanel>
+              <Button Classes="ghost" Command="{Binding ClearFilters}" HorizontalAlignment="Stretch" Content="Effacer les filtres" />
+          </StackPanel>
+        </Expander>
         <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,0,2">
           <TextBlock Text="{Binding PageText}" Classes="muted" VerticalAlignment="Center" Margin="0,0,8,0" />
           <Button Classes="toolicon" Command="{Binding PreviousPage}" IsEnabled="{Binding CanPrevious}" ToolTip.Tip="Page précédente">
@@ -91,18 +120,15 @@
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
               <StackPanel Spacing="6">
                 <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" FontSize="16" />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Border Classes="chip" Padding="8,3">
-                    <TextBlock Text="{Binding Matricule}" FontSize="{DynamicResource FsSmall}" />
-                  </Border>
-                  <TextBlock Text="{Binding Promotion}" Classes="muted" FontSize="{DynamicResource FsSmall}"
-                             TextWrapping="Wrap" VerticalAlignment="Center" />
+                <StackPanel Spacing="3">
+                  <TextBlock Text="{Binding Promotion}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Matricule}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="7">
                   <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
                   <TextBlock Text="{Binding Status}" Classes="muted" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
                 </StackPanel>
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" infra:Adaptive.StackBelow="230">
                   <StackPanel Spacing="2">
                     <TextBlock Text="Solde" Classes="caption" />
                     <TextBlock Text="{Binding Balance}" FontWeight="SemiBold" TextWrapping="Wrap" />
