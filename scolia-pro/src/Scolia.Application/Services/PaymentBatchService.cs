@@ -91,13 +91,19 @@ public sealed class PaymentBatchService(IAppDbContext db, IWriteGate gate, IAudi
             try
             {
                 // Un envoi déjà traité renvoie son reçu : les mois sont alors déjà réglés et ne seraient plus planifiables.
-                var previous = key is null ? null : await db.Receipts.AsNoTracking().Where(r => r.IdempotencyKey == key)
-                    .Select(r => new { r.Id, r.Number, r.Amount, r.EnrollmentId }).FirstOrDefaultAsync(ct);
+                var previous = key is null ? null : await db.Receipts.AsNoTracking()
+                    .Include(r => r.Allocations).FirstOrDefaultAsync(r => r.IdempotencyKey == key, ct);
                 if (previous is not null)
                 {
-                    // Le poste a peut-être réordonné les lignes en renvoyant le lot.
-                    // Ne jamais présenter le reçu d'un autre apprenant comme un paiement réussi.
-                    if (previous.EnrollmentId != item.EnrollmentId)
+                    // Le lot doit être réémis à l'identique : ni réorganisation des apprenants
+                    // ni changement de mois, de mode ou de référence ne peut réutiliser ce reçu.
+                    if (previous.EnrollmentId != item.EnrollmentId
+                        || previous.Status != OperationStatus.Valide
+                        || previous.Method != PaymentService.ParseMethod(item.Method)
+                        || (input.Date.HasValue && previous.Date != input.Date.Value)
+                        || !string.Equals(previous.Reference?.Trim(), item.Reference?.Trim(), StringComparison.Ordinal)
+                        || previous.Allocations.Count != item.FeeItemIds.Distinct().Count()
+                        || previous.Allocations.Any(a => !item.FeeItemIds.Contains(a.FeeItemId)))
                         throw new DomainException("lot", "Le lot a changé depuis son premier envoi : rechargez les lignes avant de recommencer.");
                     if (!processedEnrollments.Add(item.EnrollmentId))
                     {
