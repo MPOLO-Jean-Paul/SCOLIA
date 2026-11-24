@@ -247,7 +247,7 @@
     <Setter Property="HorizontalAlignment" Value="Left" /><Setter Property="VerticalAlignment" Value="Top" />
     <Setter Property="Background" Value="White" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="BorderThickness" Value="1.5" />
-    <Setter Property="Padding" Value="9,6,13,6" />
+    <Setter Property="Padding" Value="9,6,15,6" />
   </Style>
   <Style Selector="Grid.authidentity > Grid.identityaccount">
     <Setter Property="HorizontalAlignment" Value="Right" />

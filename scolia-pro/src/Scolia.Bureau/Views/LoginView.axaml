@@ -349,11 +349,13 @@
                    une seule silhouette. Le logo ne masque pas les initiales. -->
               <Panel x:Name="CombinedIdentity" IsVisible="False">
                 <Grid x:Name="ScoliaAccountEmblem" Classes="authidentity" ClipToBounds="False">
-                  <Border x:Name="IdentityBrandCircle" Classes="identitybrand" AutomationProperties.Name="SCOLIA Pro">
-                    <Image Source="{DynamicResource ScoliaMark}" Width="36" Height="36"
+                  <Border x:Name="IdentityBrandCircle" Classes="identitybrand" HorizontalAlignment="Left"
+                          VerticalAlignment="Top" AutomationProperties.Name="SCOLIA Pro">
+                    <Image Source="{DynamicResource ScoliaMark}" Width="34" Height="34"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
-                  <Grid x:Name="IdentityAccountCircle" Classes="authavatar identityaccount">
+                  <Grid x:Name="IdentityAccountCircle" Classes="authavatar identityaccount"
+                        HorizontalAlignment="Right" VerticalAlignment="Bottom">
                     <Ellipse Classes="halo" />
                     <Ellipse Classes="ring" />
                     <Border Classes="disc">

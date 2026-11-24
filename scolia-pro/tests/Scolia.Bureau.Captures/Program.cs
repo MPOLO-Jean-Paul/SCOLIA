@@ -208,6 +208,7 @@ if (args.Length > 3 && args[3] == "identite-connexion")
         var a = BoundsInWindow(brand);
         var b = BoundsInWindow(account);
         var overlap = Math.Min(a.Right, b.Right) - Math.Max(a.Left, b.Left);
+        Console.WriteLine($"Emblème : marque {a}, compte {b}, intersection horizontale {overlap:0.##} px");
         if (overlap <= 0 || overlap > 30 || b.Left <= a.Left ||
             Math.Abs(a.Width - a.Height) > 1 || Math.Abs(b.Width - b.Height) > 1 ||
             a.Left < -1 || b.Right > window.Bounds.Width + 1)
