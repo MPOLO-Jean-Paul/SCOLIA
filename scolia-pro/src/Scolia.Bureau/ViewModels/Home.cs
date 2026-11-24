@@ -99,6 +99,23 @@ public sealed class HomePage : PageViewModel
     public string CashLine { get => cashLine; private set { if (Set(ref cashLine, value)) Raise(nameof(HasCashLine)); } }
     public bool HasCashLine => cashLine.Length > 0;
     public IBrush CashBrush { get => cashBrush; private set => Set(ref cashBrush, value); }
+    public bool CanReadOverview => Shell.Can(Perm.ReportsRead);
+    private bool overviewAvailable;
+    public bool OverviewAvailable
+    {
+        get => overviewAvailable;
+        private set
+        {
+            if (Set(ref overviewAvailable, value)) Raise(nameof(OverviewUnavailable));
+        }
+    }
+    public bool OverviewUnavailable => CanReadOverview && !OverviewAvailable && !Busy;
+    private bool dailyDetailsAvailable;
+    public bool DailyDetailsAvailable
+    {
+        get => dailyDetailsAvailable;
+        private set => Set(ref dailyDetailsAvailable, value);
+    }
     public bool HasKpis => Kpis.Count > 0;
     public bool HasTasks => Tasks.Count > 0;
     public RelayCommand ShowAllTools { get; }
@@ -132,7 +149,8 @@ public sealed class HomePage : PageViewModel
         Raise(nameof(AccountContextLine));
         Raise(nameof(HeaderSchoolLine));
         Raise(nameof(AllToolGroups));
-        if (!Shell.Can(Perm.ReportsRead)) { RaiseLists(); return; }
+        Raise(nameof(CanReadOverview));
+        if (!CanReadOverview) { RaiseLists(); return; }
 
         // Hors connexion, l'absence de copie locale ne doit pas empêcher
         // l'ouverture de l'accueil ni produire des chiffres inventés.
@@ -140,6 +158,8 @@ public sealed class HomePage : PageViewModel
         try { d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord"); }
         catch (OfflineException)
         {
+            OverviewAvailable = false;
+            DailyDetailsAvailable = false;
             Kpis.Clear();
             Tasks.Clear();
             Receipts.Clear();
@@ -151,6 +171,9 @@ public sealed class HomePage : PageViewModel
         TodayDto? t = null;
         try { t = await Shell.Api.GetAsync<TodayDto>("api/rapports/aujourdhui"); }
         catch (ApiException) { }
+        catch (OfflineException) { }
+        OverviewAvailable = true;
+        DailyDetailsAvailable = t is not null;
         var nextReceipts = new List<RecentReceiptVm>();
         var nextKpis = new List<HomeKpiVm>();
         var nextTasks = new List<HomeTaskVm>();
@@ -181,7 +204,7 @@ public sealed class HomePage : PageViewModel
                 nextTasks.Add(new HomeTaskVm("1. Créer les promotions et leurs frais", $"Chaque {Shell.StudentTerms.Singular} est inscrit dans une promotion, avec sa mensualité",
                     MaterialIconKind.School, ThemeBrush.Get("ToneIndigo"), new AsyncCommand(() => Shell.Run(() => SettingsPage.NewPromotionAsync(Shell)))));
             if (Shell.Can(Perm.StudentsWrite))
-                nextTasks.Add(new HomeTaskVm($"{(nextTasks.Count + 1)}. Inscrire le premier {Shell.StudentTerms.Singular}", "Son matricule est donné automatiquement",
+                nextTasks.Add(new HomeTaskVm($"{(nextTasks.Count + 1)}. Inscrire le premier {Shell.StudentTerms.Singular}", "Le matricule reste vide jusqu’à l’attribution du code anonyme",
                     MaterialIconKind.AccountPlus, ThemeBrush.Get("ToneBlue"), new AsyncCommand(() => Shell.Run(() => StudentForms.CreateAsync(Shell)))));
             if (Shell.Can(Perm.PaymentsCreate))
                 nextTasks.Add(new HomeTaskVm($"{(nextTasks.Count + 1)}. Encaisser une mensualité", "Le reçu numéroté s'imprime aussitôt",
@@ -242,13 +265,13 @@ public sealed class HomePage : PageViewModel
 
         Add(Perm.PaymentsCreate, "Encaisser", "Choisir les mois payés, imprimer le reçu.", MaterialIconKind.HandCoin, "ToneGreen",
             () => Shell.Open(() => new CashierPage(Shell)));
-        Add(Perm.StudentsWrite,  $"Inscrire {Shell.StudentTerms.Indefinite}", "Créer le dossier. Le matricule est attribué seul.", MaterialIconKind.AccountPlus, "ToneBlue",
+        Add(Perm.StudentsWrite,  $"Inscrire {Shell.StudentTerms.Indefinite}", "Créer un dossier et enregistrer son code anonyme lorsqu’il est disponible.", MaterialIconKind.AccountPlus, "ToneBlue",
             () => StudentForms.CreateAsync(Shell), "Inscrire");
         Add(Perm.ReportsRead, "Recouvrement", "Voir les retards et relancer les parents.", MaterialIconKind.ChartBar, "ToneOrange",
             () => Shell.Open(() => new DebtorsPage(Shell)), "Retards");
         Add(Perm.ReportsRead, "Rapports et exports", "Tous les documents en PDF ou en Excel.", MaterialIconKind.FileChart, "ToneRed",
             () => Shell.Open(() => new ReportsPage(Shell)), "Rapports");
-        Add(Perm.PaymentsRead, "Journal des reçus", "Retrouver, imprimer ou annuler un reçu.", MaterialIconKind.ReceiptText, "TonePurple",
+        Add(Perm.PaymentsRead, "Journal des reçus", "Retrouver et consulter les reçus de l’établissement.", MaterialIconKind.ReceiptText, "TonePurple",
             () => Shell.Open(() => new ReceiptsPage(Shell)), "Reçus");
         Add(Perm.AcademicsRead, "Présences", "Faire l'appel du jour par promotion.", MaterialIconKind.ClipboardCheck, "ToneTeal",
             () => Shell.Open(() => new AttendancePage(Shell)));
