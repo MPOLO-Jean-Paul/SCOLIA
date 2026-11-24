@@ -1835,6 +1835,8 @@ if (Environment.GetEnvironmentVariable("SCOLIA_ASSISTANT") == "1")
 {
     shell.IsSetupRequired = true;
     Wait(shell.Setup.LoadAsync());
+    Save(window, "00-accueil-choix-etablissement.png");
+    shell.Setup.SelectInstitution.Execute("ItmIm");
     Save(window, "00-assistant-etape-1.png");
     shell.Setup.SchoolName = "Institut de test";
     shell.Setup.ShortName = "IT";

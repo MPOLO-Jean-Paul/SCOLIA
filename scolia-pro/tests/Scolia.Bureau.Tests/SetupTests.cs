@@ -19,6 +19,43 @@ public class SetupTests
             AdminConfirm = "Scolia2026!",
         };
 
+    [Theory]
+    [InlineData("ItmIm", "Promotions")]
+    [InlineData("Maternelle", "Classes")]
+    [InlineData("Primaire", "Classes")]
+    [InlineData("Secondaire", "Classes")]
+    [InlineData("ComplexeScolaire", "Classes")]
+    [InlineData("SuperieurLmd", "Promotions")]
+    public void Accueil_exige_le_choix_du_profil_et_permet_de_revenir(string profile, string heading)
+    {
+        var wizard = NewWizard();
+        Assert.True(wizard.IsChoosingInstitution);
+        Assert.False(wizard.IsStepOne);
+        wizard.SelectInstitution.Execute("inconnu");
+        Assert.True(wizard.IsChoosingInstitution);
+        wizard.SelectInstitution.Execute(profile);
+        Assert.True(wizard.IsStepOne);
+        Assert.Equal(profile, wizard.InstitutionType.Value);
+        Assert.Equal(heading, wizard.PromotionHeading);
+        Assert.Equal(profile == "SuperieurLmd" ? "Mensualité (USD)" : "Mensualité (FC)", wizard.FeeHeading);
+        wizard.Back.Execute(null);
+        Assert.True(wizard.IsChoosingInstitution);
+        Assert.Equal("Institut de test", wizard.SchoolName);
+    }
+
+    [Fact]
+    public void Donnees_de_demo_reservees_au_profil_itm_prive()
+    {
+        var wizard = NewWizard();
+        wizard.SelectInstitution.Execute("ItmIm");
+        wizard.LoadDemo = true;
+        Assert.True(wizard.LoadDemo);
+        wizard.Back.Execute(null);
+        wizard.SelectInstitution.Execute("Primaire");
+        Assert.False(wizard.CanLoadDemo);
+        Assert.False(wizard.LoadDemo);
+    }
+
     [Fact]
     public void Etape_un_demande_le_nom_et_le_sigle()
     {

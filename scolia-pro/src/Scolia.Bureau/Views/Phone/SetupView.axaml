@@ -75,6 +75,21 @@
       <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
       <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
     </Style>
+    <Style Selector="Button.profileChoice">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="14,12" />
+      <Setter Property="MinHeight" Value="76" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.profileChoice:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
   </UserControl.Styles>
 
   <!-- Configuration sur le téléphone : il devient le serveur de l'établissement. Une colonne, au doigt, mêmes étapes que l'ordinateur. -->
@@ -103,7 +118,60 @@
     <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
       <StackPanel Classes="iossetupbody" Margin="18,16,18,14" Spacing="16">
         <!-- Étape 1 : identité de l'établissement ; le réseau est configuré ensuite. -->
+        <StackPanel IsVisible="{Binding IsChoosingInstitution}" Spacing="10">
+          <TextBlock Text="Bienvenue dans SCOLIA Pro" FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <TextBlock Text="Choisissez le type de votre établissement. Si une école existe déjà sur un autre poste, rejoignez son serveur." TextWrapping="Wrap" Classes="muted" />
+          <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="ItmIm" >
+  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+    <mi:MaterialIcon Kind="School" Width="25" Height="25" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+    <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="ITM / IEM" FontWeight="SemiBold" TextWrapping="Wrap" /><TextBlock Text="Instituts techniques médicaux et d'enseignement médical" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" /></StackPanel>
+    <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" VerticalAlignment="Center" />
+  </Grid>
+</Button>
+          <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="Maternelle" >
+  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+    <mi:MaterialIcon Kind="School" Width="25" Height="25" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+    <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="École maternelle" FontWeight="SemiBold" TextWrapping="Wrap" /><TextBlock Text="Enseignement préscolaire" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" /></StackPanel>
+    <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" VerticalAlignment="Center" />
+  </Grid>
+</Button>
+          <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="Primaire" >
+  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+    <mi:MaterialIcon Kind="School" Width="25" Height="25" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+    <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="École primaire" FontWeight="SemiBold" TextWrapping="Wrap" /><TextBlock Text="Classes et suivi des élèves" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" /></StackPanel>
+    <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" VerticalAlignment="Center" />
+  </Grid>
+</Button>
+          <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="Secondaire" >
+  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+    <mi:MaterialIcon Kind="School" Width="25" Height="25" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+    <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="École secondaire / technique" FontWeight="SemiBold" TextWrapping="Wrap" /><TextBlock Text="Humanités, options et filières techniques" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" /></StackPanel>
+    <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" VerticalAlignment="Center" />
+  </Grid>
+</Button>
+          <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="ComplexeScolaire" >
+  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+    <mi:MaterialIcon Kind="School" Width="25" Height="25" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+    <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Complexe scolaire" FontWeight="SemiBold" TextWrapping="Wrap" /><TextBlock Text="Plusieurs cycles dans un même établissement" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" /></StackPanel>
+    <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" VerticalAlignment="Center" />
+  </Grid>
+</Button>
+          <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="SuperieurLmd" >
+  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+    <mi:MaterialIcon Kind="School" Width="25" Height="25" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+    <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Université / institut supérieur" FontWeight="SemiBold" TextWrapping="Wrap" /><TextBlock Text="Enseignement supérieur et système LMD" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" /></StackPanel>
+    <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" VerticalAlignment="Center" />
+  </Grid>
+</Button>
+          <Button Classes="iossetupsecondary" Command="{Binding JoinExisting}" HorizontalAlignment="Stretch"><TextBlock Text="Rejoindre un établissement existant" TextWrapping="Wrap" /></Button>
+        </StackPanel>
         <StackPanel IsVisible="{Binding IsStepOne}" Spacing="14">
+          <Border Classes="card"><StackPanel Spacing="8">
+            <TextBlock Text="{Binding ProfileLabel}" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding ProfileHint}" Classes="muted" TextWrapping="Wrap" />
+            <StackPanel Classes="field"><TextBlock Text="Régime de l'établissement" /><ComboBox ItemsSource="{Binding GovernanceTypes}" SelectedItem="{Binding Governance}" HorizontalAlignment="Stretch" /></StackPanel>
+            <TextBlock Text="Public : aucun frais sans base réglementaire vérifiée." Classes="muted" TextWrapping="Wrap" />
+          </StackPanel></Border>
           <Border Classes="card">
             <StackPanel Spacing="10">
               <Grid ColumnDefinitions="Auto,*">
@@ -119,9 +187,9 @@
                   <TextBlock Text="{Binding LogoLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                 </StackPanel>
               </Grid>
-              <StackPanel Classes="field"><TextBlock Text="Nom de l'établissement" /><TextBox Classes="w11" Text="{Binding SchoolName}" PlaceholderText="Institut technique médical" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Nom de l'établissement" /><TextBox Classes="w11" Text="{Binding SchoolName}" PlaceholderText="Nom officiel" /></StackPanel>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="10" infra:Adaptive.StackBelow="300">
-                <StackPanel Classes="field"><TextBlock Text="Sigle" /><TextBox Classes="w11" Text="{Binding ShortName}" PlaceholderText="ITM" /></StackPanel>
+                <StackPanel Classes="field"><TextBlock Text="Sigle" /><TextBox Classes="w11" Text="{Binding ShortName}" PlaceholderText="Sigle" /></StackPanel>
                 <StackPanel Classes="field" Grid.Column="1"><TextBlock Text="Ville" /><TextBox Classes="w11" Text="{Binding City}" PlaceholderText="Kinshasa" /></StackPanel>
               </Grid>
               <StackPanel Classes="field"><TextBlock Text="Téléphone" /><TextBox Classes="w11" Text="{Binding Phone}" infra:PhoneInput.Digits="True" PlaceholderText="0812345678" /></StackPanel>
@@ -131,11 +199,13 @@
 
           <Border Classes="card">
             <StackPanel Spacing="10">
-              <TextBlock Text="Année scolaire" FontWeight="SemiBold" />
+              <TextBlock Text="Année scolaire et paiements" FontWeight="SemiBold" />
+              <StackPanel Classes="field"><TextBlock Text="Dernier jour sans retard" TextWrapping="Wrap" /><ComboBox ItemsSource="{Binding PaymentDeadlineDays}" SelectedItem="{Binding LastOnTimeDay}" HorizontalAlignment="Stretch" /></StackPanel>
+              <TextBlock Text="{Binding MonthRangeSummary}" Classes="muted" TextWrapping="Wrap" />
               <StackPanel Classes="field"><TextBlock Text="Année" /><TextBox Classes="w11" Text="{Binding YearLabel}" PlaceholderText="2026-2027" /></StackPanel>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="10" infra:Adaptive.StackBelow="300">
                 <StackPanel Classes="field"><TextBlock Text="Premier mois" /><ComboBox ItemsSource="{Binding StartMonths}" SelectedItem="{Binding StartMonth}" HorizontalAlignment="Stretch" /></StackPanel>
-                <StackPanel Classes="field" Grid.Column="1"><TextBlock Text="Durée" /><ComboBox ItemsSource="{Binding MonthCounts}" SelectedItem="{Binding MonthCount}" HorizontalAlignment="Stretch" /></StackPanel>
+                <StackPanel Classes="field" Grid.Column="1"><TextBlock Text="Dernier mois" /><ComboBox ItemsSource="{Binding EndMonths}" SelectedItem="{Binding EndMonth}" HorizontalAlignment="Stretch" /></StackPanel>
               </Grid>
             </StackPanel>
           </Border>
@@ -144,8 +214,8 @@
             <StackPanel Spacing="10">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="1">
-                  <TextBlock Text="Promotions" FontWeight="SemiBold" />
-                  <TextBlock Text="Le code, par exemple INF1, commence chaque matricule." Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding PromotionHeading}" FontWeight="SemiBold" />
+                  <TextBlock Text="Le code identifie la classe ou la promotion." Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                 </StackPanel>
                 <Button Grid.Column="1" Command="{Binding AddPromotion}" VerticalAlignment="Center" Margin="10,0,0,0">
                   <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="Plus" Width="16" Height="16" /><TextBlock Text="Ajouter" /></StackPanel>
@@ -157,9 +227,9 @@
                     <Border Background="{DynamicResource Surface2Brush}" CornerRadius="12" Padding="10" Margin="0,0,0,8">
                       <Grid ColumnDefinitions="90,*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
                         <TextBox Classes="w11" Text="{Binding Code}" PlaceholderText="INF1" MaxLength="4" />
-                        <TextBox Classes="w11" Grid.Column="1" Text="{Binding Fee}" PlaceholderText="Mensualité, 55000" />
+                        <TextBox Classes="w11" Grid.Column="1" Text="{Binding Fee}" PlaceholderText="Montant" />
                         <Button Grid.Column="2" Classes="toolicon" Command="{Binding Remove}" VerticalAlignment="Center"><mi:MaterialIcon Kind="Close" Width="16" Height="16" /></Button>
-                        <TextBox Classes="w11" Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Name}" PlaceholderText="Désignation, par exemple Première Infirmière" />
+                        <TextBox Classes="w11" Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Name}" PlaceholderText="Désignation" />
                         <!-- Désignations prédites d'après le code : un toucher remplit la ligne -->
                         <ItemsControl Grid.Row="2" Grid.ColumnSpan="3" ItemsSource="{Binding Suggestions}" IsVisible="{Binding HasSuggestions}">
                           <ItemsControl.ItemsPanel>
@@ -181,7 +251,7 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <CheckBox IsChecked="{Binding LoadDemo}"><TextBlock Text="Charger des données de démonstration fictives" TextWrapping="Wrap" /></CheckBox>
+              <CheckBox IsChecked="{Binding LoadDemo}" IsVisible="{Binding CanLoadDemo}"><TextBlock Text="Charger des données de démonstration fictives" TextWrapping="Wrap" /></CheckBox>
               <TextBlock Text="{Binding CurrencyLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
@@ -224,15 +294,15 @@
     </ScrollViewer>
 
     <!-- Boutons toujours visibles, en bas, au pouce : deux colonnes égales, aucun chevauchement sur petit écran. -->
-    <Border Grid.Row="2" Classes="iossetupfooter" Background="#26FFFFFF" BorderThickness="0" Padding="16,10">
+    <Border Grid.Row="2" IsVisible="{Binding CanGoBack}" Classes="iossetupfooter" Background="#26FFFFFF" BorderThickness="0" Padding="16,10">
       <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-        <Button Classes="iossetupsecondary" Command="{Binding Back}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}">
+        <Button Classes="iossetupsecondary" Command="{Binding Back}" IsVisible="{Binding CanGoBack}" IsEnabled="{Binding !Busy}">
           <DockPanel>
             <mi:MaterialIcon DockPanel.Dock="Left" Kind="ChevronLeft" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center" />
             <TextBlock Text="Retour" VerticalAlignment="Center" />
           </DockPanel>
         </Button>
-        <Button Classes="iossetupsecondary" Command="{Binding JoinExisting}" IsVisible="{Binding IsStepOne}">
+        <Button Classes="iossetupsecondary" Command="{Binding JoinExisting}" IsVisible="{Binding IsChoosingInstitution}">
           <DockPanel>
             <mi:MaterialIcon DockPanel.Dock="Left" Kind="LanConnect" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center" />
             <TextBlock Text="Rejoindre un serveur" VerticalAlignment="Center" />
