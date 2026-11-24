@@ -69,9 +69,14 @@ public sealed class NativeEntryAndTeacherVisualTests
     {
         var teacher = Load("Views/TeacherHomeView.axaml");
         var admin = Load("Views/HomeView.axaml");
+        // La nouvelle vue du secrétariat reprend la surface Power BI ; l'enseignant
+        // conserve son tableau de démarrage actuel, avec les mêmes droits métier.
         Assert.Contains(admin.Descendants(), x =>
             x.Name.LocalName == "Border" &&
-            ((string?)x.Attribute("Classes"))?.Split(' ').Contains("desktopwelcome") == true);
+            ((string?)x.Attribute("Classes"))?.Split(' ').Contains("pbiPanel") == true);
+        Assert.Contains(admin.Descendants(), x =>
+            x.Name.LocalName == "ItemsControl" &&
+            (string?)x.Attribute("ItemsSource") == "{Binding QuickActions}");
         Assert.Contains(teacher.Descendants(), x =>
             x.Name.LocalName == "Border" &&
             ((string?)x.Attribute("Classes"))?.Split(' ').Contains("desktopwelcome") == true);
