@@ -71,6 +71,22 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      # Premier accueil : captures natives autonomes, Windows et téléphone.
+      - name: Premiere configuration - profils et cycles scolaires
+        env:
+          SCOLIA_ASTUCES: '0'
+        run: |
+          SCOLIA_MOBILE=0 SCOLIA_TAILLE=1280x820 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/premiere-configuration/windows http://127.0.0.1:5293/ Scolia2026! premiere-configuration
+          SCOLIA_MOBILE=1 SCOLIA_TAILLE=390x740 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/premiere-configuration/android http://127.0.0.1:5293/ Scolia2026! premiere-configuration
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Premiere_Configuration_Windows_Android
+          path: scolia-pro/artifacts/premiere-configuration/
+          if-no-files-found: ignore
+          retention-days: 14
+
       # Revue UI des cartes : donnees fictives, moteur d'export reel non touche.
       # Les captures sont seulement celles des ecrans, jamais les PDF scolaires.
       - name: Cartes - mise en page desktop et mobile sans modifier le modele

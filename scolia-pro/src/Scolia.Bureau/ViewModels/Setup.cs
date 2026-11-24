@@ -73,7 +73,7 @@ public sealed class PromotionDraftVm : Observable
 }
 
 /// <summary>
-/// Assistant de première installation, en deux étapes comme dans la version précédente :
+/// Assistant de première installation : choix explicite du profil, puis deux étapes de configuration :
 /// 1) établissement, logo, année scolaire et promotions, 2) comptes : le secrétariat, qui administre SCOLIA, et la comptabilité.
 /// </summary>
 public sealed class SetupViewModel : Observable
@@ -81,7 +81,7 @@ public sealed class SetupViewModel : Observable
     private static readonly Regex YearPattern = new(@"^\s*(\d{4})\s*-\s*(\d{4})\s*$");
 
     private readonly ShellViewModel shell;
-    private int step = 1;
+    private int step;
     private bool busy;
     private string error = string.Empty;
 
@@ -100,7 +100,8 @@ public sealed class SetupViewModel : Observable
         MonthCount = MonthCounts.First(m => m.Value == "10");
         LastOnTimeDay = PaymentDeadlineDays.First(d => d.Value == "5");
         Next = new AsyncCommand(NextAsync);
-        Back = new RelayCommand(() => { Step = 1; Error = string.Empty; });
+        Back = new RelayCommand(() => { Step = Math.Max(0, Step - 1); Error = string.Empty; });
+        SelectInstitution = new RelayCommand<string>(ChooseInstitution);
         Finish = new AsyncCommand(FinishAsync);
         JoinExisting = new AsyncCommand(() => shell.ChooseServerAsync());
         AddPromotion = new RelayCommand(AddPromotionRow);
@@ -180,19 +181,63 @@ public sealed class SetupViewModel : Observable
     // n'acquièrent pas une valeur officielle par cette simple configuration.
     public IReadOnlyList<ChoiceItem> InstitutionTypes { get; } =
     [
-        new("ItmIm", "ITM / IM"),
-        new("Maternelle", "École maternelle privée"),
-        new("Primaire", "École primaire privée"),
-        new("Secondaire", "École secondaire / technique privée"),
-        new("ComplexeScolaire", "Complexe scolaire privé — cycles à définir ensuite"),
+        new("ItmIm", "ITM / IEM"),
+        new("Maternelle", "École maternelle"),
+        new("Primaire", "École primaire"),
+        new("Secondaire", "École secondaire / technique"),
+        new("ComplexeScolaire", "Complexe scolaire"),
         new("SuperieurLmd", "Université / institut supérieur LMD"),
     ];
     private ChoiceItem institutionType = null!;
     public ChoiceItem InstitutionType
     {
         get => institutionType;
-        set { if (Set(ref institutionType, value)) Raise(nameof(CurrencyLine)); }
+        set
+        {
+            if (!Set(ref institutionType, value)) return;
+            if (!CanLoadDemo) LoadDemo = false;
+            Raise(nameof(CurrencyLine)); Raise(nameof(ProfileLabel)); Raise(nameof(ProfileHint));
+            Raise(nameof(PromotionHeading)); Raise(nameof(FeeHeading)); Raise(nameof(CanLoadDemo)); Raise(nameof(IsComplexSchool)); Raise(nameof(ShowPromotionEditor));
+        }
     }
+
+    public RelayCommand<string> SelectInstitution { get; }
+    private void ChooseInstitution(string? value)
+    {
+        if (Busy || Step != 0) return;
+        var profile = InstitutionTypes.FirstOrDefault(p => p.Value == value);
+        if (profile is null || !InstitutionProfiles.IsEnabled(profile.Value)) return;
+        InstitutionType = profile;
+        Error = string.Empty;
+        Step = 1;
+    }
+    public string ProfileLabel => InstitutionType?.Label ?? "Type d'établissement";
+    public string ProfileHint => InstitutionType?.Value switch
+    {
+        InstitutionProfiles.ItmIm => "Apprenants, sections et promotions médicales. Calendrier annuel.",
+        InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire or InstitutionProfiles.Secondaire => "Élèves et classes du cycle choisi. Calendrier scolaire annuel.",
+        InstitutionProfiles.ComplexeScolaire => "Choisissez deux ou trois cycles ci-dessous. Les classes seront rattachées à leur cycle après installation.",
+        InstitutionProfiles.SuperieurLmd => "Étudiants et formations supérieures. Les paramètres pédagogiques LMD se définissent ensuite dans Paramètres.",
+        _ => string.Empty,
+    };
+    public bool IsComplexSchool => InstitutionType?.Value == InstitutionProfiles.ComplexeScolaire;
+    public bool ShowPromotionEditor => !IsComplexSchool || Promotions.Any(p => !p.IsBlank);
+    private bool includeMaternelle;
+    private bool includePrimaire;
+    private bool includeSecondaire;
+    public bool IncludeMaternelle { get => includeMaternelle; set => Set(ref includeMaternelle, value); }
+    public bool IncludePrimaire { get => includePrimaire; set => Set(ref includePrimaire, value); }
+    public bool IncludeSecondaire { get => includeSecondaire; set => Set(ref includeSecondaire, value); }
+    private IReadOnlyList<string> SelectedCycles() => new[]
+    {
+        IncludeMaternelle ? InstitutionProfiles.Maternelle : null,
+        IncludePrimaire ? InstitutionProfiles.Primaire : null,
+        IncludeSecondaire ? InstitutionProfiles.Secondaire : null,
+    }.OfType<string>().ToArray();
+    public string PromotionHeading => InstitutionType?.Value is InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire
+        or InstitutionProfiles.Secondaire or InstitutionProfiles.ComplexeScolaire ? "Classes" : "Promotions";
+    public string FeeHeading => InstitutionType?.Value == InstitutionProfiles.SuperieurLmd ? "Mensualité (USD)" : "Mensualité (FC)";
+    public bool CanLoadDemo => InstitutionType?.Value == InstitutionProfiles.ItmIm && Governance?.Value == "Prive";
 
     public IReadOnlyList<ChoiceItem> GovernanceTypes { get; } =
     [
@@ -200,7 +245,16 @@ public sealed class SetupViewModel : Observable
         new("Public", "Établissement public (sans perception automatique)"),
     ];
     private ChoiceItem governance = null!;
-    public ChoiceItem Governance { get => governance; set => Set(ref governance, value); }
+    public ChoiceItem Governance
+    {
+        get => governance;
+        set
+        {
+            if (!Set(ref governance, value)) return;
+            if (!CanLoadDemo) LoadDemo = false;
+            Raise(nameof(CanLoadDemo));
+        }
+    }
 
     public IReadOnlyList<ChoiceItem> StartMonths { get; }
     public IReadOnlyList<ChoiceItem> EndMonths { get; }
@@ -213,7 +267,7 @@ public sealed class SetupViewModel : Observable
         new("7", "Juillet"), new("8", "Août"), new("9", "Septembre"), new("10", "Octobre"), new("11", "Novembre"), new("12", "Décembre"),
     ];
 
-    /// <summary>Étape affichée : 1 ou 2.</summary>
+    /// <summary>Étape affichée : 0 (accueil), 1 (établissement) ou 2 (comptes).</summary>
     public int Step
     {
         get => step;
@@ -221,6 +275,8 @@ public sealed class SetupViewModel : Observable
         {
             if (Set(ref step, value))
             {
+                Raise(nameof(IsChoosingInstitution));
+                Raise(nameof(CanGoBack));
                 Raise(nameof(IsStepOne));
                 Raise(nameof(IsStepTwo));
                 Raise(nameof(StepLabel));
@@ -231,12 +287,18 @@ public sealed class SetupViewModel : Observable
     }
 
     /// <summary>Avancement de l'assistant, en pourcentage.</summary>
-    public double Progress => step * 50.0;
-
+    public double Progress => (step + 1) * 100.0 / 3;
+    public bool IsChoosingInstitution => step == 0;
+    public bool CanGoBack => step > 0;
     public bool IsStepOne => step == 1;
     public bool IsStepTwo => step == 2;
-    public string StepLabel => $"Étape {step} sur 2";
-    public string StepTitle => step == 1 ? "Établissement, logo, année et promotions" : "Comptes et sécurité";
+    public string StepLabel => $"Étape {step + 1} sur 3";
+    public string StepTitle => step switch
+    {
+        0 => "Choisissez votre type d'établissement",
+        1 => "Configurer l'établissement",
+        _ => "Comptes et sécurité",
+    };
 
     public bool Busy { get => busy; private set => Set(ref busy, value); }
     public string Error { get => error; private set { if (Set(ref error, value)) Raise(nameof(HasError)); } }
@@ -323,7 +385,8 @@ public sealed class SetupViewModel : Observable
 
     public string CurrencyLine => InstitutionType?.Value == InstitutionProfiles.SuperieurLmd
         ? "Monnaie : dollar américain (USD)" : "Monnaie : franc congolais (FC)";
-    public bool LoadDemo { get; set; }
+    private bool loadDemo;
+    public bool LoadDemo { get => loadDemo; set => Set(ref loadDemo, value && CanLoadDemo); }
 
     // ---- Étape 2 : comptes ----
     // Le compte secrétariat est l'administrateur : ses fonctions, le paramétrage et les utilisateurs.
@@ -374,6 +437,7 @@ public sealed class SetupViewModel : Observable
 
     private Task NextAsync()
     {
+        if (!IsStepOne) return Task.CompletedTask;
         Error = ValidateStepOne() ?? string.Empty;
         if (HasError) return Task.CompletedTask;
         Step = 2;
@@ -382,7 +446,8 @@ public sealed class SetupViewModel : Observable
 
     private async Task FinishAsync()
     {
-        Error = ValidateStepTwo() ?? string.Empty;
+        if (!IsStepTwo || Busy) return;
+        Error = ValidateStepOne() ?? ValidateStepTwo() ?? string.Empty;
         if (HasError) return;
         Busy = true;
         try
@@ -402,6 +467,8 @@ public sealed class SetupViewModel : Observable
     {
         if (InstitutionType is null || !InstitutionProfiles.IsEnabled(InstitutionType.Value))
             return "Choisissez un type d'établissement reconnu.";
+        if (IsComplexSchool && SelectedCycles().Count < 2)
+            return "Choisissez au moins deux cycles pour le complexe scolaire.";
         if (Governance?.Value is not ("Prive" or "Public"))
             return "Choisissez le régime privé ou public de l'établissement.";
         if (LoadDemo && (InstitutionType.Value != InstitutionProfiles.ItmIm || Governance.Value != "Prive"))
@@ -424,7 +491,7 @@ public sealed class SetupViewModel : Observable
         var rank = 0;
         if (InstitutionType.Value == InstitutionProfiles.ComplexeScolaire &&
             Promotions.Any(p => !p.IsBlank))
-            return "Pour un complexe scolaire, installez d'abord l'établissement, choisissez ses cycles dans Paramètres > Cycles scolaires, puis créez les classes dans le cycle correspondant.";
+            return "Pour un complexe scolaire, retirez les promotions saisies avant le changement de profil. Les classes seront créées dans leur cycle après l'installation.";
         foreach (var p in Promotions)
         {
             rank++;
@@ -533,6 +600,7 @@ public sealed class SetupViewModel : Observable
         {
             institutionType = InstitutionType.Value,
             governance = Governance.Value,
+            initialSchoolCycles = IsComplexSchool ? SelectedCycles() : null,
             schoolName = SchoolName.Trim(),
             shortName = ShortName.Trim(),
             motto = Motto.Trim() is { Length: > 0 } motto ? motto : null,
