@@ -189,10 +189,14 @@ public sealed class CardsPage : PageViewModel
         }
         // Sous-titre court : il tient sur deux lignes d'un téléphone. Le nombre d'apprenants n'est rappelé que s'il diffère.
         var printable = Rows.Count(r => r.Selectable);
-        subtitle = (printable == Rows.Count
-            ? Format.Count(printable, "carte à imprimer", "cartes à imprimer")
-            : $"{Format.Count(printable, "carte à imprimer", "cartes à imprimer")} sur {Rows.Count}")
-            + $" · {Month?.Label} {Year?.Value}";
+        // Sous-titre sur deux lignes courtes pour les téléphones étroits (320-360 px).
+        // Sur Windows, conserver la formulation détaillée.
+        subtitle = Phone
+            ? $"{printable}/{Rows.Count} cartes{Environment.NewLine}{Month?.Label} {Year?.Value}"
+            : (printable == Rows.Count
+                ? Format.Count(printable, "carte à imprimer", "cartes à imprimer")
+                : $"{Format.Count(printable, "carte à imprimer", "cartes à imprimer")} sur {Rows.Count}")
+                + $" · {Month?.Label} {Year?.Value}";
         Raise(nameof(Subtitle));
     }
 
