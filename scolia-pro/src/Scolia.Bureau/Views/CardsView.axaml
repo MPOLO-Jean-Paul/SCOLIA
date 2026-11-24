@@ -104,7 +104,8 @@
                   <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}"
                           BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                      <CheckBox IsChecked="{Binding Selected, Mode=TwoWay}" VerticalAlignment="Top"
+                      <CheckBox IsChecked="{Binding Selected, Mode=TwoWay}" IsEnabled="{Binding Selectable}"
+                                AutomationProperties.Name="{Binding Name}" VerticalAlignment="Top"
                                 ToolTip.Tip="Inclure cette carte dans le lot" />
                       <StackPanel Grid.Column="1" Spacing="5">
                         <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
