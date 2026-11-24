@@ -2,10 +2,18 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Scolia.Bureau.Controls"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.BatchPaymentView">
   <Grid RowDefinitions="Auto,Auto,*,Auto">
-    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
-      <WrapPanel>
+    <!-- Surface Fluent Windows 11 : filtres lisibles et préparation visible. -->
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,12" Padding="14,12" CornerRadius="{DynamicResource RadiusCard}">
+      <StackPanel Spacing="9">
+        <StackPanel Orientation="Horizontal" Spacing="9">
+          <mi:MaterialIcon Kind="FormatListChecks" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" />
+          <TextBlock Text="Encaissement groupé" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </StackPanel>
+        <TextBlock Text="Sélectionnez les échéances et vérifiez le lot avant validation." Classes="muted" TextWrapping="Wrap" />
+        <WrapPanel>
         <StackPanel Classes="field pagesearch">
           <TextBlock Text="Rechercher" Classes="fieldlabel" />
           <TextBox Classes="search clearButton" Width="260" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
@@ -29,7 +37,8 @@
           <TextBlock Text="Date" Classes="fieldlabel" />
           <CalendarDatePicker Width="170" PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" SelectedDate="{Binding Day}" />
         </StackPanel>
-      </WrapPanel>
+        </WrapPanel>
+      </StackPanel>
     </Border>
     <!-- Le lot sélectionné est distinct de la recherche : cette barre reste visible pendant tous les filtres. -->
     <Border Grid.Row="1" Classes="card" Padding="12,8" Margin="0,0,0,10">

@@ -1853,6 +1853,51 @@ if (Environment.GetEnvironmentVariable("SCOLIA_ASSISTANT") == "1")
     Save(window, "00-assistant-etape-2.png");
     return;
 }
+// Captures fidèles de l'accueil Power BI, depuis l'interface Avalonia réelle,
+// sur un serveur de démonstration local. Aucun établissement n'est contacté.
+if (args.Length > 3 && args[3] == "accueil-powerbi")
+{
+    using var fixture = new LayoutServer { DemoHome = true };
+    api.Retarget(fixture.Address);
+    prefs.Animations = false;
+    var opening = ShellViewModel.MinimumOpening;
+    ShellViewModel.MinimumOpening = TimeSpan.Zero;
+    try
+    {
+        Wait(shell.OpenSessionAsync(new SessionDto(Guid.NewGuid(), "preview-home", "Amina Kabeya",
+            "Secretaire", "Secrétariat",
+            [Scolia.Bureau.Ribbon.Perm.StudentsRead, Scolia.Bureau.Ribbon.Perm.StudentsWrite,
+             Scolia.Bureau.Ribbon.Perm.PaymentsRead, Scolia.Bureau.Ribbon.Perm.PaymentsCreate,
+             Scolia.Bureau.Ribbon.Perm.ReportsRead, Scolia.Bureau.Ribbon.Perm.AcademicsRead],
+            false, "Institut Technique Médical de démonstration", "ITM Demo",
+            "2026-2027", "FC", "+243")));
+    }
+    finally { ShellViewModel.MinimumOpening = opening; }
+    shell.Sync.Stop();
+    foreach (var (width, height) in new[] { (1024, 720), (1366, 768), (1600, 900), (1920, 1080) })
+    {
+        window.Width = width;
+        window.Height = height;
+        prefs.Theme = "light";
+        Wait(shell.Open(() => new HomePage(shell)));
+        var home = shell.Current as HomePage;
+        if (home is null || home.Kpis.Count != 4 || home.QuickActions.Count < 2)
+            throw new InvalidOperationException($"Accueil Power BI {width}x{height} : indicateurs ou commandes absents.");
+        window.UpdateLayout();
+        Save(window, $"accueil-powerbi-{width}x{height}-clair.png");
+    }
+    window.Width = 1600;
+    window.Height = 900;
+    prefs.Theme = "dark";
+    Wait(shell.Open(() => new HomePage(shell)));
+    window.UpdateLayout();
+    Save(window, "accueil-powerbi-1600x900-sombre.png");
+    Console.WriteLine("OK : accueil Power BI Windows 11, commandes, indicateurs et thèmes vérifiés.");
+    shell.Sync.Stop();
+    window.Close();
+    return;
+}
+
 // Revue visuelle autonome des interfaces de préparation : uniquement des comptes et candidats fictifs.
 // Aucune ouverture de base réelle, aucune requête vers Cloudflare et aucun export scolaire.
 if (args.Length > 3 && args[3] == "cartes-ui")
@@ -3156,6 +3201,7 @@ sealed class LayoutServer : IDisposable
     public Uri Address { get; }
     public AccountDto? PaymentAccount { get; set; }
     public bool DemoCards { get; set; }
+    public bool DemoHome { get; set; }
     public int PaymentCount { get; private set; }
     public TaskCompletionSource? HoldPayment { get; set; }
     public TaskCompletionSource? HoldStudents { get; set; }
@@ -3198,6 +3244,18 @@ sealed class LayoutServer : IDisposable
                     ? new { status = "ok", version = "1.2.90", cardGenerator = Scolia.Domain.Students.CardGeneratorManifest.Id }
                     : (object)new { status = "ok" })
                 : null;
+            if (DemoHome && path == "/api/rapports/tableau-de-bord")
+                result = new DashboardDto("2026-2027", 186, 18, 8450000m, 2430000m, 125000m,
+                    12500000m, 4050000m, 3250000m, 68m, 122, 64, 400000m,
+                    [], [], [],
+                    [new ReceiptSummaryDto(Guid.NewGuid(), "REC-2026-00123", DateOnly.FromDateTime(DateTime.Today),
+                        55000m, "Especes", "Valide", "Agent de démonstration", "INF1 · MUKENDI KABUYA Alice"),
+                     new ReceiptSummaryDto(Guid.NewGuid(), "REC-2026-00122", DateOnly.FromDateTime(DateTime.Today),
+                        70000m, "Especes", "Valide", "Agent de démonstration", "ACC2 · NGOY BAKAJIKA Marcel")],
+                    91, 95);
+            if (DemoHome && path == "/api/rapports/aujourdhui")
+                result = new TodayDto(DateOnly.FromDateTime(DateTime.Today), 3, 125000m, 0m,
+                    false, 0, 0, [], []);
             if (DemoCards && path == "/api/etablissement/promotions")
                 result = Array.Empty<PromotionDto>();
             if (DemoCards && path == "/api/cartes/candidats")

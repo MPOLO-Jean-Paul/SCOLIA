@@ -205,7 +205,7 @@ public sealed class StudentCardsApiTests : IDisposable
         var enrollmentId = student.GetProperty("enrollments")[0].GetProperty("id").GetString()!;
 
         // L'ancien matricule reste interne ; aucun code n'est invente en GET.
-        Assert.Equal("À ATTRIBUER", student.GetProperty("matricule").GetString());
+        Assert.Equal(string.Empty, student.GetProperty("matricule").GetString());
         var before = (await admin.GetAsync($"/api/cartes/candidats?promotionId={promotion}").Ok())
             .EnumerateArray().Single();
         Assert.False(before.GetProperty("hasAnonymousCode").GetBoolean());
@@ -284,8 +284,8 @@ public sealed class StudentCardsApiTests : IDisposable
                 .EnumerateArray().Single().GetProperty("matricule").GetString()!;
 
         // Avant l'attribution : la mention, jamais la référence technique INF101.
-        Assert.Equal("À ATTRIBUER", await AttendanceMatricule());
-        Assert.Equal("À ATTRIBUER", await BatchMatricule());
+        Assert.Equal(string.Empty, await AttendanceMatricule());
+        Assert.Equal(string.Empty, await BatchMatricule());
 
         await admin.Post("/api/deliberation/codes/attribution", new { promotionId = promotion }).Ok();
         await admin.Put($"/api/deliberation/codes/{enrollmentId}",

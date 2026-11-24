@@ -60,7 +60,10 @@ public sealed class NativePreHomePolishTests
         var teacher = View("Views/TeacherHomeView.axaml");
         var home = View("Views/HomeView.axaml");
         Assert.Contains(home.Descendants(), x =>
-            x.Name.LocalName == "Border" && (string?)x.Attribute("Classes") == "desktopwelcome");
+            x.Name.LocalName == "Border" && (string?)x.Attribute("Classes") == "pbiPanel");
+        Assert.Contains(home.Descendants(), x =>
+            x.Name.LocalName == "ItemsControl" &&
+            (string?)x.Attribute("ItemsSource") == "{Binding MoreTools}");
         Assert.Contains(teacher.Descendants(), x =>
             x.Name.LocalName == "Border" && (string?)x.Attribute("Classes") == "desktopwelcome");
         Assert.True(teacher.Descendants().Count(x =>

@@ -275,9 +275,9 @@ public sealed class BusinessApiTests : IDisposable
             identity = new { lastName = "Mukendi", middleName = "Kabeya", firstName = "grâce", birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14), gender = "F", guardianPhone = "0812345678", guardianName = "Parent" },
             promotionId, confirmDuplicate = false,
         }).Ok();
-        // Le champ « Matricule » affiche le code anonyme actif ; tant qu'aucun code n'est attribué, il l'annonce
+        // Le champ « Matricule » affiche le code anonyme actif ; tant qu'aucun code n'est attribué, il reste vide
         // au lieu de révéler la référence technique (INF101), qui reste rattachée aux paiements et aux reçus.
-        Assert.Equal("À ATTRIBUER", student.GetProperty("matricule").GetString());
+        Assert.Equal(string.Empty, student.GetProperty("matricule").GetString());
         Assert.Equal("MUKENDI", student.GetProperty("lastName").GetString());
         Assert.Equal("Grâce", student.GetProperty("firstName").GetString());
         return (promotionId, student.GetProperty("enrollments")[0].GetProperty("id").GetString()!, student.GetProperty("id").GetString()!);
@@ -337,10 +337,10 @@ public sealed class BusinessApiTests : IDisposable
         var (status, body) = await admin.Post("/api/apprenants", payload).Fail();
         Assert.Equal(HttpStatusCode.Conflict, status);
         // L'homonyme est présenté par son code anonyme (ici pas encore attribué), jamais par INF101.
-        Assert.Equal("À ATTRIBUER", body.GetProperty("candidates")[0].GetProperty("matricule").GetString());
+        Assert.Equal(string.Empty, body.GetProperty("candidates")[0].GetProperty("matricule").GetString());
         var confirmed = await admin.Post("/api/apprenants", payload with { confirmDuplicate = true }).Ok();
         // Nouvel homonyme confirmé : même règle, le champ « Matricule » attend son code anonyme.
-        Assert.Equal("À ATTRIBUER", confirmed.GetProperty("matricule").GetString());
+        Assert.Equal(string.Empty, confirmed.GetProperty("matricule").GetString());
     }
 
     [Fact]
@@ -427,15 +427,30 @@ public sealed class BusinessApiTests : IDisposable
         // Dix mensualités et les frais d'inscription de la catégorie créée.
         Assert.Equal(550000m + 20000m, account.GetProperty("totalNet").GetDecimal());
 
-        var receipt = await admin.PayMonths(enrollmentId, 1, key: "cle-unique-1");
+        var (firstIds, firstTotal) = await admin.OpenMonths(enrollmentId, 1);
+        var request = new
+        {
+            enrollmentId, amount = firstTotal, feeItemIds = firstIds,
+            method = "Especes", idempotencyKey = "cle-unique-1"
+        };
+        var receipt = await admin.Post("/api/paiements", request).Ok();
         Assert.Matches(@"^RC-\d{4}-000001$", receipt.GetProperty("number").GetString());
         var allocation = receipt.GetProperty("allocations").EnumerateArray().Single();
         Assert.Equal(55000m, allocation.GetProperty("amount").GetDecimal());
         var monthId = allocation.GetProperty("feeItemId").GetString();
 
-        // Même clé : le même reçu revient, sans second encaissement.
-        var again = await admin.PayMonths(enrollmentId, 1, key: "cle-unique-1");
+        // Retransmission du même corps : le même reçu revient, sans second encaissement.
+        var again = await admin.Post("/api/paiements", request).Ok();
         Assert.Equal(receipt.GetProperty("id").GetString(), again.GetProperty("id").GetString());
+
+        // Une nouvelle mensualité avec la même clé est un autre encaissement.
+        var (nextIds, nextTotal) = await admin.OpenMonths(enrollmentId, 1);
+        Assert.NotEqual(firstIds.Single(), nextIds.Single());
+        var changed = await admin.Post("/api/paiements",
+            request with { feeItemIds = nextIds, amount = nextTotal }).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, changed.Status);
+        var unchanged = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
+        Assert.Equal(firstTotal, unchanged.GetProperty("totalPaid").GetDecimal());
 
         var second = await admin.PayMonths(enrollmentId, 1, method: "MobileMoney", reference: "MP123");
         Assert.EndsWith("000002", second.GetProperty("number").GetString(), StringComparison.Ordinal);

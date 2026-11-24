@@ -21,57 +21,65 @@
     </Style>
   </UserControl.Styles>
   <Grid RowDefinitions="Auto,*">
-    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
-      <!-- Filtres à gauche, pagination à droite, comme l'Explorateur et Outlook -->
-      <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="640">
-      <WrapPanel>
-        <StackPanel Classes="field pagesearch">
-          <TextBlock Text="Rechercher" Classes="fieldlabel" />
-          <TextBox Classes="search clearButton" Width="300" Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un matricule" />
-        </StackPanel>
-        <StackPanel Classes="field">
-          <TextBlock Text="Promotion" Classes="fieldlabel" />
-          <ComboBox Width="230" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
-        </StackPanel>
-        <StackPanel Classes="field" IsVisible="{Binding HasSections}">
-          <TextBlock Text="Section" Classes="fieldlabel" />
-          <ComboBox Width="220" ItemsSource="{Binding Sections}" SelectedItem="{Binding SectionChoice}" />
-        </StackPanel>
-        <StackPanel Classes="field">
-          <TextBlock Text="Statut" Classes="fieldlabel" />
-          <ComboBox Width="190" ItemsSource="{Binding StatusChoices}" SelectedItem="{Binding Status}" />
-        </StackPanel>
-        <StackPanel Classes="field">
-          <TextBlock Text="Sexe" Classes="fieldlabel" />
-          <ComboBox Width="160" ItemsSource="{Binding GenderChoices}" SelectedItem="{Binding Gender}" />
-        </StackPanel>
-        <!-- Paiement : en ordre, en retard, jamais payé ou pris en charge ; puis un mois précis si besoin -->
-        <StackPanel Classes="field">
-          <TextBlock Text="Paiement" Classes="fieldlabel" />
-          <ComboBox Width="190" ItemsSource="{Binding PaymentChoices}" SelectedItem="{Binding Payment}" />
-        </StackPanel>
-        <StackPanel Classes="field" IsVisible="{Binding HasMonthFilter}">
-          <TextBlock Text="Mois" Classes="fieldlabel" />
-          <ComboBox Width="170" ItemsSource="{Binding Months}" SelectedItem="{Binding Month}" />
-        </StackPanel>
-        <Button Classes="ghost" Command="{Binding ClearFilters}" VerticalAlignment="Bottom" Margin="0,0,12,12"
-                ToolTip.Tip="{Binding ResetFiltersTooltip}">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="FilterRemoveOutline" Width="18" Height="18" />
-            <TextBlock Text="Effacer les filtres" VerticalAlignment="Center" />
+    <!-- Barre de commande WinUI 3 : titre, filtres adaptatifs, navigation sur sa propre ligne.
+         Evite que les boutons de pagination recouvrent les champs aux petites largeurs. -->
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,12" Padding="14,12" CornerRadius="{DynamicResource RadiusCard}">
+      <StackPanel Spacing="10">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="AccountGroupOutline" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" />
+            <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
           </StackPanel>
-        </Button>
-      </WrapPanel>
-      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom" Margin="0,0,0,12">
-        <TextBlock Text="{Binding PageText}" Classes="muted" VerticalAlignment="Center" Margin="0,0,8,0" />
-        <Button Classes="toolicon" Command="{Binding PreviousPage}" IsEnabled="{Binding CanPrevious}" ToolTip.Tip="Page précédente">
-          <mi:MaterialIcon Kind="ChevronLeft" Width="20" Height="20" />
-        </Button>
-        <Button Classes="toolicon" Command="{Binding NextPage}" IsEnabled="{Binding CanNext}" ToolTip.Tip="Page suivante">
-          <mi:MaterialIcon Kind="ChevronRight" Width="20" Height="20" />
-        </Button>
+          <TextBlock Grid.Column="1" Text="{Binding PageText}" Classes="muted" VerticalAlignment="Center" />
+        </Grid>
+        <WrapPanel>
+          <StackPanel Classes="field pagesearch">
+            <TextBlock Text="Rechercher" Classes="fieldlabel" />
+            <TextBox Classes="search clearButton" Width="300" Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un code anonyme" />
+          </StackPanel>
+          <StackPanel Classes="field">
+            <TextBlock Text="Promotion" Classes="fieldlabel" />
+            <ComboBox Width="230" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+          </StackPanel>
+          <StackPanel Classes="field" IsVisible="{Binding HasSections}">
+            <TextBlock Text="Section" Classes="fieldlabel" />
+            <ComboBox Width="220" ItemsSource="{Binding Sections}" SelectedItem="{Binding SectionChoice}" />
+          </StackPanel>
+          <StackPanel Classes="field">
+            <TextBlock Text="Statut" Classes="fieldlabel" />
+            <ComboBox Width="190" ItemsSource="{Binding StatusChoices}" SelectedItem="{Binding Status}" />
+          </StackPanel>
+          <StackPanel Classes="field">
+            <TextBlock Text="Sexe" Classes="fieldlabel" />
+            <ComboBox Width="160" ItemsSource="{Binding GenderChoices}" SelectedItem="{Binding Gender}" />
+          </StackPanel>
+          <!-- Paiement : en ordre, en retard, jamais payé ou pris en charge ; puis un mois précis si besoin -->
+          <StackPanel Classes="field">
+            <TextBlock Text="Paiement" Classes="fieldlabel" />
+            <ComboBox Width="190" ItemsSource="{Binding PaymentChoices}" SelectedItem="{Binding Payment}" />
+          </StackPanel>
+          <StackPanel Classes="field" IsVisible="{Binding HasMonthFilter}">
+            <TextBlock Text="Mois" Classes="fieldlabel" />
+            <ComboBox Width="170" ItemsSource="{Binding Months}" SelectedItem="{Binding Month}" />
+          </StackPanel>
+          <Button Classes="ghost" Command="{Binding ClearFilters}" VerticalAlignment="Bottom" Margin="0,0,12,12"
+                  ToolTip.Tip="{Binding ResetFiltersTooltip}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="FilterRemoveOutline" Width="18" Height="18" />
+              <TextBlock Text="Effacer les filtres" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </WrapPanel>
+        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,0,2">
+          <TextBlock Text="{Binding PageText}" Classes="muted" VerticalAlignment="Center" Margin="0,0,8,0" />
+          <Button Classes="toolicon" Command="{Binding PreviousPage}" IsEnabled="{Binding CanPrevious}" ToolTip.Tip="Page précédente">
+            <mi:MaterialIcon Kind="ChevronLeft" Width="20" Height="20" />
+          </Button>
+          <Button Classes="toolicon" Command="{Binding NextPage}" IsEnabled="{Binding CanNext}" ToolTip.Tip="Page suivante">
+            <mi:MaterialIcon Kind="ChevronRight" Width="20" Height="20" />
+          </Button>
+        </StackPanel>
       </StackPanel>
-      </Grid>
     </Border>
     <!-- Android : cartes individuelles au lieu d'un tableau trop large pour un téléphone. -->
     <ItemsControl Grid.Row="1" ItemsSource="{Binding Items}" IsVisible="{Binding Phone}" Margin="0,0,4,16">

@@ -70,6 +70,9 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         if (filter is null)
         {
             total = await query.CountAsync(ct);
+            // Lorsque la dernière ligne d'une page a été transférée ou supprimée,
+            // revenir sur la dernière page réellement existante plutôt qu'afficher une liste vide.
+            page = Math.Min(page, Math.Max(1, (int)Math.Ceiling(total / (double)pageSize)));
             rows = (await ordered.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct)).Select(x => (x.e, x.s, x.p)).ToList();
             map = await accounts.ComputeAsync(year.Id, rows.Select(r => r.e.Id).ToList(), null, ct);
         }
@@ -82,6 +85,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             map = await accounts.ComputeAsync(year.Id, all.Select(r => r.e.Id).ToList(), null, ct);
             var kept = all.Where(r => map.GetValueOrDefault(r.e.Id) is { } entry && PaymentFilter.Matches(filter.Value, entry, periodId)).ToList();
             total = kept.Count;
+            page = Math.Min(page, Math.Max(1, (int)Math.Ceiling(total / (double)pageSize)));
             rows = kept.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         }
         // Le code anonyme actif de cette inscription est l'identifiant affiche
@@ -97,7 +101,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             var entry = map.GetValueOrDefault(r.e.Id);
             var account = entry?.Account;
             return new StudentListItem(r.s.Id, r.e.Id,
-                activeCodes.GetValueOrDefault(r.e.Id) ?? "À ATTRIBUER", r.s.LastName, r.s.MiddleName, r.s.FirstName, r.s.Gender.ToString(), r.p.Code,
+                activeCodes.GetValueOrDefault(r.e.Id) ?? string.Empty, r.s.LastName, r.s.MiddleName, r.s.FirstName, r.s.Gender.ToString(), r.p.Code,
                 Labels.Of(r.e.Status), r.s.GuardianPhone, account?.Balance ?? 0, account?.Overdue ?? 0,
                 entry is null ? null : CoverageText.Of(entry.Coverage));
         }).ToList();
@@ -119,7 +123,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             await db.AnonymousCodes.AsNoTracking()
                 .Where(c => c.EnrollmentId == latestEnrollment.Id && c.IsActive)
                 .Select(c => c.Code).FirstOrDefaultAsync(ct);
-        return new StudentDto(s.Id, activeCode ?? "À ATTRIBUER", s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(), s.BirthDate, s.BirthPlace, s.Nationality,
+        return new StudentDto(s.Id, activeCode ?? string.Empty, s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(), s.BirthDate, s.BirthPlace, s.Nationality,
             s.Address, s.Phone, s.Email, s.GuardianName, s.GuardianRelation, s.GuardianPhone, s.GuardianPhone2, s.Notes, s.Photo is { Length: > 0 },
             enrollments, s.Version, s.PermanentNumber);
     }
@@ -188,7 +192,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             // référence technique (INF101…).
             var anonymous = latest is null ? null : await db.AnonymousCodes.AsNoTracking()
                 .Where(a => a.EnrollmentId == latest.Id && a.IsActive).Select(a => a.Code).FirstOrDefaultAsync(ct);
-            result.Add(new DuplicateCandidate(c.Id, anonymous ?? "À ATTRIBUER", c.FullName, latest?.Code));
+            result.Add(new DuplicateCandidate(c.Id, anonymous ?? string.Empty, c.FullName, latest?.Code));
         }
         return result;
     }
@@ -201,6 +205,8 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var promotion = await db.Promotions.FirstOrDefaultAsync(p => p.Id == input.PromotionId && p.AcademicYearId == year.Id, ct)
             ?? throw new DomainException("promotionId", "Choisissez une promotion de l'année scolaire courante.");
         if (!promotion.IsActive) throw new DomainException("promotionId", "Cette promotion est désactivée.");
+        if (input.EnrolledOn is { } enrolledOn && enrolledOn > clock.Today)
+            throw new DomainException("enrolledOn", "La date d'inscription ne peut pas être dans le futur.");
         await EnsureCapacityAsync(promotion, ct);
         if (!input.ConfirmDuplicate)
         {
@@ -239,7 +245,13 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             throw new ConflictException("Ce dossier a été modifié sur un autre poste. Rechargez-le avant d'enregistrer.");
         var before = $"{student.FullName} | {student.GuardianPhone}";
         var oldName = student.FullName;
+        var oldIdentity = student.IdentityKey;
         Apply(student, input);
+        // Éviter qu'un renommage fabrique silencieusement un second dossier identique.
+        // Un homonyme déjà confirmé peut continuer à être modifié tant que son identité reste inchangée.
+        if (student.IdentityKey != oldIdentity &&
+            await db.Students.AsNoTracking().AnyAsync(other => other.Id != id && other.IdentityKey == student.IdentityKey, ct))
+            throw new ConflictException("Un autre apprenant porte déjà cette identité. Vérifiez le dossier avant de modifier le nom.");
         // Un changement de nom se lit tel quel au journal : ancien et nouveau nom.
         var summary = oldName == student.FullName ? $"Dossier {student.Matricule} modifié." : $"Dossier {student.Matricule} renommé : {oldName} → {student.FullName}.";
         audit.Record(oldName == student.FullName ? "apprenant.modifie" : "apprenant.renomme", "Apprenant", id.ToString(), summary,
@@ -267,6 +279,10 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var promotion = await db.Promotions.FirstOrDefaultAsync(p => p.Id == input.PromotionId, ct) ?? throw new NotFoundException("Promotion introuvable.");
         if (await db.Enrollments.AnyAsync(e => e.StudentId == studentId && e.AcademicYearId == promotion.AcademicYearId, ct))
             throw new ConflictException("Cet apprenant est déjà inscrit pour cette année scolaire.");
+        if (!promotion.IsActive)
+            throw new DomainException("promotionId", "Cette promotion est désactivée : choisissez une promotion active.");
+        if (input.EnrolledOn is { } enrolledOn && enrolledOn > clock.Today)
+            throw new DomainException("enrolledOn", "La date d'inscription ne peut pas être dans le futur.");
         await EnsureCapacityAsync(promotion, ct);
         var hadPrevious = await db.Enrollments.AnyAsync(e => e.StudentId == studentId, ct);
         db.Enrollments.Add(new Enrollment
@@ -285,6 +301,8 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var status = EnumText.Parse(input.Status, "status", StatusLabels);
         if (status != EnrollmentStatus.Actif && string.IsNullOrWhiteSpace(input.Reason))
             throw new DomainException("reason", "Précisez le motif du changement de statut.");
+        if (input.Date is { } changeDate && changeDate > clock.Today)
+            throw new DomainException("date", "La date du changement de statut ne peut pas être dans le futur.");
         var old = enrollment.Status;
         enrollment.Status = status;
         enrollment.ExitDate = status is EnrollmentStatus.Actif or EnrollmentStatus.Suspendu ? null : input.Date ?? clock.Today;
@@ -303,6 +321,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         if (enrollment.PromotionId == promotionId) return true;
         var target = await db.Promotions.Include(p => p.Fees).FirstOrDefaultAsync(p => p.Id == promotionId, ct) ?? throw new NotFoundException("Promotion introuvable.");
         if (target.AcademicYearId != enrollment.AcademicYearId) throw new DomainException("promotionId", "La nouvelle promotion doit appartenir à la même année scolaire.");
+        if (!target.IsActive) throw new DomainException("promotionId", "La promotion de destination est désactivée.");
         await EnsureCapacityAsync(target, ct);
         var source = await db.Promotions.AsNoTracking().Include(p => p.Fees).FirstAsync(p => p.Id == enrollment.PromotionId, ct);
         if (await db.Sponsorships.AnyAsync(s => s.EnrollmentId == enrollmentId && s.IsActive, ct))

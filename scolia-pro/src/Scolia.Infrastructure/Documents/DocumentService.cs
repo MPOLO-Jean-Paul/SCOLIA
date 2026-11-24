@@ -269,25 +269,33 @@ public sealed class DocumentService : IDocumentService
         page.Margin(d.Columns.Count > 16 ? 18 : 28);
         page.DefaultTextStyle(s => s.FontFamily(Font).FontSize(size).FontColor("#1E293B"));
         page.Header().Element(c => Header(c, d.School, d.Title, d.Subtitle));
-        var widths = ColumnWidths(d);
-        var amounts = AmountColumns(d);
+        var columns = d.Columns.Count > 0 ? d.Columns : (IReadOnlyList<string>)["Information"];
+        float[] widths = d.Columns.Count > 0 ? ColumnWidths(d) : [1f];
+        bool[] amounts = d.Columns.Count > 0 ? AmountColumns(d) : [false];
         page.Content().PaddingTop(10).Table(t =>
         {
             t.ColumnsDefinition(c => { foreach (var w in widths) c.RelativeColumn(w); });
             t.Header(h =>
             {
-                for (var c = 0; c < d.Columns.Count; c++)
-                    Align(h.Cell().Background(Navy).Padding(padding), amounts[c]).Text(d.Columns[c]).FontColor(Colors.White).Bold().FontSize(headSize);
+                for (var c = 0; c < columns.Count; c++)
+                    Align(h.Cell().Background(Navy).Padding(padding), amounts[c]).Text(columns[c]).FontColor(Colors.White).Bold().FontSize(headSize);
             });
             var i = 0;
             foreach (var row in d.Rows)
             {
                 var bg = i++ % 2 == 0 ? "#FFFFFF" : "#F7F9FD";
-                for (var c = 0; c < row.Count; c++) Align(t.Cell().Background(bg).Padding(padding), c < amounts.Length && amounts[c]).Text(row[c]);
+                for (var c = 0; c < columns.Count; c++)
+                    Align(t.Cell().Background(bg).Padding(padding), amounts[c]).Text(c < row.Count ? row[c] : string.Empty);
+            }
+            if (d.Rows.Count == 0)
+            {
+                Align(t.Cell().Padding(7), false).Text("Aucune donnée à exporter pour les critères sélectionnés.");
+                for (var c = 1; c < columns.Count; c++) t.Cell().Text(string.Empty);
             }
             if (d.Totals is not null)
-                for (var c = 0; c < d.Totals.Count; c++)
-                    Align(t.Cell().BorderTop(1).BorderColor(Navy).Padding(4), c < amounts.Length && amounts[c]).Text(d.Totals[c]).Bold();
+                for (var c = 0; c < columns.Count; c++)
+                    Align(t.Cell().BorderTop(1).BorderColor(Navy).Padding(4), amounts[c])
+                        .Text(c < d.Totals.Count ? d.Totals[c] : string.Empty).Bold();
         });
         page.Footer().Element(c => Footer(c, null));
     })).GeneratePdf();
