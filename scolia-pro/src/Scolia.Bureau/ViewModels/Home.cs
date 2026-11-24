@@ -170,8 +170,7 @@ public sealed class HomePage : PageViewModel
         }
         TodayDto? t = null;
         try { t = await Shell.Api.GetAsync<TodayDto>("api/rapports/aujourdhui"); }
-        catch (ApiException) { }
-        catch (OfflineException) { }
+        catch (ApiException) { } // Inclut OfflineException, dérivée de ApiException.
         OverviewAvailable = true;
         DailyDetailsAvailable = t is not null;
         var nextReceipts = new List<RecentReceiptVm>();
