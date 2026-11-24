@@ -40,6 +40,16 @@ public sealed class HomeAndBatchUsabilityTests
     }
 
     [Fact]
+    public void Une_recherche_differee_ne_peut_pas_arreter_un_minuteur_plus_recent()
+    {
+        var students = File.ReadAllText(ViewFile("ViewModels/Students.cs"));
+        var cashier = File.ReadAllText(ViewFile("ViewModels/Cashier.cs"));
+        Assert.Contains("if (!ReferenceEquals(debounce, scheduled)) return;", students);
+        foreach (var field in new[] { "searchTimer", "previewTimer", "timer" })
+            Assert.Contains($"if (!ReferenceEquals({field}, scheduled)) return;", cashier);
+    }
+
+    [Fact]
     public void Les_parametres_mobile_gardent_les_selections_et_les_curseurs_adaptatifs()
     {
         var nodes = XDocument.Load(ViewFile("Views/SettingsView.axaml")).Descendants().ToArray();
