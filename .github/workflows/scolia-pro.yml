@@ -57,6 +57,20 @@ jobs:
           dotnet build Scolia.sln -c Release
           dotnet build tests/Scolia.Bureau.Captures -c Release
 
+      # Captures natives de l'accueil Power BI : donnees fictives, sans serveur scolaire.
+      - name: Accueil Power BI - Windows 11 (formats et themes)
+        env:
+          SCOLIA_ASTUCES: '0'
+        run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/accueil-powerbi http://127.0.0.1:5293/ Scolia2026! accueil-powerbi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Pro_Accueil_PowerBI_Windows11
+          path: scolia-pro/artifacts/accueil-powerbi/
+          if-no-files-found: ignore
+          retention-days: 14
+
       # Revue UI des cartes : donnees fictives, moteur d'export reel non touche.
       # Les captures sont seulement celles des ecrans, jamais les PDF scolaires.
       - name: Cartes - mise en page desktop et mobile sans modifier le modele
