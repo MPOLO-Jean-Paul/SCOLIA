@@ -8,6 +8,15 @@ set -euo pipefail
 racine="$(cd "$(dirname "$0")/.." && pwd)"
 sortie="${1:-$racine/artifacts}"
 version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$racine/Directory.Build.props")"
+# Une release Android doit exposer exactement la même version que le programme.
+# Sans ce contrôle, 1.2.91 fut empaquetée avec versionName=1.2.90 et
+# l'application proposait indéfiniment une mise à jour déjà installée.
+version_android="$(sed -n 's:.*<ApplicationDisplayVersion>\(.*\)</ApplicationDisplayVersion>.*:\1:p' "$racine/src/Scolia.Mobile/Scolia.Mobile.csproj" | head -1)"
+if [[ "$version_android" != "$version" ]]; then
+  echo "::error::Version Android ($version_android) différente de la version produit ($version). Publication bloquée." >&2
+  exit 1
+fi
+
 dossier="$sortie/android"
 sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
 if [ -z "$sdk" ]; then echo "ANDROID_HOME n'est pas défini : le SDK Android est nécessaire." >&2; exit 1; fi
