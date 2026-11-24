@@ -51,10 +51,31 @@ internal static class UpdateCompletionPolicy
         => startedAtUtc <= 0 || nowUtc < startedAtUtc
             || nowUtc - startedAtUtc > PendingDownloadRetentionSeconds;
 
-    // Après une installation réussie, l'APK en cache n'est plus une nouvelle version.
-    // Éviter d'afficher à tort « APK incorrect » lors du redémarrage de SCOLIA.
-    internal static bool AlreadyInstalled(string? downloadedVersion, string? installedVersion)
+    /// <summary>
+    /// Android peut annoncer un ancien versionName alors que le code embarqué a déjà
+    /// changé de version. Prendre la plus récente des deux valeurs connues pour
+    /// éviter de proposer indéfiniment le même APK.
+    /// </summary>
+    internal static Version? EffectiveInstalledVersion(string? androidVersion, string? bundledVersion)
+    {
+        Version? android = Version.TryParse(androidVersion, out var a) ? a : null;
+        Version? bundled = Version.TryParse(bundledVersion, out var b) ? b : null;
+        if (android is null) return bundled;
+        if (bundled is null) return android;
+        return android >= bundled ? android : bundled;
+    }
+
+    internal static bool IsReleaseNewer(string? candidateVersion, string? androidVersion, string? bundledVersion)
+        => Version.TryParse(candidateVersion, out var candidate)
+           && EffectiveInstalledVersion(androidVersion, bundledVersion) is { } installed
+           && candidate > installed;
+
+    // Une ancienne distribution 1.2.91 a versionCode 1.2.91 mais versionName 1.2.90.
+    // Pour cette version aussi, la présence du binaire courant doit vider le cache
+    // de l'installateur au lieu d'afficher « APK refusé ».
+    internal static bool AlreadyInstalled(string? downloadedVersion, string? installedVersion,
+        string? bundledVersion = null)
         => Version.TryParse(downloadedVersion, out var downloaded)
-        && Version.TryParse(installedVersion, out var installed)
-        && installed.CompareTo(downloaded) >= 0;
+           && EffectiveInstalledVersion(installedVersion, bundledVersion) is { } installed
+           && installed >= downloaded;
 }
