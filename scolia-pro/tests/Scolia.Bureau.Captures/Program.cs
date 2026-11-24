@@ -1892,8 +1892,29 @@ if (args.Length > 3 && args[3] == "cartes-ui")
         Wait(Task.Delay(TimeSpan.FromMilliseconds(4300)));
         window.UpdateLayout();
         Save(window, $"cartes-interface-{(Preferences.MobileLayout ? "mobile" : "bureau")}-{width}x{height}.png");
+
+        if (!Preferences.MobileLayout)
+        {
+            var cardsView = window.GetVisualDescendants().OfType<CardsView>()
+                .First(view => view.IsEffectivelyVisible);
+            var hint = cardsView.GetVisualDescendants().OfType<TextBlock>()
+                .First(text => text.Text == "Cochez les participants de chaque promotion.");
+            var table = cardsView.GetVisualDescendants().OfType<DataGrid>()
+                .First(grid => grid.IsEffectivelyVisible);
+            if (hint.TransformToVisual(window) is not { } hintTransform ||
+                table.TransformToVisual(window) is not { } tableTransform ||
+                new Rect(hint.Bounds.Size).TransformToAABB(hintTransform).Bottom >=
+                new Rect(table.Bounds.Size).TransformToAABB(tableTransform).Top)
+                throw new InvalidOperationException($"Cartes {width}x{height} : le texte de sélection chevauche le tableau.");
+        }
     }
-    Console.WriteLine("OK : contrôles de l'interface des cartes et des commandes de sélection.");
+    if (Preferences.MobileLayout)
+    {
+        var report = Path.Combine(output, "debordements.txt");
+        if (!File.Exists(report) || File.ReadAllLines(report).Any(line => line.StartsWith("  ", StringComparison.Ordinal)))
+            throw new InvalidOperationException("Cartes Android : du texte dépasse ou est tronqué sur un petit écran.");
+    }
+    Console.WriteLine("OK : interface des cartes, sélection et absence de chevauchement validées.");
     return;
 }
 
