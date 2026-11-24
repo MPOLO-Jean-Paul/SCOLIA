@@ -61,8 +61,11 @@ public sealed class ReceiptsExportPaginationTests : IDisposable
             await db.SaveChangesAsync();
         }
 
-        var response = await admin.GetAsync("/api/paiements/export?format=excel");
+        // L'API utilise le format xlsx ; tout autre format emprunte la branche PDF.
+        using var response = await admin.GetAsync("/api/paiements/export?format=xlsx");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            response.Content.Headers.ContentType?.MediaType);
         using var workbook = new XLWorkbook(new MemoryStream(await response.Content.ReadAsByteArrayAsync()));
         var sheet = workbook.Worksheet(1);
         Assert.True(sheet.LastRowUsed()!.RowNumber() >= 1007,
