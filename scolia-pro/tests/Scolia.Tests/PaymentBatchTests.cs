@@ -151,4 +151,52 @@ public sealed class PaymentBatchTests : IDisposable
         var account = await admin.GetAsync($"/api/inscriptions/{student}/compte").Ok();
         Assert.Equal(0m, account.GetProperty("totalPaid").GetDecimal());
     }
+
+    [Fact]
+    public async Task Same_student_cannot_be_collected_twice_in_one_batch()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await PromotionAsync(admin);
+        var enrollment = await EnrollmentAsync(admin, promotion, "MUKENDI");
+        var months = await MonthIdsAsync(admin, enrollment, 1);
+        var items = new[] { Item(enrollment, months), Item(enrollment, months) };
+
+        var preview = await admin.Post("/api/paiements/lot/apercu", new { items }).Ok();
+        Assert.Equal(1, preview.GetProperty("count").GetInt32());
+        Assert.Equal(1, preview.GetProperty("errors").GetInt32());
+
+        var result = await admin.Post("/api/paiements/lot", new { items }).Ok();
+        Assert.Equal(1, result.GetProperty("succeeded").GetInt32());
+        Assert.Equal(1, result.GetProperty("failed").GetInt32());
+        Assert.Contains("déjà", result.GetProperty("lines")[1].GetProperty("error").GetString(), StringComparison.OrdinalIgnoreCase);
+        var account = await admin.GetAsync($"/api/inscriptions/{enrollment}/compte").Ok();
+        Assert.Equal(55000m, account.GetProperty("totalPaid").GetDecimal());
+    }
+
+    [Fact]
+    public async Task A_payment_key_cannot_be_reused_for_a_different_student()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await PromotionAsync(admin);
+        var first = await EnrollmentAsync(admin, promotion, "MUKENDI");
+        var second = await EnrollmentAsync(admin, promotion, "NGANDU");
+        var firstMonth = await MonthIdsAsync(admin, first, 1);
+        var secondMonth = await MonthIdsAsync(admin, second, 1);
+
+        var original = new
+        {
+            enrollmentId = first, amount = 55000m, method = "Especes",
+            feeItemIds = firstMonth, idempotencyKey = "transaction-tiers-unique-001"
+        };
+        await admin.Post("/api/paiements", original).Ok();
+
+        var (status, _) = await admin.Post("/api/paiements", new
+        {
+            enrollmentId = second, amount = 55000m, method = "Especes",
+            feeItemIds = secondMonth, idempotencyKey = "transaction-tiers-unique-001"
+        }).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, status);
+        var account = await admin.GetAsync($"/api/inscriptions/{second}/compte").Ok();
+        Assert.Equal(0m, account.GetProperty("totalPaid").GetDecimal());
+    }
 }
