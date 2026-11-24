@@ -70,6 +70,9 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         if (filter is null)
         {
             total = await query.CountAsync(ct);
+            // Lorsque la dernière ligne d'une page a été transférée ou supprimée,
+            // revenir sur la dernière page réellement existante plutôt qu'afficher une liste vide.
+            page = Math.Min(page, Math.Max(1, (int)Math.Ceiling(total / (double)pageSize)));
             rows = (await ordered.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct)).Select(x => (x.e, x.s, x.p)).ToList();
             map = await accounts.ComputeAsync(year.Id, rows.Select(r => r.e.Id).ToList(), null, ct);
         }
@@ -82,6 +85,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             map = await accounts.ComputeAsync(year.Id, all.Select(r => r.e.Id).ToList(), null, ct);
             var kept = all.Where(r => map.GetValueOrDefault(r.e.Id) is { } entry && PaymentFilter.Matches(filter.Value, entry, periodId)).ToList();
             total = kept.Count;
+            page = Math.Min(page, Math.Max(1, (int)Math.Ceiling(total / (double)pageSize)));
             rows = kept.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         }
         // Le code anonyme actif de cette inscription est l'identifiant affiche
@@ -97,7 +101,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             var entry = map.GetValueOrDefault(r.e.Id);
             var account = entry?.Account;
             return new StudentListItem(r.s.Id, r.e.Id,
-                activeCodes.GetValueOrDefault(r.e.Id) ?? "À ATTRIBUER", r.s.LastName, r.s.MiddleName, r.s.FirstName, r.s.Gender.ToString(), r.p.Code,
+                activeCodes.GetValueOrDefault(r.e.Id) ?? string.Empty, r.s.LastName, r.s.MiddleName, r.s.FirstName, r.s.Gender.ToString(), r.p.Code,
                 Labels.Of(r.e.Status), r.s.GuardianPhone, account?.Balance ?? 0, account?.Overdue ?? 0,
                 entry is null ? null : CoverageText.Of(entry.Coverage));
         }).ToList();
