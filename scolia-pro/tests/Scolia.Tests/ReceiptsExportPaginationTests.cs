@@ -63,7 +63,8 @@ public sealed class ReceiptsExportPaginationTests : IDisposable
         var sheet = workbook.Worksheet(1);
         Assert.True(sheet.LastRowUsed()!.RowNumber() >= 1007,
             "L'export doit dépasser les 1 000 lignes et comprendre la ligne des totaux.");
-        Assert.Equal("TEST-EXPORT-000001", sheet.Cell(6, 2).GetString());
-        Assert.Equal("TEST-EXPORT-001001", sheet.Cell(1006, 2).GetString());
+        // Le journal est trié par date descendante, puis numéro de reçu décroissant.
+        Assert.Equal("TEST-EXPORT-001001", sheet.Cell(6, 2).GetString());
+        Assert.Equal("TEST-EXPORT-000001", sheet.Cell(1006, 2).GetString());
     }
 }
