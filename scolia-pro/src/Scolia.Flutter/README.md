@@ -48,3 +48,6 @@ L'accueil Flutter reçoit maintenant tout le catalogue métier autorisé par Sid
 
 ## Continuité visuelle et métier
 Flutter reprend les couleurs claires et sombres de Themes/Material3.axaml, les rayons des cartes (12) et champs (8), la présentation compacte de Phone/HomeView.axaml et les actions rapides autorisées. La carte d'accueil lit la véritable session et l'état du SyncCenter natif ; elle ne simule pas une connexion. Les modèles de calcul et d'export des cartes d'examen ne sont pas modifiés. Les autres pages gardent leur présentation native jusqu'à leur portage effectif. Les tests de compilation et de rendu sur téléphone restent indispensables pour confirmer la parité.
+
+## Fiche scolaire Flutter
+La fiche affiche les rubriques de StudentDetailPage : identité, inscriptions et, si PaymentsRead, indicateurs, échéances, reçus et prises en charge. Les données et montants sont fournis par le modèle métier existant. Le dossier doit appartenir à la dernière liste autorisée de la session ; les droits sont revérifiés après lecture. Les actions de modification, changement de statut, relevé et autres fonctions restent accessibles dans la fiche native, et l'encaissement utilise le parcours natif vérifié. Les tests Flutter couvrent l'affichage et le retour au registre. Aucun modèle PDF ni calcul n'a été changé.

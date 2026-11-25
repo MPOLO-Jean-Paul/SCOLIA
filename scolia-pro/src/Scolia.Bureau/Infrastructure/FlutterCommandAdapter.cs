@@ -12,7 +12,11 @@ namespace Scolia.Bureau.Infrastructure;
 public sealed class FlutterCommandAdapter(ShellViewModel shell)
 {
     public sealed record Snapshot(int Protocol, string Stage, string School, string User,
-        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null, IReadOnlyList<ModuleEntry>? Catalog = null, WorkspaceHeader? Header = null);
+        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null, IReadOnlyList<ModuleEntry>? Catalog = null, WorkspaceHeader? Header = null, StudentProfile? Profile = null);
+
+    public sealed record ProfileValue(string Label, string Value);
+    public sealed record ProfileSection(string Title, IReadOnlyList<IReadOnlyList<ProfileValue>> Rows);
+    public sealed record StudentProfile(string Id, string Title, string Subtitle, IReadOnlyList<ProfileSection> Sections);
 
     public sealed record WorkspaceHeader(string Greeting, string Date, string Initials, string SyncStatus, string SyncHint, bool Offline, bool Pending);
 
@@ -127,7 +131,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         Dispatcher.UIThread.VerifyAccess();
         if (executing) throw new InvalidOperationException("Une commande SCOLIA est déjà en cours.");
         if (operation != "listMonthly" && operation != "exportMonthly") { monthlySelection = null; monthlyOwner = null; }
-        if (operation is not ("listStudents" or "openStudent" or "cashierStudent")) { visibleStudents.Clear(); studentOwner = null; }
+        if (operation is not ("listStudents" or "openStudent" or "cashierStudent" or "studentActions")) { visibleStudents.Clear(); studentOwner = null; }
         if (operation == "snapshot") return Read();
         executing = true;
         try
@@ -212,6 +216,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     var exportPage = int.TryParse(arguments.GetValueOrDefault("page"), out var ep) ? ep : 1;
                     return Read() with { Stage = "monthly", Monthly = DescribeMonthly(selected, exportPage) };
                 case "openStudent":
+                case "studentActions":
                 case "cashierStudent":
                     if (AllowedPage("students") is null || !ReferenceEquals(studentOwner, shell.Session) ||
                         !Guid.TryParse(Required(arguments, "student", 36), out var studentId) ||
@@ -223,7 +228,38 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                             throw new UnauthorizedAccessException("Encaissement non autorisé.");
                         await shell.Open(() => new CashierPage(shell, studentId));
                     }
-                    else await shell.Open(() => new StudentDetailPage(shell, studentId));
+                    else if (operation == "studentActions")
+                        await shell.Open(() => new StudentDetailPage(shell, studentId));
+                    else
+                    {
+                        var profileOwner = shell.Session;
+                        var detail = new StudentDetailPage(shell, studentId);
+                        await detail.LoadAsync();
+                        if (AllowedPage("students") is null || !ReferenceEquals(profileOwner, shell.Session))
+                            throw new UnauthorizedAccessException("Session modifiée.");
+                        var sections = new List<ProfileSection>();
+                        static IReadOnlyList<ProfileValue> Row(params ProfileValue[] values) => values;
+                        sections.Add(new("Identité", detail.Details.Select(x => Row(new(x.Label, x.Value))).ToArray()));
+                        sections.Add(new("Inscriptions", detail.Enrollments.Select(x => Row(
+                            new("Année", x.Year), new("Promotion", x.Promotion), new("Inscrit le", x.EnrolledOn),
+                            new("Statut", x.Status), new("Sortie", x.Exit))).ToArray()));
+                        if (shell.Can(Perm.PaymentsRead))
+                        {
+                            sections.Insert(0, new("Indicateurs du compte", detail.Totals.Select(x => Row(
+                                new(x.Label, x.Value), new("Détail", x.Hint))).ToArray()));
+                            sections.Add(new("Compte de l’année", detail.Lines.Select(x => Row(
+                                new("Échéance", x.Label), new("Date", x.DueDate), new("Montant", x.Amount),
+                                new("Pris en charge", x.Covered), new("Payé", x.Paid), new("Reste", x.Remaining),
+                                new("Statut", x.Status))).ToArray()));
+                            sections.Add(new("Reçus", detail.Receipts.Select(x => Row(
+                                new("Numéro", x.Number), new("Date", x.Date), new("Montant", x.Amount), new("Mode", x.Method))).ToArray()));
+                            sections.Add(new("Prises en charge", detail.Sponsorships.Select(x => Row(
+                                new("Garant ou organisme", x.Sponsor), new("Type", x.Type), new("Motif", x.Reason),
+                                new("Effet", x.Since), new("Couvert", x.Covered), new("État", x.Status))).ToArray()));
+                        }
+                        return Read() with { Stage = "studentProfile",
+                            Profile = new(studentId.ToString(), detail.Title, detail.Subtitle, sections) };
+                    }
                     return Read(native: true);
                 case "openModule":
                     var module = Required(arguments, "module", 80);

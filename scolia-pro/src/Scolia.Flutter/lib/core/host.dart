@@ -1,15 +1,15 @@
 import 'package:flutter/services.dart';
 
-enum Stage { pairing, login, home, nativeScreen, loading, students, monthly }
+enum Stage { pairing, login, home, nativeScreen, loading, students, monthly, studentProfile }
 
 enum Operation {
   snapshot, scanQr, chooseServer, createSchool, signIn, recover,
-  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent
+  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions
 }
 
 class SchoolSession {
   const SchoolSession({required this.stage, this.school = '', this.user = '',
-    this.year = '', this.modules = const [], this.notice = '', this.students, this.monthly, this.catalog = const [], this.header});
+    this.year = '', this.modules = const [], this.notice = '', this.students, this.monthly, this.catalog = const [], this.header, this.profile});
   final Stage stage;
   final String school, user, year, notice;
   final List<String> modules;
@@ -17,6 +17,7 @@ class SchoolSession {
   final MonthlyListing? monthly;
   final List<ModuleEntry> catalog;
   final WorkspaceHeader? header;
+  final StudentProfile? profile;
 
   factory SchoolSession.fromMap(Map<Object?, Object?> value) {
     if (value['protocol'] != 1) {
@@ -32,8 +33,35 @@ class SchoolSession {
       catalog: List<ModuleEntry>.unmodifiable((value['catalog'] as List<Object?>? ?? []).map(
         (x) => ModuleEntry.fromMap(x as Map<Object?, Object?>))),
       students: stage == Stage.students ? StudentListing.fromMap(value['students'] as Map<Object?, Object?>) : null,
-      monthly: stage == Stage.monthly ? MonthlyListing.fromMap(value['monthly'] as Map<Object?, Object?>) : null);
+      monthly: stage == Stage.monthly ? MonthlyListing.fromMap(value['monthly'] as Map<Object?, Object?>) : null,
+      profile: stage == Stage.studentProfile ? StudentProfile.fromMap(value['profile'] as Map<Object?, Object?>) : null);
   }
+}
+
+class ProfileValue {
+  const ProfileValue(this.label, this.value);
+  final String label, value;
+  factory ProfileValue.fromMap(Map<Object?, Object?> m) =>
+    ProfileValue(m['label'] as String, m['value'] as String);
+}
+
+class ProfileSection {
+  const ProfileSection(this.title, this.rows);
+  final String title;
+  final List<List<ProfileValue>> rows;
+  factory ProfileSection.fromMap(Map<Object?, Object?> m) => ProfileSection(m['title'] as String,
+    List<List<ProfileValue>>.unmodifiable((m['rows'] as List<Object?>).map((r) =>
+      List<ProfileValue>.unmodifiable((r as List<Object?>).map((v) => ProfileValue.fromMap(v as Map<Object?, Object?>))))));
+}
+
+class StudentProfile {
+  const StudentProfile({required this.id, required this.title, required this.subtitle, required this.sections});
+  final String id, title, subtitle;
+  final List<ProfileSection> sections;
+  factory StudentProfile.fromMap(Map<Object?, Object?> m) => StudentProfile(
+    id: m['id'] as String, title: m['title'] as String, subtitle: m['subtitle'] as String,
+    sections: List<ProfileSection>.unmodifiable((m['sections'] as List<Object?>).map(
+      (s) => ProfileSection.fromMap(s as Map<Object?, Object?>))));
 }
 
 class WorkspaceHeader {

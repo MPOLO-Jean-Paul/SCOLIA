@@ -97,7 +97,11 @@ class _WorkspaceState extends State<Workspace> {
       if (!mounted) return;
       setState(() {
         session = result;
-        if (result.stage != Stage.students) studentSearch.clear();
+        if (result.stage == Stage.students && result.students != null) {
+          studentPage = result.students!.page;
+          studentQuery = result.students!.search;
+          studentSearch.text = studentQuery;
+        } else if (result.stage != Stage.studentProfile) studentSearch.clear();
         if (result.stage != Stage.monthly) paymentSearch.clear();
         else if (result.monthly != null) paymentSearch.text = result.monthly!.search;
         if (result.stage != Stage.login || (operation == Operation.recover && result.notice.isEmpty)) {
@@ -294,8 +298,12 @@ class _WorkspaceState extends State<Workspace> {
     action('Se déconnecter', Icons.logout, Operation.signOut),
   ]);
 
-  Future<void> listStudents(int page, String query) =>
-    execute(Operation.listStudents, {'page': page.toString(), 'q': query.trim()});
+  int studentPage = 1;
+  String studentQuery = '';
+  Future<void> listStudents(int page, String query) {
+    studentPage = page; studentQuery = query.trim();
+    return execute(Operation.listStudents, {'page': page.toString(), 'q': studentQuery});
+  }
 
   Widget students(StudentListing listing) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
     Align(alignment: Alignment.centerLeft, child: TextButton.icon(
@@ -343,6 +351,42 @@ class _WorkspaceState extends State<Workspace> {
       IconButton(tooltip: 'Page suivante', onPressed: busy || !listing.hasNext ? null :
         () => listStudents(listing.page + 1, listing.search), icon: const Icon(Icons.chevron_right)),
     ]),
+  ]);
+
+  Widget studentProfile(StudentProfile p) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    Align(alignment: Alignment.centerLeft, child: TextButton.icon(
+      onPressed: busy ? null : () => listStudents(studentPage, studentQuery),
+      icon: const Icon(Icons.arrow_back), label: const Text('Retour au registre'))),
+    heading(p.title, p.subtitle),
+    Wrap(spacing: 8, runSpacing: 8, children: [
+      if (session?.modules.contains('cashier') ?? false)
+        FilledButton.icon(onPressed: busy ? null : () => execute(Operation.cashierStudent, {'student': p.id}),
+          icon: const Icon(Icons.payments_outlined), label: const Text('Encaisser')),
+      OutlinedButton.icon(onPressed: busy ? null : () => execute(Operation.studentActions, {'student': p.id}),
+        icon: const Icon(Icons.more_horiz), label: const Text('Actions du dossier')),
+    ]),
+    const SizedBox(height: 16),
+    for (final section in p.sections)
+      Card.outlined(margin: const EdgeInsets.only(bottom: 12), child: Padding(
+        padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text(section.title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (section.rows.isEmpty) const Text('Aucun élément'),
+          for (var index = 0; index < section.rows.length; index++) ...[
+            if (index > 0) const Divider(height: 20),
+            for (final field in section.rows[index])
+              Padding(padding: const EdgeInsets.symmetric(vertical: 3),
+                child: LayoutBuilder(builder: (context, constraints) => constraints.maxWidth < 280
+                  ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(field.label, style: Theme.of(context).textTheme.bodySmall),
+                    Text(field.value)])
+                  : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Expanded(flex: 2, child: Text(field.label, style: Theme.of(context).textTheme.bodySmall)),
+                    const SizedBox(width: 8),
+                    Expanded(flex: 3, child: Text(field.value)),
+                  ]))),
+          ],
+        ]))),
   ]);
 
   Future<void> listMonthly({MonthlyListing? current, String? period,
@@ -445,6 +489,7 @@ class _WorkspaceState extends State<Workspace> {
                 Stage.nativeScreen => heading('Interface SCOLIA', 'Cette opération utilise encore l’interface native existante.'),
                 Stage.students => students(current.students!),
                 Stage.monthly => monthly(current.monthly!),
+                Stage.studentProfile => studentProfile(current.profile!),
               },
             ],
           ]),

@@ -117,6 +117,19 @@ void main() {
     expect(find.text('Hors ligne'), findsOneWidget);
     expect(find.text('Données locales disponibles'), findsOneWidget);
   });
+  testWidgets('student profile renders actual sections without adding unauthorised cashier', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.studentProfile, modules: ['students'],
+      profile: StudentProfile(id: 'test', title: 'Dossier test', subtitle: 'INF1',
+        sections: [ProfileSection('Identité', [[ProfileValue('Matricule', 'INF001')]])])));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    expect(find.text('Dossier test'), findsOneWidget);
+    expect(find.text('INF001'), findsOneWidget);
+    expect(find.text('Encaisser'), findsNothing);
+    await tester.tap(find.text('Retour au registre'));
+    await tester.pumpAndSettle();
+    expect(host.last, Operation.listStudents);
+  });
   testWidgets('catalog exposes authorised native modules only', (tester) async {
     final host = TestHost(const SchoolSession(stage: Stage.home,
       modules: ['page:CardsPage'], catalog: [
