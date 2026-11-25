@@ -29,6 +29,16 @@ if [ -z "$code" ] && horodatage="$(git -C "$racine" log -1 --format=%ct 2>/dev/n
 fi
 options=()
 if [ -n "$code" ]; then options+=("-p:ApplicationVersion=$code"); fi
+# Le mode Flutter officiel est volontairement désactivé par défaut.
+# La signature historique et le canal de publication restent inchangés.
+if [[ "${SCOLIA_FLUTTER_OFFICIAL:-false}" == "true" ]]; then
+  attendu="E5:B5:F7:FA:41:54:11:EE:AC:4B:F7:34:84:90:24:FF:CF:7F:93:50:0C:60:13:83:99:31:B0:20:38:F5:89:80"
+  if [[ "${SCOLIA_SIGNATURE_EMPREINTE:-}" != "$attendu" || -z "${SCOLIA_KEYSTORE:-}" || -z "${SCOLIA_KEYSTORE_PASS:-}" ]]; then
+    echo "::error::Flutter officiel nécessite la signature historique vérifiée." >&2
+    exit 1
+  fi
+  options+=("-p:ScoliaFlutterOfficial=true")
+fi
 
 echo "==> Application Android $version${code:+ (numéro $code)}"
 rm -rf "$dossier" && mkdir -p "$dossier"

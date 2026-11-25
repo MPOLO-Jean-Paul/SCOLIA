@@ -20,7 +20,7 @@ public sealed class MainActivity : AvaloniaMainActivity
 #endif
     private static bool launchPresented;
     private StartupScreen? startup;
-#if SCOLIA_FLUTTER_EXPERIMENT
+#if SCOLIA_FLUTTER_UI
     private FlutterActivityHost? flutterHost;
 #endif
 
@@ -51,6 +51,9 @@ public sealed class MainActivity : AvaloniaMainActivity
             var minimum = launchPresented ? TimeSpan.Zero : TimeSpan.FromMilliseconds(900);
             launchPresented = true;
             startup = new StartupScreen(this);
+#if SCOLIA_FLUTTER_UI
+            startup.Ready += OnNativeStartupReady;
+#endif
             AddContentView(startup, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
             // App.OnFrameworkInitializationCompleted est exécuté par AndroidApp.OnCreate avant l'activité.
             // Si cet invariant est rompu, afficher une erreur plutôt que retirer le logo prématurément.
@@ -58,11 +61,15 @@ public sealed class MainActivity : AvaloniaMainActivity
         }
     }
 
+#if SCOLIA_FLUTTER_UI
+    private void OnNativeStartupReady() => flutterHost?.NativeStartupReady();
+#endif
+
     protected override void OnResume()
     {
         base.OnResume();
         AndroidAlerts.SetForeground(true);
-#if SCOLIA_FLUTTER_EXPERIMENT
+#if SCOLIA_FLUTTER_UI
         flutterHost ??= new FlutterActivityHost(this);
 #endif
         startup?.SetActive(true);
@@ -91,14 +98,14 @@ public sealed class MainActivity : AvaloniaMainActivity
         try { Synchronization.SyncWorker.ScheduleOnResume(this); }
         catch (Exception ex)
         { Android.Util.Log.Warn("SCOLIA-Sync", $"Reprise différée indisponible : {ex.GetType().Name}"); }
-#if SCOLIA_FLUTTER_EXPERIMENT
+#if SCOLIA_FLUTTER_UI
         flutterHost?.Resume();
 #endif
     }
 
     protected override void OnPause()
     {
- #if SCOLIA_FLUTTER_EXPERIMENT
+ #if SCOLIA_FLUTTER_UI
         flutterHost?.Pause();
 #endif
         AndroidAppUpdates.OnPause(this);
@@ -131,9 +138,12 @@ public sealed class MainActivity : AvaloniaMainActivity
 
     protected override void OnDestroy()
     {
- #if SCOLIA_FLUTTER_EXPERIMENT
+ #if SCOLIA_FLUTTER_UI
         flutterHost?.Dispose();
         flutterHost = null;
+#endif
+#if SCOLIA_FLUTTER_UI
+        if (startup is not null) startup.Ready -= OnNativeStartupReady;
 #endif
         startup?.Close();
         startup = null;

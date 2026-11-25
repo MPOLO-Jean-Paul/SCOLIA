@@ -1,4 +1,4 @@
-#if SCOLIA_FLUTTER_EXPERIMENT
+#if SCOLIA_FLUTTER_UI
 using Avalonia.Threading;
 using System.Runtime.CompilerServices;
 using Scolia.Bureau.Infrastructure;
@@ -32,8 +32,12 @@ internal static class FlutterIntegration
                     // Ne jamais transférer sa réponse ou fermer la nouvelle vue.
                     if (!isCurrent()) throw new OperationCanceledException("Vue Flutter remplacée.");
                     using var message = System.Text.Json.JsonDocument.Parse(response);
+                    var stage = message.RootElement.GetProperty("stage").GetString();
+                    // Repère de test sans identité, contenu de formulaire ni donnée d'établissement.
+                    if (operation == "snapshot" && stage is "home" or "login" or "pairing")
+                        Android.Util.Log.Info("SCOLIA-Flutter", "validation:bridge-ready");
                     completion.TrySetResult(response);
-                    if (message.RootElement.GetProperty("stage").GetString() == "nativeScreen") nativeFallback();
+                    if (stage == "nativeScreen") nativeFallback();
                 }
                 catch (Exception ex) { completion.TrySetException(ex); }
             });

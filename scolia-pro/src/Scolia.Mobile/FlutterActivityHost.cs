@@ -1,4 +1,4 @@
-#if SCOLIA_FLUTTER_EXPERIMENT
+#if SCOLIA_FLUTTER_UI
 using Android.Views;
 using Avalonia.Controls.ApplicationLifetimes;
 using Com.Jpservices.Scolia.Flutterbridge;
@@ -40,16 +40,24 @@ internal sealed class FlutterActivityHost(MainActivity activity) : IDisposable
         _ = TryOpenAsync(request);
     }
 
+    internal void NativeStartupReady()
+    {
+        // Un écran de démarrage peut finir pendant OnPause : ne pas créer de vue cachée.
+        if (active && !disposed && !bridgeFailed && surface is null) Resume();
+    }
+
     private async Task TryOpenAsync(int request)
     {
+        var phase = "startup";
         try
         {
             var startup = Platform.StartupTask;
             if (startup is null) return;
-            await startup;
-            // Le splash natif doit réellement avoir disparu.
-            for (var attempt = 0; attempt < 40 && activity.IsStartupOverlayVisible; attempt++)
-                await Task.Delay(100);
+            // Les erreurs du démarrage natif appartiennent au splash et restent réessayables.
+            try { await startup; }
+            catch (Exception) { return; }
+            // Si le splash est encore visible, son événement Ready relancera l'hôte.
+            // Aucun délai arbitraire ni moteur Flutter derrière un écran de démarrage.
             if (!active || disposed || fellBack || request != generation ||
                 activity.IsStartupOverlayVisible || surface is not null) return;
             if (Avalonia.Application.Current?.ApplicationLifetime is not ISingleViewApplicationLifetime lifetime ||
@@ -60,20 +68,28 @@ internal sealed class FlutterActivityHost(MainActivity activity) : IDisposable
                 fellBack = true;
                 return;
             }
+            phase = "flutter-surface";
             surface = new ScoliaFlutterSurface(activity);
+            phase = "native-channel";
             connection = FlutterIntegration.Connect(surface.Engine!, current,
                 () => active && !disposed && !fellBack && request == generation && ReferenceEquals(shell, current),
                 Fallback);
+            phase = "attach-view";
             view = surface.SurfaceView;
             if (view is null) throw new InvalidOperationException("Flutter view missing.");
             activity.AddContentView(view, new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
+            phase = "dart-entrypoint";
             surface.Start();
         }
         catch (Exception ex)
         {
             if (request != generation || disposed || !active) return;
-            Android.Util.Log.Warn("SCOLIA-Flutter", "Interface expérimentale indisponible : " + ex.GetType().Name);
+            Android.Util.Log.Warn("SCOLIA-Flutter", "Interface expérimentale indisponible : " + phase + " / " + ex.GetType().Name);
+#if SCOLIA_FLUTTER_EXPERIMENT
+            // Le paquet isolé ne contient aucun dossier réel ; uniquement ici, conserver la cause JNI.
+            Android.Util.Log.Error("SCOLIA-Flutter", ex.ToString());
+#endif
             bridgeFailed = true;
             Fallback();
         }

@@ -1065,34 +1065,37 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                         throw new UnauthorizedAccessException("Inscription non autorisée.");
                     var fields = form.Fields.Where(x => x.Kind != FieldKind.Header).ToArray();
                     if (arguments.Count != fields.Length + 1) throw new ArgumentException("Formulaire incomplet.");
-                    foreach (var field in fields)
+                    try
                     {
-                        if (!arguments.TryGetValue(field.Key, out var value) || value.Length > 500)
-                            throw new ArgumentException("Champ invalide.");
-                        if (field.Kind == FieldKind.Choice)
+                        foreach (var field in fields)
                         {
-                            field.Choice = field.Options.FirstOrDefault(x => x.Value == value);
-                            if (value.Length > 0 && field.Choice is null) throw new ArgumentException("Choix invalide.");
+                            if (!arguments.TryGetValue(field.Key, out var value) || value.Length > 500)
+                                throw new ArgumentException("Champ invalide.");
+                            if (field.Kind == FieldKind.Choice)
+                            {
+                                field.Choice = field.Options.FirstOrDefault(x => x.Value == value);
+                                if (value.Length > 0 && field.Choice is null) throw new ArgumentException("Choix invalide.");
+                            }
+                            else if (field.Kind == FieldKind.Flag)
+                            {
+                                if (value is not ("true" or "false")) throw new ArgumentException("Valeur invalide.");
+                                field.Flag = value == "true";
+                            }
+                            else if (field.Kind == FieldKind.Day)
+                            {
+                                field.Text = value;
+                                field.Day = DateOnly.TryParseExact(value, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+                                    System.Globalization.DateTimeStyles.None, out var date) ? date.ToDateTime(TimeOnly.MinValue) : null;
+                            }
+                            else field.Text = value;
                         }
-                        else if (field.Kind == FieldKind.Flag)
-                        {
-                            if (value is not ("true" or "false")) throw new ArgumentException("Valeur invalide.");
-                            field.Flag = value == "true";
-                        }
-                        else if (field.Kind == FieldKind.Day)
-                        {
-                            field.Text = value;
-                            field.Day = DateOnly.TryParseExact(value, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
-                                System.Globalization.DateTimeStyles.None, out var date) ? date.ToDateTime(TimeOnly.MinValue) : null;
-                        }
-                        else field.Text = value;
+                        if (operation is "lmdFeePreview" or "settingsPreview")
+                            return Read() with { Stage = "enrollment", Enrollment = DescribeEnrollment(form) };
+                        await form.Submit.ExecuteAsync();
                     }
-                    if (operation is "lmdFeePreview" or "settingsPreview")
-                        return Read() with { Stage = "enrollment", Enrollment = DescribeEnrollment(form) };
-                    try { await form.Submit.ExecuteAsync(); }
                     finally
                     {
-                        // Ne jamais renvoyer ou conserver le code provisoire dans un formulaire Flutter.
+                        // Effacer aussi après un choix invalide, une prévisualisation ou une exception avant Submit.
                         foreach (var secret in fields.Where(x => x.Kind == FieldKind.Secret))
                         {
                             var fieldError = secret.Error;

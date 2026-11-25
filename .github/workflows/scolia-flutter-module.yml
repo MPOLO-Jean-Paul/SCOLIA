@@ -31,6 +31,8 @@ jobs:
           flutter-version: '3.44.0'
       - run: flutter pub get
       - run: flutter analyze
+      - name: Tester le contrôle de compatibilité des mises à jour
+        run: python3 -m unittest discover -s android_bridge -p 'test_verify_release_upgrade.py'
       - run: flutter test
       - run: flutter build aar --no-debug --no-profile
       - name: Compiler le pont Java contre le moteur Flutter réel
