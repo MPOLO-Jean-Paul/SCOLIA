@@ -24,6 +24,7 @@ internal sealed class FlutterActivityHost(MainActivity activity) : IDisposable
     internal void Resume()
     {
         active = true;
+        if (fellBack || disposed || surface is not null) return;
         var request = ++generation;
         _ = TryOpenAsync(request);
     }
@@ -46,7 +47,9 @@ internal sealed class FlutterActivityHost(MainActivity activity) : IDisposable
             if (RequiresNative(current)) { shell = null; return; }
             shell.PropertyChanged += ShellChanged;
             surface = new ScoliaFlutterSurface(activity);
-            connection = FlutterIntegration.Connect(surface.Engine!, current, Fallback);
+            connection = FlutterIntegration.Connect(surface.Engine!, current,
+                () => active && !disposed && !fellBack && request == generation && ReferenceEquals(shell, current),
+                Fallback);
             view = surface.SurfaceView;
             if (view is null) throw new InvalidOperationException("Flutter view missing.");
             activity.AddContentView(view, new ViewGroup.LayoutParams(
@@ -55,6 +58,7 @@ internal sealed class FlutterActivityHost(MainActivity activity) : IDisposable
         }
         catch (Exception ex)
         {
+            if (request != generation || disposed || !active) return;
             Android.Util.Log.Warn("SCOLIA-Flutter", "Interface expérimentale indisponible : " + ex.GetType().Name);
             Fallback();
         }
@@ -71,10 +75,19 @@ internal sealed class FlutterActivityHost(MainActivity activity) : IDisposable
 
     private void Fallback()
     {
+        if (disposed || fellBack) return;
         fellBack = true;
+        var request = ++generation;
         // Ne pas détruire le moteur pendant une réponse JNI en cours.
-        if (view is not null) view.Visibility = ViewStates.Invisible;
-        activity.RunOnUiThread(() => activity.Window?.DecorView?.Post(new Java.Lang.Runnable(Close)));
+        activity.RunOnUiThread(() =>
+        {
+            if (request != generation || disposed) return;
+            if (view is not null) view.Visibility = ViewStates.Invisible;
+            activity.Window?.DecorView?.Post(new Java.Lang.Runnable(() =>
+            {
+                if (request == generation && !disposed) Close();
+            }));
+        });
     }
 
     internal void Pause()

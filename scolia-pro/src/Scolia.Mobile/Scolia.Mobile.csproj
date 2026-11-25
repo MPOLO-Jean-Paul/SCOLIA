@@ -57,6 +57,8 @@
     <AndroidManifest>../Scolia.Flutter/build/bridge/AndroidManifest.validation.xml</AndroidManifest>
     <!-- Jamais la clé de distribution dans cette configuration. -->
     <AndroidKeyStore>false</AndroidKeyStore>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
   <ItemGroup Condition="'$(ScoliaFlutterExperiment)' == 'true'">
     <ProjectReference Include="../Scolia.Flutter.AndroidBinding/Scolia.Flutter.AndroidBinding.csproj" />

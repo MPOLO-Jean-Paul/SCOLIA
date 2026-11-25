@@ -36,3 +36,6 @@ Le workflow expérimental utilise `com.jpservices.scolia.fluttervalidation`, une
 
 ### Correction de résolution Maven
 Le journal CI a confirmé une erreur HTTP 404 sur l'URL .aar de l'embedding. Le script réutilise désormais le cache Gradle de la version déclarée dans le POM ; en secours il essaie les extensions JAR et AAR, vérifie la présence de FlutterEngine et normalise l'archive de packaging. Les bibliothèques ABI utilisent le même résolveur. Le succès du nouveau workflow reste à confirmer.
+
+### Cycle de vie du canal
+L'adaptateur de commandes est conservé par Shell entre les recréations de la vue Flutter, afin de conserver le verrou des opérations en cours. Les réponses d'une vue Android fermée ne peuvent plus être envoyées à une nouvelle vue ni déclencher son retour natif. Le paquet expérimental conserve les mêmes options .NET sans AOT ni trimming que le client officiel afin de ne pas éliminer les composants du serveur embarqué. Ces corrections sont à valider dans la CI Android et sur appareil.
