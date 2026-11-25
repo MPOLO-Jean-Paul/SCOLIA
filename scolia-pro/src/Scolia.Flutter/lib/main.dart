@@ -661,7 +661,7 @@ class _WorkspaceState extends State<Workspace> {
       'promotions' => 'Nouvelle promotion',
       'frais' => 'Gérer les catégories de frais',
       _ => 'Ouvrir les paramètres',
-    } : 'Créer ou gérer les utilisateurs';
+    } : 'Nouvel utilisateur';
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: busy ? null : () => leaveRegister(r),
         icon: const Icon(Icons.arrow_back), label: const Text('Retour à l’accueil'))),
@@ -673,9 +673,9 @@ class _WorkspaceState extends State<Workspace> {
         if (r.context.isNotEmpty) Text(r.context),
         const SizedBox(height: 12),
       ],
-      if (!settings || r.canWrite) action(label, Icons.settings_outlined,
-        directForm ? Operation.settingsForm : Operation.registerNative,
-        primary: true, args: {'token': r.token}),
+      if (r.canWrite) action(label, Icons.settings_outlined,
+        !settings ? Operation.userForm : directForm ? Operation.settingsForm : Operation.registerNative,
+        primary: true, args: {'token': r.token, if (!settings) 'mode': 'create'}),
       const SizedBox(height: 16),
       if (r.rows.isEmpty) const Text('Aucun élément enregistré.'),
       for (final row in r.rows) Card.outlined(margin: const EdgeInsets.only(bottom: 8), child: Padding(
@@ -685,10 +685,17 @@ class _WorkspaceState extends State<Workspace> {
           if (row.status.isNotEmpty) Text(row.status, style: TextStyle(color: Theme.of(context).colorScheme.primary)),
           for (final item in row.details) if (item.value.isNotEmpty) Padding(
             padding: const EdgeInsets.only(top: 4), child: Text(item.label == 'Valeur' ? item.value : '${item.label} : ${item.value}')),
-          if (row.id.isNotEmpty && (!settings || r.canWrite)) Align(alignment: Alignment.centerRight,
-            child: TextButton.icon(onPressed: busy ? null : () => execute(directForm ? Operation.settingsForm : Operation.registerNative,
-              {'token': r.token, 'row': row.id}), icon: Icon(directForm ? Icons.edit_outlined : Icons.more_horiz),
-              label: Text(directForm ? 'Modifier' : 'Actions'))),
+          if (row.id.isNotEmpty && r.canWrite) Wrap(alignment: WrapAlignment.end, spacing: 8, children: [
+            TextButton.icon(onPressed: busy ? null : () => execute(!settings ? Operation.userForm :
+              directForm ? Operation.settingsForm : Operation.registerNative,
+              {'token': r.token, 'row': row.id, if (!settings) 'mode': 'edit'}),
+              icon: Icon(!settings || directForm ? Icons.edit_outlined : Icons.more_horiz),
+              label: Text(!settings || directForm ? 'Modifier' : 'Actions')),
+            if (!settings) TextButton.icon(onPressed: busy ? null : () => execute(Operation.userForm,
+              {'token': r.token, 'row': row.id, 'mode': 'reset'}), icon: const Icon(Icons.key_outlined), label: const Text('Code provisoire')),
+            if (!settings) TextButton(onPressed: busy ? null : () => execute(Operation.registerNative,
+              {'token': r.token, 'row': row.id}), child: const Text('Autres actions')),
+          ]),
         ]))),
     ]);
   }
@@ -945,12 +952,14 @@ class _WorkspaceState extends State<Workspace> {
       },
       child: InputDecorator(decoration: decoration.copyWith(suffixIcon: const Icon(Icons.calendar_today)),
         child: Text(current.isEmpty ? 'Choisir une date' : current)));
-    return TextFormField(key: ValueKey('${e.token}:${f.key}:${f.value}'), initialValue: current,
-      enabled: !busy, maxLength: f.kind == 'Phone' ? 10 : 500,
+    return TextFormField(key: f.kind == 'Secret' ? ObjectKey(f) : ValueKey('${e.token}:${f.key}:${f.value}'), initialValue: current,
+      enabled: !busy, obscureText: f.kind == 'Secret',
+      autocorrect: f.kind != 'Secret', enableSuggestions: f.kind != 'Secret',
+      maxLength: f.kind == 'Phone' ? 10 : 500,
       keyboardType: f.kind == 'Phone' ? TextInputType.phone : f.kind == 'Amount'
         ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
       inputFormatters: f.kind == 'Phone' ? [FilteringTextInputFormatter.digitsOnly] : null,
-      textCapitalization: TextCapitalization.words,
+      textCapitalization: f.kind == 'Secret' ? TextCapitalization.none : TextCapitalization.words,
       maxLines: f.kind == 'Multiline' ? 3 : 1,
       decoration: decoration.copyWith(counterText: ''),
       onChanged: (v) => enrollmentValues[f.key] = v);
@@ -977,11 +986,20 @@ class _WorkspaceState extends State<Workspace> {
             FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirmer'))]));
         if (!mounted || accepted != true || session?.enrollment?.token != e.token) return;
       }
-      await execute(e.purpose == 'school' || e.purpose == 'promotion' ? Operation.settingsSubmit : Operation.submitEnrollment,
-        {'token': e.token, ...enrollmentValues});
+      if (e.purpose == 'user-reset') {
+        final accepted = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
+          title: const Text('Réinitialiser le code ?'),
+          content: const Text('Les sessions existantes seront invalidées. Le titulaire devra changer son code à la prochaine connexion.'),
+          actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirmer'))]));
+        if (!mounted || accepted != true || session?.enrollment?.token != e.token) return;
+      }
+      await execute(e.purpose == 'school' || e.purpose == 'promotion' || e.purpose.startsWith('user-')
+        ? Operation.settingsSubmit : Operation.submitEnrollment, {'token': e.token, ...enrollmentValues});
     }, icon: Icon(e.purpose == 'enrollment' ? Icons.person_add_alt_1 : Icons.save_outlined),
       label: Text(e.purpose == 'lmdFee' ? 'Enregistrer les frais' : e.purpose == 'promotion' ? 'Enregistrer la promotion'
-        : e.purpose == 'school' ? 'Enregistrer les informations' : 'Inscrire')),
+        : e.purpose == 'school' ? 'Enregistrer les informations' : e.purpose == 'user-create' ? 'Créer le compte'
+        : e.purpose == 'user-edit' ? 'Enregistrer le compte' : e.purpose == 'user-reset' ? 'Réinitialiser le code' : 'Inscrire')),
     const SizedBox(height: 8),
     action('Annuler', Icons.close, Operation.snapshot),
   ]);

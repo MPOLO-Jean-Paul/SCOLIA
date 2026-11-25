@@ -55,7 +55,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
             [], p.AllSections.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(), rows,
             Overview: p.SectionTitle, Context: p.Subtitle);
     }
-    private SchoolRegister DescribeUsers(UsersPage p) => new("users", p.Title, p.Subtitle, "", "", "", false, false, false, false,
+    private SchoolRegister DescribeUsers(UsersPage p) => new("users", p.Title, p.Subtitle, "", "", "", false, shell.Can(Perm.UsersManage), false, false,
         registerToken, [], [], p.Items.Select(x => new RegisterRow(x.Id.ToString(), x.DisplayName, x.UserName, x.Active, "", [
             new("Rôle", x.Role), new("Dernière connexion", x.LastLogin), new("Verrouillage", x.Locked)])).ToArray());
 
@@ -248,6 +248,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
             {
                 FieldKind.Choice => field.Choice?.Value ?? "",
                 FieldKind.Flag => field.Flag ? "true" : "false",
+                FieldKind.Secret => "",
                 FieldKind.Day => field.Day?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) ?? field.Text,
                 _ => field.Text,
             }, field.Hint ?? "", field.Error ?? "", field.Options.Select(x => new FilterChoice(x.Value, x.Label)).ToArray())).ToArray(), enrollmentPurpose);
@@ -349,7 +350,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         if (operation is not ("listStudents" or "openStudent" or "cashierStudent" or "studentActions")) { visibleStudents.Clear(); studentOwner = null; }
         if (operation is not ("listReceipts" or "exportReceipts" or "openReceipt"))
         { journalSelection = null; journalOwner = null; }
-        if (operation is not ("listAttendance" or "editAttendance" or "saveAttendance" or "attendanceAll" or "attendanceDay" or "listDiscipline" or "disciplineExport" or "registerNative" or "listPersonnel" or "marksCheck" or "marksSave" or "academicExport" or "lmdFeeForm" or "settingsForm"))
+        if (operation is not ("listAttendance" or "editAttendance" or "saveAttendance" or "attendanceAll" or "attendanceDay" or "listDiscipline" or "disciplineExport" or "registerNative" or "listPersonnel" or "marksCheck" or "marksSave" or "academicExport" or "lmdFeeForm" or "settingsForm" or "userForm"))
             ClearRegister();
         if (operation is not ("submitEnrollment" or "lmdFeePreview" or "settingsSubmit" or "settingsPreview")) ClearEnrollment();
         if (operation == "snapshot") return ActiveCashier is { } active ? DescribeCashier(active) : Read();
@@ -517,6 +518,33 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                         return Read() with { Stage = "schoolRegister", Register = DescribeProgress(progress) };
                     }
                     throw new UnauthorizedAccessException("Export non autorisé.");
+                }
+                case "userForm":
+                {
+                    if (usersDraft is not { } users || AllowedPage("page:UsersPage") is null || !shell.Can(Perm.UsersManage) ||
+                        !ReferenceEquals(registerOwner, shell.Session) || Required(arguments, "token", 36) != registerToken)
+                        throw new UnauthorizedAccessException("Gestion des comptes non autorisée.");
+                    var mode = Required(arguments, "mode", 10);
+                    var row = arguments.GetValueOrDefault("row", "");
+                    FormViewModel accountForm;
+                    if (mode == "create" && row.Length == 0)
+                        accountForm = await UsersPage.CreateUserFormAsync(shell);
+                    else if (mode is "edit" or "reset")
+                    {
+                        if (!Guid.TryParse(row, out var id)) throw new ArgumentException("Compte invalide.");
+                        var user = users.Items.FirstOrDefault(x => x.Id == id)
+                            ?? throw new UnauthorizedAccessException("Compte non proposé.");
+                        accountForm = mode == "edit" ? await users.EditUserFormAsync(user.Source) : users.ResetUserForm(user.Source);
+                    }
+                    else throw new ArgumentException("Action invalide.");
+                    if (!ReferenceEquals(registerOwner, shell.Session) || AllowedPage("page:UsersPage") is null || !shell.Can(Perm.UsersManage))
+                        throw new UnauthorizedAccessException("Session modifiée.");
+                    enrollmentForm = accountForm;
+                    enrollmentOwner = shell.Session;
+                    enrollmentToken = Guid.NewGuid().ToString();
+                    enrollmentPurpose = "user-" + mode;
+                    ClearRegister();
+                    return Read() with { Stage = "enrollment", Enrollment = DescribeEnrollment(accountForm) };
                 }
                 case "settingsForm":
                 {
@@ -961,13 +989,16 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                 case "lmdFeePreview":
                 case "submitEnrollment":
                     var lmdFee = enrollmentPurpose == "lmdFee";
-                    var settingsEdit = enrollmentPurpose is "school" or "promotion";
-                    bool FormAllowed() => settingsEdit ? AllowedPage("settings") is not null && shell.Can(Perm.SettingsWrite)
+                    var userEdit = enrollmentPurpose is "user-create" or "user-edit" or "user-reset";
+                    var settingsEdit = enrollmentPurpose is "school" or "promotion" || userEdit;
+                    bool FormAllowed() => userEdit ? AllowedPage("page:UsersPage") is not null && shell.Can(Perm.UsersManage)
+                        : settingsEdit ? AllowedPage("settings") is not null && shell.Can(Perm.SettingsWrite)
                         : lmdFee ? AllowedPage("lmd") is not null && shell.Can(Perm.SettingsWrite)
                         : AllowedPage("students") is not null && shell.Can(Perm.StudentsWrite);
                     if (!FormAllowed() ||
                         (operation == "lmdFeePreview" && !lmdFee) ||
                         ((operation is "settingsPreview" or "settingsSubmit") != settingsEdit) ||
+                        (operation == "settingsPreview" && userEdit) ||
                         enrollmentForm is not { } form || !ReferenceEquals(enrollmentOwner, shell.Session) ||
                         !string.Equals(enrollmentToken, Required(arguments, "token", 36), StringComparison.Ordinal))
                         throw new UnauthorizedAccessException("Inscription non autorisée.");
@@ -997,7 +1028,17 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     }
                     if (operation is "lmdFeePreview" or "settingsPreview")
                         return Read() with { Stage = "enrollment", Enrollment = DescribeEnrollment(form) };
-                    await form.Submit.ExecuteAsync();
+                    try { await form.Submit.ExecuteAsync(); }
+                    finally
+                    {
+                        // Ne jamais renvoyer ou conserver le code provisoire dans un formulaire Flutter.
+                        foreach (var secret in fields.Where(x => x.Kind == FieldKind.Secret))
+                        {
+                            var fieldError = secret.Error;
+                            secret.Text = "";
+                            secret.Error = fieldError;
+                        }
+                    }
                     if (!FormAllowed() || !ReferenceEquals(enrollmentOwner, shell.Session))
                     {
                         ClearEnrollment();
@@ -1006,7 +1047,8 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     if (form.Completion.IsCompletedSuccessfully)
                     {
                         var accepted = form.Completion.Result;
-                        var notice = settingsEdit ? (accepted ? "Configuration enregistrée." : "Configuration non confirmée. Vérifiez la synchronisation.")
+                        var notice = userEdit ? (accepted ? "Compte enregistré." : "Modification du compte non confirmée. Vérifiez la synchronisation.")
+                            : settingsEdit ? (accepted ? "Configuration enregistrée." : "Configuration non confirmée. Vérifiez la synchronisation.")
                             : lmdFee ? (accepted ? "Configuration des frais confirmée." : "Modification des frais non confirmée.")
                             : accepted ? form.Message : "Inscription non confirmée. Vérifiez le registre avant de réessayer.";
                         ClearEnrollment();

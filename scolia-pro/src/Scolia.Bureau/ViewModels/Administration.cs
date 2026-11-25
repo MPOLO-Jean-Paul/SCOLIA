@@ -1488,6 +1488,13 @@ public sealed class UsersPage : PageViewModel
     /// <summary>Formulaire de création d'un compte nominatif.</summary>
     public static async Task NewUserAsync(ShellViewModel shell)
     {
+        var form = await CreateUserFormAsync(shell);
+        if (await shell.Ask(form) && shell.Current is UsersPage page) await page.RefreshAsync();
+    }
+
+    internal static async Task<FormViewModel> CreateUserFormAsync(ShellViewModel shell)
+    {
+        if (!shell.Can(Perm.UsersManage)) throw new UnauthorizedAccessException("Gestion des comptes non autorisée.");
         var teachers = await TeacherChoicesAsync(shell);
         var form = new FormViewModel("Nouvel utilisateur", "Secrétariat : administration. Comptabilité : encaissements et caisse. Promoteur : consultation d'indicateurs agrégés, sans modification. Enseignant : encodage et remise des cotes de ses seuls cours, par code anonyme. Le mot de passe provisoire devra être changé à la première connexion.", async f =>
         {
@@ -1510,7 +1517,7 @@ public sealed class UsersPage : PageViewModel
         form.AddFlag("jury", "Membre du jury : encode aussi les épreuves du jury (rôle Enseignant)", false);
         form.Add("motDePasse", "Code provisoire", FieldKind.Secret, required: true,
             hint: AccessCode.Hint + " La personne choisira le sien à sa première connexion.");
-        if (await shell.Ask(form) && shell.Current is UsersPage page) await page.RefreshAsync();
+        return form;
     }
 
     private async Task EditAsync()
@@ -1520,7 +1527,13 @@ public sealed class UsersPage : PageViewModel
             Shell.Notify("Sélectionnez un compte.");
             return;
         }
-        var u = Selected.Source;
+        var form = await EditUserFormAsync(Selected.Source);
+        if (await Shell.Ask(form)) await RefreshAsync();
+    }
+
+    internal async Task<FormViewModel> EditUserFormAsync(UserDto u)
+    {
+        if (!Shell.Can(Perm.UsersManage)) throw new UnauthorizedAccessException("Gestion des comptes non autorisée.");
         var form = new FormViewModel("Modifier le compte", $"Identifiant {u.UserName}", async f =>
         {
             await Shell.Api.SendAsync(HttpMethod.Put, $"api/utilisateurs/{u.Id}", new
@@ -1541,7 +1554,7 @@ public sealed class UsersPage : PageViewModel
         // Privilège, pas un compte : le retirer laisse en place les cotes du jury déjà encodées.
         form.AddFlag("jury", "Membre du jury : encode aussi les épreuves du jury (rôle Enseignant)", u.JuryAccess);
         form.AddFlag("actif", "Compte actif", u.IsActive);
-        if (await Shell.Ask(form)) await RefreshAsync();
+        return form;
     }
 
     /// <summary>
@@ -1579,7 +1592,13 @@ public sealed class UsersPage : PageViewModel
             Shell.Notify("Sélectionnez un compte.");
             return;
         }
-        var u = Selected.Source;
+        var form = ResetUserForm(Selected.Source);
+        if (await Shell.Ask(form)) await RefreshAsync();
+    }
+
+    internal FormViewModel ResetUserForm(UserDto u)
+    {
+        if (!Shell.Can(Perm.UsersManage)) throw new UnauthorizedAccessException("Gestion des comptes non autorisée.");
         var form = new FormViewModel("Réinitialiser le mot de passe",
             $"Compte {u.UserName} · L'accès actuel sera remplacé. Les sessions existantes seront invalidées.", async f =>
         {
@@ -1607,6 +1626,6 @@ public sealed class UsersPage : PageViewModel
             hint: AccessCode.Hint + " À remettre uniquement au titulaire du compte.");
         form.Add("confirmation", "Confirmer le nouveau code", FieldKind.Secret, required: true,
             hint: "Ressaisissez exactement le même code pour éviter les erreurs.");
-        if (await Shell.Ask(form)) await RefreshAsync();
+        return form;
     }
 }

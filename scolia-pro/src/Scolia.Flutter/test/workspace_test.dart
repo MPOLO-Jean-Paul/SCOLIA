@@ -113,6 +113,19 @@ void main() {
     expect(host.last, Operation.settingsSubmit);
     expect(host.lastArgs, {'token': 'promotion-token', 'actif': 'false'});
   });
+  testWidgets('user registry opens only the selected account reset form', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.schoolRegister,
+      register: SchoolRegister(kind: 'users', title: 'Utilisateurs', token: 'users-token', canWrite: true,
+        rows: [RegisterRow('user1', 'Compte test', 'test', 'Actif', '', [])])));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Code provisoire'));
+    await tester.tap(find.text('Code provisoire'));
+    await tester.pumpAndSettle();
+    expect(host.last, Operation.userForm);
+    expect(host.lastArgs, {'token': 'users-token', 'row': 'user1', 'mode': 'reset'});
+    expect(tester.takeException(), isNull);
+  });
   test('reject incompatible protocol', () {
     expect(() => SchoolSession.fromMap({'protocol': 2, 'stage': 'home'}), throwsFormatException);
   });
