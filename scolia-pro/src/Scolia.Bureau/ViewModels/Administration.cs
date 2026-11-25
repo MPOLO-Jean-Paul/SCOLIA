@@ -1181,6 +1181,12 @@ public sealed class SettingsPage : PageViewModel
     /// <summary>Boîte de création ou de modification d'une promotion.</summary>
     public static async Task PromotionFormAsync(ShellViewModel shell, PromotionDto? existing)
     {
+        var form = await CreatePromotionFormAsync(shell, existing);
+        if (form is not null && await shell.Ask(form) && shell.Current is SettingsPage page) await page.RefreshAsync();
+    }
+
+    internal static async Task<FormViewModel?> CreatePromotionFormAsync(ShellViewModel shell, PromotionDto? existing)
+    {
         var sections = await shell.Api.GetAsync<List<SectionDto>>("api/etablissement/sections");
         // Une section désactivée n'est plus proposée, sauf si la promotion y est déjà rattachée.
         var sectionChoices = sections.Where(s => s.IsActive || s.Id == existing?.SectionId)
@@ -1203,7 +1209,7 @@ public sealed class SettingsPage : PageViewModel
         if (schoolUsesCycles && activeCycles.Count == 0)
         {
             shell.Notify("Configurez d'abord les cycles dans Paramètres > Cycles scolaires avant de créer une classe.");
-            return;
+            return null;
         }
         var cycleChoices = activeCycles.Select(c =>
             new ChoiceItem(c.Id.ToString(), c.Name)).ToList();
@@ -1348,7 +1354,7 @@ public sealed class SettingsPage : PageViewModel
             Preview();
         }
 
-        if (await shell.Ask(form) && shell.Current is SettingsPage page) await page.RefreshAsync();
+        return form;
     }
 
     /// <summary>

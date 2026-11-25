@@ -91,12 +91,27 @@ void main() {
     await tester.pumpWidget(ScoliaApp(host: host));
     await tester.pumpAndSettle();
     expect(find.text('Promotion test'), findsOneWidget);
-    await tester.ensureVisible(find.text('Actions'));
-    await tester.tap(find.text('Actions'));
+    await tester.ensureVisible(find.text('Modifier'));
+    await tester.tap(find.text('Modifier'));
     await tester.pumpAndSettle();
-    expect(host.last, Operation.registerNative);
+    expect(host.last, Operation.settingsForm);
     expect(host.lastArgs, {'token': 'settings-token', 'row': 'promotion1'});
     expect(tester.takeException(), isNull);
+  });
+  testWidgets('promotion form sends its own command and preserves active flag', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.enrollment,
+      enrollment: EnrollmentForm(token: 'promotion-token', title: 'Nouvelle promotion', subtitle: '',
+        purpose: 'promotion', fields: [
+          EnrollmentField(key: 'actif', label: 'Promotion active', kind: 'Flag', value: 'true'),
+        ])));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Promotion active'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer la promotion'));
+    await tester.pumpAndSettle();
+    expect(host.last, Operation.settingsSubmit);
+    expect(host.lastArgs, {'token': 'promotion-token', 'actif': 'false'});
   });
   test('reject incompatible protocol', () {
     expect(() => SchoolSession.fromMap({'protocol': 2, 'stage': 'home'}), throwsFormatException);

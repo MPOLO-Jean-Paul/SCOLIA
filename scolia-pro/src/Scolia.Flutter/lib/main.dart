@@ -653,11 +653,12 @@ class _WorkspaceState extends State<Workspace> {
 
   Widget administrationRegister(SchoolRegister r) {
     final settings = r.kind == 'settings';
+    final directForm = settings && (r.date == 'promotions' || r.date == 'etablissement');
     final label = settings ? switch (r.date) {
       'etablissement' => 'Modifier les informations',
       'annees' => 'Gérer les années scolaires',
       'sections' => 'Créer ou gérer les sections',
-      'promotions' => 'Créer ou gérer les promotions',
+      'promotions' => 'Nouvelle promotion',
       'frais' => 'Gérer les catégories de frais',
       _ => 'Ouvrir les paramètres',
     } : 'Créer ou gérer les utilisateurs';
@@ -672,7 +673,8 @@ class _WorkspaceState extends State<Workspace> {
         if (r.context.isNotEmpty) Text(r.context),
         const SizedBox(height: 12),
       ],
-      if (!settings || r.canWrite) action(label, Icons.settings_outlined, Operation.registerNative,
+      if (!settings || r.canWrite) action(label, Icons.settings_outlined,
+        directForm ? Operation.settingsForm : Operation.registerNative,
         primary: true, args: {'token': r.token}),
       const SizedBox(height: 16),
       if (r.rows.isEmpty) const Text('Aucun élément enregistré.'),
@@ -684,8 +686,9 @@ class _WorkspaceState extends State<Workspace> {
           for (final item in row.details) if (item.value.isNotEmpty) Padding(
             padding: const EdgeInsets.only(top: 4), child: Text(item.label == 'Valeur' ? item.value : '${item.label} : ${item.value}')),
           if (row.id.isNotEmpty && (!settings || r.canWrite)) Align(alignment: Alignment.centerRight,
-            child: TextButton.icon(onPressed: busy ? null : () => execute(Operation.registerNative,
-              {'token': r.token, 'row': row.id}), icon: const Icon(Icons.more_horiz), label: const Text('Actions'))),
+            child: TextButton.icon(onPressed: busy ? null : () => execute(directForm ? Operation.settingsForm : Operation.registerNative,
+              {'token': r.token, 'row': row.id}), icon: Icon(directForm ? Icons.edit_outlined : Icons.more_horiz),
+              label: Text(directForm ? 'Modifier' : 'Actions'))),
         ]))),
     ]);
   }
@@ -919,6 +922,9 @@ class _WorkspaceState extends State<Workspace> {
     final decoration = InputDecoration(labelText: f.required ? '${f.label} *' : f.label,
       helperText: f.hint.isEmpty ? null : f.hint, helperMaxLines: 3,
       errorText: f.error.isEmpty ? null : f.error, errorMaxLines: 3);
+    if (f.kind == 'Flag') return SwitchListTile(contentPadding: EdgeInsets.zero,
+      title: Text(f.label), subtitle: f.hint.isEmpty ? null : Text(f.hint),
+      value: current == 'true', onChanged: busy ? null : (v) => setState(() => enrollmentValues[f.key] = v.toString()));
     if (f.kind == 'Choice') return InputDecorator(decoration: decoration,
       child: DropdownButtonHideUnderline(child: DropdownButton<String>(
         value: f.options.any((x) => x.id == current) ? current : null,
@@ -939,12 +945,13 @@ class _WorkspaceState extends State<Workspace> {
       },
       child: InputDecorator(decoration: decoration.copyWith(suffixIcon: const Icon(Icons.calendar_today)),
         child: Text(current.isEmpty ? 'Choisir une date' : current)));
-    return TextFormField(key: ValueKey('${e.token}:${f.key}'), initialValue: current,
+    return TextFormField(key: ValueKey('${e.token}:${f.key}:${f.value}'), initialValue: current,
       enabled: !busy, maxLength: f.kind == 'Phone' ? 10 : 500,
       keyboardType: f.kind == 'Phone' ? TextInputType.phone : f.kind == 'Amount'
         ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
       inputFormatters: f.kind == 'Phone' ? [FilteringTextInputFormatter.digitsOnly] : null,
       textCapitalization: TextCapitalization.words,
+      maxLines: f.kind == 'Multiline' ? 3 : 1,
       decoration: decoration.copyWith(counterText: ''),
       onChanged: (v) => enrollmentValues[f.key] = v);
   }
@@ -955,14 +962,14 @@ class _WorkspaceState extends State<Workspace> {
       child: Text(e.error, style: TextStyle(color: Theme.of(context).colorScheme.error))),
     for (final field in e.fields)
       Padding(padding: const EdgeInsets.only(bottom: 12), child: enrollmentField(e, field)),
-    if (e.purpose == 'lmdFee') ...[
-      OutlinedButton.icon(onPressed: busy ? null : () => execute(Operation.lmdFeePreview,
+    if (e.purpose == 'lmdFee' || (e.purpose == 'promotion' && e.fields.any((f) => f.key == 'tranches'))) ...[
+      OutlinedButton.icon(onPressed: busy ? null : () => execute(e.purpose == 'promotion' ? Operation.settingsPreview : Operation.lmdFeePreview,
         {'token': e.token, ...enrollmentValues}), icon: const Icon(Icons.calculate_outlined),
         label: const Text('Aperçu des tranches')),
       const SizedBox(height: 8),
     ],
     FilledButton.icon(onPressed: busy ? null : () async {
-      if (e.purpose == 'lmdFee') {
+      if (e.purpose == 'lmdFee' || (e.purpose == 'promotion' && e.fields.any((f) => f.key == 'tranches'))) {
         final accepted = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
           title: const Text('Confirmer les frais académiques'),
           content: Text('Total annuel : ${enrollmentValues['annuel']} · ${enrollmentValues['tranches']} tranche(s).'),
@@ -970,9 +977,11 @@ class _WorkspaceState extends State<Workspace> {
             FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirmer'))]));
         if (!mounted || accepted != true || session?.enrollment?.token != e.token) return;
       }
-      await execute(Operation.submitEnrollment, {'token': e.token, ...enrollmentValues});
-    }, icon: Icon(e.purpose == 'lmdFee' ? Icons.save_outlined : Icons.person_add_alt_1),
-      label: Text(e.purpose == 'lmdFee' ? 'Enregistrer les frais' : 'Inscrire')),
+      await execute(e.purpose == 'school' || e.purpose == 'promotion' ? Operation.settingsSubmit : Operation.submitEnrollment,
+        {'token': e.token, ...enrollmentValues});
+    }, icon: Icon(e.purpose == 'enrollment' ? Icons.person_add_alt_1 : Icons.save_outlined),
+      label: Text(e.purpose == 'lmdFee' ? 'Enregistrer les frais' : e.purpose == 'promotion' ? 'Enregistrer la promotion'
+        : e.purpose == 'school' ? 'Enregistrer les informations' : 'Inscrire')),
     const SizedBox(height: 8),
     action('Annuler', Icons.close, Operation.snapshot),
   ]);

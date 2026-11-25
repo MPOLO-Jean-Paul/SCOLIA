@@ -16,9 +16,10 @@ public sealed class FlutterJsonDispatcher(
         if (document.RootElement.ValueKind != JsonValueKind.Object)
             throw new ArgumentException("Arguments invalides.");
         var arguments = new Dictionary<string, string>(StringComparer.Ordinal);
+        var settingsForm = operation is "settingsPreview" or "settingsSubmit";
         foreach (var property in document.RootElement.EnumerateObject())
         {
-            if (arguments.Count >= (operation == "submitEnrollment" ? 16 : 12) || property.Name.Length > 40 ||
+            if (arguments.Count >= (settingsForm ? 96 : operation == "submitEnrollment" ? 16 : 12) || property.Name.Length > (settingsForm ? 64 : 40) ||
                 property.Value.ValueKind != JsonValueKind.String ||
                 !arguments.TryAdd(property.Name, property.Value.GetString()!))
                 throw new ArgumentException("Arguments invalides.");
