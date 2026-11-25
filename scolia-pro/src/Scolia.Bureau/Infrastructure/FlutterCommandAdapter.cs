@@ -239,7 +239,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                             throw new UnauthorizedAccessException("Session modifiée.");
                         var sections = new List<ProfileSection>();
                         static IReadOnlyList<ProfileValue> Row(params ProfileValue[] values) => values;
-                        sections.Add(new("Identité", detail.Details.Select(x => Row(new(x.Label, x.Value))).ToArray()));
+                        sections.Add(new("Identité", detail.Details.Select(x => Row(new ProfileValue(x.Label, x.Value))).ToArray()));
                         sections.Add(new("Inscriptions", detail.Enrollments.Select(x => Row(
                             new("Année", x.Year), new("Promotion", x.Promotion), new("Inscrit le", x.EnrolledOn),
                             new("Statut", x.Status), new("Sortie", x.Exit))).ToArray()));
