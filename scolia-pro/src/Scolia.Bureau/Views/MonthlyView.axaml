@@ -1,29 +1,43 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:c="using:Scolia.Bureau.Controls"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.MonthlyView">
   <Grid RowDefinitions="Auto,Auto,*">
     <!-- Critères : le mois d'abord, puis la promotion, l'état et la recherche -->
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <StackPanel Spacing="8">
+      <TextBlock Text="Filtres du suivi mensuel" Classes="heading" />
       <WrapPanel>
         <StackPanel Classes="field">
           <TextBlock Text="Mois" Classes="fieldlabel" />
-          <ComboBox Width="200" ItemsSource="{Binding Months}" SelectedItem="{Binding Month}" />
+          <ComboBox Width="200" ItemsSource="{Binding Months}" SelectedItem="{Binding Month, Mode=TwoWay}" />
         </StackPanel>
         <StackPanel Classes="field">
           <TextBlock Text="Promotion" Classes="fieldlabel" />
-          <ComboBox Width="240" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+          <ComboBox Width="240" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion, Mode=TwoWay}" />
         </StackPanel>
         <StackPanel Classes="field">
           <TextBlock Text="État" Classes="fieldlabel" />
-          <ComboBox Width="190" ItemsSource="{Binding StateChoices}" SelectedItem="{Binding State}" />
+          <ComboBox Width="190" ItemsSource="{Binding StateChoices}" SelectedItem="{Binding State, Mode=TwoWay}" />
         </StackPanel>
         <StackPanel Classes="field pagesearch">
           <TextBlock Text="Rechercher" Classes="fieldlabel" />
-          <TextBox Classes="search clearButton" Width="240" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
+          <TextBox Classes="search clearButton" Width="240" Text="{Binding Search, Mode=TwoWay}" PlaceholderText="Nom ou matricule" />
         </StackPanel>
       </WrapPanel>
+      <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" infra:Adaptive.StackBelow="620">
+          <TextBlock Text="{Binding ExportScope}" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" />
+          <WrapPanel Grid.Column="1" Orientation="Horizontal">
+            <Button Command="{Binding ExportExcel}" Classes="quiet" ToolTip.Tip="Exporter la sélection en Excel"><StackPanel Orientation="Horizontal" Spacing="5"><mi:MaterialIcon Kind="FileExcel" Width="18" Height="18" Foreground="{DynamicResource ToneGreen}" /><TextBlock Text="Excel" /></StackPanel></Button>
+            <Button Command="{Binding ExportPdf}" Classes="quiet" ToolTip.Tip="Exporter la sélection en PDF"><StackPanel Orientation="Horizontal" Spacing="5"><mi:MaterialIcon Kind="FilePdfBox" Width="18" Height="18" Foreground="{DynamicResource ToneRed}" /><TextBlock Text="PDF" /></StackPanel></Button>
+            <Button Command="{Binding ExportWord}" Classes="quiet" ToolTip.Tip="Exporter la sélection en Word"><StackPanel Orientation="Horizontal" Spacing="5"><mi:MaterialIcon Kind="FileDocumentOutline" Width="18" Height="18" Foreground="{DynamicResource ToneBlue}" /><TextBlock Text="Word" /></StackPanel></Button>
+          </WrapPanel>
+        </Grid>
+      </Border>
+      </StackPanel>
     </Border>
 
     <!-- Bilan du mois pour la promotion choisie -->

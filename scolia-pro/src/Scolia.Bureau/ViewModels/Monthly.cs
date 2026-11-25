@@ -32,6 +32,7 @@ public sealed class MonthlyPage : PageViewModel
     private MonthlyRowVm? selected;
     private string subtitle = string.Empty;
     private bool ready;
+    private string? loadedFilters;
     private DispatcherTimer? timer;
 
     public MonthlyPage(ShellViewModel shell, string? initialState = null) : base(shell)
@@ -43,6 +44,7 @@ public sealed class MonthlyPage : PageViewModel
         Action("Relancer par SMS", MaterialIconKind.MessageText, () => OpenLinkAsync(r => r.SmsLink), row: true);
         Action("Excel", MaterialIconKind.FileExcel, () => ExportAsync("xlsx"));
         Action("PDF", MaterialIconKind.FilePdfBox, () => ExportAsync("pdf"));
+        Action("Word", MaterialIconKind.FileDocumentOutline, () => ExportAsync("docx"));
         ActionRefresh();
         MenuAction("Aperçu rapide", MaterialIconKind.Eye, () =>
         {
@@ -63,10 +65,20 @@ public sealed class MonthlyPage : PageViewModel
     public IReadOnlyList<ChoiceItem> Months { get; private set; } = [];
     public IReadOnlyList<ChoiceItem> Promotions { get; private set; } = [];
     public IReadOnlyList<ChoiceItem> StateChoices => States;
+    public System.Windows.Input.ICommand ExportExcel => Actions.First(a => a.Label == "Excel").Command;
+    public System.Windows.Input.ICommand ExportPdf => Actions.First(a => a.Label == "PDF").Command;
+    public System.Windows.Input.ICommand ExportWord => Actions.First(a => a.Label == "Word").Command;
+    public string ExportScope => $"Export : {Month?.Label ?? "mois à choisir"} · {Promotion?.Label ?? "promotion à choisir"} · {State?.Label ?? "Tous les états"} · {Items.Count} ligne(s)";
 
-    public ChoiceItem? Month { get => month; set { if (Set(ref month, value) && ready) _ = Shell.Run(RefreshAsync); } }
-    public ChoiceItem? Promotion { get => promotion; set { if (Set(ref promotion, value) && ready) _ = Shell.Run(RefreshAsync); } }
-    public ChoiceItem? State { get => state; set { if (Set(ref state, value) && ready) _ = Shell.Run(RefreshAsync); } }
+    public ChoiceItem? Month { get => month; set { if (Set(ref month, value)) FilterChanged(); } }
+    public ChoiceItem? Promotion { get => promotion; set { if (Set(ref promotion, value)) FilterChanged(); } }
+    public ChoiceItem? State { get => state; set { if (Set(ref state, value)) FilterChanged(); } }
+    private void FilterChanged()
+    {
+        loadedFilters = null;
+        Raise(nameof(ExportScope));
+        if (ready) _ = Shell.Run(RefreshAsync);
+    }
     public MonthlyRowVm? Selected { get => selected; set => Set(ref selected, value); }
 
     public string Search
@@ -75,6 +87,8 @@ public sealed class MonthlyPage : PageViewModel
         set
         {
             if (!Set(ref search, value)) return;
+            loadedFilters = null;
+            Raise(nameof(ExportScope));
             timer?.Stop();
             var scheduled = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
             timer = scheduled;
@@ -99,7 +113,10 @@ public sealed class MonthlyPage : PageViewModel
             Raise(nameof(Promotion));
         }
 
-        var d = await Shell.Api.GetAsync<MonthlyFollowUpDto>("api/rapports/suivi-mensuel" + Filters());
+        var requestedFilters = Filters();
+        var d = await Shell.Api.GetAsync<MonthlyFollowUpDto>("api/rapports/suivi-mensuel" + requestedFilters);
+        // Ne jamais appliquer une réponse ancienne après un changement de filtre.
+        if (ready && !string.Equals(requestedFilters, Filters(), StringComparison.Ordinal)) return;
         if (!ready)
         {
             // Le mois en cours est choisi d'office ; les autres mois de l'année restent à un clic.
@@ -131,6 +148,8 @@ public sealed class MonthlyPage : PageViewModel
         var scope = Promotion is { Value.Length: > 0 } p ? $" · {p.Label}" : string.Empty;
         subtitle = $"{d.Period}{scope} · {Format.Count(d.Rows.Count, Shell.StudentTerms.Singular, Shell.StudentTerms.Plural)}";
         Raise(nameof(Subtitle));
+        loadedFilters = Filters();
+        Raise(nameof(ExportScope));
     }
 
     /// <summary>Couleur du point d'état : vert payé, sarcelle pris en charge, orange partiel ou non payé, rouge en retard.</summary>
@@ -146,8 +165,33 @@ public sealed class MonthlyPage : PageViewModel
         ("periodeId", ready ? Month?.Value : null), ("promotionId", Promotion?.Value is { Length: > 0 } id ? id : null),
         ("etat", State?.Value is { Length: > 0 } e ? e : null), ("q", Search.Trim()), ("format", format));
 
-    private Task ExportAsync(string format) =>
-        Shell.Download("api/rapports/suivi-mensuel/export" + Filters(format), $"suivi-mensuel.{format}");
+    private async Task ExportAsync(string format)
+    {
+        if (!ready || !Guid.TryParse(Month?.Value, out var periodId) || Promotion is null ||
+            (Promotion.Value.Length > 0 && !Guid.TryParse(Promotion.Value, out _)))
+        {
+            Shell.Notify("Choisissez le mois et la promotion avant d’exporter.");
+            return;
+        }
+        var requested = Filters();
+        if (timer is not null) { timer.Stop(); timer = null; }
+        if (Busy || !string.Equals(loadedFilters, requested, StringComparison.Ordinal))
+            await RefreshAsync();
+        if (!string.Equals(requested, Filters(), StringComparison.Ordinal) ||
+            !string.Equals(loadedFilters, requested, StringComparison.Ordinal))
+        {
+            Shell.Notify("Les filtres ont changé ou la liste n’est pas actualisée. Vérifiez la sélection puis réessayez.");
+            return;
+        }
+        var promotionScope = Promotion.Value.Length == 0 ? "all" : Promotion.Value;
+        var query = ScoliaClient.Query(("periodeId", periodId), ("promotionScope", promotionScope),
+            ("etat", State?.Value), ("q", Search.Trim()), ("expectedCount", Items.Count), ("format", format));
+        static string Safe(string text) => string.Concat(text.Select(c => char.IsLetterOrDigit(c) ? c : '-'));
+        var name = $"suivi-mensuel-{Safe(Month?.Label ?? "mois")}-{Safe(Promotion.Label)}.{format}";
+        await Shell.Download("api/rapports/suivi-mensuel/export/selection" + query, name);
+    }
+
+    public override Task PrintAsync() => ExportAsync("pdf");
 
     private async Task EncashAsync()
     {

@@ -173,6 +173,51 @@ public sealed class MonthlyFollowUpTests : IDisposable
         Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
     }
     [Fact]
+    public async Task Monthly_strict_export_contains_only_selected_promotion_month_state_and_search()
+    {
+        var admin = await app.InstalledAdmin();
+        var first = await Promotion(admin, "INF1");
+        var second = await Promotion(admin, "INF2");
+        var payer = await Student(admin, first, "Mukendi", "0811111111");
+        await Student(admin, first, "Ilunga", "0822222222");
+        await Student(admin, second, "Kasongo", "0833333333");
+        await admin.PayMonths(payer, 1);
+        var overview = await admin.GetAsync("/api/rapports/suivi-mensuel").Ok();
+        var periods = overview.GetProperty("periods");
+        var sep = periods[0].GetProperty("id").GetString();
+        var oct = periods[1].GetProperty("id").GetString();
+        var endpoint = "/api/rapports/suivi-mensuel/export/selection";
+        var selection = $"?periodeId={sep}&promotionScope={first}&etat=paye&q=Mukendi&expectedCount=1";
+        var xlsx = await admin.GetAsync(endpoint + selection + "&format=xlsx");
+        Assert.True(xlsx.IsSuccessStatusCode);
+        using var book = new ClosedXML.Excel.XLWorkbook(await xlsx.Content.ReadAsStreamAsync());
+        var sheet = book.Worksheet(1);
+        Assert.Equal("MUKENDI KABEYA Grâce", sheet.Cell(6, 2).GetString());
+        Assert.Equal("INF1", sheet.Cell(6, 3).GetString());
+        Assert.Equal("Payé", sheet.Cell(6, 7).GetString());
+        Assert.Equal("Total", sheet.Cell(7, 2).GetString());
+        Assert.DoesNotContain(sheet.CellsUsed(), c => c.GetString().Contains("KASONGO", StringComparison.Ordinal));
+        var wrongCount = await admin.GetAsync(endpoint + selection.Replace("expectedCount=1", "expectedCount=2", StringComparison.Ordinal) + "&format=xlsx");
+        Assert.Equal(System.Net.HttpStatusCode.Conflict, wrongCount.StatusCode);
+        var missingPromotion = await admin.GetAsync(endpoint + $"?periodeId={sep}&expectedCount=1&format=xlsx");
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, missingPromotion.StatusCode);
+        var october = await admin.GetAsync(endpoint + $"?periodeId={oct}&promotionScope={first}&etat=paye&expectedCount=0&format=xlsx");
+        Assert.True(october.IsSuccessStatusCode);
+        using var octBook = new ClosedXML.Excel.XLWorkbook(await october.Content.ReadAsStreamAsync());
+        Assert.DoesNotContain(octBook.Worksheet(1).CellsUsed(), c => c.GetString().Contains("MUKENDI", StringComparison.Ordinal));
+        var pdf = await admin.GetAsync(endpoint + selection + "&format=pdf");
+        Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
+        var word = await admin.GetAsync(endpoint + selection + "&format=docx");
+        Assert.Equal("application/vnd.openxmlformats-officedocument.wordprocessingml.document", word.Content.Headers.ContentType?.MediaType);
+        using var zip = new System.IO.Compression.ZipArchive(await word.Content.ReadAsStreamAsync());
+        using var reader = new StreamReader(zip.GetEntry("word/document.xml")!.Open());
+        var xml = await reader.ReadToEndAsync();
+        Assert.Contains("MUKENDI", xml, StringComparison.Ordinal);
+        Assert.DoesNotContain("KASONGO", xml, StringComparison.Ordinal);
+        Assert.DoesNotContain("ILUNGA", xml, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Monthly_reconciles_allocations_partial_payments_and_cancelled_receipts()
     {
         var admin = await app.InstalledAdmin();

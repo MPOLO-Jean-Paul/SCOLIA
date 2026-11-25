@@ -456,12 +456,18 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
         var scope = q.PromotionId is { } promotionId
             ? $"promotion {await db.Promotions.AsNoTracking().Where(p => p.Id == promotionId).Select(p => p.Code).FirstOrDefaultAsync(ct)}"
             : "toutes les promotions";
+        var paid = d.Rows.Count(r => r.Status == "Payé");
+        var unpaid = d.Rows.Count(r => r.Status is "Non payé" or "En retard" or "Partiel");
+        var late = d.Rows.Count(r => r.Status == "En retard");
+        var covered = d.Rows.Count(r => r.Status == "Pris en charge");
+        var filter = string.IsNullOrWhiteSpace(q.Etat) ? "tous les états" : StatusFilter(q.Etat) ?? "tous les états";
+        var search = string.IsNullOrWhiteSpace(q.Q) ? string.Empty : $" · recherche : {q.Q.Trim()}";
         return new TableDocument(PaymentService.Header(school), $"Suivi des paiements · {d.Period}",
-            $"{scope} · {d.PaidCount} payé(s), {d.UnpaidCount} non payé(s) dont {d.LateCount} en retard, {d.CoveredCount} pris en charge · situation au {clock.Today:dd/MM/yyyy}",
+            $"{scope} · {filter}{search} · {d.Rows.Count} ligne(s) · {paid} payé(s), {unpaid} non payé(s) dont {late} en retard, {covered} pris en charge · situation au {clock.Today:dd/MM/yyyy}",
             ["Matricule", "Nom complet", "Promotion", "Montant du mois", "Payé", "Reste", "État", "Prise en charge", "Reçu", "Payé le", "Contact"],
             d.Rows.Select(r => (IReadOnlyList<string>)[r.Matricule, r.FullName, r.PromotionCode, M(r.Amount), M(r.Paid), M(r.Remaining), r.Status,
                 r.Sponsorship ?? "", r.ReceiptNumber ?? "", r.PaidOn?.ToString("dd/MM/yyyy") ?? "", r.GuardianPhone ?? ""]).ToList(),
-            ["", "Total", "", M(d.Rows.Sum(r => r.Amount)), M(d.Rows.Sum(r => r.Paid)), M(d.Rows.Sum(r => r.Remaining)), "", $"{d.CoveredCount} pris en charge", "", "", ""], Landscape: true);
+            ["", "Total", "", M(d.Rows.Sum(r => r.Amount)), M(d.Rows.Sum(r => r.Paid)), M(d.Rows.Sum(r => r.Remaining)), "", $"{covered} pris en charge", "", "", ""], Landscape: true);
     }
 
     public byte[] Pdf(TableDocument table) => documents.Table(table);
