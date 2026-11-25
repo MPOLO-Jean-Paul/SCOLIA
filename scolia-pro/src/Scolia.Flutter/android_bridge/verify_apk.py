@@ -49,9 +49,13 @@ for apk in candidates:
             for name in sorted(n for n in names if re.fullmatch(r"classes(?:[0-9]+)?\.dex", n)):
                 dex = Path(directory) / name
                 dex.write_bytes(z.read(name))
-                proc = subprocess.run([str(dexdump), "-f", str(dex)], text=True,
+                # DEX strings use modified UTF-8, which can contain surrogate bytes.
+                # Match ASCII class definitions directly without decoding unrelated strings.
+                proc = subprocess.run([str(dexdump), "-f", str(dex)],
                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-                required_classes -= set(re.findall(r"Class descriptor\s*:\s*'([^']+)'", proc.stdout))
+                definitions = set(re.findall(rb"(?m)^[ \t]*Class descriptor[ \t]*:[ \t]*'([^'\r\n]+)'", proc.stdout))
+                required_classes = {descriptor for descriptor in required_classes
+                                    if descriptor.encode("ascii") not in definitions}
                 if not required_classes:
                     break
         if required_classes:
