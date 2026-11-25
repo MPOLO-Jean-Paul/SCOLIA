@@ -40,6 +40,29 @@ public sealed class HomeAndBatchUsabilityTests
     }
 
     [Fact]
+    public void Demarrer_est_distinct_de_l_accueil_analytique()
+    {
+        var nodes = XDocument.Load(ViewFile("Views/StartView.axaml")).Descendants().ToArray();
+        Assert.Contains(nodes, x => (string?)x.Attribute("ItemsSource") == "{Binding NewActions}");
+        Assert.Contains(nodes, x => (string?)x.Attribute("Command") == "{Binding OpenHome}");
+        Assert.DoesNotContain(nodes, x => (string?)x.Attribute("ItemsSource") == "{Binding Kpis}");
+        var shell = File.ReadAllText(ViewFile("ViewModels/Shell.cs"));
+        Assert.Contains("? new PromoterDashboardPage(this) : new StartPage(this)", shell);
+    }
+
+    [Fact]
+    public void Les_montants_recents_utilisent_la_meme_grille_que_l_entete()
+    {
+        var nodes = XDocument.Load(ViewFile("Views/HomeView.axaml")).Descendants().ToArray();
+        foreach (var name in new[] { "RecentAmountHeader", "RecentAmountValue" })
+        {
+            var amount = Assert.Single(nodes.Where(x => x.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == name)));
+            Assert.Equal("*,132", (string?)amount.Parent!.Attribute("ColumnDefinitions"));
+            Assert.Equal("Right", (string?)amount.Attribute("TextAlignment"));
+        }
+    }
+
+    [Fact]
     public void Une_recherche_differee_ne_peut_pas_arreter_un_minuteur_plus_recent()
     {
         var students = File.ReadAllText(ViewFile("ViewModels/Students.cs"));
