@@ -1,64 +1,57 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
  xmlns:mi="using:Material.Icons.Avalonia" xmlns:infra="using:Scolia.Bureau.Infrastructure" x:Class="Scolia.Bureau.Views.StartView">
-  <UserControl.Styles>
-    <Style Selector="Button.starttile">
-      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-      <Setter Property="Cursor" Value="Hand" />
-      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="8" />
-      <Setter Property="Padding" Value="16" />
-      <Setter Property="MinHeight" Value="86" />
-      <Setter Property="HorizontalAlignment" Value="Stretch" />
-      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-    </Style>
-    <Style Selector="Button.starttile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-    </Style>
-    <Style Selector="Button.starttile:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-    </Style>
-  </UserControl.Styles>
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Spacing="24" Margin="12,16,12,24" MaxWidth="1040" HorizontalAlignment="Left">
-      <StackPanel Spacing="6">
-        <TextBlock Text="SCOLIA PRO" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" FontSize="12" />
-        <TextBlock Text="{Binding Greeting}" FontWeight="SemiBold" FontSize="30" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding School}" Classes="muted" TextWrapping="Wrap" />
-        <TextBlock Text="Choisissez une opération pour commencer." Classes="muted" TextWrapping="Wrap" />
+    <StackPanel Spacing="28" Margin="12,22,12,28" MaxWidth="1000" HorizontalAlignment="Stretch">
+      <StackPanel Spacing="7">
+        <TextBlock Text="SCOLIA PRO  /  DÉMARRER" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" FontSize="12" />
+        <TextBlock Text="{Binding Greeting}" FontWeight="SemiBold" FontSize="32" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding School}" Classes="muted" FontSize="15" TextWrapping="Wrap" />
       </StackPanel>
-      <StackPanel Spacing="10" IsVisible="{Binding HasNewActions}">
-        <TextBlock Text="Nouveau" FontSize="18" FontWeight="SemiBold" />
-        <ItemsControl ItemsSource="{Binding NewActions}">
-          <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" infra:Adaptive.MinItemWidth="260" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate><DataTemplate>
-            <Button Classes="starttile" Command="{Binding Open}" Margin="0,0,8,8" AutomationProperties.Name="{Binding Title}">
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                <mi:MaterialIcon Kind="{Binding Icon}" Width="30" Height="30" Foreground="{Binding Brush}" VerticalAlignment="Center" />
-                <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
-                  <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap" />
-                </StackPanel>
-              </Grid>
-            </Button>
-          </DataTemplate></ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </StackPanel>
-      <StackPanel Spacing="10">
-        <TextBlock Text="Espace de travail" FontSize="18" FontWeight="SemiBold" />
-        <Button Classes="starttile" Command="{Binding OpenHome}" x:Name="OpenHomeButton" AutomationProperties.Name="Accueil">
-          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
-            <mi:MaterialIcon Kind="HomeOutline" Width="30" Height="30" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
-            <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
-              <TextBlock Text="Accueil" FontSize="16" FontWeight="SemiBold" />
-              <TextBlock Text="Consulter les indicateurs, les encaissements récents et les outils." Classes="muted" TextWrapping="Wrap" />
+      <!-- Composition vectorielle locale, purement décorative : aucune donnée fictive ni commande dupliquée. -->
+      <Border x:Name="StartHero" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}"
+              BorderThickness="1" CornerRadius="12" Padding="26" ClipToBounds="True">
+        <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="24" infra:Adaptive.StackBelow="620">
+          <StackPanel Spacing="14" VerticalAlignment="Center" Margin="0,12">
+            <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="8" Padding="10,6" HorizontalAlignment="Left">
+              <TextBlock Text="VOTRE ESPACE DE TRAVAIL" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="SemiBold" />
+            </Border>
+            <TextBlock Text="Une nouvelle journée commence." FontSize="25" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="Retrouvez vos opérations quotidiennes dans le volet de gauche, puis accédez à votre espace de gestion." Classes="muted" FontSize="14" TextWrapping="Wrap" />
+            <Border Background="{DynamicResource LineBrush}" Height="1" Margin="0,4" />
+            <StackPanel Orientation="Horizontal" Spacing="9">
+              <Image Source="{DynamicResource ScoliaMark}" Width="28" Height="28" />
+              <TextBlock Text="SCOLIA Pro" FontWeight="SemiBold" VerticalAlignment="Center" />
             </StackPanel>
-            <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" VerticalAlignment="Center" />
+          </StackPanel>
+          <Grid Grid.Column="1" MinHeight="230" MaxWidth="330" HorizontalAlignment="Stretch" VerticalAlignment="Center" IsHitTestVisible="False">
+            <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="20" Margin="18,8,10,12" />
+            <Ellipse Width="158" Height="158" Fill="{DynamicResource AccentBrush}" Opacity="0.09" HorizontalAlignment="Right" VerticalAlignment="Top" />
+            <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                    CornerRadius="10" Margin="0,26,26,0" Padding="16" VerticalAlignment="Center">
+              <StackPanel Spacing="13">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
+                  <Border Width="32" Height="32" CornerRadius="7" Background="{DynamicResource AccentSoftBrush}">
+                    <Image Source="{DynamicResource ScoliaMark}" Width="22" Height="22" />
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
+                    <Border Background="{DynamicResource AccentBrush}" Opacity=".65" Height="6" Width="82" CornerRadius="3" HorizontalAlignment="Left" />
+                    <Border Background="{DynamicResource LineBrush}" Height="5" Width="48" CornerRadius="2" HorizontalAlignment="Left" />
+                  </StackPanel>
+                </Grid>
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" Height="72">
+                  <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="6" />
+                  <Border Grid.Column="1" Background="{DynamicResource AccentBrush}" Opacity=".35" CornerRadius="6" Height="52" VerticalAlignment="Bottom" />
+                  <Border Grid.Column="2" Background="{DynamicResource AccentBrush}" Opacity=".8" CornerRadius="6" Height="64" VerticalAlignment="Bottom" />
+                </Grid>
+                <Border Background="{DynamicResource LineBrush}" Height="5" CornerRadius="2" />
+                <Border Background="{DynamicResource LineBrush}" Height="5" CornerRadius="2" Width="100" HorizontalAlignment="Left" />
+              </StackPanel>
+            </Border>
           </Grid>
-        </Button>
-      </StackPanel>
+        </Grid>
+      </Border>
+      <TextBlock Text="Choisissez une opération dans le menu pour commencer." Classes="muted" TextWrapping="Wrap" />
     </StackPanel>
   </ScrollViewer>
 </UserControl>
