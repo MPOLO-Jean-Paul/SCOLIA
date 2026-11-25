@@ -172,4 +172,53 @@ public sealed class MonthlyFollowUpTests : IDisposable
         var pdf = await admin.GetAsync($"/api/rapports/suivi-mensuel/export?periodeId={periodId}");
         Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
     }
+    [Fact]
+    public async Task Monthly_reconciles_allocations_partial_payments_and_cancelled_receipts()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await Promotion(admin, "INF1");
+        var a = await Student(admin, promotion, "Mukendi", "0811111111");
+        var b = await Student(admin, promotion, "Ilunga", "0822222222");
+        var c = await Student(admin, promotion, "Kasongo", "0833333333");
+        var initial = await admin.GetAsync("/api/rapports/suivi-mensuel").Ok();
+        var periods = initial.GetProperty("periods");
+        var first = periods[0].GetProperty("id").GetString();
+        var second = periods[1].GetProperty("id").GetString();
+        var firstYear = int.Parse(periods[0].GetProperty("name").GetString()!.Split(' ')[^1],
+            System.Globalization.CultureInfo.InvariantCulture);
+        var date = new DateOnly(firstYear, 9, 1);
+        await admin.PayMonths(a, 2, date: date);
+        var (bFees, _) = await admin.OpenMonths(b, 2);
+        async Task<System.Text.Json.JsonElement> Partial(decimal amount) =>
+            await admin.Post("/api/paiements", new { enrollmentId = b, amount,
+                feeItemIds = new[] { bFees[1] }, method = "Especes", date }).Ok();
+        await Partial(15000m);
+        var cancelled = await admin.PayMonths(c, 2, date: date);
+        var cancelledId = cancelled.GetProperty("id").GetString();
+        await admin.Post($"/api/paiements/{cancelledId}/annulation", new { reason = "Erreur de saisie de test" }).Ok();
+
+        var month = await admin.GetAsync($"/api/rapports/suivi-mensuel?periodeId={second}").Ok();
+        Assert.Equal(1, month.GetProperty("paidCount").GetInt32());
+        Assert.Equal(2, month.GetProperty("unpaidCount").GetInt32());
+        Assert.Equal(55000m, month.GetProperty("collected").GetDecimal());
+        Assert.Equal(65000m, month.GetProperty("remaining").GetDecimal());
+        Assert.Equal(0, month.GetProperty("receiptCount").GetInt32());
+        Assert.Equal("Partiel", month.GetProperty("rows").EnumerateArray()
+            .Single(r => r.GetProperty("enrollmentId").GetString() == b).GetProperty("status").GetString());
+        var unpaid = month.GetProperty("rows").EnumerateArray().Single(r => r.GetProperty("enrollmentId").GetString() == c);
+        Assert.Equal(0m, unpaid.GetProperty("paid").GetDecimal());
+        Assert.Equal(JsonValueKind.Null, unpaid.GetProperty("receiptNumber").ValueKind);
+
+        await Partial(25000m);
+        var settled = await admin.GetAsync($"/api/rapports/suivi-mensuel?periodeId={second}&etat=paye").Ok();
+        Assert.Equal(2, settled.GetProperty("paidCount").GetInt32());
+        Assert.Equal(2, settled.GetProperty("rows").GetArrayLength());
+        Assert.Equal(80000m, settled.GetProperty("collected").GetDecimal());
+        var cash = await admin.GetAsync($"/api/rapports/suivi-mensuel?periodeId={first}").Ok();
+        Assert.Equal(3, cash.GetProperty("receiptCount").GetInt32());
+        Assert.Equal(2, cash.GetProperty("payingStudentsByReceiptDate").GetInt32());
+        Assert.Equal(120000m, cash.GetProperty("cashReceived").GetDecimal());
+        Assert.Equal(40000m, cash.GetProperty("collected").GetDecimal());
+    }
+
 }

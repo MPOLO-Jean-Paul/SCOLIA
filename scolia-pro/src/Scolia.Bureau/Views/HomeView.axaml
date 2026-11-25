@@ -310,7 +310,7 @@
             <Border Background="{DynamicResource GroupBrush}" CornerRadius="6" Padding="10,7">
               <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
                 <TextBlock Text="Dossier / Référence" Classes="pbiMuted" FontWeight="SemiBold" />
-                <TextBlock Grid.Column="1" Text="Montant" Classes="pbiMuted" FontWeight="SemiBold"
+                <TextBlock x:Name="RecentAmountHeader" Grid.Column="1" Text="Montant" Classes="pbiMuted" FontWeight="SemiBold"
                            TextAlignment="Right" />
               </Grid>
             </Border>
@@ -327,7 +327,7 @@
                           <TextBlock Text="{Binding Date}" Classes="pbiMuted" />
                         </StackPanel>
                       </StackPanel>
-                      <TextBlock Grid.Column="1" Text="{Binding Amount}" FontWeight="SemiBold"
+                      <TextBlock x:Name="RecentAmountValue" Grid.Column="1" Text="{Binding Amount}" FontWeight="SemiBold"
                                  TextAlignment="Right" VerticalAlignment="Center"
                                  TextWrapping="Wrap" />
                     </Grid>

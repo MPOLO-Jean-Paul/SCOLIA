@@ -76,9 +76,16 @@ public sealed class MonthlyPage : PageViewModel
         {
             if (!Set(ref search, value)) return;
             timer?.Stop();
-            timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
-            timer.Tick += async (_, _) => { timer?.Stop(); await Shell.Run(RefreshAsync); };
-            timer.Start();
+            var scheduled = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+            timer = scheduled;
+            scheduled.Tick += async (_, _) =>
+            {
+                scheduled.Stop();
+                if (!ReferenceEquals(timer, scheduled)) return;
+                timer = null;
+                await Shell.Run(RefreshAsync);
+            };
+            scheduled.Start();
         }
     }
 
@@ -115,6 +122,8 @@ public sealed class MonthlyPage : PageViewModel
         ReceiptActivity = d.ReceiptCount is { } count && d.PayingStudentsByReceiptDate is { } people && d.CashReceived is { } cashReceived
             ? $"Reçus validés émis pendant {d.Period} : {count} · {people} apprenant(s) distinct(s) · {Money(cashReceived)} reçus, tous frais et mois confondus."
             : "Le nombre de reçus par date d’encaissement est indisponible. Actualisez sur le serveur.";
+        if (!Shell.Api.IsOnline)
+            ReceiptActivity += " · Dernière situation confirmée disponible localement. Les versements non synchronisés ne sont pas encore inclus.";
         CollectionSync.Apply(Items, d.Rows.Select(r => new MonthlyRowVm(r.StudentId, r.Matricule, r.FullName, r.PromotionCode, Money(r.Amount), Money(r.Paid), Money(r.Remaining),
                 r.Status + (r.Sponsorship == "Prise en charge partielle" ? " · PEC partielle" : string.Empty), ThemeBrush.Get(Tone(r.Status)), r.ReceiptNumber ?? "—", r.PaidOn is { } on ? Format.Date(on) : "—", r.WhatsAppLink, r.SmsLink, r.FeeItemId)));
 
