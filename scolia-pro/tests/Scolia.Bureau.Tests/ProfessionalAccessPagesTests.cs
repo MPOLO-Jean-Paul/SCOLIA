@@ -236,7 +236,17 @@ public sealed class ProfessionalAccessPagesTests
         Assert.Contains("LayoutTransformControl.anim Border#StartHero", frame, StringComparison.Ordinal);
         Assert.Contains("IsVisible=\"{Binding !IsStartPage}\"", frame, StringComparison.Ordinal);
         var start = File.ReadAllText(Source("Views/StartView.axaml"));
-        Assert.DoesNotContain("<Button", start, StringComparison.Ordinal);
+        Assert.DoesNotContain("Binding NewActions", start, StringComparison.Ordinal);
+        Assert.DoesNotContain("Binding OpenHome", start, StringComparison.Ordinal);
+        Assert.Contains("Binding Recommended", start, StringComparison.Ordinal);
+        Assert.Contains("Binding RecentTools", start, StringComparison.Ordinal);
+        Assert.Contains("RecommendationScroll", start, StringComparison.Ordinal);
+        Assert.Contains("Classes=\"startentry\"", frame, StringComparison.Ordinal);
+        Assert.Contains("ShowWorkspaceTab", frame, StringComparison.Ordinal);
+        var launch = File.ReadAllText(Source("ViewModels/Start.cs"));
+        Assert.Contains("Shell.Recents", launch, StringComparison.Ordinal);
+        Assert.Contains("i.PageType != typeof(CashierPage)", launch, StringComparison.Ordinal);
+        Assert.Contains("recents.Clear();", shell, StringComparison.Ordinal);
         Assert.Contains("Binding Greeting", start, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"StartHero\"", start, StringComparison.Ordinal);
     }
