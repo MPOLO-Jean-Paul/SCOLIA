@@ -13,8 +13,12 @@ public final class ScoliaFlutterSurface {
     private FlutterEngine engine;
     private FlutterView view;
     public ScoliaFlutterSurface(Activity activity) {
-        engine = new FlutterEngine(activity);
+        String phase = "engine";
         try {
+            // Flutter runs inside a host that already owns its plugins and lifecycle.
+            // No generated plugin registrant is required for SCOLIA's explicit channel.
+            engine = new FlutterEngine(activity, null, false);
+            phase = "texture-view";
             view = new FlutterView(activity, new FlutterTextureView(activity));
             view.addOnFirstFrameRenderedListener(new FlutterUiDisplayListener() {
                 @Override public void onFlutterUiDisplayed() {
@@ -22,9 +26,14 @@ public final class ScoliaFlutterSurface {
                 }
                 @Override public void onFlutterUiNoLongerDisplayed() {}
             });
+            phase = "attach-engine";
             view.attachToFlutterEngine(engine);
         } catch (RuntimeException | Error ex) {
-            engine.destroy();
+            android.util.Log.w("SCOLIA-Flutter", "Flutter initialization failed at " + phase + ": " + ex.getClass().getSimpleName());
+            if (activity.getPackageName().endsWith(".fluttervalidation")) {
+                android.util.Log.e("SCOLIA-Flutter", "Isolated Flutter initialization failure", ex);
+            }
+            if (engine != null) engine.destroy();
             engine = null;
             throw ex;
         }

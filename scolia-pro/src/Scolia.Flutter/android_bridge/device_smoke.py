@@ -130,7 +130,9 @@ def main():
             diagnostic = adb("logcat", "-d", "-b", "crash", "-t", "300", check=False)
             diagnostic += "\n" + adb("logcat", "-d", "-t", "500", "-s",
                                      "SCOLIA-Flutter:V", "SCOLIA:W", "AndroidRuntime:E",
-                                     "monodroid:E", "DOTNET:E", "flutter:E", check=False)
+                                     "monodroid:E", "DOTNET:E", "flutter:V",
+                                     "FlutterLoader:V", "FlutterJNI:V", "FlutterEngine:V",
+                                     "linker:E", check=False)
             print("Isolated emulator diagnostics:\n" + diagnostic, flush=True)
             if args.capture_dir is not None:
                 args.capture_dir.mkdir(parents=True, exist_ok=True)

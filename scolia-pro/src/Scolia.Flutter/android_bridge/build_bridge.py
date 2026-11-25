@@ -52,6 +52,34 @@ def resolve_artifact(artifact, extensions):
             errors.append(name)
     raise RuntimeError(f"Flutter artifact unavailable: {', '.join(errors)}")
 
+# Manual AAR imports do not resolve Maven runtime dependencies.
+embedding_pom = resolve_artifact("flutter_embedding_release", ("pom",))
+dependencies = ET.parse(embedding_pom).findall("./m:dependencies/m:dependency", ns)
+relinker_versions = {dep.findtext("m:version", namespaces=ns) for dep in dependencies
+                     if dep.findtext("m:groupId", namespaces=ns) == "com.getkeepsafe.relinker"
+                     and dep.findtext("m:artifactId", namespaces=ns) == "relinker"}
+if len(relinker_versions) != 1:
+    raise RuntimeError("Expected one ReLinker runtime dependency in Flutter POM")
+relinker_version = relinker_versions.pop()
+if not relinker_version or not re.fullmatch(r"[0-9]+(?:\.[0-9]+)+", relinker_version):
+    raise RuntimeError("Unexpected ReLinker version")
+relinker_name = f"relinker-{relinker_version}.aar"
+cached_relinker = sorted((cache / "com.getkeepsafe.relinker" / "relinker" / relinker_version).glob(f"*/{relinker_name}"))
+relinker = out / "relinker.aar"
+if cached_relinker:
+    shutil.copyfile(cached_relinker[0], relinker)
+else:
+    url = f"https://repo.maven.apache.org/maven2/com/getkeepsafe/relinker/relinker/{relinker_version}/{relinker_name}"
+    with urllib.request.urlopen(url, timeout=120) as response:
+        relinker.write_bytes(response.read())
+import io
+with zipfile.ZipFile(relinker) as archive:
+    with zipfile.ZipFile(io.BytesIO(archive.read("classes.jar"))) as classes_jar:
+        if not {"com/getkeepsafe/relinker/ReLinker.class",
+                "com/getkeepsafe/relinker/ReLinker$Logger.class"}.issubset(classes_jar.namelist()):
+            raise RuntimeError("ReLinker runtime classes absent")
+print("Flutter ReLinker runtime dependency verified:", relinker_version)
+
 embedding = resolve_artifact("flutter_embedding_release", ("jar", "aar"))
 if embedding.suffix == ".aar":
     with zipfile.ZipFile(embedding) as archive:

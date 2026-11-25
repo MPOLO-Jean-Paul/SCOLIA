@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 import zipfile
+import tempfile
 
 root = Path(__file__).resolve().parent.parent
 mobile = root.parent / "Scolia.Mobile/bin/Release"
@@ -19,6 +20,9 @@ if not tools:
     raise RuntimeError("Android build tools unavailable")
 aapt = tools[-1] / "aapt"
 signer = tools[-1] / "apksigner"
+dexdump = tools[-1] / "dexdump"
+if not dexdump.is_file():
+    raise RuntimeError("dexdump missing")
 out = root / "build/validation"
 out.mkdir(parents=True, exist_ok=True)
 verified = []
@@ -36,6 +40,26 @@ for apk in candidates:
                     raise RuntimeError(f"Missing {abi}/{lib}")
         if "assets/flutter_assets/AssetManifest.bin" not in names:
             raise RuntimeError("Flutter assets missing")
+        required_classes = {
+            "Lio/flutter/embedding/engine/FlutterEngine;",
+            "Lcom/getkeepsafe/relinker/ReLinker;",
+            "Lcom/getkeepsafe/relinker/ReLinker$Logger;",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            for name in sorted(n for n in names if re.fullmatch(r"classes(?:[0-9]+)?\.dex", n)):
+                dex = Path(directory) / name
+                dex.write_bytes(z.read(name))
+                # DEX strings use modified UTF-8, which can contain surrogate bytes.
+                # Match ASCII class definitions directly without decoding unrelated strings.
+                proc = subprocess.run([str(dexdump), "-f", str(dex)],
+                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+                definitions = set(re.findall(rb"(?m)^[ \t]*Class descriptor[ \t]*:[ \t]*'([^'\r\n]+)'", proc.stdout))
+                required_classes = {descriptor for descriptor in required_classes
+                                    if descriptor.encode("ascii") not in definitions}
+                if not required_classes:
+                    break
+        if required_classes:
+            raise RuntimeError("Missing Java runtime definitions: " + ", ".join(sorted(required_classes)))
     verified.append(apk)
 if not verified:
     raise RuntimeError("No isolated Flutter validation package")
