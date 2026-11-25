@@ -1822,6 +1822,7 @@ public sealed class ShellViewModel : Observable
         set
         {
             if (!Set(ref phone, value)) return;
+            Raise(nameof(SidebarShown));
             Raise(nameof(FullScreenDialog));
             Raise(nameof(CenteredDialog));
             Raise(nameof(CenteredDialogContent));
