@@ -238,6 +238,9 @@ if (args.Length > 3 && args[3] == "premiere-configuration")
     var choices = window.GetVisualDescendants().OfType<Button>()
         .Where(b => b.IsEffectivelyVisible && b.Classes.Contains("profileChoice")).ToArray();
     if (choices.Length != 6) throw new InvalidOperationException($"Six profils attendus, {choices.Length} trouvés.");
+    if (!Preferences.MobileLayout && choices.Any(b => Math.Abs(b.Bounds.Width - choices[0].Bounds.Width) > 2 ||
+        Math.Abs(b.Bounds.Height - choices[0].Bounds.Height) > 2))
+        throw new InvalidOperationException("Première configuration : les six cartes doivent avoir le même gabarit.");
     shell.Setup.SelectInstitution.Execute("ComplexeScolaire");
     shell.Setup.IncludeMaternelle = true;
     shell.Setup.IncludePrimaire = true;

@@ -115,6 +115,28 @@ public sealed class ProfessionalAccessPagesTests
     }
 
     [Fact]
+    public void La_configuration_garde_ses_six_profils_et_les_commandes_sur_les_deux_formats()
+    {
+        foreach (var view in new[] { "Views/SetupView.axaml", "Views/Phone/SetupView.axaml" })
+        {
+            var nodes = Elements(view);
+            var profiles = nodes.Where(e => Attr(e, "Classes") == "profileChoice").ToArray();
+            Assert.Equal(6, profiles.Length);
+            Assert.Equal(6, profiles.Select(e => Attr(e, "CommandParameter")).Distinct().Count());
+            foreach (var profile in profiles)
+            {
+                Assert.Equal("{Binding SelectInstitution}", Attr(profile, "Command"));
+                Assert.Contains(profile.Descendants(), e => e.Name.LocalName == "Ellipse");
+            }
+            foreach (var command in new[] { "JoinExisting", "Back", "Next", "Finish" })
+                Assert.Contains(nodes, e => Attr(e, "Command") == "{Binding " + command + "}");
+        }
+        var desktop = Elements("Views/SetupView.axaml");
+        Assert.Equal("3", Attr(Named(desktop, "SetupProfiles"), "Columns"));
+        Assert.Equal("96", Setting(StyleOf(desktop, "Button.setupentry"), "Height"));
+    }
+
+    [Fact]
     public void La_connexion_est_courte_et_garde_ses_commandes()
     {
         var nodes = Rendered("LoginView.axaml", "IosLoginThemeScope");
