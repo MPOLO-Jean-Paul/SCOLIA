@@ -3,6 +3,7 @@ using System.Net.Http;
 using Material.Icons;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -232,38 +233,44 @@ public sealed class LmdPlanningPage : PageViewModel
     private async Task InstallmentsAsync()
     {
         if (SelectedPromotion is null) { Shell.Notify("Sélectionnez d'abord une promotion."); return; }
-        var years = await Shell.Api.GetAsync<List<AcademicYearDto>>("api/etablissement/annees");
-        var year = years.FirstOrDefault(y => y.IsCurrent);
-        if (year is null) { Shell.Notify("Configurez d'abord l'année académique courante."); return; }
         var promotions = await Shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions");
         var promotion = promotions.First(p => p.Id.ToString() == SelectedPromotion.Value);
-        var existing = promotion.Fees.Where(f => f.Label.StartsWith("Frais académiques — ", StringComparison.Ordinal))
-            .OrderBy(f => f.DueDate).ToList();
+        var existing = promotion.Fees.Where(f => LmdInstallmentPlan.IsTranche(f.Label)).OrderBy(f => f.DueDate).ToList();
         var symbol = Shell.Session?.CurrencySymbol ?? "$";
-        var span = year.EndDate.DayNumber - year.StartDate.DayNumber;
+        var totalBefore = existing.Sum(f => f.Amount);
         var form = new FormViewModel($"Frais académiques — {promotion.Name}",
-            $"Montants en {symbol}. Laissez une tranche à zéro pour ne pas l'utiliser. Les encaissements déjà reçus restent protégés.",
+            "Montant annuel propre à cette promotion. Les premières tranches sont plus élevées ; les échéances sont réparties dans l’année. Les encaissements sont protégés.",
             async f =>
             {
-                var tranches = Enumerable.Range(1, 4)
-                    .Select(i => (Amount: f.Amount($"montant{i}"), Due: f.Day($"echeance{i}")))
-                    .Where(t => t.Amount > 0)
-                    .Select(t => new { amount = t.Amount, dueDate = t.Due ?? year.EndDate })
-                    .ToArray();
-                if (tranches.Length == 0) { f.Find("montant1").Error = "Indiquez au moins une tranche."; return false; }
-                await Shell.Api.SendAsync(HttpMethod.Put,
-                    $"api/etablissement/lmd/promotions/{promotion.Id}/tranches", new { installments = tranches });
-                Shell.Notify($"Frais académiques enregistrés en {tranches.Length} tranche(s).");
+                var total = f.Amount("annuel");
+                var count = int.Parse(f.ChoiceValue("tranches") ?? "3", System.Globalization.CultureInfo.InvariantCulture);
+                if (existing.Count > 0 && total == totalBefore && count == existing.Count) return true;
+                try { _ = LmdInstallmentPlan.Split(total, count); }
+                catch (ArgumentException ex) { f.Find("annuel").Error = ex.Message; return false; }
+                await Shell.Api.SendAsync(HttpMethod.Put, $"api/etablissement/lmd/promotions/{promotion.Id}/tranches",
+                    new { annualFee = new { annualTotal = total, count } });
+                Shell.Notify($"Frais académiques enregistrés en {count} tranche(s).");
                 return true;
             });
-        for (var i = 1; i <= 4; i++)
+        var annual = form.Add("annuel", $"Total annuel ({symbol})", FieldKind.Amount,
+            totalBefore > 0 ? totalBefore.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : null, required: true);
+        form.AddChoice("tranches", "Nombre de tranches", Enumerable.Range(1, LmdInstallmentPlan.MaxCount)
+            .Select(n => new ChoiceItem(n.ToString(System.Globalization.CultureInfo.InvariantCulture), $"{n} tranche(s)")).ToList(),
+            (existing.Count > 0 ? existing.Count : 3).ToString(System.Globalization.CultureInfo.InvariantCulture), required: true);
+        void Preview()
         {
-            var fee = existing.ElementAtOrDefault(i - 1);
-            form.AddHeader(i == 1 ? "1re tranche" : $"{i}e tranche");
-            form.Add($"montant{i}", $"Montant ({symbol})", FieldKind.Amount,
-                fee?.Amount.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? (i <= 3 ? null : "0"));
-            form.AddDay($"echeance{i}", "Échéance", fee?.DueDate ?? year.StartDate.AddDays(span * (i - 1) / 3 + 15));
+            var total = form.Amount("annuel");
+            var count = int.Parse(form.ChoiceValue("tranches") ?? "3", System.Globalization.CultureInfo.InvariantCulture);
+            if (existing.Count > 0 && total == totalBefore && count == existing.Count)
+            {
+                annual.Hint = "Plan conservé : " + string.Join(" · ", existing.Select((f, i) => $"T{i + 1} : {f.Amount:0.##} {symbol}"));
+                return;
+            }
+            try { annual.Hint = string.Join(" · ", LmdInstallmentPlan.Split(total, count).Select((a, i) => $"T{i + 1} : {a:0.##} {symbol}")); }
+            catch (ArgumentException ex) { annual.Hint = ex.Message; }
         }
-        await Shell.Ask(form);
+        form.Changed = _ => Preview();
+        Preview();
+        if (await Shell.Ask(form)) await RefreshAsync();
     }
 }

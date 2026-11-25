@@ -48,6 +48,10 @@ public sealed class FeeCategoryService(IAppDbContext db, IWriteGate gate, IAudit
         var category = id is null
             ? new FeeCategory { Order = await db.FeeCategories.CountAsync(ct) + 1 }
             : await db.FeeCategories.FirstOrDefaultAsync(c => c.Id == id, ct) ?? throw new NotFoundException("Catégorie de frais introuvable.");
+        if (InstitutionProfiles.Canonicalize(school.InstitutionType) == InstitutionProfiles.SuperieurLmd &&
+            (LmdInstallmentPlan.IsTranche(name) || (id is not null && LmdInstallmentPlan.IsTranche(category.Name))) &&
+            (input.ApplyToPromotions || (id is not null && category.Name != name)))
+            throw new DomainException("tranches", "Les tranches académiques se règlent séparément dans chaque promotion.");
         var renamed = id is not null && category.Name != name;
         category.Name = name;
         category.NameKey = key;

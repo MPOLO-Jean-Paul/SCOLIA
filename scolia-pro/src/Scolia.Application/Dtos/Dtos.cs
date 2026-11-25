@@ -59,7 +59,7 @@ public sealed record PromotionDto(Guid Id, Guid AcademicYearId, string Code, str
 /// les frais ponctuels (inscription, examen…) sont ajoutés en plus.</summary>
 public sealed record PromotionUpsert(string Code, string Name, Guid? SectionId, int Level, int? Capacity, bool IsActive, string? NextPromotionCode,
     decimal MonthlyFee, IReadOnlyList<OneTimeFee>? OneTimeFees, bool ManagesCategories = false,
-    Guid? SchoolCycleId = null, Guid? AcademicUnitId = null);
+    Guid? SchoolCycleId = null, Guid? AcademicUnitId = null, LmdAnnualFeeInput? LmdAnnualFee = null);
 
 /// <summary>Autre frais d'une promotion. CategoryId désigne la catégorie du catalogue ; les anciens clients
 /// n'envoient que la nature et le libellé, rapprochés du nom d'une catégorie existante.</summary>

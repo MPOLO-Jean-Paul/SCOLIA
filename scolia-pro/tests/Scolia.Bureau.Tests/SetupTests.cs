@@ -37,7 +37,7 @@ public class SetupTests
         Assert.True(wizard.IsStepOne);
         Assert.Equal(profile, wizard.InstitutionType.Value);
         Assert.Equal(heading, wizard.PromotionHeading);
-        Assert.Equal(profile == "SuperieurLmd" ? "Mensualité (USD)" : "Mensualité (FC)", wizard.FeeHeading);
+        Assert.Equal(profile == "SuperieurLmd" ? "Frais annuels (USD)" : "Mensualité (FC)", wizard.FeeHeading);
         wizard.Back.Execute(null);
         Assert.True(wizard.IsChoosingInstitution);
         Assert.Equal("Institut de test", wizard.SchoolName);
