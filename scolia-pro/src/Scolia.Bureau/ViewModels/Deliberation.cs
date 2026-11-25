@@ -67,6 +67,20 @@ public sealed class AnonymousCodesPage : PageViewModel
         Selected = null;
     }
 
+    internal async Task LoadForFlutterAsync(string? promotionId)
+    {
+        if (!ready)
+        {
+            Promotions = await PromotionChoicesAsync(withAll: true);
+            ready = true;
+            Raise(nameof(Promotions));
+        }
+        promotion = string.IsNullOrEmpty(promotionId) ? (Promotions.Count > 0 ? Promotions[0] : null)
+            : Promotions.FirstOrDefault(p => p.Value == promotionId) ?? throw new ArgumentException("Promotion invalide.");
+        Raise(nameof(Promotion));
+        await LoadAsync();
+    }
+
     private async Task AssignAsync()
     {
         var scope = Promotion is { Value.Length: > 0 } p ? $"la promotion {p.Label}" : "toutes les promotions de l'année";
@@ -362,6 +376,46 @@ public sealed class MarksPage : PageViewModel
             ResetCodeEntry();
             CodeFeedback = $"Note {value:0.##}/{ScoreMaximum:0.##} pour {code} en attente de synchronisation avec le serveur.";
         }
+    }
+
+    // Sélection séquentielle pour Flutter : ne pas déclencher les chargements asynchrones des setters UI.
+    internal async Task LoadTeacherForFlutterAsync(string? promotionId, string? courseId, string? markKind)
+    {
+        if (!teacher) throw new UnauthorizedAccessException("Espace enseignant requis.");
+        await LoadAsync();
+        if (!string.IsNullOrEmpty(promotionId) && Promotion?.Value != promotionId)
+        {
+            promotion = Promotions.FirstOrDefault(p => p.Value == promotionId)
+                ?? throw new ArgumentException("Promotion non attribuée.");
+            await LoadAsync();
+        }
+        if (string.IsNullOrEmpty(courseId)) return;
+        course = Courses.FirstOrDefault(c => c.Id.ToString() == courseId)
+            ?? throw new ArgumentException("Cours non attribué.");
+        Kinds = AllKinds.Where(k => Accepts(course.Source.Semester, k.Value)).ToList();
+        kind = string.IsNullOrEmpty(markKind) ? Kinds[0]
+            : Kinds.FirstOrDefault(k => k.Value == markKind) ?? throw new ArgumentException("Période invalide.");
+        await LoadSheetAsync();
+    }
+
+    internal bool FlutterMayEncode => teacher && currentSheet is { EncodingOpen: true, Locked: false, SubmittedAtUtc: null };
+    internal string FlutterValidatedCode => validatedCode;
+
+    internal async Task CheckForFlutterAsync(string code)
+    {
+        if (!teacher || !ShowCodeEntry) throw new UnauthorizedAccessException("Cours non sélectionné.");
+        ResetCodeEntry();
+        CodeQuery = code.Trim().ToUpperInvariant();
+        if (CodeQuery == "—") { CodeFeedback = "Code anonyme non attribué."; return; }
+        await CheckCodeAsync();
+    }
+
+    internal async Task SaveForFlutterAsync(string code, string score)
+    {
+        if (!FlutterMayEncode || !ShowScoreInput || !string.Equals(validatedCode, code, StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException("Code ou feuille non confirmé.");
+        ScoreText = score;
+        await SaveCodeAsync();
     }
 
     /// <summary>Espace enseignant : seulement ses cours attribués, en feuille anonyme.</summary>
@@ -780,6 +834,43 @@ public sealed class DeliberationPage : PageViewModel
         Selected = null;
     }
 
+    internal async Task LoadForFlutterAsync(string? promotionId, string? periodId, bool cases)
+    {
+        if (!ready)
+        {
+            Promotions = await PromotionChoicesAsync(withAll: false);
+            ready = true;
+            Raise(nameof(Promotions));
+        }
+        promotion = string.IsNullOrEmpty(promotionId) ? (Promotions.Count > 0 ? Promotions[0] : null)
+            : Promotions.FirstOrDefault(p => p.Value == promotionId) ?? throw new ArgumentException("Promotion invalide.");
+        period = string.IsNullOrEmpty(periodId) ? Periods[0]
+            : Periods.FirstOrDefault(p => p.Value == periodId) ?? throw new ArgumentException("Période invalide.");
+        onlyCases = cases;
+        Raise(nameof(Promotion)); Raise(nameof(Period)); Raise(nameof(OnlyCases));
+        await LoadAsync();
+    }
+
+    internal Task ExportForFlutterAsync(string document, Guid? enrollmentId)
+    {
+        if (PromotionId is null) throw new InvalidOperationException("Sélectionnez une promotion.");
+        if (document == "bulletin")
+        {
+            Selected = Items.FirstOrDefault(r => r.EnrollmentId == enrollmentId)
+                ?? throw new UnauthorizedAccessException("Dossier non proposé.");
+            return BulletinAsync();
+        }
+        return document switch
+        {
+            "pv" => DownloadAsync("proces-verbal.pdf", null, "proces-verbal.pdf"),
+            "grille-pdf" => DownloadAsync("grille", "pdf", "grille-des-cotes.pdf"),
+            "grille-xlsx" => DownloadAsync("grille", "xlsx", "grille-des-cotes.xlsx"),
+            "palmares" => DownloadAsync("palmares", "pdf", "palmares.pdf"),
+            "bulletins" => DownloadAsync("bulletins.pdf", null, "bulletins-deliberation.pdf"),
+            _ => throw new ArgumentException("Document invalide."),
+        };
+    }
+
     private static string Tone(string decision) => decision switch
     {
         _ when decision.StartsWith("Admis", StringComparison.Ordinal) => "ToneGreen",
@@ -986,6 +1077,26 @@ public sealed class EncodingProgressPage : PageViewModel
         Items.Clear();
         foreach (var r in onlyLate ? all.Where(r => !r.Status.StartsWith("Remis", StringComparison.Ordinal) && r.Status != "Figé") : all) Items.Add(r);
     }
+
+    internal async Task LoadForFlutterAsync(string? promotionId, string? periodId, bool late)
+    {
+        if (!ready)
+        {
+            Promotions = await PromotionChoicesAsync(withAll: true);
+            ready = true;
+            Raise(nameof(Promotions));
+        }
+        promotion = string.IsNullOrEmpty(promotionId) ? (Promotions.Count > 0 ? Promotions[0] : null)
+            : Promotions.FirstOrDefault(p => p.Value == promotionId) ?? throw new ArgumentException("Promotion invalide.");
+        period = string.IsNullOrEmpty(periodId) ? Periods[0]
+            : Periods.FirstOrDefault(p => p.Value == periodId) ?? throw new ArgumentException("Période invalide.");
+        onlyLate = late;
+        Raise(nameof(Promotion)); Raise(nameof(Period)); Raise(nameof(OnlyLate));
+        await LoadAsync();
+    }
+
+    internal Task ExportForFlutterAsync(string format) => format is "pdf" or "xlsx"
+        ? ExportAsync(format) : throw new ArgumentException("Format invalide.");
 
     private Task ExportAsync(string format) =>
         Shell.Download("api/deliberation/suivi/export" + ScoliaClient.Query(("promotionId", PromotionId),

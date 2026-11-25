@@ -106,6 +106,26 @@ public sealed class MonthlyPage : PageViewModel
         }
     }
 
+    // Instance isolée pour Flutter : filtres atomiques, sans minuteries ni appels concurrents.
+    internal async Task LoadForFlutterAsync(string? period, string? promotionId, string? status, string query)
+    {
+        if (!ready) await LoadAsync();
+        month = period is null ? month : Months.FirstOrDefault(x => x.Value == period)
+            ?? throw new ArgumentException("Période inconnue.");
+        promotion = promotionId is null ? promotion : Promotions.FirstOrDefault(x => x.Value == promotionId)
+            ?? throw new ArgumentException("Promotion inconnue.");
+        state = status is null ? state : States.FirstOrDefault(x => x.Value == status)
+            ?? throw new ArgumentException("État inconnu.");
+        search = query;
+        loadedFilters = null;
+        if (month is null || promotion is null) throw new InvalidOperationException("Sélection indisponible.");
+        await LoadAsync();
+        if (!string.Equals(loadedFilters, Filters(), StringComparison.Ordinal))
+            throw new InvalidOperationException("La sélection n’a pas été confirmée.");
+    }
+
+    internal Task ExportForFlutterAsync(string format) => ExportAsync(format, strict: true);
+
     public override async Task LoadAsync()
     {
         if (!ready)
@@ -171,22 +191,27 @@ public sealed class MonthlyPage : PageViewModel
         ("periodeId", ready ? Month?.Value : null), ("promotionId", Promotion?.Value is { Length: > 0 } id ? id : null),
         ("etat", State?.Value is { Length: > 0 } e ? e : null), ("q", Search.Trim()), ("format", format));
 
-    private async Task ExportAsync(string format)
+    private async Task ExportAsync(string format, bool strict = false)
     {
         if (!ready || !Guid.TryParse(Month?.Value, out var periodId) || Promotion is null ||
             (Promotion.Value.Length > 0 && !Guid.TryParse(Promotion.Value, out _)))
         {
+            if (strict) throw new InvalidOperationException("Sélection d’export indisponible.");
             Shell.Notify("Choisissez le mois et la promotion avant d’exporter.");
             return;
         }
         var requested = Filters();
         if (timer is not null) { timer.Stop(); timer = null; }
         if (Busy || !string.Equals(loadedFilters, requested, StringComparison.Ordinal))
+        {
+            if (strict) throw new InvalidOperationException("La sélection doit être actualisée.");
             await RefreshAsync();
+        }
         if (Promotion is not { } selectedPromotion || !Guid.TryParse(Month?.Value, out var currentPeriod) || currentPeriod != periodId ||
             !string.Equals(requested, Filters(), StringComparison.Ordinal) ||
             !string.Equals(loadedFilters, requested, StringComparison.Ordinal))
         {
+            if (strict) throw new InvalidOperationException("La sélection a changé.");
             Shell.Notify("Les filtres ont changé ou la liste n’est pas actualisée. Vérifiez la sélection puis réessayez.");
             return;
         }

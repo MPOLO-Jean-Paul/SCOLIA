@@ -568,6 +568,18 @@ public sealed class ShellViewModel : Observable
             return;
         }
 
+#if SCOLIA_FLUTTER_EXPERIMENT
+        // Premier lancement de validation : créer un contexte local de test au lieu
+        // de rejoindre automatiquement un établissement réel trouvé sur le Wi-Fi.
+        if (saved is null)
+        {
+            if (!ConnectionStore.TrySave(new ConnectionSettings(ConnectionSettings.Local)))
+                throw new IOException("Impossible d'enregistrer le poste de validation.");
+            api.Retarget(ConnectionStore.LocalAddress);
+            await ShowEntryAsync();
+            return;
+        }
+#endif
         // Premier lancement d'un poste sans base : SCOLIA cherche d'abord l'établissement sur le réseau.
         Status = "Recherche de SCOLIA sur le réseau de l'établissement…";
         var found = await LanDiscovery.FindAsync();

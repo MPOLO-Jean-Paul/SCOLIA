@@ -106,6 +106,14 @@ public sealed class StaffAttendancePage : PageViewModel
         Selected = null;
     }
 
+    internal bool PreviousMonth => previousMonth;
+
+    internal Task LoadForFlutterAsync(bool previous)
+    {
+        previousMonth = previous;
+        return LoadAsync();
+    }
+
     private (DateOnly From, DateOnly To) PeriodOf(DateOnly today)
     {
         if (!previousMonth) return (new DateOnly(today.Year, today.Month, 1), today);

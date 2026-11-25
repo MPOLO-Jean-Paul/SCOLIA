@@ -417,6 +417,31 @@ public sealed class CashierPage : PageViewModel
         }
     }
 
+    internal Task SearchForFlutterAsync(string term)
+    {
+        search = term;
+        return SearchAsync();
+    }
+
+    internal async Task PrepareForFlutterAsync(IReadOnlySet<Guid> ids, string amount, string methodId,
+        string externalReference, string observation)
+    {
+        if (!HasStudent || HasReceipt || ids.Any(id => !Months.Any(m => m.Id == id)))
+            throw new InvalidOperationException("Sélection indisponible.");
+        var choice = Methods.FirstOrDefault(m => m.Value == methodId)
+            ?? throw new ArgumentException("Mode de paiement inconnu.");
+        updatingMonthSelection = true;
+        try { foreach (var month in Months) month.IsSelected = ids.Contains(month.Id); }
+        finally { updatingMonthSelection = false; }
+        MonthsChanged();
+        AmountText = amount;
+        Method = choice;
+        if (!IsCash) Reference = externalReference;
+        Note = observation;
+        previewValid = false;
+        await PreviewAsync();
+    }
+
     private Task<OfflineStudentSearch.Result?> FindLocallyAsync(string term)
     {
         var store = Shell.Api.Offline;
@@ -952,6 +977,21 @@ public sealed class ReceiptsPage : PageViewModel
             + (!Shell.Api.IsOnline ? " · copie locale" : string.Empty);
         Raise(nameof(Subtitle));
     }
+
+    internal async Task LoadForFlutterAsync(string query, DateTime? start, DateTime? end,
+        string? mode, string? state, string? promotionId)
+    {
+        if (!ready) await LoadAsync();
+        search = query;
+        from = start;
+        to = end;
+        method = Methods.FirstOrDefault(x => x.Value == (mode ?? "")) ?? throw new ArgumentException("Mode invalide.");
+        status = Statuses.FirstOrDefault(x => x.Value == (state ?? "")) ?? throw new ArgumentException("Statut invalide.");
+        promotion = Promotions.FirstOrDefault(x => x.Value == (promotionId ?? "")) ?? throw new ArgumentException("Promotion invalide.");
+        await LoadAsync();
+    }
+
+    internal Task ExportForFlutterAsync(string format) => ExportAsync(format);
 
     private string Filters(int? size) => ScoliaClient.Query(
         ("search", Search.Trim()), ("from", ToDayOrNull(From)), ("to", ToDayOrNull(To)), ("method", Method?.Value),
