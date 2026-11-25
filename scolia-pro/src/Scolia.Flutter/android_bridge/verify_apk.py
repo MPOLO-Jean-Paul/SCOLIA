@@ -29,7 +29,8 @@ for apk in candidates:
     subprocess.run([str(signer), "verify", str(apk)], check=True)
     with zipfile.ZipFile(apk) as z:
         names = set(z.namelist())
-        for abi in ("arm64-v8a", "armeabi-v7a"):
+        required_abis = ("x86_64",) if os.environ.get("SCOLIA_FLUTTER_EMULATOR") == "1" else ("arm64-v8a", "armeabi-v7a")
+        for abi in required_abis:
             for lib in ("libflutter.so", "libapp.so"):
                 if f"lib/{abi}/{lib}" not in names:
                     raise RuntimeError(f"Missing {abi}/{lib}")

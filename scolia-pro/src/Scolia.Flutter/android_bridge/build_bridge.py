@@ -89,8 +89,10 @@ module_aars = list(repo.rglob("flutter_release-*.aar"))
 if len(module_aars) != 1:
     raise RuntimeError("Expected exactly one release module AAR")
 shutil.copyfile(module_aars[0], out / "flutter-module.aar")
-for artifact, abi in (("arm64_v8a_release", "arm64-v8a"),
-                      ("armeabi_v7a_release", "armeabi-v7a")):
+architectures = [("arm64_v8a_release", "arm64-v8a"), ("armeabi_v7a_release", "armeabi-v7a")]
+if os.environ.get("SCOLIA_FLUTTER_EMULATOR") == "1":
+    architectures = [("x86_64_release", "x86_64")]
+for artifact, abi in architectures:
     target = resolve_artifact(artifact, ("jar", "aar"))
     with zipfile.ZipFile(target) as archive:
         matches = [n for n in archive.namelist() if n == f"{abi}/libflutter.so" or n.endswith(f"/{abi}/libflutter.so")]

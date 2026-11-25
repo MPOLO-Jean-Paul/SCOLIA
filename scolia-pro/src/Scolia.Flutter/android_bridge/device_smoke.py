@@ -1,8 +1,9 @@
-"""Smoke test on a dedicated ARM Android test device, never a production installation."""
+"""Smoke test on a dedicated Android test device, never a production installation."""
 import argparse
 import re
 import subprocess
 import time
+import zipfile
 from pathlib import Path
 
 PACKAGE = "com.jpservices.scolia.fluttervalidation"
@@ -25,6 +26,8 @@ def main():
     parser.add_argument("--apksigner", required=True, help="Path to Android build-tools apksigner")
     parser.add_argument("--isolated-device", action="store_true", required=True,
                         help="Confirm dedicated test device, isolated from real school servers")
+    parser.add_argument("--offline-resume", action="store_true",
+                        help="Disable external network on a disposable emulator before resume")
     args = parser.parse_args()
 
     if not args.apk.is_file():
@@ -40,8 +43,14 @@ def main():
     if adb("get-state") != "device":
         raise RuntimeError("ADB device unavailable")
     abi = adb("shell", "getprop", "ro.product.cpu.abilist")
-    if not any(x in abi.split(",") for x in ("arm64-v8a", "armeabi-v7a")):
-        raise RuntimeError("This APK requires ARM Android")
+    with zipfile.ZipFile(args.apk) as archive:
+        files = set(archive.namelist())
+    compatible = [x for x in abi.split(",") if
+                  f"lib/{x}/libflutter.so" in files and f"lib/{x}/libapp.so" in files]
+    if not compatible:
+        raise RuntimeError("No compatible Flutter ABI in the validation APK")
+    if args.offline_resume and adb("shell", "getprop", "ro.kernel.qemu") != "1":
+        raise RuntimeError("Offline network changes are restricted to disposable emulators")
     for package in (PRODUCTION, PACKAGE):
         if "package:" in adb("shell", "pm", "path", package, check=False):
             raise RuntimeError("Refusing a device with a pre-existing SCOLIA installation")
@@ -84,9 +93,19 @@ def main():
     print("PASS: cold startup, Flutter first frame, real .NET bridge response")
     adb("shell", "input", "keyevent", "KEYCODE_HOME")
     time.sleep(3)
-    launch()
-    observe(first)
-    print("PASS: background/foreground recovery with new frame and native response")
+    if args.offline_resume:
+        adb("shell", "svc", "wifi", "disable")
+        adb("shell", "svc", "data", "disable")
+    try:
+        launch()
+        observe(first)
+        print("PASS: background/foreground recovery with new frame and native response")
+        if args.offline_resume:
+            print("PASS: Flutter and native channel resume with Wi-Fi/mobile data disabled")
+    finally:
+        if args.offline_resume:
+            adb("shell", "svc", "wifi", "enable")
+            adb("shell", "svc", "data", "enable")
     print("No school data, no real login, no uninstall or data clearing performed.")
 
 

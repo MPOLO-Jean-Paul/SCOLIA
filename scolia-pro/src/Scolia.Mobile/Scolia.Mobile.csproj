@@ -60,11 +60,15 @@
     <RunAOTCompilation>false</RunAOTCompilation>
     <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(ScoliaFlutterExperiment)' == 'true' And '$(ScoliaFlutterEmulator)' == 'true'">
+    <RuntimeIdentifiers>android-x64</RuntimeIdentifiers>
+  </PropertyGroup>
   <ItemGroup Condition="'$(ScoliaFlutterExperiment)' == 'true'">
     <ProjectReference Include="../Scolia.Flutter.AndroidBinding/Scolia.Flutter.AndroidBinding.csproj" />
     <AndroidLibrary Include="../Scolia.Flutter/build/bridge/flutter-module.aar" Bind="false" />
-    <AndroidNativeLibrary Include="../Scolia.Flutter/build/bridge/native/arm64-v8a/libflutter.so" Abi="arm64-v8a" />
-    <AndroidNativeLibrary Include="../Scolia.Flutter/build/bridge/native/armeabi-v7a/libflutter.so" Abi="armeabi-v7a" />
+    <AndroidNativeLibrary Condition="'$(ScoliaFlutterEmulator)' != 'true'" Include="../Scolia.Flutter/build/bridge/native/arm64-v8a/libflutter.so" Abi="arm64-v8a" />
+    <AndroidNativeLibrary Condition="'$(ScoliaFlutterEmulator)' != 'true'" Include="../Scolia.Flutter/build/bridge/native/armeabi-v7a/libflutter.so" Abi="armeabi-v7a" />
+    <AndroidNativeLibrary Condition="'$(ScoliaFlutterEmulator)' == 'true'" Include="../Scolia.Flutter/build/bridge/native/x86_64/libflutter.so" Abi="x86_64" />
   </ItemGroup>
 
   <ItemGroup>

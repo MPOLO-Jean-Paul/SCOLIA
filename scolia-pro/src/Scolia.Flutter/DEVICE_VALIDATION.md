@@ -16,3 +16,11 @@ python android_bridge/device_smoke.py --serial SERIAL_TEST --apk SCOLIA_Flutter_
 ```
 
 Le code de sortie non nul interdit de considérer le test comme réussi. Si une boîte de dialogue Android empêche l'affichage, le test peut échouer et doit être diagnostiqué sur le téléphone. Les seuls marqueurs ajoutés ne contiennent aucune donnée métier, identité ou secret. Ce test n'est pas un test d'encaissement, de connexion, de synchronisation de données ou de migration de signature. Ces parcours nécessitent encore une base et des comptes de test conformément à la PR 188.
+
+## Émulateur CI x86_64
+
+Le workflow séparé construit un APK de validation x86_64, distinct de l'APK ARM destiné au téléphone. Il installe l'application sur un émulateur jetable, vérifie la réponse initiale du moteur et la reprise avec Wi-Fi et données mobiles désactivés. Ce test ne prouve pas que les encaissements sont correctement synchronisés : il vérifie le démarrage et le canal natif sans réseau. Les paramètres de production restent inchangés.
+
+## Contrôle de mise à jour officielle
+
+`verify_release_upgrade.py` compare le package, la version et les empreintes des certificats des deux APK signés et exige la présence de Flutter pour ARM. Il n'utilise aucune clé privée. La réussite ne remplace pas un test de migration de données sur une installation de test.
