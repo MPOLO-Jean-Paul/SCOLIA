@@ -310,10 +310,10 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     if (operation == "cashierSearch")
                     {
                         // A new search opens a new native page, releasing the previous page's lock.
-                        var term = Required(arguments, "q", 100);
+                        var payerQuery = Required(arguments, "q", 100);
                         await shell.Open(() => new CashierPage(shell));
                         cashier = ActiveCashier ?? throw new UnauthorizedAccessException("Caisse indisponible.");
-                        await cashier.SearchForFlutterAsync(term);
+                        await cashier.SearchForFlutterAsync(payerQuery);
                     }
                     else if (operation == "cashierChoose")
                     {
