@@ -281,6 +281,8 @@ class _WorkspaceState extends State<Workspace> {
     else if (id == 'page:DeliberationPage') { unawaited(loadRegister('deliberation')); }
     else if (id == 'page:EncodingProgressPage') { unawaited(loadRegister('progress')); }
     else if (id == 'lmd') { unawaited(loadRegister('lmd')); }
+    else if (id == 'settings') { unawaited(loadRegister('settings')); }
+    else if (id == 'page:UsersPage') { unawaited(loadRegister('users')); }
     else { unawaited(execute(Operation.openModule, {'module': id})); }
   }
 
@@ -649,7 +651,47 @@ class _WorkspaceState extends State<Workspace> {
     ]);
   }
 
+  Widget administrationRegister(SchoolRegister r) {
+    final settings = r.kind == 'settings';
+    final label = settings ? switch (r.date) {
+      'etablissement' => 'Modifier les informations',
+      'annees' => 'Gérer les années scolaires',
+      'sections' => 'Créer ou gérer les sections',
+      'promotions' => 'Créer ou gérer les promotions',
+      'frais' => 'Gérer les catégories de frais',
+      _ => 'Ouvrir les paramètres',
+    } : 'Créer ou gérer les utilisateurs';
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: busy ? null : () => leaveRegister(r),
+        icon: const Icon(Icons.arrow_back), label: const Text('Retour à l’accueil'))),
+      heading(r.title, r.subtitle),
+      if (settings && r.options.isNotEmpty) ...[
+        filter('Rubrique', r.date, r.options, (v) => loadRegister(r.kind, current: r, date: v)),
+        const SizedBox(height: 16),
+        Text(r.overview, style: Theme.of(context).textTheme.titleLarge),
+        if (r.context.isNotEmpty) Text(r.context),
+        const SizedBox(height: 12),
+      ],
+      if (!settings || r.canWrite) action(label, Icons.settings_outlined, Operation.registerNative,
+        primary: true, args: {'token': r.token}),
+      const SizedBox(height: 16),
+      if (r.rows.isEmpty) const Text('Aucun élément enregistré.'),
+      for (final row in r.rows) Card.outlined(margin: const EdgeInsets.only(bottom: 8), child: Padding(
+        padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text(row.name, style: Theme.of(context).textTheme.titleSmall),
+          if (row.code.isNotEmpty) Text(row.code),
+          if (row.status.isNotEmpty) Text(row.status, style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+          for (final item in row.details) if (item.value.isNotEmpty) Padding(
+            padding: const EdgeInsets.only(top: 4), child: Text(item.label == 'Valeur' ? item.value : '${item.label} : ${item.value}')),
+          if (row.id.isNotEmpty && (!settings || r.canWrite)) Align(alignment: Alignment.centerRight,
+            child: TextButton.icon(onPressed: busy ? null : () => execute(Operation.registerNative,
+              {'token': r.token, 'row': row.id}), icon: const Icon(Icons.more_horiz), label: const Text('Actions'))),
+        ]))),
+    ]);
+  }
+
   Widget schoolRegister(SchoolRegister r) {
+    if (r.kind == 'settings' || r.kind == 'users') return administrationRegister(r);
     if (r.kind == 'lmd') return lmdRegister(r);
     if (r.kind == 'deliberation' || r.kind == 'progress') return academicRegister(r);
     if (r.kind == 'marks') return marksRegister(r);

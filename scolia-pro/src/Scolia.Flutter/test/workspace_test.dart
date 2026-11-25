@@ -83,6 +83,21 @@ void main() {
     expect(host.lastArgs, {'token': 'lmd-token'});
     expect(tester.takeException(), isNull);
   });
+  testWidgets('settings opens actions for the confirmed promotion', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.schoolRegister,
+      register: SchoolRegister(kind: 'settings', title: 'Configuration', token: 'settings-token',
+        date: 'promotions', canWrite: true, options: [FilterChoice('promotions', 'Promotions et frais')],
+        rows: [RegisterRow('promotion1', 'Promotion test', 'INF1', 'Active', '', [])])));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    expect(find.text('Promotion test'), findsOneWidget);
+    await tester.ensureVisible(find.text('Actions'));
+    await tester.tap(find.text('Actions'));
+    await tester.pumpAndSettle();
+    expect(host.last, Operation.registerNative);
+    expect(host.lastArgs, {'token': 'settings-token', 'row': 'promotion1'});
+    expect(tester.takeException(), isNull);
+  });
   test('reject incompatible protocol', () {
     expect(() => SchoolSession.fromMap({'protocol': 2, 'stage': 'home'}), throwsFormatException);
   });

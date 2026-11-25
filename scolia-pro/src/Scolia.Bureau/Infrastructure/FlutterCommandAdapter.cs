@@ -28,6 +28,37 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     private DeliberationPage? deliberationDraft;
     private EncodingProgressPage? progressDraft;
     private LmdPlanningPage? lmdDraft;
+    private SettingsPage? settingsDraft;
+    private UsersPage? usersDraft;
+    private SchoolRegister DescribeSettings(SettingsPage p)
+    {
+        var selected = p.Section?.Value ?? "";
+        var rows = selected switch
+        {
+            "annees" => p.Years.Select(x => new RegisterRow(x.Id.ToString(), x.Label, "", x.Status, "", [
+                new("Période", x.Period), new("Année courante", x.IsCurrent ? "Oui" : "Non"),
+                new("Paiements", x.Months), new("Échéances", x.Deadline)])).ToArray(),
+            "sections" => p.SectionRows.Select(x => new RegisterRow(x.Id.ToString(), x.Name, x.Code, x.StatusLabel, "", [
+                new("Promotions", x.Promotions), new("Effectif", x.Students)])).ToArray(),
+            "promotions" => p.Promotions.Select(x => new RegisterRow(x.Id.ToString(), x.Name, x.Code, x.Active == "Oui" ? "Active" : "Inactive", "", [
+                new("Section", x.Section), new("Niveau", x.Level), new("Effectif", x.Students),
+                new(x.FeeLabel, x.Monthly), new("Total annuel", x.Annual)])).ToArray(),
+            "frais" => p.Categories.Select(x => new RegisterRow(x.Id.ToString(), x.Name, "", x.Active == "Oui" ? "Active" : "Inactive", "", [
+                new("Montant", x.Amount), new("Échéance", x.DueDate), new("Promotions", x.Promotions)])).ToArray(),
+            "etablissement" when p.SchoolForm is { } form => form.Fields
+                .Where(x => x.Kind != FieldKind.Header && x.Kind != FieldKind.Secret)
+                .Select(x => new RegisterRow("", x.Label, "", "", "", [new("Valeur", x.Text)])).ToArray(),
+            _ => [],
+        };
+        return new("settings", p.Title, p.SectionHint, "", selected, "", false,
+            shell.Can(Perm.SettingsWrite) && p.SchoolSections.Any(x => x.Value == selected), false, false, registerToken,
+            [], p.AllSections.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(), rows,
+            Overview: p.SectionTitle, Context: p.Subtitle);
+    }
+    private SchoolRegister DescribeUsers(UsersPage p) => new("users", p.Title, p.Subtitle, "", "", "", false, false, false, false,
+        registerToken, [], [], p.Items.Select(x => new RegisterRow(x.Id.ToString(), x.DisplayName, x.UserName, x.Active, "", [
+            new("Rôle", x.Role), new("Dernière connexion", x.LastLogin), new("Verrouillage", x.Locked)])).ToArray());
+
     private SchoolRegister DescribeLmd(LmdPlanningPage p)
     {
         var fees = p.FlutterPromotion?.Fees.Where(f => LmdInstallmentPlan.IsTranche(f.Label)).OrderBy(f => f.DueDate).ToList() ?? [];
@@ -110,7 +141,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     private bool registerDirty;
     private void ClearRegister()
     {
-        attendanceDraft = null; disciplineDraft = null; staffDraft = null; pointageDraft = null; teachingDraft = null; codesDraft = null; marksDraft = null; deliberationDraft = null; progressDraft = null; lmdDraft = null; registerOwner = null; registerToken = ""; registerDirty = false;
+        attendanceDraft = null; disciplineDraft = null; staffDraft = null; pointageDraft = null; teachingDraft = null; codesDraft = null; marksDraft = null; deliberationDraft = null; progressDraft = null; lmdDraft = null; settingsDraft = null; usersDraft = null; registerOwner = null; registerToken = ""; registerDirty = false;
     }
     private SchoolRegister DescribeAttendance(AttendancePage page) => new("attendance", page.Title, page.Subtitle,
         page.Promotion?.Value ?? "", WireDate(page.Day), "", page.ShowSummary,
@@ -507,7 +538,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     var kind = Required(arguments, "kind", 20);
                     var moduleId = kind switch { "staff" => "page:StaffPage", "pointage" => "page:StaffAttendancePage",
                         "teaching" => "page:TeachingPage", "codes" => "page:AnonymousCodesPage", "marks" => "grades", "deliberation" => "page:DeliberationPage",
-                        "progress" => "page:EncodingProgressPage", "lmd" => "lmd", _ => throw new ArgumentException("Module invalide.") };
+                        "progress" => "page:EncodingProgressPage", "lmd" => "lmd", "settings" => "settings", "users" => "page:UsersPage", _ => throw new ArgumentException("Module invalide.") };
                     if (AllowedPage(moduleId) is null || ((kind is "codes" or "deliberation" or "progress") && shell.TeacherOnly) || shell.Session is not { } personnelOwner)
                         throw new UnauthorizedAccessException("Module non autorisé.");
                     if (kind == "marks")
@@ -527,7 +558,29 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                         return Read() with { Stage = "schoolRegister", Register = DescribeMarks(p) };
                     }
                     var summary = arguments.GetValueOrDefault("summary") == "true";
-                    if (kind == "lmd")
+                    if (kind == "settings")
+                    {
+                        var requested = arguments.GetValueOrDefault("date", "");
+                        var catalog = new SettingsPage(shell);
+                        if (!string.IsNullOrEmpty(requested) && !catalog.AllSections.Any(x => x.Value == requested))
+                            throw new UnauthorizedAccessException("Rubrique non autorisée.");
+                        var p = string.IsNullOrEmpty(requested) ? catalog : new SettingsPage(shell, requested);
+                        // Les rubriques de poste, de licence et de sécurité gardent leurs réglages natifs.
+                        if (p.IsPoste || p.IsLicense)
+                        {
+                            await shell.Open(() => p);
+                            return Read(native: true);
+                        }
+                        await p.LoadAsync();
+                        settingsDraft = p;
+                    }
+                    else if (kind == "users")
+                    {
+                        var p = new UsersPage(shell);
+                        await p.LoadAsync();
+                        usersDraft = p;
+                    }
+                    else if (kind == "lmd")
                     {
                         var p = new LmdPlanningPage(shell);
                         await p.LoadForFlutterAsync(arguments.GetValueOrDefault("promotion"));
@@ -572,7 +625,8 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     if (AllowedPage(moduleId) is null || ((kind is "codes" or "deliberation" or "progress") && shell.TeacherOnly) || !ReferenceEquals(personnelOwner, shell.Session))
                     { ClearRegister(); throw new UnauthorizedAccessException("Session modifiée."); }
                     registerOwner = personnelOwner; registerToken = Guid.NewGuid().ToString();
-                    return Read() with { Stage = "schoolRegister", Register = lmdDraft is { } lmd ? DescribeLmd(lmd) : deliberationDraft is { } board ? DescribeDeliberation(board)
+                    return Read() with { Stage = "schoolRegister", Register = settingsDraft is { } settings ? DescribeSettings(settings)
+                        : usersDraft is { } users ? DescribeUsers(users) : lmdDraft is { } lmd ? DescribeLmd(lmd) : deliberationDraft is { } board ? DescribeDeliberation(board)
                         : progressDraft is { } progress ? DescribeProgress(progress) : staffDraft is { } personnel ? DescribeStaff(personnel)
                         : pointageDraft is { } pointage ? DescribePointage(pointage) : codesDraft is { } codes ? DescribeCodes(codes) : DescribeTeaching(teachingDraft!) };
                 }
@@ -615,6 +669,40 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     if (!ReferenceEquals(registerOwner, shell.Session) || !MayShowWorkspace ||
                         Required(arguments, "token", 36) != registerToken)
                         throw new UnauthorizedAccessException("Registre non confirmé.");
+                    if (operation == "registerNative" && settingsDraft is { } settings && AllowedPage("settings") is not null)
+                    {
+                        if (!shell.Can(Perm.SettingsWrite)) throw new UnauthorizedAccessException("Configuration non autorisée.");
+                        var row = arguments.GetValueOrDefault("row", "");
+                        Guid? selectedId = string.IsNullOrEmpty(row) ? null : Guid.Parse(row);
+                        if (selectedId is { } sid && !(settings.IsYears && settings.Years.Any(x => x.Id == sid)
+                            || settings.IsSections && settings.SectionRows.Any(x => x.Id == sid)
+                            || settings.IsPromotions && settings.Promotions.Any(x => x.Id == sid)
+                            || settings.IsFees && settings.Categories.Any(x => x.Id == sid)))
+                            throw new UnauthorizedAccessException("Élément non proposé.");
+                        // Une ouverture ciblée active le détail sur Android.
+                        var native = new SettingsPage(shell, settings.Section?.Value);
+                        await shell.Open(() => native);
+                        if (selectedId is { } id)
+                        {
+                            if (native.IsYears) native.SelectedYear = native.Years.FirstOrDefault(x => x.Id == id);
+                            if (native.IsSections) native.SelectedSection = native.SectionRows.FirstOrDefault(x => x.Id == id);
+                            if (native.IsPromotions) native.SelectedPromotion = native.Promotions.FirstOrDefault(x => x.Id == id);
+                            if (native.IsFees) native.SelectedCategory = native.Categories.FirstOrDefault(x => x.Id == id);
+                        }
+                        ClearRegister();
+                        return Read(native: true);
+                    }
+                    if (operation == "registerNative" && usersDraft is { } users && AllowedPage("page:UsersPage") is not null)
+                    {
+                        var row = arguments.GetValueOrDefault("row", "");
+                        Guid? selectedId = string.IsNullOrEmpty(row) ? null : Guid.Parse(row);
+                        if (selectedId is { } sid && !users.Items.Any(x => x.Id == sid))
+                            throw new UnauthorizedAccessException("Compte non proposé.");
+                        await shell.Open(() => users);
+                        users.Selected = users.Items.FirstOrDefault(x => x.Id == selectedId);
+                        ClearRegister();
+                        return Read(native: true);
+                    }
                     if (operation == "registerNative" && lmdDraft is { } lmd && AllowedPage("lmd") is not null)
                     {
                         await shell.Open(() => lmd);
