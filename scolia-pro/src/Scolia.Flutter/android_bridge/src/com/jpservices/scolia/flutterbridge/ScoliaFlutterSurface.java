@@ -6,6 +6,7 @@ import io.flutter.embedding.android.FlutterTextureView;
 import io.flutter.embedding.android.FlutterView;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.dart.DartExecutor;
+import io.flutter.embedding.engine.renderer.FlutterUiDisplayListener;
 
 /** Engine and texture view share the existing Activity; no second database or process. */
 public final class ScoliaFlutterSurface {
@@ -15,6 +16,12 @@ public final class ScoliaFlutterSurface {
         engine = new FlutterEngine(activity);
         try {
             view = new FlutterView(activity, new FlutterTextureView(activity));
+            view.addOnFirstFrameRenderedListener(new FlutterUiDisplayListener() {
+                @Override public void onFlutterUiDisplayed() {
+                    android.util.Log.i("SCOLIA-Flutter", "validation:first-frame");
+                }
+                @Override public void onFlutterUiNoLongerDisplayed() {}
+            });
             view.attachToFlutterEngine(engine);
         } catch (RuntimeException | Error ex) {
             engine.destroy();
