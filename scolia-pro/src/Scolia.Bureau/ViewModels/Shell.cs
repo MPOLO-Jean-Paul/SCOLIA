@@ -115,9 +115,9 @@ public sealed class ShellViewModel : Observable
     public RelayCommand SearchCommand { get; private set; } = null!;
     /// <summary>Bandeau de la page : recherche limitée au métier ou aux réglages actifs.</summary>
     public RelayCommand ContextSearchCommand { get; }
-    public bool ContextSearchAvailable => Current is HomePage or PromoterDashboardPage or SettingsPage ||
+    public bool ContextSearchAvailable => Current is StartPage or HomePage or PromoterDashboardPage or SettingsPage ||
                                           PhoneHeaderSearchVm.Scope(Current).Length > 0;
-    public string ContextSearchPlaceholder => Current is HomePage or PromoterDashboardPage
+    public string ContextSearchPlaceholder => Current is StartPage or HomePage or PromoterDashboardPage
         ? "Recherche générale : dossiers, reçus, fonctionnalités…"
         : HeaderSearch.Placeholder;
     /// <summary>Recherche locale des réglages dans le bandeau mobile, jamais dans les apprenants.</summary>
@@ -1075,7 +1075,7 @@ public sealed class ShellViewModel : Observable
                 : teacherOnly
                 ? new TeacherHomePage(this)
                 : s.Permissions.Contains(Perm.PilotageRead) && !s.Permissions.Contains(Perm.ReportsRead)
-                ? new PromoterDashboardPage(this) : new HomePage(this));
+                ? new PromoterDashboardPage(this) : new StartPage(this));
             var rest = minimum - watch.Elapsed;
             if (rest > TimeSpan.Zero) await Task.Delay(rest);
             OpeningProgress = 100;
@@ -1830,7 +1830,7 @@ public sealed class ShellViewModel : Observable
     public IReadOnlyList<NavItemVm> PhoneTabs { get; private set; } = [];
 
     private static readonly Type[] PhoneTabOrder =
-        [typeof(HomePage), typeof(PromoterDashboardPage), typeof(TeacherHomePage), typeof(TeacherCurriculumPage), typeof(StudentResultsPage), typeof(StudentsPage), typeof(CashierPage), typeof(ReceiptsPage),
+        [typeof(StartPage), typeof(HomePage), typeof(PromoterDashboardPage), typeof(TeacherHomePage), typeof(TeacherCurriculumPage), typeof(StudentResultsPage), typeof(StudentsPage), typeof(CashierPage), typeof(ReceiptsPage),
             typeof(MonthlyPage), typeof(DebtorsPage), typeof(CashPage), typeof(MarksPage)];
 
     private void RebuildPhoneTabs()
