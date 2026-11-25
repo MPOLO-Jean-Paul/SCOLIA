@@ -40,16 +40,23 @@ internal sealed class FlutterActivityHost(MainActivity activity) : IDisposable
         _ = TryOpenAsync(request);
     }
 
+    internal void NativeStartupReady()
+    {
+        // Un écran de démarrage peut finir pendant OnPause : ne pas créer de vue cachée.
+        if (active && !disposed && !bridgeFailed && surface is null) Resume();
+    }
+
     private async Task TryOpenAsync(int request)
     {
         try
         {
             var startup = Platform.StartupTask;
             if (startup is null) return;
-            await startup;
-            // Le splash natif doit réellement avoir disparu.
-            for (var attempt = 0; attempt < 40 && activity.IsStartupOverlayVisible; attempt++)
-                await Task.Delay(100);
+            // Les erreurs du démarrage natif appartiennent au splash et restent réessayables.
+            try { await startup; }
+            catch (Exception) { return; }
+            // Si le splash est encore visible, son événement Ready relancera l'hôte.
+            // Aucun délai arbitraire ni moteur Flutter derrière un écran de démarrage.
             if (!active || disposed || fellBack || request != generation ||
                 activity.IsStartupOverlayVisible || surface is not null) return;
             if (Avalonia.Application.Current?.ApplicationLifetime is not ISingleViewApplicationLifetime lifetime ||

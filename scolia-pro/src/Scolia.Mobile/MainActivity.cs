@@ -51,12 +51,19 @@ public sealed class MainActivity : AvaloniaMainActivity
             var minimum = launchPresented ? TimeSpan.Zero : TimeSpan.FromMilliseconds(900);
             launchPresented = true;
             startup = new StartupScreen(this);
+#if SCOLIA_FLUTTER_UI
+            startup.Ready += OnNativeStartupReady;
+#endif
             AddContentView(startup, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
             // App.OnFrameworkInitializationCompleted est exécuté par AndroidApp.OnCreate avant l'activité.
             // Si cet invariant est rompu, afficher une erreur plutôt que retirer le logo prématurément.
             startup.Begin(ScoliaPlatform.StartupTask ?? Task.FromException(new InvalidOperationException("L'initialisation SCOLIA n'est pas disponible.")), minimum);
         }
     }
+
+#if SCOLIA_FLUTTER_UI
+    private void OnNativeStartupReady() => flutterHost?.NativeStartupReady();
+#endif
 
     protected override void OnResume()
     {
@@ -134,6 +141,9 @@ public sealed class MainActivity : AvaloniaMainActivity
  #if SCOLIA_FLUTTER_UI
         flutterHost?.Dispose();
         flutterHost = null;
+#endif
+#if SCOLIA_FLUTTER_UI
+        if (startup is not null) startup.Ready -= OnNativeStartupReady;
 #endif
         startup?.Close();
         startup = null;
