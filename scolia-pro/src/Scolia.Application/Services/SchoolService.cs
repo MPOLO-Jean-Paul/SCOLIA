@@ -360,6 +360,11 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
     {
         var school = await YearContext.SchoolAsync(db, ct);
         var code = Promotion.NormalizeCode(input.Code);
+        var university = InstitutionProfiles.Canonicalize(school.InstitutionType) == InstitutionProfiles.SuperieurLmd;
+        if (input.LmdAnnualFee is not null && (!university || school.Governance == SchoolGovernanceKind.Public || input.MonthlyFee != 0))
+            throw new DomainException("tranches", "Les tranches académiques privées remplacent les mensualités et sont réservées au LMD.");
+        if (university && id is null && input.MonthlyFee != 0)
+            throw new DomainException("monthlyFee", "Une promotion LMD se règle par tranches académiques, pas par mensualités.");
         if (input.SchoolCycleId is not null &&
             InstitutionProfiles.Canonicalize(school.InstitutionType) is (InstitutionProfiles.ItmIm or InstitutionProfiles.SuperieurLmd))
             throw new DomainException("schoolCycleId", "Les classes ITM/IM restent indépendantes des nouveaux cycles scolaires.");
@@ -423,6 +428,36 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
                 var used = await db.Enrollments.AnyAsync(e => e.PromotionId == promotion.Id, ct);
                 if (used) throw new DomainException("code", "Le code d'une promotion qui a des inscrits ne peut plus changer (il figure dans les matricules).");
                 if (await db.Promotions.AnyAsync(p => p.AcademicYearId == year.Id && p.Code == code && p.Id != promotion.Id, ct)) throw new ConflictException("Ce code existe déjà.");
+            }
+        }
+        if (input.LmdAnnualFee is { } plan)
+        {
+            if (year.Status == AcademicYearStatus.Closed)
+                throw new DomainException("tranches", "Cette année académique est clôturée.");
+            IReadOnlyList<decimal> amounts;
+            IReadOnlyList<DateOnly> dates;
+            try
+            {
+                amounts = LmdInstallmentPlan.Split(plan.AnnualTotal, plan.Count, school.WholeAmountsOnly);
+                dates = LmdInstallmentPlan.DueDates(year.StartDate, year.EndDate, plan.Count);
+            }
+            catch (ArgumentException ex) { throw new DomainException("tranches", ex.Message); }
+            if (wanted.Any(w => LmdInstallmentPlan.IsTranche(w.Category.Name)))
+                throw new DomainException("tranches", "Ne combinez pas des tranches manuelles et automatiques.");
+            for (var i = 0; i < amounts.Count; i++)
+            {
+                var name = LmdInstallmentPlan.Name(i + 1);
+                var key = TextKey.Normalize(name);
+                var category = categories.FirstOrDefault(c => c.NameKey == key);
+                if (category is null)
+                {
+                    // Catégorie technique commune ; montant réel toujours sur la promotion.
+                    category = new FeeCategory { Name = name, NameKey = key, Amount = amounts[i],
+                        IsActive = true, Order = categories.Count + 1 };
+                    db.FeeCategories.Add(category);
+                    categories.Add(category);
+                }
+                wanted.Add((category, FeeKind.Autre, amounts[i], dates[i]));
             }
         }
         // Section : elle doit exister ; une section désactivée ne reçoit plus de nouvelle promotion (l'ancienne reste).
@@ -499,13 +534,22 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
                 continue;
             }
             EnsureNotBelowPaid(existing, input.MonthlyFee, paidByItem);
-            existing.Amount = input.MonthlyFee;
+            if (input.LmdAnnualFee is not null && input.MonthlyFee == 0)
+            {
+                if (await db.ReceiptAllocations.AnyAsync(a => a.FeeItemId == existing.Id, ct) ||
+                    await db.SponsorshipLines.AnyAsync(l => l.FeeItemId == existing.Id, ct))
+                    throw new DomainException("tranches", "Une ancienne mensualité possède un historique : conversion comptable requise avant de la remplacer.");
+                promotion.Fees.Remove(existing);
+                db.FeeItems.Remove(existing);
+            }
+            else existing.Amount = input.MonthlyFee;
         }
 
         // Autres frais : une rubrique par catégorie choisie. Un client récent envoie la liste complète des catégories
         // (ManagesCategories) ; un ancien client ne connaît que l'inscription et l'examen : les autres catégories restent.
         var managed = promotion.Fees.Where(f => f.Kind != FeeKind.Mensualite
-            && (input.ManagesCategories || f.Kind is FeeKind.Inscription or FeeKind.Examen)).ToList();
+            && (input.ManagesCategories || f.Kind is FeeKind.Inscription or FeeKind.Examen ||
+                (input.LmdAnnualFee is not null && LmdInstallmentPlan.IsTranche(f.Label)))).ToList();
         foreach (var old in managed)
         {
             var match = wanted.FirstOrDefault(w => old.CategoryId == w.Category.Id

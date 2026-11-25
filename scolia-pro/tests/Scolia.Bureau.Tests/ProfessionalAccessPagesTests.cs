@@ -54,7 +54,31 @@ public sealed class ProfessionalAccessPagesTests
     }
 
     [Fact]
-    public void Le_style_commun_suit_le_theme_et_place_une_carte_sur_grand_ecran()
+    public void Le_jumelage_existant_ne_force_plus_de_texte_blanc_sur_fond_clair()
+    {
+        var nodes = Elements("Views/ConnectionView.axaml");
+        Assert.DoesNotContain(nodes, e => Attr(e, "Selector") is "Grid.desktopconnect TextBlock" or "Grid.desktopconnect TextBlock.muted");
+        var expander = StyleOf(nodes, "Grid.desktopconnect Expander");
+        Assert.Equal("{DynamicResource TextBrush}", Setting(expander, "Foreground"));
+        Assert.Equal("{DynamicResource SurfaceBrush}", Setting(expander, "Background"));
+        Assert.Equal("{DynamicResource OnAccentBrush}", Setting(StyleOf(nodes, "Grid.desktopconnect Button.authprimary TextBlock"), "Foreground"));
+        Assert.Equal("{DynamicResource MutedBrush}", Setting(StyleOf(nodes, "Grid.desktopconnect Button.authprimary:disabled TextBlock"), "Foreground"));
+        Assert.Equal("{DynamicResource AccentBrush}", Setting(StyleOf(nodes, "Grid.desktopconnect Button.authsecondary TextBlock"), "Foreground"));
+        Assert.Equal("{DynamicResource AccentBrush}", Setting(StyleOf(nodes, "Grid.desktopconnect Button.authlink TextBlock"), "Foreground"));
+        Assert.Equal("{DynamicResource OnAccentBrush}", Setting(StyleOf(nodes, "Grid.desktopconnect Button.authprimary mi|MaterialIcon"), "Foreground"));
+        var compact = Elements("Views/Phone/ConnectionCompactView.axaml");
+        Assert.Equal("{DynamicResource OnAccentBrush}", Setting(StyleOf(compact, "Button.connectmain TextBlock"), "Foreground"));
+        Assert.Equal("{DynamicResource MutedBrush}", Setting(StyleOf(compact, "Button.connectmain:disabled TextBlock"), "Foreground"));
+        Assert.Equal("{DynamicResource AccentBrush}", Setting(StyleOf(compact, "Button.connectsecondary TextBlock"), "Foreground"));
+        var auth = Elements("Themes/Auth.axaml");
+        Assert.Equal("{DynamicResource TextBrush}", Setting(StyleOf(auth, "TextBlock.authtitle"), "Foreground"));
+        Assert.Equal("{DynamicResource MutedBrush}", Setting(StyleOf(auth, "TextBlock.authsubtitle"), "Foreground"));
+        foreach (var name in new[] { "IosQrOptions", "IosNearbyServers", "IosWifiOptions" })
+            Assert.False(string.IsNullOrWhiteSpace(Attr(Named(nodes, name), "Header")));
+    }
+
+    [Fact]
+    public void Le_style_commun_suit_le_theme_et_reste_sans_carte_sur_grand_ecran()
     {
         var nodes = Elements("Themes/Auth.axaml");
         var field = StyleOf(nodes, "TextBox.authfield");
@@ -79,7 +103,10 @@ public sealed class ProfessionalAccessPagesTests
         // Téléphone : aucun cadre ; grand écran : carte blanche à filet fin.
         Assert.Equal("Transparent", Setting(StyleOf(nodes, "Border.authcard"), "Background"));
         var wide = StyleOf(nodes, "ScrollViewer.wide Border.authcard");
-        Assert.Equal("{DynamicResource SurfaceBrush}", Setting(wide, "Background"));
+        Assert.Equal("Transparent", Setting(wide, "Background"));
+        Assert.Equal("0", Setting(wide, "BorderThickness"));
+        Assert.Equal("False", Setting(StyleOf(nodes, "Border.authrail"), "IsVisible"));
+        Assert.Equal("True", Setting(StyleOf(nodes, "ScrollViewer.wide Border.authrail"), "IsVisible"));
         Assert.Equal("{DynamicResource LineBrush}", Setting(wide, "BorderBrush"));
         Assert.Equal("440", Setting(StyleOf(nodes, "StackPanel.authbody"), "MaxWidth"));
 
@@ -90,6 +117,47 @@ public sealed class ProfessionalAccessPagesTests
 
         var app = File.ReadAllText(Source("App.axaml"));
         Assert.Contains("avares://SCOLIA/Themes/Auth.axaml", app, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Les_ecrans_avant_connexion_partagent_une_composition_Fluent_adaptative()
+    {
+        foreach (var (view, root) in new[] { ("LoginView.axaml", "IosLoginThemeScope"), ("ConnectionView.axaml", "IosConnectionThemeScope") })
+        {
+            var nodes = Rendered(view, root);
+            var layout = Assert.Single(nodes, e => Attr(e, "Classes") == "authworkspace");
+            Assert.Equal("*,Auto", Attr(layout, "ColumnDefinitions"));
+            Assert.Contains(layout.Descendants(), e => Attr(e, "Classes") == "authrail");
+        }
+        var login = Rendered("LoginView.axaml", "IosLoginThemeScope");
+        foreach (var name in new[] { "IosUserNameBox", "IosPasswordBox", "IosNewPasswordBox", "IosConfirmPasswordBox", "IosRecoveryCodeBox" })
+            Assert.Contains("withicon", Attr(Named(login, name), "Classes"), StringComparison.Ordinal);
+        Assert.Contains(login, e => Attr(e, "Classes") == "authinputicon");
+        var startup = Named(Elements("Views/MainView.axaml"), "OpeningHost");
+        Assert.DoesNotContain(startup.Descendants(), e => e.Name.LocalName == "LinearGradientBrush");
+        Assert.Contains(startup.Descendants(), e => Attr(e, "Background") == "{DynamicResource BgBrush}");
+    }
+
+    [Fact]
+    public void La_configuration_garde_ses_six_profils_et_les_commandes_sur_les_deux_formats()
+    {
+        foreach (var view in new[] { "Views/SetupView.axaml", "Views/Phone/SetupView.axaml" })
+        {
+            var nodes = Elements(view);
+            var profiles = nodes.Where(e => Attr(e, "Classes") == "profileChoice").ToArray();
+            Assert.Equal(6, profiles.Length);
+            Assert.Equal(6, profiles.Select(e => Attr(e, "CommandParameter")).Distinct().Count());
+            foreach (var profile in profiles)
+            {
+                Assert.Equal("{Binding SelectInstitution}", Attr(profile, "Command"));
+                Assert.Contains(profile.Descendants(), e => e.Name.LocalName == "Ellipse");
+            }
+            foreach (var command in new[] { "JoinExisting", "Back", "Next", "Finish" })
+                Assert.Contains(nodes, e => Attr(e, "Command") == "{Binding " + command + "}");
+        }
+        var desktop = Elements("Views/SetupView.axaml");
+        Assert.Equal("3", Attr(Named(desktop, "SetupProfiles"), "Columns"));
+        Assert.Equal("96", Setting(StyleOf(desktop, "Button.setupentry"), "Height"));
     }
 
     [Fact]

@@ -238,6 +238,9 @@ if (args.Length > 3 && args[3] == "premiere-configuration")
     var choices = window.GetVisualDescendants().OfType<Button>()
         .Where(b => b.IsEffectivelyVisible && b.Classes.Contains("profileChoice")).ToArray();
     if (choices.Length != 6) throw new InvalidOperationException($"Six profils attendus, {choices.Length} trouvés.");
+    if (!Preferences.MobileLayout && choices.Any(b => Math.Abs(b.Bounds.Width - choices[0].Bounds.Width) > 2 ||
+        Math.Abs(b.Bounds.Height - choices[0].Bounds.Height) > 2))
+        throw new InvalidOperationException("Première configuration : les six cartes doivent avoir le même gabarit.");
     shell.Setup.SelectInstitution.Execute("ComplexeScolaire");
     shell.Setup.IncludeMaternelle = true;
     shell.Setup.IncludePrimaire = true;
@@ -470,6 +473,61 @@ if (args.Length > 3 && args[3] == "contraste")
     window.Width = Preferences.MobileLayout ? 360 : 1280;
     window.Height = Preferences.MobileLayout ? 760 : 820;
     Save(window, "contraste-connexion.png");
+
+    // Tester la vraie vue « Rejoindre un établissement », sans effectuer de connexion ni de recherche réseau.
+    var pairing = new ConnectionView { DataContext = new ConnectionViewModel(shell) };
+    var pairingWindow = new Window { Content = pairing, Width = Preferences.MobileLayout ? 360 : 1024,
+        Height = Preferences.MobileLayout ? 760 : 740 };
+    pairingWindow.Show();
+    foreach (var theme in new[] { "light", "dark" })
+    {
+        prefs.Theme = theme;
+        prefs.Apply();
+        for (var i = 0; i < 6; i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            pairingWindow.UpdateLayout();
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        }
+        var visible = pairing.GetVisualDescendants().OfType<TextBlock>()
+            .Where(t => t.IsEffectivelyVisible && !string.IsNullOrWhiteSpace(t.Text)).ToArray();
+        void CheckPair(string label, Avalonia.Media.IBrush? foreground, Avalonia.Media.IBrush? background)
+        {
+            var ratio = foreground is Avalonia.Media.ISolidColorBrush fg && background is Avalonia.Media.ISolidColorBrush bg
+                ? ThemeContrast.Ratio(fg.Color, bg.Color) : 0;
+            Console.WriteLine($"Jumelage {theme} · {label} : {ratio:0.00}:1");
+            if (ratio < 4.5) failures++;
+        }
+        var title = visible.FirstOrDefault(t => t.Text == (Preferences.MobileLayout ? "Relier mon appareil" : "Bienvenue sur SCOLIA"));
+        var primary = visible.FirstOrDefault(t => t.Text == ((ConnectionViewModel)pairing.DataContext!).ScanLabel);
+        if (title is null || primary is null)
+        {
+            Console.WriteLine($"ECHEC : titre ou action QR absente du jumelage {theme}.");
+            failures++;
+        }
+        else
+        {
+            CheckPair("titre", title.Foreground, ThemeBrush.Get("BgBrush"));
+            CheckPair("action QR", primary.Foreground, ThemeBrush.Get("AccentBrush"));
+        }
+        if (!Preferences.MobileLayout)
+        {
+            foreach (var label in new[] { "Reliez cet appareil au serveur de votre établissement.", "ou sur le Wi-Fi de l'établissement", "Rechercher le serveur" })
+            {
+                var item = visible.FirstOrDefault(t => t.Text == label);
+                if (item is null) { failures++; Console.WriteLine($"ECHEC : libellé absent : {label}"); }
+                else CheckPair(label, item.Foreground, ThemeBrush.Get("BgBrush"));
+            }
+            foreach (var name in new[] { "IosQrOptions", "IosWifiOptions" })
+            {
+                var expander = pairing.FindControl<Expander>(name);
+                if (expander is null || !expander.IsEffectivelyVisible) { failures++; continue; }
+                CheckPair(name, expander.Foreground, expander.Background);
+            }
+        }
+        Save(pairingWindow, $"contraste-jumelage-{(Preferences.MobileLayout ? "android" : "windows")}-{theme}.png");
+    }
+    pairingWindow.Close();
     failures += VerifyPayments(contrastServer, Preferences.MobileLayout);
     if (Preferences.MobileLayout)
     {

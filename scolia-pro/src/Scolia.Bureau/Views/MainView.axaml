@@ -73,7 +73,11 @@
     <!-- Volet de lancement plat, inspiré du mode Fichier de Power BI. -->
     <Style Selector="Border#DesktopSidebar">
       <Setter Property="Width" Value="250" />
-      <Setter Property="Margin" Value="8,8,0,8" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,1,0" />
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     </Style>
     <Style Selector="Border#DesktopSidebar.startpane">
       <Setter Property="Width" Value="176" />
@@ -318,40 +322,23 @@
     <!-- Ouverture : logo, nom SCOLIA Pro et trois points animés, sans textes ni barre supplémentaires. -->
     <Grid x:Name="OpeningHost" IsVisible="{Binding Opening}">
       <Grid.RenderTransform><TranslateTransform /></Grid.RenderTransform>
-      <Border>
-        <Border.Background>
-          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-            <GradientStop Offset="0" Color="#2F7BEA" />
-            <GradientStop Offset="0.5" Color="#1258D0" />
-            <GradientStop Offset="1" Color="#0B2F6E" />
-          </LinearGradientBrush>
-        </Border.Background>
-      </Border>
-      <Border IsHitTestVisible="False">
-        <Border.Background>
-          <RadialGradientBrush Center="50%,0%" GradientOrigin="50%,0%" RadiusX="90%" RadiusY="70%">
-            <GradientStop Offset="0" Color="#66FFFFFF" />
-            <GradientStop Offset="0.45" Color="#1FFFFFFF" />
-            <GradientStop Offset="1" Color="#00FFFFFF" />
-          </RadialGradientBrush>
-        </Border.Background>
-      </Border>
+      <Border Background="{DynamicResource BgBrush}" />
       <!-- Après connexion : un seul titre et trois points ; les étapes techniques restent internes. -->
       <StackPanel x:Name="WelcomeContent" MaxWidth="340" Margin="20"
                   HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
-        <Border Width="96" Height="96" CornerRadius="48" Background="White"
-                HorizontalAlignment="Center" BoxShadow="0 8 24 0 #33000000">
+        <Border Width="82" Height="82" CornerRadius="8" Background="{DynamicResource SurfaceBrush}"
+                HorizontalAlignment="Center" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
           <ctl:LogoAssembly x:Name="OpeningLogo" Width="66" Height="66"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
                             Primary="#0B2A6F" Secondary="#16A34A" />
         </Border>
-        <TextBlock Text="SCOLIA Pro" Foreground="White" FontSize="25" FontWeight="SemiBold"
+        <TextBlock Text="SCOLIA Pro" Foreground="{DynamicResource TextBrush}" FontSize="25" FontWeight="SemiBold"
                    HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8"
                     Margin="0,6,0,0" AutomationProperties.Name="Ouverture de la session en cours">
-          <Border Classes="welcomedot onbrand first" />
-          <Border Classes="welcomedot onbrand second" />
-          <Border Classes="welcomedot onbrand third" />
+          <Border Classes="welcomedot first" />
+          <Border Classes="welcomedot second" />
+          <Border Classes="welcomedot third" />
         </StackPanel>
       </StackPanel>
     </Grid>

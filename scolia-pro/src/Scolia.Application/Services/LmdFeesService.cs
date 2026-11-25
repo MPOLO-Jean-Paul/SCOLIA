@@ -13,13 +13,26 @@ namespace Scolia.Application.Services;
 /// </summary>
 public sealed class LmdFeesService(IAppDbContext db, SchoolService schools, FeeCategoryService categories)
 {
-    public static string TrancheName(int n) => $"Frais académiques — {(n == 1 ? "1re" : $"{n}e")} tranche";
+    public static string TrancheName(int n) => LmdInstallmentPlan.Name(n);
 
     public async Task<PromotionDto> SetInstallmentsAsync(Guid promotionId, LmdInstallmentsInput input, CancellationToken ct = default)
     {
         var school = await YearContext.SchoolAsync(db, ct);
         if (InstitutionProfiles.Canonicalize(school.InstitutionType) != InstitutionProfiles.SuperieurLmd)
             throw new DomainException("tranches", "Les frais académiques par tranches concernent les universités LMD.");
+        if (input.AnnualFee is { } annual)
+        {
+            if (input.Installments is { Count: > 0 })
+                throw new DomainException("tranches", "Choisissez soit le plan annuel, soit les tranches manuelles.");
+            var selected = await db.Promotions.AsNoTracking().Include(p => p.Fees)
+                .FirstOrDefaultAsync(p => p.Id == promotionId, ct) ?? throw new NotFoundException("Promotion introuvable.");
+            var extras = selected.Fees.Where(f => f.Kind != FeeKind.Mensualite && !LmdInstallmentPlan.IsTranche(f.Label))
+                .Select(f => new OneTimeFee(f.Kind.ToString(), f.Label, f.Amount, f.DueDate, f.CategoryId)).ToList();
+            return await schools.UpsertPromotionAsync(selected.Id, new PromotionUpsert(
+                selected.Code, selected.Name, selected.SectionId, selected.Level, selected.Capacity, selected.IsActive,
+                selected.NextPromotionCode, 0, extras, ManagesCategories: true,
+                AcademicUnitId: selected.AcademicUnitId, LmdAnnualFee: annual), ct);
+        }
         var tranches = input.Installments ?? [];
         if (tranches.Count is < 1 or > 6)
             throw new DomainException("tranches", "Indiquez de 1 à 6 tranches.");

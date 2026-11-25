@@ -691,7 +691,7 @@
   <!-- Carte façon SCOLIA Console : blanche sur le fond clair, cernée d'un filet fin et d'une ombre à peine visible. -->
   <Style Selector="Border.card">
     <Setter Property="infra:Reveal.Enabled" Value="True" />
-    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
@@ -704,12 +704,12 @@
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
-    <Setter Property="BoxShadow" Value="0 4 18 0 #10000000" />
+    <Setter Property="BoxShadow" Value="0 0 0 0 #00000000" />
     <Setter Property="Padding" Value="16" />
   </Style>
   <Style Selector="Border.tile">
     <Setter Property="infra:Reveal.Enabled" Value="True" />
-    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
@@ -868,7 +868,7 @@
 
   <!-- Téléphone : une carte par ligne de tableau -->
   <Style Selector="Border.phonecard">
-    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="Padding" Value="14,12,8,12" />
     <Setter Property="Margin" Value="0,0,0,8" />
@@ -1081,7 +1081,7 @@
     <Setter Property="infra:GridPriority.Adaptive" Value="True" />
     <Setter Property="infra:RowMenu.Enabled" Value="True" />
     <Setter Property="infra:PhoneCards.Enabled" Value="True" />
-    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
@@ -1103,7 +1103,7 @@
     <Setter Property="Fill" Value="White" />
   </Style>
   <Style Selector="DataGridColumnHeader">
-    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Background" Value="{DynamicResource TableHeadBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
     <Setter Property="FontWeight" Value="SemiBold" />
@@ -1539,13 +1539,13 @@
   <!-- Carte d'outil de l'accueil -->
   <Style Selector="Border.toolcard">
     <Setter Property="infra:Reveal.Enabled" Value="True" />
-    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="Padding" Value="18,18,18,16" />
     <Setter Property="MinHeight" Value="170" />
-    <Setter Property="BoxShadow" Value="0 1 2 0 #0F152C4D" />
+    <Setter Property="BoxShadow" Value="0 0 0 0 #00000000" />
     <Setter Property="Transitions">
       <Transitions>
         <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.18" Easing="{x:Static infra:Motion.Spring}" />
@@ -1556,7 +1556,7 @@
   <!-- Élévation au survol, façon Material/Flutter : l'ombre s'élargit doucement, le filet se renforce. -->
   <Style Selector="Border.toolcard:pointerover">
     <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
-    <Setter Property="BoxShadow" Value="0 8 22 0 #1F152C4D" />
+    <Setter Property="BoxShadow" Value="0 0 0 0 #00000000" />
   </Style>
   <!-- Carte de fonctionnalité de l'accueil : avatar, titre et description sur deux lignes -->
   <Style Selector="Border.toolcard.feature">

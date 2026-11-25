@@ -568,6 +568,29 @@ public static class ScoliaEndpoints
         g.MapGet("/suivi-mensuel", ([AsParameters] MonthlyQuery q, ReportService r, CancellationToken ct) => r.MonthlyAsync(q, ct));
         g.MapGet("/suivi-mensuel/export", async ([AsParameters] MonthlyQuery q, string? format, ReportService r, CancellationToken ct) =>
             Table(await r.MonthlyTableAsync(q, ct), format, "suivi-mensuel-paiements", r));
+        // Le client natif transmet une sélection explicite : aucun repli silencieux sur toutes les promotions.
+        g.MapGet("/suivi-mensuel/export/selection", async (Guid periodeId, string promotionScope, int expectedCount, string expectedSelection,
+            string? etat, string? q, string? format, ReportService r, CancellationToken ct) =>
+        {
+            Guid? promotionId = null;
+            if (!string.Equals(promotionScope, "all", StringComparison.Ordinal))
+            {
+                if (!Guid.TryParse(promotionScope, out var id) || id == Guid.Empty)
+                    return Results.BadRequest(new { title = "Promotion invalide : sélectionnez une promotion ou Toutes." });
+                promotionId = id;
+            }
+            if (periodeId == Guid.Empty || expectedCount < 0 || expectedSelection.Length != 64 || format is not ("xlsx" or "pdf" or "docx"))
+                return Results.BadRequest(new { title = "Sélection d’export invalide." });
+            if (!string.IsNullOrEmpty(etat) && etat is not ("nonpaye" or "retard" or "paye" or "couvert"))
+                return Results.BadRequest(new { title = "État de paiement invalide." });
+            var table = await r.MonthlyTableAsync(new MonthlyQuery(periodeId, promotionId, etat, q), expectedSelection, ct);
+            if (table.Rows.Count != expectedCount)
+                return Results.Conflict(new { title = "La liste a changé. Actualisez le suivi mensuel avant d’exporter." });
+            if (format == "docx")
+                return Results.File(TableWordWriter.Write(table), "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "suivi-mensuel-paiements.docx");
+            return Table(table, format, "suivi-mensuel-paiements", r);
+        });
         g.MapGet("/promotions/export", async (string? format, ReportService r, CancellationToken ct) =>
             Table(await r.PromotionsTableAsync(ct), format, "situation-par-promotion", r));
         g.MapGet("/apprenants/export", async (string? format, ReportService r, CancellationToken ct) =>

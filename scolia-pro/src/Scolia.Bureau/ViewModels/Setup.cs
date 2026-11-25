@@ -24,7 +24,22 @@ public sealed class PromotionDraftVm : Observable
 
     public string Code { get => code; set { if (Set(ref code, (value ?? string.Empty).ToUpperInvariant())) Refresh(); } }
     public string Name { get => name; set { if (Set(ref name, value ?? string.Empty)) Refresh(); } }
-    public string Fee { get => fee; set => Set(ref fee, value); }
+    public string Fee { get => fee; set { if (Set(ref fee, value)) Raise(nameof(InstallmentPreview)); } }
+    private bool isLmd;
+    public bool IsLmd { get => isLmd; set { if (Set(ref isLmd, value)) Raise(nameof(InstallmentPreview)); } }
+    private string trancheCount = "3";
+    public string TrancheCount { get => trancheCount; set { if (Set(ref trancheCount, value)) Raise(nameof(InstallmentPreview)); } }
+    public string InstallmentPreview
+    {
+        get
+        {
+            if (!decimal.TryParse(Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.NumberStyles.Number,
+                System.Globalization.CultureInfo.InvariantCulture, out var total) ||
+                !int.TryParse(TrancheCount, out var count) || total <= 0) return "Indiquez le total annuel et le nombre de tranches (1 à 6).";
+            try { return string.Join(" · ", LmdInstallmentPlan.Split(total, count).Select((amount, i) => $"T{i + 1} : {amount:0.##} $")); }
+            catch (ArgumentException ex) { return ex.Message; }
+        }
+    }
     public RelayCommand Remove { get; }
 
     /// <summary>Désignations prédites d'après le code et la saisie : « INF1 » donne « Première Infirmière »…</summary>
@@ -116,13 +131,13 @@ public sealed class SetupViewModel : Observable
     /// </summary>
     private void AddPromotionRow()
     {
-        var row = new PromotionDraftVm(d => Promotions.Remove(d), DraftContext);
+        var row = new PromotionDraftVm(d => Promotions.Remove(d), DraftContext) { IsLmd = InstitutionType.Value == InstitutionProfiles.SuperieurLmd };
         if (Promotions.LastOrDefault() is { } previous && previous.Next() is { } next
             && Promotions.All(p => !p.Code.Equals(next.Code, StringComparison.OrdinalIgnoreCase)))
         {
             row.Code = next.Code;
             row.Name = next.Name;
-            row.Fee = previous.Fee;
+            if (!row.IsLmd) row.Fee = previous.Fee;
         }
         Promotions.Add(row);
         row.Refresh();
@@ -197,6 +212,7 @@ public sealed class SetupViewModel : Observable
             if (!Set(ref institutionType, value)) return;
             if (!CanLoadDemo) LoadDemo = false;
             Raise(nameof(CurrencyLine)); Raise(nameof(ProfileLabel)); Raise(nameof(ProfileHint));
+            foreach (var draft in Promotions) draft.IsLmd = InstitutionType.Value == InstitutionProfiles.SuperieurLmd;
             Raise(nameof(PromotionHeading)); Raise(nameof(FeeHeading)); Raise(nameof(CanLoadDemo)); Raise(nameof(IsComplexSchool)); Raise(nameof(ShowPromotionEditor));
         }
     }
@@ -236,7 +252,7 @@ public sealed class SetupViewModel : Observable
     }.OfType<string>().ToArray();
     public string PromotionHeading => InstitutionType?.Value is InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire
         or InstitutionProfiles.Secondaire or InstitutionProfiles.ComplexeScolaire ? "Classes" : "Promotions";
-    public string FeeHeading => InstitutionType?.Value == InstitutionProfiles.SuperieurLmd ? "Mensualité (USD)" : "Mensualité (FC)";
+    public string FeeHeading => InstitutionType?.Value == InstitutionProfiles.SuperieurLmd ? "Frais annuels (USD)" : "Mensualité (FC)";
     public bool CanLoadDemo => InstitutionType?.Value == InstitutionProfiles.ItmIm && Governance?.Value == "Prive";
 
     public IReadOnlyList<ChoiceItem> GovernanceTypes { get; } =
@@ -501,6 +517,15 @@ public sealed class SetupViewModel : Observable
                 return $"Promotion {rank} : le code compte 4 caractères, lettres ou chiffres, par exemple INF1.";
             if (!seen.Add(code)) return $"Promotion {rank} : le code {code} est déjà utilisé.";
             if (string.IsNullOrWhiteSpace(p.Name)) return $"Promotion {rank} : indiquez la désignation, par exemple « Première année ».";
+            if (InstitutionType.Value == InstitutionProfiles.SuperieurLmd && Governance.Value != "Public")
+            {
+                if (!decimal.TryParse(p.Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.NumberStyles.Number,
+                    System.Globalization.CultureInfo.InvariantCulture, out var annual) || !int.TryParse(p.TrancheCount, out var count))
+                    return $"Promotion {rank} : indiquez le total annuel et le nombre de tranches.";
+                try { _ = LmdInstallmentPlan.Split(annual, count); }
+                catch (ArgumentException ex) { return $"Promotion {rank} : {ex.Message}"; }
+                continue;
+            }
             if (!decimal.TryParse(p.Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var fee)
                 || (Governance.Value == "Public" ? fee != 0
                     : InstitutionType.Value == InstitutionProfiles.ItmIm ? fee <= 0 : fee < 0)
@@ -582,7 +607,8 @@ public sealed class SetupViewModel : Observable
                     code, name = p.Name.Trim(), sectionId = (Guid?)null, level = Math.Max(level, 1), capacity = (int?)null, isActive = true,
                     nextPromotionCode = (string?)null,
                     schoolCycleId,
-                    monthlyFee = decimal.Parse(p.Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.CultureInfo.InvariantCulture),
+                    monthlyFee = p.IsLmd ? 0m : decimal.Parse(p.Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.CultureInfo.InvariantCulture),
+                    lmdAnnualFee = p.IsLmd && Governance.Value != "Public" ? new { annualTotal = decimal.Parse(p.Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.CultureInfo.InvariantCulture), count = int.Parse(p.TrancheCount, System.Globalization.CultureInfo.InvariantCulture) } : null,
                     oneTimeFees = Array.Empty<object>(),
                 });
             }

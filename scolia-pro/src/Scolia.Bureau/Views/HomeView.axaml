@@ -12,11 +12,11 @@
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="CornerRadius" Value="4" />
     </Style>
     <Style Selector="Border.pbiInfo">
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Padding" Value="11,9" />
     </Style>
     <Style Selector="TextBlock.pbiTitle">
@@ -38,9 +38,9 @@
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Padding" Value="14,12" />
-      <Setter Property="MinHeight" Value="112" />
+      <Setter Property="MinHeight" Value="172" />
       <Setter Property="Margin" Value="5,4" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -57,7 +57,7 @@
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Padding" Value="15,13" />
       <Setter Property="MinHeight" Value="124" />
       <Setter Property="Margin" Value="5,4" />
@@ -90,7 +90,7 @@
     <Style Selector="Button.pbiState">
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Padding" Value="10,11" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     </Style>
@@ -140,22 +140,19 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate>
                   <Button Classes="pbiAction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding ShortTitle}">
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                      <Border Width="48" Height="48" CornerRadius="8" VerticalAlignment="Center">
-                        <Grid>
-                          <Border Background="{Binding Brush}" Opacity="0.12" CornerRadius="8" />
-                          <mi:MaterialIcon Kind="{Binding Icon}" Width="27" Height="27" Foreground="{Binding Brush}"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Grid>
-                      </Border>
-                      <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding ShortTitle}" FontSize="15" FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis" MaxLines="1" />
-                        <TextBlock Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap"
-                                   MaxLines="2" TextTrimming="CharacterEllipsis" />
-                      </StackPanel>
-                      <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
-                                       Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                    <Grid RowDefinitions="64,Auto,Auto" RowSpacing="7">
+                      <Grid ClipToBounds="True">
+                        <Border Background="{Binding Brush}" Opacity="0.12" CornerRadius="2" />
+                        <Ellipse Fill="{Binding Brush}" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <mi:MaterialIcon Kind="{Binding Icon}" Width="25" Height="25" Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Grid>
+                      <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                        <TextBlock Text="{Binding ShortTitle}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <mi:MaterialIcon Grid.Column="1" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" />
+                      </Grid>
+                      <TextBlock Grid.Row="2" Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap"
+                                 MaxLines="2" TextTrimming="CharacterEllipsis" />
                     </Grid>
                   </Button>
             </DataTemplate>
@@ -245,22 +242,19 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate>
               <Button Classes="pbiAction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding Title}">
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                      <Border Width="48" Height="48" CornerRadius="8" VerticalAlignment="Center">
-                        <Grid>
-                          <Border Background="{Binding Brush}" Opacity="0.12" CornerRadius="8" />
-                          <mi:MaterialIcon Kind="{Binding Icon}" Width="27" Height="27" Foreground="{Binding Brush}"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Grid>
-                      </Border>
-                      <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis" MaxLines="1" />
-                        <TextBlock Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap"
-                                   MaxLines="2" TextTrimming="CharacterEllipsis" />
-                      </StackPanel>
-                      <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
-                                       Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                    <Grid RowDefinitions="64,Auto,Auto" RowSpacing="7">
+                      <Grid ClipToBounds="True">
+                        <Border Background="{Binding Brush}" Opacity="0.12" CornerRadius="2" />
+                        <Ellipse Fill="{Binding Brush}" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <mi:MaterialIcon Kind="{Binding Icon}" Width="25" Height="25" Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Grid>
+                      <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                        <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <mi:MaterialIcon Grid.Column="1" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" />
+                      </Grid>
+                      <TextBlock Grid.Row="2" Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap"
+                                 MaxLines="2" TextTrimming="CharacterEllipsis" />
                     </Grid>
                   </Button>
             </DataTemplate>

@@ -35,7 +35,8 @@ public sealed record LmdDebtDto(Guid Id, Guid StudentId, string Matricule, strin
 public sealed record LmdDebtClearInput(decimal Mark);
 
 public sealed record LmdInstallmentInput(decimal Amount, DateOnly DueDate);
-public sealed record LmdInstallmentsInput(IReadOnlyList<LmdInstallmentInput> Installments);
+public sealed record LmdAnnualFeeInput(decimal AnnualTotal, int Count);
+public sealed record LmdInstallmentsInput(IReadOnlyList<LmdInstallmentInput>? Installments = null, LmdAnnualFeeInput? AnnualFee = null);
 
 public sealed record LmdTranscriptPrintDto(
     string SchoolName, string? SchoolAddress, string? SchoolCity, byte[]? SchoolLogo, string CurrencySymbol,
