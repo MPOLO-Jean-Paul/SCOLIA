@@ -134,6 +134,9 @@ internal sealed class StartupScreen : FrameLayout
         };
     }
 
+    // Émis uniquement après un démarrage natif réussi et le retrait effectif du splash.
+    internal event Action? Ready;
+
     public void Begin(Task startup, TimeSpan minimum)
     {
         PlayIntro();
@@ -236,7 +239,12 @@ internal sealed class StartupScreen : FrameLayout
                 }).ConfigureAwait(false);
                 await Task.Delay(TimeSpan.FromMilliseconds(FadeOut * animationScale), token).ConfigureAwait(false);
             }
-            await OnUiAsync(Close).ConfigureAwait(false);
+            await OnUiAsync(() =>
+            {
+                if (closed) return;
+                Close();
+                Ready?.Invoke();
+            }).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception ex)
