@@ -26,6 +26,20 @@ class MissingHost implements ScoliaHost {
 }
 
 void main() {
+  testWidgets('anonymous codes register uses native actions and keeps missing codes explicit', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.schoolRegister,
+      register: SchoolRegister(kind: 'codes', title: 'Codes anonymes', token: 'test-token',
+        rows: [RegisterRow('id1', 'Dossier test', '', 'À attribuer', '', [])])));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    expect(find.text('Code non attribué'), findsOneWidget);
+    await tester.ensureVisible(find.text('Actions'));
+    await tester.tap(find.text('Actions'));
+    await tester.pumpAndSettle();
+    expect(host.last, Operation.registerNative);
+    expect(host.lastArgs, {'token': 'test-token', 'row': 'id1'});
+    expect(tester.takeException(), isNull);
+  });
   test('reject incompatible protocol', () {
     expect(() => SchoolSession.fromMap({'protocol': 2, 'stage': 'home'}), throwsFormatException);
   });

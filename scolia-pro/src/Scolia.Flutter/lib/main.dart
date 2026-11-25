@@ -271,6 +271,7 @@ class _WorkspaceState extends State<Workspace> {
     else if (id == 'page:StaffPage') { unawaited(loadRegister('staff')); }
     else if (id == 'page:StaffAttendancePage') { unawaited(loadRegister('pointage')); }
     else if (id == 'page:TeachingPage') { unawaited(loadRegister('teaching')); }
+    else if (id == 'page:AnonymousCodesPage') { unawaited(loadRegister('codes')); }
     else { unawaited(execute(Operation.openModule, {'module': id})); }
   }
 
@@ -461,7 +462,31 @@ class _WorkspaceState extends State<Workspace> {
     ]);
   }
 
+  Widget codesRegister(SchoolRegister r) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: busy ? null : () => leaveRegister(r),
+      icon: const Icon(Icons.arrow_back), label: const Text('Retour à l’accueil'))),
+    heading(r.title, r.subtitle),
+    if (r.promotions.isNotEmpty)
+      filter('Promotion', r.promotion, r.promotions, (v) => loadRegister(r.kind, current: r, promotion: v)),
+    const SizedBox(height: 12),
+    action('Attribution, import et export des codes', Icons.more_horiz, Operation.registerNative, args: {'token': r.token}),
+    const SizedBox(height: 12),
+    if (r.rows.isEmpty) const Text('Aucun élément dans la sélection.'),
+    for (final row in r.rows) Card.outlined(margin: const EdgeInsets.only(bottom: 8), child: Padding(
+      padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text(row.name, style: Theme.of(context).textTheme.titleSmall),
+        for (final value in row.details) Text('${value.label} : ${value.value}'),
+        if (row.code.isNotEmpty) SelectableText(row.code, style: Theme.of(context).textTheme.titleLarge)
+        else const Text('Code non attribué'),
+        Text(row.status),
+        Align(alignment: Alignment.centerRight, child: TextButton.icon(
+          onPressed: busy ? null : () => execute(Operation.registerNative, {'token': r.token, 'row': row.id}),
+          icon: const Icon(Icons.more_horiz), label: const Text('Actions'))),
+      ]))),
+  ]);
+
   Widget schoolRegister(SchoolRegister r) {
+    if (r.kind == 'codes') return codesRegister(r);
     if (r.kind != 'attendance' && r.kind != 'discipline') return personnelRegister(r);
     final attendance = r.kind == 'attendance';
     final locked = busy || r.dirty;

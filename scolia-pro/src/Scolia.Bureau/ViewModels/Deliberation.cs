@@ -67,6 +67,20 @@ public sealed class AnonymousCodesPage : PageViewModel
         Selected = null;
     }
 
+    internal async Task LoadForFlutterAsync(string? promotionId)
+    {
+        if (!ready)
+        {
+            Promotions = await PromotionChoicesAsync(withAll: true);
+            ready = true;
+            Raise(nameof(Promotions));
+        }
+        promotion = string.IsNullOrEmpty(promotionId) ? Promotions.FirstOrDefault()
+            : Promotions.FirstOrDefault(p => p.Value == promotionId) ?? throw new ArgumentException("Promotion invalide.");
+        Raise(nameof(Promotion));
+        await LoadAsync();
+    }
+
     private async Task AssignAsync()
     {
         var scope = Promotion is { Value.Length: > 0 } p ? $"la promotion {p.Label}" : "toutes les promotions de l'année";

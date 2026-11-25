@@ -22,6 +22,13 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     private StaffPage? staffDraft;
     private StaffAttendancePage? pointageDraft;
     private TeachingPage? teachingDraft;
+    private AnonymousCodesPage? codesDraft;
+
+    private SchoolRegister DescribeCodes(AnonymousCodesPage p) => new("codes", p.Title, p.Subtitle, p.Promotion?.Value ?? "", "", "",
+        false, false, false, false, registerToken,
+        p.Promotions.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(), [],
+        p.Items.Select(x => new RegisterRow(x.EnrollmentId.ToString(), x.FullName, x.HasCode ? x.Code : "", x.Origin, "", [
+            new("Promotion", x.Promotion)])).ToArray());
 
     private SchoolRegister DescribeStaff(StaffPage p) => new("staff", p.Title, p.Subtitle, "", p.Period, "",
         p.ShowPayroll, false, false, false, registerToken, [],
@@ -53,7 +60,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     private bool registerDirty;
     private void ClearRegister()
     {
-        attendanceDraft = null; disciplineDraft = null; staffDraft = null; pointageDraft = null; teachingDraft = null; registerOwner = null; registerToken = ""; registerDirty = false;
+        attendanceDraft = null; disciplineDraft = null; staffDraft = null; pointageDraft = null; teachingDraft = null; codesDraft = null; registerOwner = null; registerToken = ""; registerDirty = false;
     }
     private SchoolRegister DescribeAttendance(AttendancePage page) => new("attendance", page.Title, page.Subtitle,
         page.Promotion?.Value ?? "", WireDate(page.Day), "", page.ShowSummary,
@@ -397,8 +404,8 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     ClearRegister();
                     var kind = Required(arguments, "kind", 20);
                     var moduleId = kind switch { "staff" => "page:StaffPage", "pointage" => "page:StaffAttendancePage",
-                        "teaching" => "page:TeachingPage", _ => throw new ArgumentException("Module invalide.") };
-                    if (AllowedPage(moduleId) is null || shell.Session is not { } personnelOwner)
+                        "teaching" => "page:TeachingPage", "codes" => "page:AnonymousCodesPage", _ => throw new ArgumentException("Module invalide.") };
+                    if (AllowedPage(moduleId) is null || (kind == "codes" && shell.TeacherOnly) || shell.Session is not { } personnelOwner)
                         throw new UnauthorizedAccessException("Module non autorisé.");
                     var summary = arguments.GetValueOrDefault("summary") == "true";
                     if (kind == "staff")
@@ -413,17 +420,23 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                         await p.LoadForFlutterAsync(summary);
                         pointageDraft = p;
                     }
+                    else if (kind == "codes")
+                    {
+                        var p = new AnonymousCodesPage(shell);
+                        await p.LoadForFlutterAsync(arguments.GetValueOrDefault("promotion"));
+                        codesDraft = p;
+                    }
                     else
                     {
                         var p = new TeachingPage(shell);
                         await p.LoadForFlutterAsync(arguments.GetValueOrDefault("promotion"), summary);
                         teachingDraft = p;
                     }
-                    if (AllowedPage(moduleId) is null || !ReferenceEquals(personnelOwner, shell.Session))
+                    if (AllowedPage(moduleId) is null || (kind == "codes" && shell.TeacherOnly) || !ReferenceEquals(personnelOwner, shell.Session))
                     { ClearRegister(); throw new UnauthorizedAccessException("Session modifiée."); }
                     registerOwner = personnelOwner; registerToken = Guid.NewGuid().ToString();
                     return Read() with { Stage = "schoolRegister", Register = staffDraft is { } personnel ? DescribeStaff(personnel)
-                        : pointageDraft is { } pointage ? DescribePointage(pointage) : DescribeTeaching(teachingDraft!) };
+                        : pointageDraft is { } pointage ? DescribePointage(pointage) : codesDraft is { } codes ? DescribeCodes(codes) : DescribeTeaching(teachingDraft!) };
                 }
                 case "listAttendance":
                 case "listDiscipline":
@@ -464,7 +477,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     if (!ReferenceEquals(registerOwner, shell.Session) || !MayShowWorkspace ||
                         Required(arguments, "token", 36) != registerToken)
                         throw new UnauthorizedAccessException("Registre non confirmé.");
-                    if (operation == "registerNative" && (staffDraft is not null || pointageDraft is not null || teachingDraft is not null))
+                    if (operation == "registerNative" && (staffDraft is not null || pointageDraft is not null || teachingDraft is not null || codesDraft is not null))
                     {
                         var row = arguments.GetValueOrDefault("row", "");
                         Guid? selectedId = string.IsNullOrEmpty(row) ? null : Guid.Parse(row);
@@ -482,6 +495,13 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                                 throw new UnauthorizedAccessException("Membre non proposé.");
                             await shell.Open(() => pointage);
                             pointage.Selected = pointage.Members.FirstOrDefault(x => x.Id == selectedId);
+                        }
+                        else if (codesDraft is { } codes && !shell.TeacherOnly && AllowedPage("page:AnonymousCodesPage") is not null)
+                        {
+                            if (selectedId is { } sid && !codes.Items.Any(x => x.EnrollmentId == sid))
+                                throw new UnauthorizedAccessException("Dossier non proposé.");
+                            await shell.Open(() => codes);
+                            codes.Selected = codes.Items.FirstOrDefault(x => x.EnrollmentId == selectedId);
                         }
                         else if (teachingDraft is { } teaching && AllowedPage("page:TeachingPage") is not null)
                         {
