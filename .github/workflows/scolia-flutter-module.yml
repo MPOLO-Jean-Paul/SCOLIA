@@ -42,8 +42,10 @@ jobs:
         run: dotnet workload install android
       - name: Compiler la liaison .NET Android (bibliothèque de validation)
         run: dotnet build ../Scolia.Flutter.AndroidBinding/Scolia.Flutter.AndroidBinding.csproj -c Release
-      - name: Compiler le client Android expérimental sans publication
-        run: dotnet build ../Scolia.Mobile/Scolia.Mobile.csproj -c Release -p:ScoliaFlutterExperiment=true
+      - name: Générer un APK expérimental isolé (signature de validation)
+        run: dotnet publish ../Scolia.Mobile/Scolia.Mobile.csproj -c Release -p:ScoliaFlutterExperiment=true -p:AndroidKeyStore=false -p:AndroidPackageFormat=apk
+      - name: Contrôler le contenu et l'identité de l'APK
+        run: python3 android_bridge/verify_apk.py
       - uses: actions/upload-artifact@v4
         with:
           name: scolia-flutter-module-aar-validation
@@ -51,4 +53,5 @@ jobs:
             scolia-pro/src/Scolia.Flutter/build/host/outputs/repo/
             scolia-pro/src/Scolia.Flutter/build/bridge/scolia-flutter-bridge.jar
             scolia-pro/src/Scolia.Flutter.AndroidBinding/bin/Release/net10.0-android/
+            scolia-pro/src/Scolia.Flutter/build/validation/
           if-no-files-found: error

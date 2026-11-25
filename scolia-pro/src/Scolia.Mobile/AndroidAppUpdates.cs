@@ -59,8 +59,12 @@ public static class AndroidAppUpdates
     private static ISharedPreferences Preferences(Context context) =>
         context.GetSharedPreferences(Store, FileCreationMode.Private)!;
 
+    private static bool IsOfficialPackage(Context context) =>
+        string.Equals(context.PackageName, "com.jpservices.scolia", StringComparison.Ordinal);
+
     public static void Schedule(Context context)
     {
+        if (!IsOfficialPackage(context)) return;
         var constraints = new Constraints.Builder()
             .SetRequiredNetworkType(NetworkType.Connected)!.Build();
         var periodic = new PeriodicWorkRequest.Builder(
@@ -72,6 +76,7 @@ public static class AndroidAppUpdates
 
     public static void OnResume(Activity activity)
     {
+        if (!IsOfficialPackage(activity)) return;
         foregroundActivity = new WeakReference<Activity>(activity);
         // Le broadcast Android est utile, mais n'est pas la seule source de vérité :
         // en cas de signal perdu, un contrôle léger du statut déclenche la fenêtre Installer.
@@ -210,6 +215,7 @@ public static class AndroidAppUpdates
     /// <summary>Commande visible « Vérifier les mises à jour » : interroge GitHub sans cache.</summary>
     public static async Task CheckNowAsync(Activity activity)
     {
+        if (!IsOfficialPackage(activity)) return;
         try
         {
             // Toujours consulter GitHub, MEME si une ancienne version attend

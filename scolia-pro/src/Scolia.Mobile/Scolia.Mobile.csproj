@@ -27,7 +27,7 @@
   </PropertyGroup>
 
   <!-- APK installable directement, signé avec la clé fournie à la compilation (variables SCOLIA_KEYSTORE_*). -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' And '$(ScoliaFlutterExperiment)' != 'true'">
     <AndroidKeyStore Condition="'$(SCOLIA_KEYSTORE)' != ''">true</AndroidKeyStore>
     <AndroidSigningKeyStore Condition="'$(SCOLIA_KEYSTORE)' != ''">$(SCOLIA_KEYSTORE)</AndroidSigningKeyStore>
     <AndroidSigningStorePass Condition="'$(SCOLIA_KEYSTORE)' != ''">env:SCOLIA_KEYSTORE_PASS</AndroidSigningStorePass>
@@ -52,6 +52,11 @@
   <!-- Liaison expérimentale, désactivée pour toutes les versions officielles. -->
   <PropertyGroup Condition="'$(ScoliaFlutterExperiment)' == 'true'">
     <DefineConstants>$(DefineConstants);SCOLIA_FLUTTER_EXPERIMENT</DefineConstants>
+    <ApplicationId>com.jpservices.scolia.fluttervalidation</ApplicationId>
+    <ApplicationTitle>SCOLIA Flutter Validation</ApplicationTitle>
+    <AndroidManifest>../Scolia.Flutter/build/bridge/AndroidManifest.validation.xml</AndroidManifest>
+    <!-- Jamais la clé de distribution dans cette configuration. -->
+    <AndroidKeyStore>false</AndroidKeyStore>
   </PropertyGroup>
   <ItemGroup Condition="'$(ScoliaFlutterExperiment)' == 'true'">
     <ProjectReference Include="../Scolia.Flutter.AndroidBinding/Scolia.Flutter.AndroidBinding.csproj" />

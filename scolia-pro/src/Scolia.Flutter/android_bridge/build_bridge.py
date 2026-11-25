@@ -66,3 +66,13 @@ for artifact, abi in (("arm64_v8a_release", "arm64-v8a"),
         native = out / "native" / abi
         native.mkdir(parents=True, exist_ok=True)
         (native / "libflutter.so").write_bytes(archive.read(matches[0]))
+
+# Generate a separate manifest from the current client, without modifying it.
+manifest = root.parent / "Scolia.Mobile/AndroidManifest.xml"
+xml = manifest.read_text(encoding="utf-8")
+if xml.count('com.jpservices.scolia.fichiers') != 1:
+    raise RuntimeError("Unexpected FileProvider authority")
+xml = xml.replace('com.jpservices.scolia.fichiers',
+                  'com.jpservices.scolia.fluttervalidation.fichiers')
+xml = xml.replace('android:label="SCOLIA"', 'android:label="SCOLIA Flutter Validation"')
+(out / "AndroidManifest.validation.xml").write_text(xml, encoding="utf-8")
