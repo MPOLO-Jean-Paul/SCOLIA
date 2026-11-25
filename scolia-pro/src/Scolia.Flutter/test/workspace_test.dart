@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
-import 'package:flutter/material.dart' show TextField, OutlinedButton;
+import 'package:flutter/material.dart' show TextField, TextFormField, OutlinedButton;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scolia_flutter/core/host.dart';
 import 'package:scolia_flutter/main.dart';
@@ -152,6 +152,25 @@ void main() {
     expect(find.descendant(of: find.byType(ModuleTile), matching: find.text('Encaisser')), findsOneWidget);
     expect(find.text('Dossiers scolaires'), findsNothing);
     expect(find.text('Configuration'), findsNothing);
+  });
+  testWidgets('temporary password is cleared after a rejected account submission', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.enrollment,
+      enrollment: EnrollmentForm(token: 'user-token', title: 'Nouvel utilisateur', subtitle: '',
+        purpose: 'user-create', fields: [
+          EnrollmentField(key: 'motDePasse', label: 'Code provisoire', kind: 'Secret', required: true),
+        ])));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), 'Test1234!');
+    await tester.tap(find.text('Créer le compte'));
+    await tester.pumpAndSettle();
+    expect(host.last, Operation.settingsSubmit);
+    expect(host.lastArgs['motDePasse'], 'Test1234!');
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, isEmpty);
+    await tester.tap(find.text('Créer le compte'));
+    await tester.pumpAndSettle();
+    expect(host.lastArgs['motDePasse'], isEmpty);
+    expect(tester.takeException(), isNull);
   });
   test('reject incompatible protocol', () {
     expect(() => SchoolSession.fromMap({'protocol': 2, 'stage': 'home'}), throwsFormatException);

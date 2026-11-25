@@ -84,6 +84,7 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
   final confirm = TextEditingController();
   final form = GlobalKey<FormState>();
   final enrollmentValues = <String, String>{};
+  int secretFormRevision = 0;
   final journalSearch = TextEditingController();
   final marksCode = TextEditingController();
   final marksScore = TextEditingController();
@@ -165,7 +166,16 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
     if (!mounted || (busy && session != null)) return;
     final before = session;
     openingPoll?.cancel();
-    setState(() { busy = true; error = null; });
+    setState(() {
+      busy = true; error = null;
+      if (operation == Operation.settingsSubmit || operation == Operation.submitEnrollment) {
+        for (final field in before?.enrollment?.fields ?? const <EnrollmentField>[]) {
+          if (field.kind == 'Secret') enrollmentValues[field.key] = '';
+        }
+        // Les arguments sont une copie éphémère ; le champ visible doit être vidé avant l'attente.
+        secretFormRevision++;
+      }
+    });
     try {
       final pending = statusRequest;
       if (pending != null) await pending;
@@ -197,7 +207,7 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
         enrollmentValues.clear();
         if (result.enrollment != null) {
           for (final field in result.enrollment!.fields) {
-            if (field.kind != 'Header') enrollmentValues[field.key] = field.value;
+            if (field.kind != 'Header') enrollmentValues[field.key] = field.kind == 'Secret' ? '' : field.value;
           }
         }
         if (result.stage == Stage.students && result.students != null) {
@@ -1092,7 +1102,7 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
       },
       child: InputDecorator(decoration: decoration.copyWith(suffixIcon: const Icon(Icons.calendar_today)),
         child: Text(current.isEmpty ? 'Choisir une date' : current)));
-    return TextFormField(key: f.kind == 'Secret' ? ObjectKey(f) : ValueKey('${e.token}:${f.key}:${f.value}'), initialValue: current,
+    return TextFormField(key: f.kind == 'Secret' ? ValueKey('secret:${e.token}:${f.key}:$secretFormRevision') : ValueKey('${e.token}:${f.key}:${f.value}'), initialValue: current,
       enabled: !busy, obscureText: f.kind == 'Secret',
       autocorrect: f.kind != 'Secret', enableSuggestions: f.kind != 'Secret',
       maxLength: f.kind == 'Phone' ? 10 : 500,

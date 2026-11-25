@@ -28,6 +28,7 @@ def main():
                         help="Confirm dedicated test device, isolated from real school servers")
     parser.add_argument("--offline-resume", action="store_true",
                         help="Disable external network on a disposable emulator before resume")
+    parser.add_argument('--capture-dir', type=Path)
     args = parser.parse_args()
 
     if not args.apk.is_file():
@@ -64,12 +65,15 @@ def main():
         raise RuntimeError("Cannot resolve isolated launcher")
 
     def launch():
-        result = adb("shell", "am", "start", "-W", "-n", component)
-        if "Status: ok" not in result:
-            raise RuntimeError("Android did not start the validation activity")
+        # am start -W can time out on a slow first managed-runtime startup.
+        # Only the subsequent foreground + two Flutter markers prove success.
+        result = adb("shell", "am", "start", "-W", "-n", component, timeout=120, check=False)
+        print("Activity launch response:", result, flush=True)
+        if re.search(r"(?im)^\s*(Error|Exception|SecurityException):", result):
+            raise RuntimeError("Android rejected the validation activity")
 
     def observe(previous=None):
-        deadline = time.monotonic() + 90
+        deadline = time.monotonic() + 180
         while time.monotonic() < deadline:
             pid = adb("shell", "pidof", PACKAGE, check=False).split()
             if len(pid) == 1 and re.fullmatch(r"\d+", pid[0]):
@@ -88,25 +92,56 @@ def main():
             time.sleep(2)
         raise RuntimeError("No verified foreground Flutter frame and native snapshot within timeout")
 
-    launch()
-    first = observe()
-    print("PASS: cold startup, Flutter first frame, real .NET bridge response")
-    adb("shell", "input", "keyevent", "KEYCODE_HOME")
-    time.sleep(3)
-    if args.offline_resume:
-        adb("shell", "svc", "wifi", "disable")
-        adb("shell", "svc", "data", "disable")
+    def capture(name):
+        if args.capture_dir is None:
+            return
+        args.capture_dir.mkdir(parents=True, exist_ok=True)
+        result = subprocess.run(["adb", "-s", args.serial, "exec-out", "screencap", "-p"],
+                                capture_output=True, check=True, timeout=20)
+        if not result.stdout.startswith(b"\x89PNG\r\n\x1a\n"):
+            raise RuntimeError("Invalid Android screenshot")
+        (args.capture_dir / (name + ".png")).write_bytes(result.stdout)
+
     try:
         launch()
-        observe(first)
-        print("PASS: background/foreground recovery with new frame and native response")
+        first = observe()
+        capture("android-01-demarrage")
+        print("PASS: cold startup, Flutter first frame, real .NET bridge response")
+        adb("shell", "input", "keyevent", "KEYCODE_HOME")
+        time.sleep(3)
         if args.offline_resume:
-            print("PASS: Flutter and native channel resume with Wi-Fi/mobile data disabled")
-    finally:
-        if args.offline_resume:
-            adb("shell", "svc", "wifi", "enable")
-            adb("shell", "svc", "data", "enable")
-    print("No school data, no real login, no uninstall or data clearing performed.")
+            adb("shell", "svc", "wifi", "disable")
+            adb("shell", "svc", "data", "disable")
+        try:
+            launch()
+            observe(first)
+            capture('android-02-reprise')
+            print("PASS: background/foreground recovery with new frame and native response")
+            if args.offline_resume:
+                print("PASS: Flutter and native channel resume with Wi-Fi/mobile data disabled")
+        finally:
+            if args.offline_resume:
+                adb("shell", "svc", "wifi", "enable")
+                adb("shell", "svc", "data", "enable")
+        print("No school data, no real login, no uninstall or data clearing performed.")
+    except Exception:
+        if args.offline_resume and adb("shell", "getprop", "ro.kernel.qemu") == "1":
+            # CI emulator only, no actual school accounts or personal logs.
+            diagnostic = adb("logcat", "-d", "-b", "crash", "-t", "300", check=False)
+            diagnostic += "\n" + adb("logcat", "-d", "-t", "500", "-s",
+                                     "SCOLIA-Flutter:V", "SCOLIA:W", "AndroidRuntime:E",
+                                     "monodroid:E", "DOTNET:E", "flutter:V",
+                                     "FlutterLoader:V", "FlutterJNI:V", "FlutterEngine:V",
+                                     "linker:E", check=False)
+            print("Isolated emulator diagnostics:\n" + diagnostic, flush=True)
+            if args.capture_dir is not None:
+                args.capture_dir.mkdir(parents=True, exist_ok=True)
+                (args.capture_dir / "android-diagnostic.txt").write_text(diagnostic, encoding="utf-8")
+                try:
+                    capture("android-echec")
+                except Exception:
+                    pass
+        raise
 
 
 if __name__ == "__main__":
