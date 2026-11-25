@@ -214,6 +214,15 @@ public sealed class StudentsPage : PageViewModel
     public AsyncCommand NextPage { get; }
     public AsyncCommand ClearFilters { get; }
 
+    // Chargement isolé, uniquement après contrôle des droits par l’adaptateur.
+    internal int FlutterPage => page;
+    internal Task LoadForFlutterAsync(string query, int requestedPage)
+    {
+        search = query;
+        page = requestedPage;
+        return LoadAsync();
+    }
+
     public override async Task LoadAsync()
     {
         if (!ready)

@@ -11,7 +11,11 @@ namespace Scolia.Bureau.Infrastructure;
 public sealed class FlutterCommandAdapter(ShellViewModel shell)
 {
     public sealed record Snapshot(int Protocol, string Stage, string School, string User,
-        string Year, IReadOnlyList<string> Modules, string Notice);
+        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null);
+
+    public sealed record StudentEntry(string Name, string Code, string Promotion, string Status);
+    public sealed record StudentListing(string Title, string Subtitle, int Page, string Search,
+        bool HasPrevious, bool HasNext, IReadOnlyList<StudentEntry> Rows);
 
     private bool executing;
 
@@ -101,6 +105,21 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     return Read(native: true);
                 case "createSchool" when shell.ShowSetup && !shell.IsLoggedIn:
                     return Read(native: true);
+                case "listStudents":
+                    if (AllowedPage("students") is null || shell.Session is not { } owner)
+                        throw new UnauthorizedAccessException("Registre non autorisé.");
+                    var query = arguments.TryGetValue("q", out var term) ? term.Trim() : "";
+                    if (query.Length > 100 || !int.TryParse(Required(arguments, "page", 6),
+                        System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var page) ||
+                        page is < 1 or > 100000)
+                        throw new ArgumentException("Recherche ou page invalide.");
+                    var students = new StudentsPage(shell);
+                    await students.LoadForFlutterAsync(query, page);
+                    if (AllowedPage("students") is null || !ReferenceEquals(owner, shell.Session))
+                        throw new UnauthorizedAccessException("Session modifiée.");
+                    return Read() with { Stage = "students", Students = new StudentListing(students.Title,
+                        students.Subtitle, students.FlutterPage, query, students.CanPrevious, students.CanNext,
+                        students.Items.Select(r => new StudentEntry(r.Name, r.Matricule, r.Promotion, r.Status)).ToArray()) };
                 case "openModule":
                     var item = AllowedPage(Required(arguments, "module", 40)) ??
                         throw new UnauthorizedAccessException("Fonctionnalité non autorisée.");

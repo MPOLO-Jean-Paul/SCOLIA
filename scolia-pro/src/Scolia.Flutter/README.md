@@ -15,3 +15,6 @@ Documentation : https://docs.flutter.dev/add-to-app/android/project-setup
 
 ## Adaptateur C#
 `Scolia.Bureau/Infrastructure/FlutterCommandAdapter.cs` utilise la session Shell, les commandes de connexion, de récupération et les droits existants. Les écrans métier non migrés, la configuration et le verrouillage nécessitent un retour explicite à la vue native par le futur hôte Android. Le statut `nativeScreen` ne signifie pas que cet hôte est déjà en service. Les opérations de connexion sont sérialisées et les secrets de formulaire effacés. Aucune interface réseau ou accès SQL supplémentaire. Le SDK 3.44.0 est fixé pour rendre la première validation reproductible ; la migration vers les nouveaux packages Material sera traitée séparément.
+
+## Premier écran métier Flutter
+Registre en lecture seule, recherche explicite et pagination. L'adaptateur appelle StudentsPage (cache local inclus) et revérifie la session après chargement ; seules les données nécessaires à la liste sont transférées. Fiche détaillée, écritures et filtres avancés restent à migrer. Les données de test ne sont utilisées que par les tests de widgets.

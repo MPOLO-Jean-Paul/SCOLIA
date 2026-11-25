@@ -52,6 +52,7 @@ class _WorkspaceState extends State<Workspace> {
   bool busy = true, hidePassword = true, recovery = false;
   String? error;
   Timer? openingPoll;
+  final studentSearch = TextEditingController();
   final username = TextEditingController();
   final password = TextEditingController();
   final recoveryCode = TextEditingController();
@@ -64,7 +65,7 @@ class _WorkspaceState extends State<Workspace> {
   @override
   void dispose() {
     openingPoll?.cancel();
-    username.dispose(); password.dispose(); recoveryCode.dispose(); confirm.dispose();
+    studentSearch.dispose(); username.dispose(); password.dispose(); recoveryCode.dispose(); confirm.dispose();
     super.dispose();
   }
 
@@ -77,6 +78,7 @@ class _WorkspaceState extends State<Workspace> {
       if (!mounted) return;
       setState(() {
         session = result;
+        if (result.stage != Stage.students) studentSearch.clear();
         if (result.stage != Stage.login || (operation == Operation.recover && result.notice.isEmpty)) {
           recovery = false;
         }
@@ -84,6 +86,8 @@ class _WorkspaceState extends State<Workspace> {
     } on MissingPluginException {
       if (mounted) setState(() => error =
         'Le moteur SCOLIA natif n’est pas raccordé à ce module.');
+    } on TimeoutException {
+      if (mounted) setState(() { session = null; error = 'Le moteur SCOLIA ne répond pas. Réessayez.'; });
     } on PlatformException {
       if (mounted) setState(() => error =
         'Opération refusée ou indisponible. Vérifiez votre configuration.');
@@ -209,11 +213,51 @@ class _WorkspaceState extends State<Workspace> {
         for (final entry in allowed)
           SizedBox(width: (width - 12 * (columns - 1)) / columns,
             child: ModuleTile(label: entry.value.$1, icon: entry.value.$2,
-              onTap: busy ? null : () => execute(Operation.openModule, {'module': entry.key}))),
+              onTap: busy ? null : () => entry.key == 'students'
+                ? listStudents(1, '') : execute(Operation.openModule, {'module': entry.key}))),
       ]);
     }),
     const SizedBox(height: 24),
     action('Se déconnecter', Icons.logout, Operation.signOut),
+  ]);
+
+  Future<void> listStudents(int page, String query) =>
+    execute(Operation.listStudents, {'page': page.toString(), 'q': query.trim()});
+
+  Widget students(StudentListing listing) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    Align(alignment: Alignment.centerLeft, child: TextButton.icon(
+      onPressed: busy ? null : () => execute(Operation.snapshot),
+      icon: const Icon(Icons.arrow_back), label: const Text('Retour à l’accueil'))),
+    heading(listing.title, listing.subtitle),
+    TextField(controller: studentSearch, enabled: !busy, maxLength: 100,
+      textInputAction: TextInputAction.search,
+      onSubmitted: (q) => listStudents(1, q),
+      decoration: InputDecoration(labelText: 'Rechercher un dossier',
+        prefixIcon: const Icon(Icons.search), counterText: '',
+        suffixIcon: IconButton(tooltip: 'Rechercher', onPressed: busy ? null :
+          () => listStudents(1, studentSearch.text), icon: const Icon(Icons.arrow_forward)))),
+    const SizedBox(height: 16),
+    if (listing.rows.isEmpty)
+      const Padding(padding: EdgeInsets.all(16), child: Text('Aucun dossier pour cette recherche.')),
+    for (final row in listing.rows)
+      Card.outlined(margin: const EdgeInsets.only(bottom: 8), child: Padding(
+        padding: const EdgeInsets.all(12), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const CircleAvatar(child: Icon(Icons.person_outline)),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(row.name, style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 5),
+            Text([row.code, row.promotion, row.status].where((v) => v.isNotEmpty).join(' · ')),
+          ])),
+        ]))),
+    const SizedBox(height: 12),
+    Row(children: [
+      IconButton(tooltip: 'Page précédente', onPressed: busy || !listing.hasPrevious ? null :
+        () => listStudents(listing.page - 1, listing.search), icon: const Icon(Icons.chevron_left)),
+      Expanded(child: Text('Page ${listing.page}', textAlign: TextAlign.center)),
+      IconButton(tooltip: 'Page suivante', onPressed: busy || !listing.hasNext ? null :
+        () => listStudents(listing.page + 1, listing.search), icon: const Icon(Icons.chevron_right)),
+    ]),
   ]);
 
   @override
@@ -223,7 +267,8 @@ class _WorkspaceState extends State<Workspace> {
     return Scaffold(
       appBar: AppBar(title: const Text('SCOLIA Pro'),
         actions: [IconButton(tooltip: 'Actualiser', onPressed: busy ? null :
-          () => execute(Operation.snapshot), icon: const Icon(Icons.refresh))]),
+          () => current?.students != null ? listStudents(current!.students!.page, current.students!.search)
+            : execute(Operation.snapshot), icon: const Icon(Icons.refresh))]),
       body: SafeArea(child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
         child: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 860),
@@ -241,6 +286,7 @@ class _WorkspaceState extends State<Workspace> {
                 Stage.pairing => pairing(), Stage.login => login(current), Stage.home => home(current),
                 Stage.loading => heading('Ouverture de SCOLIA', 'Préparation sécurisée de votre espace de travail…'),
                 Stage.nativeScreen => heading('Interface SCOLIA', 'Cette opération utilise encore l’interface native existante.'),
+                Stage.students => students(current.students!),
               },
             ],
           ]),

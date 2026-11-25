@@ -26,7 +26,7 @@ void main() {
     expect(() => SchoolSession.fromMap({'protocol': 2, 'stage': 'home'}), throwsFormatException);
   });
   testWidgets('missing bridge fails closed', (tester) async {
-    await tester.pumpWidget(const ScoliaApp(host: NativeHost()));
+    await tester.pumpWidget(ScoliaApp(host: MissingHost()));
     await tester.pumpAndSettle();
     expect(find.text('Le moteur SCOLIA natif n’est pas raccordé à ce module.'), findsOneWidget);
     expect(find.text('Se connecter'), findsNothing);
@@ -44,7 +44,25 @@ void main() {
     expect(find.text('Encaisser'), findsNothing);
     await tester.tap(find.text('Dossiers scolaires'));
     await tester.pumpAndSettle();
-    expect(host.last, Operation.openModule);
+    expect(host.last, Operation.listStudents);
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('student list displays supplied records on narrow screen', (tester) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final host = TestHost(const SchoolSession(stage: Stage.students,
+      students: StudentListing(title: 'Apprenants', subtitle: '1 dossier', page: 1,
+        search: '', hasPrevious: false, hasNext: true,
+        rows: [StudentEntry(name: 'Dossier de test', code: 'T001', promotion: 'INF1', status: 'Actif')])));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    expect(find.text('Dossier de test'), findsOneWidget);
+    await tester.ensureVisible(find.byTooltip('Page suivante'));
+    await tester.tap(find.byTooltip('Page suivante'));
+    await tester.pumpAndSettle();
+    expect(host.last, Operation.listStudents);
     expect(tester.takeException(), isNull);
   });
   testWidgets('native screen never exposes workspace actions', (tester) async {
