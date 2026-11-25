@@ -9,8 +9,10 @@
   <ItemGroup>
     <AndroidLibrary Include="../Scolia.Flutter/build/bridge/scolia-flutter-bridge.jar" Bind="true" />
     <AndroidLibrary Include="../Scolia.Flutter/build/bridge/embedding-package.aar" Bind="false" />
+    <AndroidLibrary Include="../Scolia.Flutter/build/bridge/relinker.aar" Bind="false" />
   </ItemGroup>
   <Target Name="RequireFlutterBridge" BeforeTargets="Build;ResolveReferences">
+    <Error Condition="!Exists('../Scolia.Flutter/build/bridge/relinker.aar')" Text="Flutter ReLinker missing. Run android_bridge/build_bridge.py." />
     <Error Condition="!Exists('../Scolia.Flutter/build/bridge/scolia-flutter-bridge.jar')" Text="Build the Flutter AAR and run android_bridge/build_bridge.py first." />
   </Target>
 </Project>
