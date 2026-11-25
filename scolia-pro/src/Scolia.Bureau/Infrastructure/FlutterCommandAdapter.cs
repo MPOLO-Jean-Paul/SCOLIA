@@ -168,7 +168,8 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     var format = Required(arguments, "format", 4);
                     if (format is not ("pdf" or "xlsx" or "docx")) throw new ArgumentException("Format inconnu.");
                     // Utiliser la même instance qui a fourni les lignes affichées, avec l'empreinte du serveur.
-                    await selected.ExportForFlutterAsync(format);
+                    try { await selected.ExportForFlutterAsync(format); }
+                    catch { monthlySelection = null; monthlyOwner = null; throw; }
                     if (AllowedPage("monthly") is null || !ReferenceEquals(monthlyOwner, shell.Session))
                         throw new UnauthorizedAccessException("Session modifiée.");
                     var exportPage = int.TryParse(arguments.GetValueOrDefault("page"), out var ep) ? ep : 1;

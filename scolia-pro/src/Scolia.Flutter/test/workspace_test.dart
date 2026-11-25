@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
+import 'package:flutter/material.dart' show TextField, OutlinedButton;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scolia_flutter/core/host.dart';
 import 'package:scolia_flutter/main.dart';
@@ -97,6 +98,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(host.last, Operation.exportMonthly);
     expect(host.lastArgs, {'format': 'xlsx', 'page': '1'});
+    await tester.ensureVisible(find.byType(TextField));
+    await tester.enterText(find.byType(TextField), 'nouveau filtre');
+    await tester.pumpAndSettle();
+    final excel = tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Excel'));
+    expect(excel.onPressed, isNull);
+    expect(find.text('Appliquez la recherche avant d’exporter.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
   testWidgets('native screen never exposes workspace actions', (tester) async {

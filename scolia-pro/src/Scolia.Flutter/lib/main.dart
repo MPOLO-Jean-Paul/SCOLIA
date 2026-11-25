@@ -81,6 +81,7 @@ class _WorkspaceState extends State<Workspace> {
         session = result;
         if (result.stage != Stage.students) studentSearch.clear();
         if (result.stage != Stage.monthly) paymentSearch.clear();
+        else if (result.monthly != null) paymentSearch.text = result.monthly!.search;
         if (result.stage != Stage.login || (operation == Operation.recover && result.notice.isEmpty)) {
           recovery = false;
         }
@@ -291,6 +292,7 @@ class _WorkspaceState extends State<Workspace> {
     filter('État du paiement', m.status, m.states, (v) => listMonthly(current: m, status: v)),
     const SizedBox(height: 10),
     TextField(controller: paymentSearch, enabled: !busy, maxLength: 100,
+      onChanged: (_) => setState(() {}),
       textInputAction: TextInputAction.search, onSubmitted: (q) => listMonthly(current: m, query: q.trim()),
       decoration: InputDecoration(labelText: 'Rechercher un nom', counterText: '',
         prefixIcon: const Icon(Icons.search), suffixIcon: IconButton(tooltip: 'Appliquer la recherche',
@@ -300,9 +302,11 @@ class _WorkspaceState extends State<Workspace> {
     Text(m.exportScope, style: Theme.of(context).textTheme.bodySmall),
     const SizedBox(height: 8),
     Text('Exporter toute la sélection filtrée (${m.count})'),
+    if (paymentSearch.text.trim() != m.search)
+      const Text('Appliquez la recherche avant d’exporter.'),
     Wrap(spacing: 8, runSpacing: 8, children: [
       for (final (format, label) in [('xlsx', 'Excel'), ('pdf', 'PDF'), ('docx', 'Word')])
-        OutlinedButton(onPressed: busy ? null : () => execute(Operation.exportMonthly,
+        OutlinedButton(onPressed: busy || paymentSearch.text.trim() != m.search ? null : () => execute(Operation.exportMonthly,
           {'format': format, 'page': m.page.toString()}), child: Text(label)),
     ]),
     const SizedBox(height: 12),
