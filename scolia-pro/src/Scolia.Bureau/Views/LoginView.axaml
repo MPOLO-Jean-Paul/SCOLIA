@@ -335,6 +335,7 @@
     <ThemeVariantScope x:Name="IosLoginThemeScope" IsVisible="False">
     <ScrollViewer x:Name="IosLoginScroll" Classes="authpage" IsVisible="False"
                   HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <Grid Classes="authworkspace" ColumnDefinitions="Auto,Auto">
       <StackPanel x:Name="IosLoginLayout" Classes="authbody">
         <Border x:Name="IosLoginCard" Classes="authcard">
           <StackPanel Spacing="14">
@@ -435,18 +436,22 @@
 
                 <StackPanel Spacing="6" IsVisible="{Binding ShowAccountEntry}">
                   <TextBlock Classes="authlabel" Text="Identifiant" />
-                  <TextBox x:Name="IosUserNameBox" Classes="authfield" Text="{Binding UserName}"
-                           PlaceholderText="Votre identifiant" MaxLength="40" IsEnabled="{Binding CanType}"
-                           AutomationProperties.Name="Identifiant de connexion" />
+                  <Grid>
+                    <TextBox x:Name="IosUserNameBox" Classes="authfield withicon" Text="{Binding UserName}"
+                             PlaceholderText="Votre identifiant" MaxLength="40" IsEnabled="{Binding CanType}"
+                             AutomationProperties.Name="Identifiant de connexion" />
+                    <mi:MaterialIcon Classes="authinputicon" Kind="AccountOutline" />
+                  </Grid>
                 </StackPanel>
                 <StackPanel Spacing="6" IsVisible="{Binding ShowSignInPassword}">
                   <TextBlock Classes="authlabel" Text="Mot de passe" />
                   <Grid>
-                    <TextBox x:Name="IosPasswordBox" Classes="authfield witheye" Text="{Binding Password}"
+                    <TextBox x:Name="IosPasswordBox" Classes="authfield witheye withicon" Text="{Binding Password}"
                              PasswordChar="•" RevealPassword="{Binding ShowPassword}" MaxLength="128"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                              PlaceholderText="Votre mot de passe" IsEnabled="{Binding CanType}"
                              AutomationProperties.Name="Mot de passe de connexion" />
+                    <mi:MaterialIcon Classes="authinputicon" Kind="LockOutline" />
                     <Button Classes="autheye" Command="{Binding ToggleEye}" IsEnabled="{Binding CanType}"
                             ToolTip.Tip="Afficher ou masquer le mot de passe" AutomationProperties.Name="Afficher ou masquer le mot de passe">
                       <mi:MaterialIcon Kind="{Binding EyeIcon}" />
@@ -489,11 +494,12 @@
                 <StackPanel Spacing="6">
                   <TextBlock Classes="authlabel" Text="Nouveau mot de passe" />
                   <Grid>
-                    <TextBox x:Name="IosNewPasswordBox" Classes="authfield witheye" Text="{Binding NewPassword}"
+                    <TextBox x:Name="IosNewPasswordBox" Classes="authfield witheye withicon" Text="{Binding NewPassword}"
                              PasswordChar="•" RevealPassword="{Binding ShowNewPassword}" MaxLength="128"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                              PlaceholderText="Au moins 8 caractères" IsEnabled="{Binding NotBusy}"
                              AutomationProperties.Name="Nouveau mot de passe" />
+                    <mi:MaterialIcon Classes="authinputicon" Kind="LockOutline" />
                     <Button Classes="autheye" Command="{Binding ToggleNewPasswordEye}"
                             IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer le nouveau mot de passe">
                       <mi:MaterialIcon Kind="{Binding NewPasswordEyeIcon}" />
@@ -504,11 +510,12 @@
                 <StackPanel Spacing="6">
                   <TextBlock Classes="authlabel" Text="Confirmation" />
                   <Grid>
-                    <TextBox x:Name="IosConfirmPasswordBox" Classes="authfield witheye" Text="{Binding ConfirmPassword}"
+                    <TextBox x:Name="IosConfirmPasswordBox" Classes="authfield witheye withicon" Text="{Binding ConfirmPassword}"
                              PasswordChar="•" RevealPassword="{Binding ShowConfirmPassword}" MaxLength="128"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                              PlaceholderText="Répéter le mot de passe" IsEnabled="{Binding NotBusy}"
                              AutomationProperties.Name="Confirmation du nouveau mot de passe" />
+                    <mi:MaterialIcon Classes="authinputicon" Kind="LockOutline" />
                     <Button Classes="autheye" Command="{Binding ToggleConfirmPasswordEye}"
                             IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer la confirmation">
                       <mi:MaterialIcon Kind="{Binding ConfirmPasswordEyeIcon}" />
@@ -519,11 +526,12 @@
                 <StackPanel Spacing="6">
                   <TextBlock Classes="authlabel" Text="Code de secours du serveur" />
                   <Grid>
-                    <TextBox x:Name="IosRecoveryCodeBox" Classes="authfield witheye" Text="{Binding RecoveryCode}"
+                    <TextBox x:Name="IosRecoveryCodeBox" Classes="authfield witheye withicon" Text="{Binding RecoveryCode}"
                              PasswordChar="•" RevealPassword="{Binding ShowRecoveryCode}" MaxLength="100"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                              PlaceholderText="Code confidentiel" IsEnabled="{Binding NotBusy}"
                              AutomationProperties.Name="Code de récupération confidentiel" />
+                    <mi:MaterialIcon Classes="authinputicon" Kind="ShieldCheckOutline" />
                     <Button Classes="autheye" Command="{Binding ToggleRecoveryCodeEye}"
                             IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer le code de secours">
                       <mi:MaterialIcon Kind="{Binding RecoveryCodeEyeIcon}" />
@@ -630,6 +638,20 @@
         <TextBlock x:Name="IosLoginFooter" Text="{Binding Footer}" Classes="authhint" HorizontalAlignment="Stretch" TextAlignment="Center"
                    FontSize="11" IsVisible="False" />
       </StackPanel>
+      <Border Grid.Column="1" Classes="authrail">
+        <StackPanel Spacing="16" VerticalAlignment="Center">
+          <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="4" Height="92">
+            <mi:MaterialIcon Kind="ShieldCheckOutline" Width="42" Height="42" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Classes="authrailtitle" Text="Votre espace sécurisé" />
+          <TextBlock Classes="authhint" Text="Connectez-vous avec votre compte personnel pour accéder à votre établissement." />
+          <Border Height="1" Background="{DynamicResource LineBrush}" />
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9"><mi:MaterialIcon Kind="AccountOutline" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Classes="authhint" Text="Compte personnel" /></Grid>
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9"><mi:MaterialIcon Kind="LockOutline" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Classes="authhint" Text="Récupération protégée" /></Grid>
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9"><mi:MaterialIcon Kind="LanConnect" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Classes="authhint" Text="Liaison à votre serveur" /></Grid>
+        </StackPanel>
+      </Border>
+      </Grid>
     </ScrollViewer>
     </ThemeVariantScope>
   </Grid>

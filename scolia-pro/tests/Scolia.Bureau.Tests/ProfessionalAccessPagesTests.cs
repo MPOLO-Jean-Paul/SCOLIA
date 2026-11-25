@@ -54,7 +54,7 @@ public sealed class ProfessionalAccessPagesTests
     }
 
     [Fact]
-    public void Le_style_commun_suit_le_theme_et_place_une_carte_sur_grand_ecran()
+    public void Le_style_commun_suit_le_theme_et_reste_sans_carte_sur_grand_ecran()
     {
         var nodes = Elements("Themes/Auth.axaml");
         var field = StyleOf(nodes, "TextBox.authfield");
@@ -79,7 +79,10 @@ public sealed class ProfessionalAccessPagesTests
         // Téléphone : aucun cadre ; grand écran : carte blanche à filet fin.
         Assert.Equal("Transparent", Setting(StyleOf(nodes, "Border.authcard"), "Background"));
         var wide = StyleOf(nodes, "ScrollViewer.wide Border.authcard");
-        Assert.Equal("{DynamicResource SurfaceBrush}", Setting(wide, "Background"));
+        Assert.Equal("Transparent", Setting(wide, "Background"));
+        Assert.Equal("0", Setting(wide, "BorderThickness"));
+        Assert.Equal("False", Setting(StyleOf(nodes, "Border.authrail"), "IsVisible"));
+        Assert.Equal("True", Setting(StyleOf(nodes, "ScrollViewer.wide Border.authrail"), "IsVisible"));
         Assert.Equal("{DynamicResource LineBrush}", Setting(wide, "BorderBrush"));
         Assert.Equal("440", Setting(StyleOf(nodes, "StackPanel.authbody"), "MaxWidth"));
 

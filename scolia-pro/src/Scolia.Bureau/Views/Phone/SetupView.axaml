@@ -13,17 +13,17 @@
     </Style>
     <Style Selector="TextBox.w11">
       <Setter Property="MinHeight" Value="52" />
-      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="CornerRadius" Value="6" />
       <Setter Property="CaretBrush" Value="{DynamicResource AccentBrush}" />
       <Setter Property="SelectionBrush" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
-    <Style Selector="ComboBox"><Setter Property="MinHeight" Value="46" /><Setter Property="CornerRadius" Value="12" /></Style>
+    <Style Selector="ComboBox"><Setter Property="MinHeight" Value="46" /><Setter Property="CornerRadius" Value="6" /></Style>
     <Style Selector="CheckBox TextBlock"><Setter Property="TextWrapping" Value="Wrap" /></Style>
     <Style Selector="Button.iossetupprimary">
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="CornerRadius" Value="6" />
       <Setter Property="MinHeight" Value="52" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -41,7 +41,7 @@
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="CornerRadius" Value="6" />
       <Setter Property="MinHeight" Value="52" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -66,7 +66,7 @@
     <Style Selector="Grid.tiny Border.iossetupfooter"><Setter Property="Padding" Value="8,7" /></Style>
     <Style Selector="Grid.tiny Grid.iossetupheader"><Setter Property="Margin" Value="10,11,10,9" /></Style>
     <Style Selector="Grid.micro Grid.iossetupheader"><Setter Property="Margin" Value="9,7,9,6" /></Style>
-    <Style Selector="Grid.tiny Border.iossetupbrand"><Setter Property="Width" Value="38" /><Setter Property="Height" Value="38" /><Setter Property="CornerRadius" Value="12" /></Style>
+    <Style Selector="Grid.tiny Border.iossetupbrand"><Setter Property="Width" Value="38" /><Setter Property="Height" Value="38" /><Setter Property="CornerRadius" Value="6" /></Style>
     <Style Selector="Grid.tiny Image.iossetupmark"><Setter Property="Width" Value="26" /><Setter Property="Height" Value="26" /></Style>
     <Style Selector="Grid.tiny TextBlock.iossetuptitle"><Setter Property="FontSize" Value="17" /></Style>
     <Style Selector="Grid.micro StackPanel.iossetupbody"><Setter Property="Margin" Value="9,8,9,8" /><Setter Property="Spacing" Value="9" /></Style>
@@ -80,9 +80,9 @@
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Padding" Value="14,12" />
-      <Setter Property="MinHeight" Value="76" />
+      <Setter Property="MinHeight" Value="88" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     </Style>
@@ -95,7 +95,7 @@
   <!-- Configuration sur le téléphone : il devient le serveur de l'établissement. Une colonne, au doigt, mêmes étapes que l'ordinateur. -->
   <Grid x:Name="SetupRoot" RowDefinitions="Auto,*,Auto" Background="{DynamicResource SurfaceBrush}">
     
-    <Border Background="{DynamicResource GroupBrush}" BorderThickness="0">
+    <Border Background="{DynamicResource GroupBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1">
       <Grid Classes="iossetupheader" ColumnDefinitions="Auto,*" Margin="16,18,16,14">
         <Border Classes="iossetupbrand" CornerRadius="12" Background="Transparent" BorderThickness="0"
                 VerticalAlignment="Center">
@@ -297,7 +297,7 @@
     </ScrollViewer>
 
     <!-- Boutons toujours visibles, en bas, au pouce : deux colonnes égales, aucun chevauchement sur petit écran. -->
-    <Border Grid.Row="2" Classes="iossetupfooter" Background="{DynamicResource GroupBrush}" BorderThickness="0" Padding="16,10">
+    <Border Grid.Row="2" Classes="iossetupfooter" Background="{DynamicResource GroupBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="16,10">
       <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
         <Button Classes="iossetupsecondary" Command="{Binding Back}" IsVisible="{Binding CanGoBack}" IsEnabled="{Binding !Busy}">
           <DockPanel>

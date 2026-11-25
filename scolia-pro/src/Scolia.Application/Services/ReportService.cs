@@ -448,7 +448,9 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
     }
 
     /// <summary>Le suivi d'un mois en document : liste filtrée et totaux.</summary>
-    public async Task<TableDocument> MonthlyTableAsync(MonthlyQuery q, CancellationToken ct = default, string? expectedSelection = null)
+    public Task<TableDocument> MonthlyTableAsync(MonthlyQuery q, CancellationToken ct = default) => MonthlyTableAsync(q, null, ct);
+
+    public async Task<TableDocument> MonthlyTableAsync(MonthlyQuery q, string? expectedSelection, CancellationToken ct = default)
     {
         var school = await YearContext.SchoolAsync(db, ct);
         var d = await MonthlyAsync(q, ct);

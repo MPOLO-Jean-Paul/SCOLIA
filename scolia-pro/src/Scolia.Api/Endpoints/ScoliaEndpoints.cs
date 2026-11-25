@@ -583,7 +583,7 @@ public static class ScoliaEndpoints
                 return Results.BadRequest(new { title = "Sélection d’export invalide." });
             if (!string.IsNullOrEmpty(etat) && etat is not ("nonpaye" or "retard" or "paye" or "couvert"))
                 return Results.BadRequest(new { title = "État de paiement invalide." });
-            var table = await r.MonthlyTableAsync(new MonthlyQuery(periodeId, promotionId, etat, q), ct, expectedSelection);
+            var table = await r.MonthlyTableAsync(new MonthlyQuery(periodeId, promotionId, etat, q), expectedSelection, ct);
             if (table.Rows.Count != expectedCount)
                 return Results.Conflict(new { title = "La liste a changé. Actualisez le suivi mensuel avant d’exporter." });
             if (format == "docx")

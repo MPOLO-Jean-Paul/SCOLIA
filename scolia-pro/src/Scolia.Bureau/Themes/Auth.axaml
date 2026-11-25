@@ -24,7 +24,7 @@
   <Style Selector="ScrollViewer.micro StackPanel.authbody"><Setter Property="Margin" Value="12,8,12,8" /><Setter Property="Spacing" Value="8" /></Style>
   <Style Selector="ScrollViewer.wide StackPanel.authbody"><Setter Property="Margin" Value="24,32" /></Style>
 
-  <!-- Carte : invisible sur téléphone, carte blanche sur grand écran -->
+  <!-- Formulaire sans carte flottante, même sur le grand écran. -->
   <Style Selector="Border.authcard">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
@@ -32,18 +32,50 @@
     <Setter Property="Padding" Value="0" />
   </Style>
   <Style Selector="ScrollViewer.wide Border.authcard">
-    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
-    <Setter Property="Padding" Value="36,32,36,28" />
-    <Setter Property="BoxShadow" Value="0 8 30 0 #12000000" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="8,12" />
   </Style>
+
+  <!-- Composition commune Démarrer : volet informatif sur grand écran, formulaire sans cadre. -->
+  <Style Selector="Grid.authworkspace">
+    <Setter Property="MaxWidth" Value="1000" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.authrail">
+    <Setter Property="IsVisible" Value="False" />
+    <Setter Property="Width" Value="240" />
+    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1,0,0,0" />
+    <Setter Property="Padding" Value="24,24" />
+    <Setter Property="Margin" Value="16,24,20,24" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="ScrollViewer.wide Border.authrail"><Setter Property="IsVisible" Value="True" /></Style>
+  <Style Selector="Grid.wide Border.authrail"><Setter Property="IsVisible" Value="True" /></Style>
+  <Style Selector="Border.authrail TextBlock"><Setter Property="TextWrapping" Value="Wrap" /></Style>
+  <Style Selector="TextBlock.authrailtitle">
+    <Setter Property="FontSize" Value="17" /><Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+  </Style>
+  <Style Selector="mi|MaterialIcon.authinputicon">
+    <Setter Property="Width" Value="18" /><Setter Property="Height" Value="18" />
+    <Setter Property="Margin" Value="13,0,0,0" />
+    <Setter Property="HorizontalAlignment" Value="Left" /><Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /><Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="TextBox.authfield.withicon"><Setter Property="Padding" Value="40,0,14,0" /></Style>
+  <Style Selector="TextBox.authfield.withicon.witheye"><Setter Property="Padding" Value="40,0,48,0" /></Style>
+  <Style Selector="ScrollViewer.wide TextBlock.authtitle"><Setter Property="FontSize" Value="28" /></Style>
 
   <!-- En-tête : petit logo, nom de l'application, établissement -->
   <Style Selector="Border.authlogo">
     <Setter Property="Width" Value="52" /><Setter Property="Height" Value="52" />
-    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="CornerRadius" Value="6" />
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
