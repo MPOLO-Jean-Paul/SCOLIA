@@ -47,7 +47,16 @@ public static class PosteAdmin
     }
 
     /// <summary>Port d'écoute du serveur (5080 par défaut).</summary>
-    public static int Port() => ReadServerSetting("Port") is int port && port > 0 ? port : DefaultPort;
+    public static int Port()
+    {
+#if SCOLIA_FLUTTER_EXPERIMENT
+        // Paquet de validation distinct : ne jamais réutiliser le serveur localhost
+        // de l'application officielle installée sur le même appareil.
+        return 15080;
+#else
+        return ReadServerSetting("Port") is int port && port > 0 ? port : DefaultPort;
+#endif
+    }
 
     /// <summary>Adresses IPv4 du poste sur le réseau local, à donner aux autres postes.</summary>
     public static IReadOnlyList<string> Addresses()

@@ -39,3 +39,6 @@ Le journal CI a confirmé une erreur HTTP 404 sur l'URL .aar de l'embedding. Le 
 
 ### Cycle de vie du canal
 L'adaptateur de commandes est conservé par Shell entre les recréations de la vue Flutter, afin de conserver le verrou des opérations en cours. Les réponses d'une vue Android fermée ne peuvent plus être envoyées à une nouvelle vue ni déclencher son retour natif. Le paquet expérimental conserve les mêmes options .NET sans AOT ni trimming que le client officiel afin de ne pas éliminer les composants du serveur embarqué. Ces corrections sont à valider dans la CI Android et sur appareil.
+
+### Coexistence du paquet de validation
+Le serveur local du paquet expérimental utilise le port 15080, tandis que le port de production reste inchangé. Un premier lancement sans configuration prépare un contexte local de validation au lieu de joindre automatiquement le premier établissement découvert. Les tests doivent néanmoins être réalisés sur un téléphone ou un réseau de test, sans compte ni données scolaires réels. La connexion volontaire à un serveur distant reste possible et n'est pas une isolation réseau totale. Les deux modifications sont réservées à la compilation SCOLIA_FLUTTER_EXPERIMENT.
