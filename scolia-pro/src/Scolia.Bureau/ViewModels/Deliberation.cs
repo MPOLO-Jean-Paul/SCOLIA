@@ -834,6 +834,43 @@ public sealed class DeliberationPage : PageViewModel
         Selected = null;
     }
 
+    internal async Task LoadForFlutterAsync(string? promotionId, string? periodId, bool cases)
+    {
+        if (!ready)
+        {
+            Promotions = await PromotionChoicesAsync(withAll: false);
+            ready = true;
+            Raise(nameof(Promotions));
+        }
+        promotion = string.IsNullOrEmpty(promotionId) ? (Promotions.Count > 0 ? Promotions[0] : null)
+            : Promotions.FirstOrDefault(p => p.Value == promotionId) ?? throw new ArgumentException("Promotion invalide.");
+        period = string.IsNullOrEmpty(periodId) ? Periods[0]
+            : Periods.FirstOrDefault(p => p.Value == periodId) ?? throw new ArgumentException("Période invalide.");
+        onlyCases = cases;
+        Raise(nameof(Promotion)); Raise(nameof(Period)); Raise(nameof(OnlyCases));
+        await LoadAsync();
+    }
+
+    internal Task ExportForFlutterAsync(string document, Guid? enrollmentId)
+    {
+        if (PromotionId is null) throw new InvalidOperationException("Sélectionnez une promotion.");
+        if (document == "bulletin")
+        {
+            Selected = Items.FirstOrDefault(r => r.EnrollmentId == enrollmentId)
+                ?? throw new UnauthorizedAccessException("Dossier non proposé.");
+            return BulletinAsync();
+        }
+        return document switch
+        {
+            "pv" => DownloadAsync("proces-verbal.pdf", null, "proces-verbal.pdf"),
+            "grille-pdf" => DownloadAsync("grille", "pdf", "grille-des-cotes.pdf"),
+            "grille-xlsx" => DownloadAsync("grille", "xlsx", "grille-des-cotes.xlsx"),
+            "palmares" => DownloadAsync("palmares", "pdf", "palmares.pdf"),
+            "bulletins" => DownloadAsync("bulletins.pdf", null, "bulletins-deliberation.pdf"),
+            _ => throw new ArgumentException("Document invalide."),
+        };
+    }
+
     private static string Tone(string decision) => decision switch
     {
         _ when decision.StartsWith("Admis", StringComparison.Ordinal) => "ToneGreen",
@@ -1040,6 +1077,26 @@ public sealed class EncodingProgressPage : PageViewModel
         Items.Clear();
         foreach (var r in onlyLate ? all.Where(r => !r.Status.StartsWith("Remis", StringComparison.Ordinal) && r.Status != "Figé") : all) Items.Add(r);
     }
+
+    internal async Task LoadForFlutterAsync(string? promotionId, string? periodId, bool late)
+    {
+        if (!ready)
+        {
+            Promotions = await PromotionChoicesAsync(withAll: true);
+            ready = true;
+            Raise(nameof(Promotions));
+        }
+        promotion = string.IsNullOrEmpty(promotionId) ? (Promotions.Count > 0 ? Promotions[0] : null)
+            : Promotions.FirstOrDefault(p => p.Value == promotionId) ?? throw new ArgumentException("Promotion invalide.");
+        period = string.IsNullOrEmpty(periodId) ? Periods[0]
+            : Periods.FirstOrDefault(p => p.Value == periodId) ?? throw new ArgumentException("Période invalide.");
+        onlyLate = late;
+        Raise(nameof(Promotion)); Raise(nameof(Period)); Raise(nameof(OnlyLate));
+        await LoadAsync();
+    }
+
+    internal Task ExportForFlutterAsync(string format) => format is "pdf" or "xlsx"
+        ? ExportAsync(format) : throw new ArgumentException("Format invalide.");
 
     private Task ExportAsync(string format) =>
         Shell.Download("api/deliberation/suivi/export" + ScoliaClient.Query(("promotionId", PromotionId),

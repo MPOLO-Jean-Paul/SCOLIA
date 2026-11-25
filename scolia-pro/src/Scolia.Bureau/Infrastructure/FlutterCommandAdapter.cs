@@ -18,12 +18,30 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         IReadOnlyList<ProfileValue> Details);
     public sealed record SchoolRegister(string Kind, string Title, string Subtitle, string Promotion, string Date,
         string Measure, bool Summary, bool CanWrite, bool Pending, bool Dirty, string Token,
-        IReadOnlyList<FilterChoice> Promotions, IReadOnlyList<FilterChoice> Options, IReadOnlyList<RegisterRow> Rows, MarkInput? Marks = null);
+        IReadOnlyList<FilterChoice> Promotions, IReadOnlyList<FilterChoice> Options, IReadOnlyList<RegisterRow> Rows, MarkInput? Marks = null, string Overview = "", string Context = "");
     private StaffPage? staffDraft;
     private StaffAttendancePage? pointageDraft;
     private TeachingPage? teachingDraft;
     private AnonymousCodesPage? codesDraft;
     private MarksPage? marksDraft;
+    private DeliberationPage? deliberationDraft;
+    private EncodingProgressPage? progressDraft;
+    private SchoolRegister DescribeDeliberation(DeliberationPage p) => new("deliberation", p.Title, p.Subtitle,
+        p.Promotion?.Value ?? "", p.Period?.Value ?? "", "", p.OnlyCases, false, false, false, registerToken,
+        p.Promotions.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+        p.Periods.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+        p.Items.Select(x => new RegisterRow(x.EnrollmentId.ToString(), x.FullName, x.Code == "—" ? "" : x.Code,
+            x.Decision, x.Reason, [new("Rang", x.Rank), new("Points", x.Points), new("Pourcentage", x.Percent),
+            new("Mention", x.Mention), new("Cotes manquantes", x.Missing), new("Échecs", x.Failed),
+            new("Décision calculée", x.Computed)])).ToArray(), Overview: p.Summary, Context: p.JuryLine);
+    private SchoolRegister DescribeProgress(EncodingProgressPage p) => new("progress", p.Title, p.Subtitle,
+        p.Promotion?.Value ?? "", p.Period?.Value ?? "", "", p.OnlyLate, false, false, false, registerToken,
+        p.Promotions.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+        p.Periods.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+        p.Items.Select(x => new RegisterRow("", x.Course, x.Number, x.Status, "", [
+            new("Promotion", x.Promotion), new("Période", x.Kind), new("Enseignant", x.Teacher),
+            new("Avancement", x.Progress), new("Échecs", x.Failed), new("Moyenne", x.Average)])).ToArray(), Overview: p.Summary);
+
     public sealed record MarkInput(string Rules, string Announcement, string Sheet, string Hint, string Maximum,
         string Code, string ValidatedCode, string Score, string Feedback, IReadOnlyList<FilterChoice> Kinds);
     private SchoolRegister DescribeMarks(MarksPage p) => new("marks", p.Title, p.Subtitle,
@@ -73,7 +91,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     private bool registerDirty;
     private void ClearRegister()
     {
-        attendanceDraft = null; disciplineDraft = null; staffDraft = null; pointageDraft = null; teachingDraft = null; codesDraft = null; marksDraft = null; registerOwner = null; registerToken = ""; registerDirty = false;
+        attendanceDraft = null; disciplineDraft = null; staffDraft = null; pointageDraft = null; teachingDraft = null; codesDraft = null; marksDraft = null; deliberationDraft = null; progressDraft = null; registerOwner = null; registerToken = ""; registerDirty = false;
     }
     private SchoolRegister DescribeAttendance(AttendancePage page) => new("attendance", page.Title, page.Subtitle,
         page.Promotion?.Value ?? "", WireDate(page.Day), "", page.ShowSummary,
@@ -279,7 +297,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         if (operation is not ("listStudents" or "openStudent" or "cashierStudent" or "studentActions")) { visibleStudents.Clear(); studentOwner = null; }
         if (operation is not ("listReceipts" or "exportReceipts" or "openReceipt"))
         { journalSelection = null; journalOwner = null; }
-        if (operation is not ("listAttendance" or "editAttendance" or "saveAttendance" or "attendanceAll" or "attendanceDay" or "listDiscipline" or "disciplineExport" or "registerNative" or "listPersonnel" or "marksCheck" or "marksSave"))
+        if (operation is not ("listAttendance" or "editAttendance" or "saveAttendance" or "attendanceAll" or "attendanceDay" or "listDiscipline" or "disciplineExport" or "registerNative" or "listPersonnel" or "marksCheck" or "marksSave" or "academicExport"))
             ClearRegister();
         if (operation != "submitEnrollment") ClearEnrollment();
         if (operation == "snapshot") return ActiveCashier is { } active ? DescribeCashier(active) : Read();
@@ -425,13 +443,37 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     { ClearRegister(); throw new UnauthorizedAccessException("Session modifiée."); }
                     return Read() with { Stage = "schoolRegister", Register = DescribeMarks(marks) };
                 }
+                case "academicExport":
+                {
+                    if (shell.TeacherOnly || !MayShowWorkspace || !ReferenceEquals(registerOwner, shell.Session) ||
+                        Required(arguments, "token", 36) != registerToken)
+                        throw new UnauthorizedAccessException("Sélection non confirmée.");
+                    var document = Required(arguments, "document", 20);
+                    if (deliberationDraft is { } board && AllowedPage("page:DeliberationPage") is not null)
+                    {
+                        Guid? rowId = document == "bulletin" ? Guid.Parse(Required(arguments, "row", 36)) : null;
+                        await board.ExportForFlutterAsync(document, rowId);
+                        if (!ReferenceEquals(registerOwner, shell.Session) || AllowedPage("page:DeliberationPage") is null)
+                        { ClearRegister(); throw new UnauthorizedAccessException("Session modifiée."); }
+                        return Read() with { Stage = "schoolRegister", Register = DescribeDeliberation(board) };
+                    }
+                    if (progressDraft is { } progress && AllowedPage("page:EncodingProgressPage") is not null)
+                    {
+                        await progress.ExportForFlutterAsync(document);
+                        if (!ReferenceEquals(registerOwner, shell.Session) || AllowedPage("page:EncodingProgressPage") is null)
+                        { ClearRegister(); throw new UnauthorizedAccessException("Session modifiée."); }
+                        return Read() with { Stage = "schoolRegister", Register = DescribeProgress(progress) };
+                    }
+                    throw new UnauthorizedAccessException("Export non autorisé.");
+                }
                 case "listPersonnel":
                 {
                     ClearRegister();
                     var kind = Required(arguments, "kind", 20);
                     var moduleId = kind switch { "staff" => "page:StaffPage", "pointage" => "page:StaffAttendancePage",
-                        "teaching" => "page:TeachingPage", "codes" => "page:AnonymousCodesPage", "marks" => "grades", _ => throw new ArgumentException("Module invalide.") };
-                    if (AllowedPage(moduleId) is null || (kind == "codes" && shell.TeacherOnly) || shell.Session is not { } personnelOwner)
+                        "teaching" => "page:TeachingPage", "codes" => "page:AnonymousCodesPage", "marks" => "grades", "deliberation" => "page:DeliberationPage",
+                        "progress" => "page:EncodingProgressPage", _ => throw new ArgumentException("Module invalide.") };
+                    if (AllowedPage(moduleId) is null || ((kind is "codes" or "deliberation" or "progress") && shell.TeacherOnly) || shell.Session is not { } personnelOwner)
                         throw new UnauthorizedAccessException("Module non autorisé.");
                     if (kind == "marks")
                     {
@@ -450,7 +492,19 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                         return Read() with { Stage = "schoolRegister", Register = DescribeMarks(p) };
                     }
                     var summary = arguments.GetValueOrDefault("summary") == "true";
-                    if (kind == "staff")
+                    if (kind == "deliberation")
+                    {
+                        var p = new DeliberationPage(shell);
+                        await p.LoadForFlutterAsync(arguments.GetValueOrDefault("promotion"), arguments.GetValueOrDefault("date"), summary);
+                        deliberationDraft = p;
+                    }
+                    else if (kind == "progress")
+                    {
+                        var p = new EncodingProgressPage(shell);
+                        await p.LoadForFlutterAsync(arguments.GetValueOrDefault("promotion"), arguments.GetValueOrDefault("date"), summary);
+                        progressDraft = p;
+                    }
+                    else if (kind == "staff")
                     {
                         var p = new StaffPage(shell);
                         await p.LoadForFlutterAsync(summary, arguments.GetValueOrDefault("date"));
@@ -474,10 +528,11 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                         await p.LoadForFlutterAsync(arguments.GetValueOrDefault("promotion"), summary);
                         teachingDraft = p;
                     }
-                    if (AllowedPage(moduleId) is null || (kind == "codes" && shell.TeacherOnly) || !ReferenceEquals(personnelOwner, shell.Session))
+                    if (AllowedPage(moduleId) is null || ((kind is "codes" or "deliberation" or "progress") && shell.TeacherOnly) || !ReferenceEquals(personnelOwner, shell.Session))
                     { ClearRegister(); throw new UnauthorizedAccessException("Session modifiée."); }
                     registerOwner = personnelOwner; registerToken = Guid.NewGuid().ToString();
-                    return Read() with { Stage = "schoolRegister", Register = staffDraft is { } personnel ? DescribeStaff(personnel)
+                    return Read() with { Stage = "schoolRegister", Register = deliberationDraft is { } board ? DescribeDeliberation(board)
+                        : progressDraft is { } progress ? DescribeProgress(progress) : staffDraft is { } personnel ? DescribeStaff(personnel)
                         : pointageDraft is { } pointage ? DescribePointage(pointage) : codesDraft is { } codes ? DescribeCodes(codes) : DescribeTeaching(teachingDraft!) };
                 }
                 case "listAttendance":
@@ -523,6 +578,18 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     {
                         await shell.Open(() => new MarksPage(shell,
                             marks.Promotion is { } promotion ? Guid.Parse(promotion.Value) : null, marks.Course?.Id));
+                        ClearRegister();
+                        return Read(native: true);
+                    }
+                    if (operation == "registerNative" && deliberationDraft is { } board && !shell.TeacherOnly &&
+                        AllowedPage("page:DeliberationPage") is not null)
+                    {
+                        var row = arguments.GetValueOrDefault("row", "");
+                        Guid? selectedId = string.IsNullOrEmpty(row) ? null : Guid.Parse(row);
+                        if (selectedId is { } sid && !board.Items.Any(x => x.EnrollmentId == sid))
+                            throw new UnauthorizedAccessException("Dossier non proposé.");
+                        await shell.Open(() => board);
+                        board.Selected = board.Items.FirstOrDefault(x => x.EnrollmentId == selectedId);
                         ClearRegister();
                         return Read(native: true);
                     }

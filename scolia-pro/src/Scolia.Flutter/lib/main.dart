@@ -278,6 +278,8 @@ class _WorkspaceState extends State<Workspace> {
     else if (id == 'page:TeachingPage') { unawaited(loadRegister('teaching')); }
     else if (id == 'page:AnonymousCodesPage') { unawaited(loadRegister('codes')); }
     else if (id == 'grades') { unawaited(loadRegister('marks')); }
+    else if (id == 'page:DeliberationPage') { unawaited(loadRegister('deliberation')); }
+    else if (id == 'page:EncodingProgressPage') { unawaited(loadRegister('progress')); }
     else { unawaited(execute(Operation.openModule, {'module': id})); }
   }
 
@@ -552,7 +554,64 @@ class _WorkspaceState extends State<Workspace> {
     ]);
   }
 
+  Widget academicRegister(SchoolRegister r) {
+    final board = r.kind == 'deliberation';
+    Widget document(String label, String id) => action(label, Icons.download_outlined,
+      Operation.academicExport, args: {'token': r.token, 'document': id});
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: busy ? null : () => leaveRegister(r),
+        icon: const Icon(Icons.arrow_back), label: const Text('Retour à l’accueil'))),
+      heading(r.title, r.subtitle),
+      if (r.promotions.isNotEmpty)
+        filter('Promotion', r.promotion, r.promotions, (v) => loadRegister(r.kind, current: r, promotion: v)),
+      const SizedBox(height: 12),
+      if (r.options.isNotEmpty) filter('Période', r.date, r.options,
+        (v) => loadRegister(r.kind, current: r, date: v)),
+      const SizedBox(height: 8),
+      SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(board ? 'Cas à examiner uniquement' : 'Feuilles à relancer uniquement'),
+        value: r.summary, onChanged: busy ? null : (v) => loadRegister(r.kind, current: r, summary: v)),
+      if (r.overview.isNotEmpty || r.context.isNotEmpty) Card.outlined(margin: EdgeInsets.zero,
+        child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text('Synthèse', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (r.overview.isNotEmpty) Text(r.overview),
+          if (r.context.isNotEmpty) ...[const SizedBox(height: 8), Text(r.context)],
+        ]))),
+      const SizedBox(height: 12),
+      if (!board || r.promotion.isNotEmpty) Wrap(spacing: 8, runSpacing: 8, children: [
+        if (board) ...[
+          document('Procès-verbal', 'pv'), document('Grille PDF', 'grille-pdf'),
+          document('Grille Excel', 'grille-xlsx'), document('Palmarès', 'palmares'),
+          document('Tous les bulletins', 'bulletins'),
+        ] else ...[document('Suivi PDF', 'pdf'), document('Suivi Excel', 'xlsx')],
+      ]),
+      if (board) ...[
+        const SizedBox(height: 12),
+        action('Jury et autres actions', Icons.more_horiz, Operation.registerNative, args: {'token': r.token}),
+      ],
+      const SizedBox(height: 12),
+      if (r.rows.isEmpty) const Text('Aucun élément dans la sélection.'),
+      for (final row in r.rows) Card.outlined(margin: const EdgeInsets.only(bottom: 8), child: Padding(
+        padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text(row.name, style: Theme.of(context).textTheme.titleSmall),
+          if (row.code.isNotEmpty) Text(row.code),
+          if (row.status.isNotEmpty) Text(row.status, style: TextStyle(fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.primary)),
+          for (final detail in row.details)
+            if (detail.value.isNotEmpty) Text('${detail.label} : ${detail.value}'),
+          if (row.note.isNotEmpty) Text(row.note),
+          if (board && row.id.isNotEmpty) Wrap(alignment: WrapAlignment.end, spacing: 8, children: [
+            TextButton(onPressed: busy ? null : () => execute(Operation.academicExport,
+              {'token': r.token, 'document': 'bulletin', 'row': row.id}), child: const Text('Bulletin PDF')),
+            TextButton(onPressed: busy ? null : () => execute(Operation.registerNative,
+              {'token': r.token, 'row': row.id}), child: const Text('Fiche et jury')),
+          ]),
+        ]))),
+    ]);
+  }
+
   Widget schoolRegister(SchoolRegister r) {
+    if (r.kind == 'deliberation' || r.kind == 'progress') return academicRegister(r);
     if (r.kind == 'marks') return marksRegister(r);
     if (r.kind == 'codes') return codesRegister(r);
     if (r.kind != 'attendance' && r.kind != 'discipline') return personnelRegister(r);

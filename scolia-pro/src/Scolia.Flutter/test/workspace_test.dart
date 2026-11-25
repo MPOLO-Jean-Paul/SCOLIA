@@ -54,6 +54,21 @@ void main() {
     expect(host.lastArgs, {'token': 'test-token', 'code': 'ABC123', 'score': '12'});
     expect(tester.takeException(), isNull);
   });
+  testWidgets('deliberation exports only the confirmed student bulletin', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.schoolRegister,
+      register: SchoolRegister(kind: 'deliberation', title: 'Délibération', token: 'test-token',
+        promotion: 'inf1', overview: 'Résultats provisoires',
+        rows: [RegisterRow('student1', 'Dossier test', 'ABC123', 'Admis', '', [])])));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    expect(find.text('Résultats provisoires'), findsOneWidget);
+    await tester.ensureVisible(find.text('Bulletin PDF'));
+    await tester.tap(find.text('Bulletin PDF'));
+    await tester.pumpAndSettle();
+    expect(host.last, Operation.academicExport);
+    expect(host.lastArgs, {'token': 'test-token', 'document': 'bulletin', 'row': 'student1'});
+    expect(tester.takeException(), isNull);
+  });
   test('reject incompatible protocol', () {
     expect(() => SchoolSession.fromMap({'protocol': 2, 'stage': 'home'}), throwsFormatException);
   });
