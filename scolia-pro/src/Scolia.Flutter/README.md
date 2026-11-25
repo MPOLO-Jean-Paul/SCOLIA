@@ -18,3 +18,6 @@ Documentation : https://docs.flutter.dev/add-to-app/android/project-setup
 
 ## Premier écran métier Flutter
 Registre en lecture seule, recherche explicite et pagination. L'adaptateur appelle StudentsPage (cache local inclus) et revérifie la session après chargement ; seules les données nécessaires à la liste sont transférées. Fiche détaillée, écritures et filtres avancés restent à migrer. Les données de test ne sont utilisées que par les tests de widgets.
+
+## Suivi des paiements
+Écran Flutter : période, promotion, état, recherche, pagination de 30 lignes, export Excel/PDF/Word de la sélection entière. Le moteur réutilise la même instance MonthlyPage confirmée pour l'export (empreinte des identifiants déjà contrôlée côté serveur). Pas d'écriture financière nouvelle ; le raccordement Android effectif reste requis.

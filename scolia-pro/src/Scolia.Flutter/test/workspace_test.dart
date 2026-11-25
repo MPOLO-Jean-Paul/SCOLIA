@@ -8,9 +8,11 @@ class TestHost implements ScoliaHost {
   TestHost(this.state);
   SchoolSession state;
   Operation? last;
+  Map<String, String> lastArgs = {};
   @override
   Future<SchoolSession> execute(Operation op, [Map<String, String> args = const {}]) async {
     last = op;
+    lastArgs = args;
     return state;
   }
 }
@@ -78,6 +80,23 @@ void main() {
     await tester.tap(find.byTooltip('Page suivante'));
     await tester.pumpAndSettle();
     expect(host.last, Operation.listStudents);
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('monthly export uses confirmed selection and keeps pagination', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.monthly,
+      monthly: MonthlyListing(title: 'Suivi mensuel', subtitle: 'Octobre · INF1',
+        period: 'oct', promotion: 'inf1', status: 'paye', search: '', page: 1, count: 32,
+        hasPrevious: false, hasNext: true, periods: [FilterChoice('oct', 'Octobre')],
+        promotions: [FilterChoice('inf1', 'INF1')], states: [FilterChoice('paye', 'Payés')],
+        rows: [PaymentEntry(name: 'Dossier test', promotion: 'INF1', expected: '100',
+          paid: '100', remaining: '0', status: 'Payé')], exportScope: 'Export : Octobre · INF1')));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Excel'));
+    await tester.tap(find.text('Excel'));
+    await tester.pumpAndSettle();
+    expect(host.last, Operation.exportMonthly);
+    expect(host.lastArgs, {'format': 'xlsx', 'page': '1'});
     expect(tester.takeException(), isNull);
   });
   testWidgets('native screen never exposes workspace actions', (tester) async {

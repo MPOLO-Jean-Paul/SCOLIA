@@ -11,13 +11,37 @@ namespace Scolia.Bureau.Infrastructure;
 public sealed class FlutterCommandAdapter(ShellViewModel shell)
 {
     public sealed record Snapshot(int Protocol, string Stage, string School, string User,
-        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null);
+        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null);
 
     public sealed record StudentEntry(string Name, string Code, string Promotion, string Status);
     public sealed record StudentListing(string Title, string Subtitle, int Page, string Search,
         bool HasPrevious, bool HasNext, IReadOnlyList<StudentEntry> Rows);
 
+    public sealed record FilterChoice(string Id, string Label);
+    public sealed record PaymentEntry(string Name, string Promotion, string Expected, string Paid, string Remaining, string Status);
+    public sealed record MonthlyListing(string Title, string Subtitle, string Period, string Promotion,
+        string Status, string Search, int Page, int Count, bool HasPrevious, bool HasNext,
+        IReadOnlyList<FilterChoice> Periods, IReadOnlyList<FilterChoice> Promotions,
+        IReadOnlyList<FilterChoice> States, IReadOnlyList<PaymentEntry> Rows, string ExportScope);
+
+    private MonthlyPage? monthlySelection;
+    private object? monthlyOwner;
     private bool executing;
+
+    private MonthlyListing DescribeMonthly(MonthlyPage view, int requestedPage)
+    {
+        const int size = 30;
+        var count = view.Items.Count;
+        var page = Math.Clamp(requestedPage, 1, Math.Max(1, (int)Math.Ceiling(count / (double)size)));
+        return new(view.Title, view.Subtitle, view.Month!.Value, view.Promotion!.Value,
+            view.State?.Value ?? "", view.Search, page, count, page > 1, page * size < count,
+            view.Months.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+            view.Promotions.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+            view.StateChoices.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+            view.Items.Skip((page - 1) * size).Take(size)
+                .Select(x => new PaymentEntry(x.Name, x.Promotion, x.Amount, x.Paid, x.Remaining, x.Status)).ToArray(),
+            view.ExportScope);
+    }
 
     // Identifiants stables indépendants des libellés traduits et de la terminologie scolaire.
     private static readonly IReadOnlyDictionary<string, Type> Pages = new Dictionary<string, Type>(StringComparer.Ordinal)
@@ -70,6 +94,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     {
         Dispatcher.UIThread.VerifyAccess();
         if (executing) throw new InvalidOperationException("Une commande SCOLIA est déjà en cours.");
+        if (operation != "listMonthly" && operation != "exportMonthly") { monthlySelection = null; monthlyOwner = null; }
         if (operation == "snapshot") return Read();
         executing = true;
         try
@@ -120,6 +145,34 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     return Read() with { Stage = "students", Students = new StudentListing(students.Title,
                         students.Subtitle, students.FlutterPage, query, students.CanPrevious, students.CanNext,
                         students.Items.Select(r => new StudentEntry(r.Name, r.Matricule, r.Promotion, r.Status)).ToArray()) };
+                case "listMonthly":
+                    monthlySelection = null;
+                    monthlyOwner = null;
+                    if (AllowedPage("monthly") is null || shell.Session is not { } paymentOwner)
+                        throw new UnauthorizedAccessException("Suivi non autorisé.");
+                    var search = arguments.GetValueOrDefault("q", "").Trim();
+                    if (search.Length > 100 || !int.TryParse(Required(arguments, "page", 6), out var paymentPage) ||
+                        paymentPage is < 1 or > 100000) throw new ArgumentException("Recherche invalide.");
+                    var paymentView = new MonthlyPage(shell);
+                    await paymentView.LoadForFlutterAsync(arguments.GetValueOrDefault("period"),
+                        arguments.GetValueOrDefault("promotion"), arguments.GetValueOrDefault("status"), search);
+                    if (AllowedPage("monthly") is null || !ReferenceEquals(paymentOwner, shell.Session))
+                        throw new UnauthorizedAccessException("Session modifiée.");
+                    monthlySelection = paymentView;
+                    monthlyOwner = paymentOwner;
+                    return Read() with { Stage = "monthly", Monthly = DescribeMonthly(paymentView, paymentPage) };
+                case "exportMonthly":
+                    if (AllowedPage("monthly") is null || monthlySelection is not { } selected ||
+                        !ReferenceEquals(monthlyOwner, shell.Session))
+                        throw new UnauthorizedAccessException("Sélection non confirmée.");
+                    var format = Required(arguments, "format", 4);
+                    if (format is not ("pdf" or "xlsx" or "docx")) throw new ArgumentException("Format inconnu.");
+                    // Utiliser la même instance qui a fourni les lignes affichées, avec l'empreinte du serveur.
+                    await selected.ExportForFlutterAsync(format);
+                    if (AllowedPage("monthly") is null || !ReferenceEquals(monthlyOwner, shell.Session))
+                        throw new UnauthorizedAccessException("Session modifiée.");
+                    var exportPage = int.TryParse(arguments.GetValueOrDefault("page"), out var ep) ? ep : 1;
+                    return Read() with { Stage = "monthly", Monthly = DescribeMonthly(selected, exportPage) };
                 case "openModule":
                     var item = AllowedPage(Required(arguments, "module", 40)) ??
                         throw new UnauthorizedAccessException("Fonctionnalité non autorisée.");

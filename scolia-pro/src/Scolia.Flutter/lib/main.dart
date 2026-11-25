@@ -53,6 +53,7 @@ class _WorkspaceState extends State<Workspace> {
   String? error;
   Timer? openingPoll;
   final studentSearch = TextEditingController();
+  final paymentSearch = TextEditingController();
   final username = TextEditingController();
   final password = TextEditingController();
   final recoveryCode = TextEditingController();
@@ -65,7 +66,7 @@ class _WorkspaceState extends State<Workspace> {
   @override
   void dispose() {
     openingPoll?.cancel();
-    studentSearch.dispose(); username.dispose(); password.dispose(); recoveryCode.dispose(); confirm.dispose();
+    studentSearch.dispose(); paymentSearch.dispose(); username.dispose(); password.dispose(); recoveryCode.dispose(); confirm.dispose();
     super.dispose();
   }
 
@@ -79,6 +80,7 @@ class _WorkspaceState extends State<Workspace> {
       setState(() {
         session = result;
         if (result.stage != Stage.students) studentSearch.clear();
+        if (result.stage != Stage.monthly) paymentSearch.clear();
         if (result.stage != Stage.login || (operation == Operation.recover && result.notice.isEmpty)) {
           recovery = false;
         }
@@ -214,7 +216,8 @@ class _WorkspaceState extends State<Workspace> {
           SizedBox(width: (width - 12 * (columns - 1)) / columns,
             child: ModuleTile(label: entry.value.$1, icon: entry.value.$2,
               onTap: busy ? null : () => entry.key == 'students'
-                ? listStudents(1, '') : execute(Operation.openModule, {'module': entry.key}))),
+                ? listStudents(1, '') : entry.key == 'monthly' ? listMonthly()
+                : execute(Operation.openModule, {'module': entry.key}))),
       ]);
     }),
     const SizedBox(height: 24),
@@ -260,15 +263,83 @@ class _WorkspaceState extends State<Workspace> {
     ]),
   ]);
 
+  Future<void> listMonthly({MonthlyListing? current, String? period,
+    String? promotion, String? status, String? query, int page = 1}) =>
+    execute(Operation.listMonthly, {
+      'page': page.toString(), 'q': query ?? current?.search ?? '',
+      if (period != null || current != null) 'period': period ?? current!.period,
+      if (promotion != null || current != null) 'promotion': promotion ?? current!.promotion,
+      if (status != null || current != null) 'status': status ?? current!.status,
+    });
+
+  Widget filter(String label, String value, List<FilterChoice> options, ValueChanged<String> changed) =>
+    InputDecorator(decoration: InputDecoration(labelText: label), child: DropdownButtonHideUnderline(
+      child: DropdownButton<String>(value: value, isExpanded: true,
+        items: options.map((x) => DropdownMenuItem(value: x.id,
+          child: Text(x.label, overflow: TextOverflow.ellipsis))).toList(),
+        onChanged: busy ? null : (v) { if (v != null) changed(v); })));
+
+  Widget monthly(MonthlyListing m) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    Align(alignment: Alignment.centerLeft, child: TextButton.icon(
+      onPressed: busy ? null : () => execute(Operation.snapshot),
+      icon: const Icon(Icons.arrow_back), label: const Text('Retour à l’accueil'))),
+    heading(m.title, m.subtitle),
+    filter('Période', m.period, m.periods, (v) => listMonthly(current: m, period: v)),
+    const SizedBox(height: 10),
+    filter('Promotion', m.promotion, m.promotions, (v) => listMonthly(current: m, promotion: v)),
+    const SizedBox(height: 10),
+    filter('État du paiement', m.status, m.states, (v) => listMonthly(current: m, status: v)),
+    const SizedBox(height: 10),
+    TextField(controller: paymentSearch, enabled: !busy, maxLength: 100,
+      textInputAction: TextInputAction.search, onSubmitted: (q) => listMonthly(current: m, query: q.trim()),
+      decoration: InputDecoration(labelText: 'Rechercher un nom', counterText: '',
+        prefixIcon: const Icon(Icons.search), suffixIcon: IconButton(tooltip: 'Appliquer la recherche',
+          onPressed: busy ? null : () => listMonthly(current: m, query: paymentSearch.text.trim()),
+          icon: const Icon(Icons.arrow_forward)))),
+    const SizedBox(height: 16),
+    Text(m.exportScope, style: Theme.of(context).textTheme.bodySmall),
+    const SizedBox(height: 8),
+    Text('Exporter toute la sélection filtrée (${m.count})'),
+    Wrap(spacing: 8, runSpacing: 8, children: [
+      for (final (format, label) in [('xlsx', 'Excel'), ('pdf', 'PDF'), ('docx', 'Word')])
+        OutlinedButton(onPressed: busy ? null : () => execute(Operation.exportMonthly,
+          {'format': format, 'page': m.page.toString()}), child: Text(label)),
+    ]),
+    const SizedBox(height: 12),
+    if (m.rows.isEmpty) const Text('Aucun résultat pour ces filtres.'),
+    for (final row in m.rows)
+      Card.outlined(margin: const EdgeInsets.only(bottom: 8), child: Padding(
+        padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(row.name, style: Theme.of(context).textTheme.titleSmall),
+          Text(row.promotion),
+          const SizedBox(height: 8),
+          Text(row.status, style: TextStyle(fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.primary)),
+          const Divider(),
+          Text('Attendu : ${row.expected}'),
+          Text('Versé : ${row.paid}'),
+          Text('Reste : ${row.remaining}'),
+        ]))),
+    Row(children: [
+      IconButton(tooltip: 'Page précédente', onPressed: busy || !m.hasPrevious ? null :
+        () => listMonthly(current: m, page: m.page - 1), icon: const Icon(Icons.chevron_left)),
+      Expanded(child: Text('Page ${m.page}', textAlign: TextAlign.center)),
+      IconButton(tooltip: 'Page suivante', onPressed: busy || !m.hasNext ? null :
+        () => listMonthly(current: m, page: m.page + 1), icon: const Icon(Icons.chevron_right)),
+    ]),
+  ]);
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final current = session;
     final listing = current?.students;
+    final payments = current?.monthly;
     return Scaffold(
       appBar: AppBar(title: const Text('SCOLIA Pro'),
         actions: [IconButton(tooltip: 'Actualiser', onPressed: busy ? null :
           () => listing != null ? listStudents(listing.page, listing.search)
+            : payments != null ? listMonthly(current: payments, page: payments.page)
             : execute(Operation.snapshot), icon: const Icon(Icons.refresh))]),
       body: SafeArea(child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
@@ -288,6 +359,7 @@ class _WorkspaceState extends State<Workspace> {
                 Stage.loading => heading('Ouverture de SCOLIA', 'Préparation sécurisée de votre espace de travail…'),
                 Stage.nativeScreen => heading('Interface SCOLIA', 'Cette opération utilise encore l’interface native existante.'),
                 Stage.students => students(current.students!),
+                Stage.monthly => monthly(current.monthly!),
               },
             ],
           ]),

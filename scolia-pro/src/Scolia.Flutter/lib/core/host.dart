@@ -1,19 +1,20 @@
 import 'package:flutter/services.dart';
 
-enum Stage { pairing, login, home, nativeScreen, loading, students }
+enum Stage { pairing, login, home, nativeScreen, loading, students, monthly }
 
 enum Operation {
   snapshot, scanQr, chooseServer, createSchool, signIn, recover,
-  biometric, openModule, signOut, listStudents
+  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly
 }
 
 class SchoolSession {
   const SchoolSession({required this.stage, this.school = '', this.user = '',
-    this.year = '', this.modules = const [], this.notice = '', this.students});
+    this.year = '', this.modules = const [], this.notice = '', this.students, this.monthly});
   final Stage stage;
   final String school, user, year, notice;
   final List<String> modules;
   final StudentListing? students;
+  final MonthlyListing? monthly;
 
   factory SchoolSession.fromMap(Map<Object?, Object?> value) {
     if (value['protocol'] != 1) {
@@ -25,7 +26,8 @@ class SchoolSession {
       user: value['user'] as String? ?? '', year: value['year'] as String? ?? '',
       notice: value['notice'] as String? ?? '',
       modules: List<String>.unmodifiable(modules),
-      students: stage == Stage.students ? StudentListing.fromMap(value['students'] as Map<Object?, Object?>) : null);
+      students: stage == Stage.students ? StudentListing.fromMap(value['students'] as Map<Object?, Object?>) : null,
+      monthly: stage == Stage.monthly ? MonthlyListing.fromMap(value['monthly'] as Map<Object?, Object?>) : null);
   }
 }
 
@@ -50,6 +52,46 @@ class StudentListing {
     hasPrevious: data['hasPrevious'] as bool, hasNext: data['hasNext'] as bool,
     rows: List<StudentEntry>.unmodifiable((data['rows'] as List<Object?>).map(
       (r) => StudentEntry.fromMap(r as Map<Object?, Object?>))));
+}
+
+class FilterChoice {
+  const FilterChoice(this.id, this.label);
+  final String id, label;
+  factory FilterChoice.fromMap(Map<Object?, Object?> m) =>
+    FilterChoice(m['id'] as String, m['label'] as String);
+}
+
+class PaymentEntry {
+  const PaymentEntry({required this.name, required this.promotion, required this.expected,
+    required this.paid, required this.remaining, required this.status});
+  final String name, promotion, expected, paid, remaining, status;
+  factory PaymentEntry.fromMap(Map<Object?, Object?> m) => PaymentEntry(
+    name: m['name'] as String, promotion: m['promotion'] as String,
+    expected: m['expected'] as String, paid: m['paid'] as String,
+    remaining: m['remaining'] as String, status: m['status'] as String);
+}
+
+class MonthlyListing {
+  const MonthlyListing({required this.title, required this.subtitle, required this.period,
+    required this.promotion, required this.status, required this.search, required this.page,
+    required this.count, required this.hasPrevious, required this.hasNext, required this.periods,
+    required this.promotions, required this.states, required this.rows, required this.exportScope});
+  final String title, subtitle, period, promotion, status, search, exportScope;
+  final int page, count;
+  final bool hasPrevious, hasNext;
+  final List<FilterChoice> periods, promotions, states;
+  final List<PaymentEntry> rows;
+  factory MonthlyListing.fromMap(Map<Object?, Object?> m) {
+    List<FilterChoice> choices(String key) => List<FilterChoice>.unmodifiable(
+      (m[key] as List<Object?>).map((x) => FilterChoice.fromMap(x as Map<Object?, Object?>)));
+    return MonthlyListing(title: m['title'] as String, subtitle: m['subtitle'] as String,
+      period: m['period'] as String, promotion: m['promotion'] as String,
+      status: m['status'] as String, search: m['search'] as String, page: m['page'] as int,
+      count: m['count'] as int, hasPrevious: m['hasPrevious'] as bool, hasNext: m['hasNext'] as bool,
+      periods: choices('periods'), promotions: choices('promotions'), states: choices('states'),
+      rows: List<PaymentEntry>.unmodifiable((m['rows'] as List<Object?>).map(
+        (x) => PaymentEntry.fromMap(x as Map<Object?, Object?>))), exportScope: m['exportScope'] as String);
+  }
 }
 
 abstract interface class ScoliaHost {

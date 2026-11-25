@@ -106,6 +106,26 @@ public sealed class MonthlyPage : PageViewModel
         }
     }
 
+    // Instance isolée pour Flutter : filtres atomiques, sans minuteries ni appels concurrents.
+    internal async Task LoadForFlutterAsync(string? period, string? promotionId, string? status, string query)
+    {
+        if (!ready) await LoadAsync();
+        month = period is null ? month : Months.FirstOrDefault(x => x.Value == period)
+            ?? throw new ArgumentException("Période inconnue.");
+        promotion = promotionId is null ? promotion : Promotions.FirstOrDefault(x => x.Value == promotionId)
+            ?? throw new ArgumentException("Promotion inconnue.");
+        state = status is null ? state : States.FirstOrDefault(x => x.Value == status)
+            ?? throw new ArgumentException("État inconnu.");
+        search = query;
+        loadedFilters = null;
+        if (month is null || promotion is null) throw new InvalidOperationException("Sélection indisponible.");
+        await LoadAsync();
+        if (!string.Equals(loadedFilters, Filters(), StringComparison.Ordinal))
+            throw new InvalidOperationException("La sélection n’a pas été confirmée.");
+    }
+
+    internal Task ExportForFlutterAsync(string format) => ExportAsync(format);
+
     public override async Task LoadAsync()
     {
         if (!ready)
