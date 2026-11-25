@@ -40,6 +40,26 @@ public sealed class HomeAndBatchUsabilityTests
     }
 
     [Fact]
+    public void Accueil_et_demarrer_utilisent_des_gabarits_identiques()
+    {
+        var home = XDocument.Load(ViewFile("Views/HomeView.axaml")).Descendants().ToArray();
+        var lists = home.Where(e => e.Name.LocalName == "ItemsControl" &&
+            (string?)e.Attribute("ItemsSource") is "{Binding QuickActions}" or "{Binding MoreTools}").ToArray();
+        Assert.Equal(2, lists.Length);
+        foreach (var list in lists)
+        {
+            var grid = Assert.Single(list.Descendants().Where(e => e.Name.LocalName == "UniformGrid"));
+            Assert.Equal("2", (string?)grid.Attribute("Columns"));
+            Assert.Contains(grid.Attributes(), a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "240");
+            Assert.Contains(list.Descendants(), e => e.Name.LocalName == "Button" && (string?)e.Attribute("Classes") == "pbiAction");
+        }
+        var main = XDocument.Load(ViewFile("Views/MainView.axaml")).Descendants().ToArray();
+        var style = Assert.Single(main.Where(e => e.Name.LocalName == "Style" && (string?)e.Attribute("Selector") == "Button.startentry"));
+        Assert.Contains(style.Elements(), e => (string?)e.Attribute("Property") == "Height" && (string?)e.Attribute("Value") == "96");
+        Assert.Contains(style.Elements(), e => (string?)e.Attribute("Property") == "Padding" && (string?)e.Attribute("Value") == "0");
+    }
+
+    [Fact]
     public void Une_recherche_differee_ne_peut_pas_arreter_un_minuteur_plus_recent()
     {
         var students = File.ReadAllText(ViewFile("ViewModels/Students.cs"));
