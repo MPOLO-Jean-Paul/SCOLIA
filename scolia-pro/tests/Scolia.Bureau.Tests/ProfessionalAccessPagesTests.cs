@@ -224,6 +224,24 @@ public sealed class ProfessionalAccessPagesTests
     }
 
     [Fact]
+    public void Demarrer_windows_separe_les_commandes_du_contenu_visuel()
+    {
+        var shell = File.ReadAllText(Source("ViewModels/Shell.cs"));
+        Assert.Contains("public bool IsStartPage => current is StartPage;", shell, StringComparison.Ordinal);
+        Assert.Contains("Raise(nameof(StartNavigation));", shell, StringComparison.Ordinal);
+        Assert.Contains("IsStartPage && !Phone", shell, StringComparison.Ordinal);
+        var frame = File.ReadAllText(Source("Views/MainView.axaml"));
+        Assert.Contains("StartNavigation.OpenHome", frame, StringComparison.Ordinal);
+        Assert.Contains("StartNavigation.NewActions", frame, StringComparison.Ordinal);
+        Assert.Contains("LayoutTransformControl.anim Border#StartHero", frame, StringComparison.Ordinal);
+        Assert.Contains("IsVisible=\"{Binding !IsStartPage}\"", frame, StringComparison.Ordinal);
+        var start = File.ReadAllText(Source("Views/StartView.axaml"));
+        Assert.DoesNotContain("<Button", start, StringComparison.Ordinal);
+        Assert.Contains("Binding Greeting", start, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"StartHero\"", start, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void La_typographie_est_homogene_et_pleine()
     {
         // Roboto en vraies graisses fixes : Medium et SemiBold ne retombent plus sur un trait fin sur Android.
