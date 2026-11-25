@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 import urllib.request
+import urllib.error
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -22,13 +23,50 @@ if not version or not re.fullmatch(r"[A-Za-z0-9_.-]+", version):
     raise RuntimeError("Invalid Flutter embedding version")
 out = root / "build/bridge"
 out.mkdir(parents=True, exist_ok=True)
-embedding = out / "embedding.aar"
-url = ("https://storage.googleapis.com/download.flutter.io/io/flutter/flutter_embedding_release/"
-       f"{version}/flutter_embedding_release-{version}.aar")
-with urllib.request.urlopen(url, timeout=120) as response:
-    embedding.write_bytes(response.read())
-with zipfile.ZipFile(embedding) as archive:
-    (out / "embedding.jar").write_bytes(archive.read("classes.jar"))
+# Flutter's embedding is distributed as a JAR, not necessarily an AAR.
+# Reuse the exact artifact Gradle already resolved when constructing the module.
+import shutil
+cache = Path(os.environ.get("GRADLE_USER_HOME", str(Path.home() / ".gradle"))) / "caches/modules-2/files-2.1"
+
+def resolve_artifact(artifact, extensions):
+    folder = cache / "io.flutter" / artifact / version
+    for ext in extensions:
+        name = f"{artifact}-{version}.{ext}"
+        cached = sorted(folder.glob(f"*/{name}"))
+        if cached:
+            target = out / name
+            shutil.copyfile(cached[0], target)
+            return target
+    errors = []
+    for ext in extensions:
+        name = f"{artifact}-{version}.{ext}"
+        url = f"https://storage.googleapis.com/download.flutter.io/io/flutter/{artifact}/{version}/{name}"
+        try:
+            target = out / name
+            with urllib.request.urlopen(url, timeout=120) as response:
+                target.write_bytes(response.read())
+            return target
+        except urllib.error.HTTPError as ex:
+            if ex.code != 404:
+                raise
+            errors.append(name)
+    raise RuntimeError(f"Flutter artifact unavailable: {', '.join(errors)}")
+
+embedding = resolve_artifact("flutter_embedding_release", ("jar", "aar"))
+if embedding.suffix == ".aar":
+    with zipfile.ZipFile(embedding) as archive:
+        (out / "embedding.jar").write_bytes(archive.read("classes.jar"))
+    shutil.copyfile(embedding, out / "embedding-package.aar")
+else:
+    shutil.copyfile(embedding, out / "embedding.jar")
+    # Normalize to an AAR so .NET receives the same packaging input on either layout.
+    with zipfile.ZipFile(out / "embedding-package.aar", "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.write(out / "embedding.jar", "classes.jar")
+        archive.writestr("AndroidManifest.xml",
+            '<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="io.flutter.embedding" />')
+with zipfile.ZipFile(out / "embedding.jar") as archive:
+    if "io/flutter/embedding/engine/FlutterEngine.class" not in archive.namelist():
+        raise RuntimeError("Resolved embedding does not contain FlutterEngine")
 sdk = Path(os.environ.get("ANDROID_HOME") or os.environ["ANDROID_SDK_ROOT"])
 platforms = sorted((p for p in (sdk / "platforms").glob("android-*")
                     if p.name[8:].isdigit() and (p / "android.jar").is_file()),
@@ -47,20 +85,15 @@ print("Android bridge JAR compiled against", version)
 
 # Collect only the release module and Flutter engine binaries. The .NET host
 # already owns AndroidX; dependency conflicts are checked by its own APK build.
-import shutil
 module_aars = list(repo.rglob("flutter_release-*.aar"))
 if len(module_aars) != 1:
     raise RuntimeError("Expected exactly one release module AAR")
 shutil.copyfile(module_aars[0], out / "flutter-module.aar")
 for artifact, abi in (("arm64_v8a_release", "arm64-v8a"),
                       ("armeabi_v7a_release", "armeabi-v7a")):
-    base = ("https://storage.googleapis.com/download.flutter.io/io/flutter/"
-            f"{artifact}/{version}/{artifact}-{version}")
-    target = out / f"{artifact}.jar"
-    with urllib.request.urlopen(base + ".jar", timeout=120) as response:
-        target.write_bytes(response.read())
+    target = resolve_artifact(artifact, ("jar", "aar"))
     with zipfile.ZipFile(target) as archive:
-        matches = [n for n in archive.namelist() if n.endswith(f"/{abi}/libflutter.so")]
+        matches = [n for n in archive.namelist() if n == f"{abi}/libflutter.so" or n.endswith(f"/{abi}/libflutter.so")]
         if len(matches) != 1:
             raise RuntimeError(f"Missing exact Flutter native engine for {abi}")
         native = out / "native" / abi

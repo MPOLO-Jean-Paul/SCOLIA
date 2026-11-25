@@ -33,3 +33,6 @@ Le code de l'activité conserve le Shell et les services existants. Le moteur Fl
 
 ## APK de validation isolé
 Le workflow expérimental utilise `com.jpservices.scolia.fluttervalidation`, une autorité FileProvider propre et la signature de validation uniquement. Le client officiel conserve son identifiant, sa signature, son manifeste et ses données. Les mises à jour officielles sont désactivées pour ce paquet expérimental. Le contrôle de sortie vérifie l'identifiant, la signature, les assets Flutter et les bibliothèques natives. Ne pas connecter un établissement réel : utiliser une base et des comptes de test, sur un appareil ou un émulateur réservé à la validation. La validation de migration depuis l'APK officiel est une étape séparée, à effectuer avec des sauvegardes de test.
+
+### Correction de résolution Maven
+Le journal CI a confirmé une erreur HTTP 404 sur l'URL .aar de l'embedding. Le script réutilise désormais le cache Gradle de la version déclarée dans le POM ; en secours il essaie les extensions JAR et AAR, vérifie la présence de FlutterEngine et normalise l'archive de packaging. Les bibliothèques ABI utilisent le même résolveur. Le succès du nouveau workflow reste à confirmer.
