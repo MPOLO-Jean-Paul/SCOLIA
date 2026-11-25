@@ -27,6 +27,14 @@ code="${SCOLIA_VERSION_CODE:-}"
 if [ -z "$code" ] && horodatage="$(git -C "$racine" log -1 --format=%ct 2>/dev/null)" && [ -n "$horodatage" ]; then
   code=$(( (horodatage - 1577836800) / 60 ))
 fi
+# Le retour au design natif reste une mise à jour, y compris depuis le candidat 1.3.0.
+if [[ "$version" == "1.3.1" ]]; then
+  if [[ -n "${SCOLIA_VERSION_CODE:-}" && ( ! "$code" =~ ^[0-9]+$ || "$code" -lt 3630120 ) ]]; then
+    echo "::error::versionCode inférieur au minimum de migration 3630120." >&2
+    exit 1
+  fi
+  if [[ -z "$code" || "$code" -lt 3630120 ]]; then code=3630120; fi
+fi
 options=()
 if [ -n "$code" ]; then options+=("-p:ApplicationVersion=$code"); fi
 # Le mode Flutter officiel est volontairement désactivé par défaut.
