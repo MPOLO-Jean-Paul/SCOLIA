@@ -72,7 +72,7 @@ class _WorkspaceState extends State<Workspace> {
       if (!mounted) return;
       setState(() {
         session = result;
-        if (result.stage != Stage.login || operation == Operation.recover) {
+        if (result.stage != Stage.login || (operation == Operation.recover && result.notice.isEmpty)) {
           recovery = false;
         }
       });
@@ -97,6 +97,7 @@ class _WorkspaceState extends State<Workspace> {
     execute(recovery ? Operation.recover : Operation.signIn, {
       'userName': username.text.trim(), 'password': password.text,
       if (recovery) 'recoveryCode': recoveryCode.text,
+      if (recovery) 'confirmation': confirm.text,
     });
   }
 
@@ -179,6 +180,10 @@ class _WorkspaceState extends State<Workspace> {
     'grades': ('Cotes et résultats', Icons.school_outlined),
     'settings': ('Configuration', Icons.settings_outlined),
     'network': ('Poste et réseau', Icons.sync_outlined),
+    'receipts': ('Journal des reçus', Icons.receipt_long_outlined),
+    'dashboard': ('Tableau de bord', Icons.insights_outlined),
+    'results': ('Mes résultats', Icons.school_outlined),
+    'lmd': ('Organisation LMD', Icons.account_tree_outlined),
   };
 
   Widget home(SchoolSession s) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -223,7 +228,9 @@ class _WorkspaceState extends State<Workspace> {
               if (current.notice.isNotEmpty) Padding(padding: const EdgeInsets.only(bottom: 12),
                 child: Text(current.notice)),
               switch (current.stage) {
-                Stage.pairing => pairing(), Stage.login => login(current), Stage.home => home(current)
+                Stage.pairing => pairing(), Stage.login => login(current), Stage.home => home(current),
+                Stage.loading => heading('Ouverture de SCOLIA', 'Actualisez lorsque le moteur est prêt.'),
+                Stage.nativeScreen => heading('Interface SCOLIA', 'Cette opération utilise encore l’interface native existante.'),
               },
             ],
           ]),
@@ -250,7 +257,8 @@ class ModuleTile extends StatelessWidget {
             decoration: BoxDecoration(color: c.secondaryContainer, borderRadius: BorderRadius.circular(6)),
             child: Icon(icon, color: c.onSecondaryContainer, size: 30)),
           const SizedBox(height: 10),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w600),
+            maxLines: 2, overflow: TextOverflow.ellipsis),
         ]),
       )));
   }

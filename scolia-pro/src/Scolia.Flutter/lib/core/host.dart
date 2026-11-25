@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 
-enum Stage { pairing, login, home }
+enum Stage { pairing, login, home, nativeScreen, loading }
 
 enum Operation {
   snapshot, scanQr, chooseServer, createSchool, signIn, recover,
