@@ -48,13 +48,13 @@ public sealed class HomeAndBatchUsabilityTests
         Assert.Equal(2, lists.Length);
         foreach (var list in lists)
         {
-            var grid = Assert.Single(list.Descendants().Where(e => e.Name.LocalName == "UniformGrid"));
+            var grid = Assert.Single(list.Descendants(), e => e.Name.LocalName == "UniformGrid");
             Assert.Equal("2", (string?)grid.Attribute("Columns"));
             Assert.Contains(grid.Attributes(), a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "240");
             Assert.Contains(list.Descendants(), e => e.Name.LocalName == "Button" && (string?)e.Attribute("Classes") == "pbiAction");
         }
         var main = XDocument.Load(ViewFile("Views/MainView.axaml")).Descendants().ToArray();
-        var style = Assert.Single(main.Where(e => e.Name.LocalName == "Style" && (string?)e.Attribute("Selector") == "Button.startentry"));
+        var style = Assert.Single(main, e => e.Name.LocalName == "Style" && (string?)e.Attribute("Selector") == "Button.startentry");
         Assert.Contains(style.Elements(), e => (string?)e.Attribute("Property") == "Height" && (string?)e.Attribute("Value") == "96");
         Assert.Contains(style.Elements(), e => (string?)e.Attribute("Property") == "Padding" && (string?)e.Attribute("Value") == "0");
     }
