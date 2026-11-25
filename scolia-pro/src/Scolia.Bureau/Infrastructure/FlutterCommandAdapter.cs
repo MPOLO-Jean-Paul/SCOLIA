@@ -234,7 +234,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     public sealed record ProfileSection(string Title, IReadOnlyList<IReadOnlyList<ProfileValue>> Rows);
     public sealed record StudentProfile(string Id, string Title, string Subtitle, IReadOnlyList<ProfileSection> Sections);
 
-    public sealed record WorkspaceHeader(string Greeting, string Date, string Initials, string SyncStatus, string SyncHint, bool Offline, bool Pending);
+    public sealed record WorkspaceHeader(string Greeting, string Date, string Initials, string SyncStatus, string SyncHint, bool Offline, bool Pending, string ContextId = "");
 
     public sealed record ModuleEntry(string Id, string Label, string Group);
 
@@ -345,6 +345,8 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         return result;
     }
 
+    private object? headerOwner;
+    private string headerContext = "";
     private Snapshot Read(string? notice = null, bool native = false)
     {
         if (shell.ShowStartup || shell.Opening)
@@ -356,10 +358,15 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
             return new(1, "nativeScreen", "", "", "", [], notice ?? "");
         if (MayShowWorkspace && shell.Session is { } session)
         {
+            if (!ReferenceEquals(headerOwner, session))
+            {
+                headerOwner = session;
+                headerContext = Guid.NewGuid().ToString("N");
+            }
             var catalog = Catalog();
             var header = new WorkspaceHeader($"{(DateTime.Now.Hour >= 18 ? "Bonsoir" : "Bonjour")}, {shell.AccountName}",
                 Format.LongDate(DateOnly.FromDateTime(DateTime.Today)), shell.UserInitials,
-                shell.Sync.StatusText, shell.Sync.StatusHint, shell.Sync.Offline, shell.Sync.HasPending);
+                shell.Sync.StatusText, shell.Sync.StatusHint, shell.Sync.Offline, shell.Sync.HasPending, headerContext);
             return new(1, "home", session.SchoolName, session.DisplayName, shell.SchoolYearLine,
                 catalog.Select(x => x.Id).ToArray(), notice ?? "", Catalog: catalog, Header: header);
         }
@@ -375,6 +382,8 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     {
         Dispatcher.UIThread.VerifyAccess();
         if (executing) throw new InvalidOperationException("Une commande SCOLIA est déjà en cours.");
+        // Lecture seule : ne détruit ni la sélection, ni le formulaire, ni les verrous de caisse.
+        if (operation == "workspaceStatus") return Read();
         if (operation != "listMonthly" && operation != "exportMonthly") { monthlySelection = null; monthlyOwner = null; }
         if (operation is not ("listStudents" or "openStudent" or "cashierStudent" or "studentActions")) { visibleStudents.Clear(); studentOwner = null; }
         if (operation is not ("listReceipts" or "exportReceipts" or "openReceipt"))

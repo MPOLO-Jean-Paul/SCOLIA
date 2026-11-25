@@ -138,6 +138,21 @@ void main() {
     expect(find.text('Encaisser'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('home search only shows authorized features', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.home,
+      modules: ['students', 'cashier'], catalog: [
+        ModuleEntry('students', 'Dossiers scolaires', 'École'),
+        ModuleEntry('cashier', 'Encaisser', 'Finances'),
+        ModuleEntry('settings', 'Configuration', 'Administration'),
+      ]));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Encaisser');
+    await tester.pumpAndSettle();
+    expect(find.text('Encaisser'), findsOneWidget);
+    expect(find.text('Dossiers scolaires'), findsNothing);
+    expect(find.text('Configuration'), findsNothing);
+  });
   test('reject incompatible protocol', () {
     expect(() => SchoolSession.fromMap({'protocol': 2, 'stage': 'home'}), throwsFormatException);
   });

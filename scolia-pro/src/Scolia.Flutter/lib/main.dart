@@ -65,11 +65,17 @@ class Workspace extends StatefulWidget {
   State<Workspace> createState() => _WorkspaceState();
 }
 
-class _WorkspaceState extends State<Workspace> {
+class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
   SchoolSession? session;
   bool busy = true, hidePassword = true, recovery = false;
   String? error;
   Timer? openingPoll;
+  Timer? syncPoll;
+  Future<void>? statusRequest;
+  bool foreground = true;
+  WorkspaceHeader? liveHeader;
+  final scroll = ScrollController();
+  final moduleSearch = TextEditingController();
   final studentSearch = TextEditingController();
   final paymentSearch = TextEditingController();
   final username = TextEditingController();
@@ -90,11 +96,64 @@ class _WorkspaceState extends State<Workspace> {
   bool cashierDirty = true;
 
   @override
-  void initState() { super.initState(); execute(Operation.snapshot); }
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    foreground = WidgetsBinding.instance.lifecycleState == null ||
+      WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    execute(Operation.snapshot);
+    if (widget.host is NativeHost) {
+      syncPoll = Timer.periodic(const Duration(seconds: 8), (_) => pollStatus());
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    foreground = state == AppLifecycleState.resumed;
+    if (foreground && widget.host is NativeHost) pollStatus();
+  }
+
+  void pollStatus() {
+    final current = session;
+    if (!mounted || !foreground || busy || statusRequest != null || current == null ||
+      current.header?.contextId.isEmpty != false || current.stage != Stage.home &&
+      current.stage != Stage.students && current.stage != Stage.monthly &&
+      current.stage != Stage.receipts && current.stage != Stage.studentProfile &&
+      current.stage != Stage.schoolRegister) return;
+    statusRequest = readStatus(current).whenComplete(() => statusRequest = null);
+  }
+
+  Future<void> readStatus(SchoolSession previous) async {
+    try {
+      final next = await widget.host.execute(Operation.workspaceStatus);
+      if (!mounted || !foreground || busy || !identical(session, previous)) return;
+      if (next.stage != Stage.home || next.header?.contextId != previous.header?.contextId ||
+          next.school != previous.school || next.year != previous.year ||
+          next.modules.length != previous.modules.length ||
+          !next.modules.toSet().containsAll(previous.modules)) {
+        // Le moteur a changé de contexte ou de droits : ne pas conserver d'anciens dossiers.
+        setState(() {
+          session = next; liveHeader = next.header;
+          enrollmentValues.clear(); marksCode.clear(); marksScore.clear();
+          studentSearch.clear(); paymentSearch.clear(); journalSearch.clear();
+        });
+      } else {
+        setState(() {
+          liveHeader = next.header;
+          if (previous.stage == Stage.home) session = next;
+        });
+      }
+    } on Exception {
+      // Aucun changement de données ni message modal pour un contrôle silencieux.
+    }
+  }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    syncPoll?.cancel();
     openingPoll?.cancel();
+    scroll.dispose(); moduleSearch.dispose();
     marksCode.dispose(); marksScore.dispose();
     journalSearch.dispose(); cashierQuery.dispose(); cashierAmount.dispose(); cashierReference.dispose(); cashierNote.dispose();
     studentSearch.dispose(); paymentSearch.dispose(); username.dispose(); password.dispose(); recoveryCode.dispose(); confirm.dispose();
@@ -103,13 +162,23 @@ class _WorkspaceState extends State<Workspace> {
 
   Future<void> execute(Operation operation,
       [Map<String, String> args = const {}]) async {
+    if (!mounted) return;
     openingPoll?.cancel();
     setState(() { busy = true; error = null; });
     try {
+      final pending = statusRequest;
+      if (pending != null) await pending;
+      if (!mounted) return;
+      final previous = session;
       final result = await widget.host.execute(operation, args);
       if (!mounted) return;
       setState(() {
         session = result;
+        liveHeader = result.header;
+        if (result.stage != previous?.stage || result.register?.kind != previous?.register?.kind) {
+          if (scroll.hasClients) scroll.jumpTo(0);
+          moduleSearch.clear();
+        }
         marksCode.text = result.register?.marks?.code ?? '';
         marksScore.text = result.register?.marks?.score ?? '';
         journalSearch.text = result.journal?.search ?? '';
@@ -260,6 +329,15 @@ class _WorkspaceState extends State<Workspace> {
     'dashboard': ('Tableau de bord', Icons.insights_outlined),
     'results': ('Mes résultats', Icons.school_outlined),
     'lmd': ('Organisation LMD', Icons.account_tree_outlined),
+    'page:PromoterDashboardPage': ('Vue d’ensemble', Icons.insights_outlined),
+    'page:UsersPage': ('Utilisateurs', Icons.manage_accounts_outlined),
+    'page:StaffPage': ('Personnel', Icons.badge_outlined),
+    'page:StaffAttendancePage': ('Pointage', Icons.schedule_outlined),
+    'page:TeachingPage': ('Enseignement', Icons.menu_book_outlined),
+    'page:AnonymousCodesPage': ('Codes anonymes', Icons.pin_outlined),
+    'page:DeliberationPage': ('Délibération', Icons.gavel_outlined),
+    'page:EncodingProgressPage': ('Suivi de l’encodage', Icons.fact_check_outlined),
+    'page:DisciplinePage': ('Discipline', Icons.rule_outlined),
   };
 
   List<ModuleEntry> catalog(SchoolSession s) => s.catalog.isNotEmpty
@@ -289,7 +367,7 @@ class _WorkspaceState extends State<Workspace> {
   }
 
   Widget welcome(SchoolSession s) {
-    final h = s.header;
+    final h = liveHeader ?? s.header;
     final c = Theme.of(context).colorScheme;
     return Card.outlined(margin: EdgeInsets.zero, child: Padding(
       padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -308,7 +386,7 @@ class _WorkspaceState extends State<Workspace> {
           ListTile(contentPadding: EdgeInsets.zero,
             leading: Icon(h.offline ? Icons.cloud_off_outlined : h.pending ? Icons.sync : Icons.cloud_done_outlined,
               color: h.offline || h.pending ? c.onSurfaceVariant : c.primary),
-            title: Text(h.syncStatus), subtitle: Text(h.syncHint),
+            title: const Text('Synchronisation'), subtitle: Text(h.pending ? 'Envois en attente' : 'Gestion automatique des échanges'),
             trailing: s.modules.contains('network') ? const Icon(Icons.chevron_right) : null,
             onTap: busy || !s.modules.contains('network') ? null : () => openModule('network')),
         ],
@@ -320,10 +398,16 @@ class _WorkspaceState extends State<Workspace> {
     const SizedBox(height: 16),
     Text('Démarrer', style: Theme.of(context).textTheme.titleMedium),
     const SizedBox(height: 12),
+    TextField(controller: moduleSearch, enabled: !busy, onChanged: (_) => setState(() {}),
+      decoration: InputDecoration(labelText: 'Rechercher une fonctionnalité', prefixIcon: const Icon(Icons.search),
+        suffixIcon: moduleSearch.text.isEmpty ? null : IconButton(tooltip: 'Effacer la recherche',
+          onPressed: () => setState(moduleSearch.clear), icon: const Icon(Icons.close)))),
+    const SizedBox(height: 8),
     LayoutBuilder(builder: (context, constraints) {
       final width = constraints.maxWidth;
       final columns = width >= 680 ? 3 : width >= 330 ? 2 : 1;
-      final all = catalog(s);
+      final query = moduleSearch.text.trim().toLowerCase();
+      final all = catalog(s).where((x) => query.isEmpty || '${x.label} ${x.group}'.toLowerCase().contains(query)).toList();
       final quick = ['enroll', 'cashier', 'students', 'monthly'];
       final allowed = [
         for (final id in quick)
@@ -331,7 +415,8 @@ class _WorkspaceState extends State<Workspace> {
             ModuleEntry(item.id, item.label, 'Actions rapides'),
         ...all.where((x) => !quick.contains(x.id)),
       ];
-      if (allowed.isEmpty) return const Text('Aucune fonctionnalité autorisée pour ce compte.');
+      if (allowed.isEmpty) return Text(query.isEmpty ? 'Aucune fonctionnalité autorisée pour ce compte.'
+        : 'Aucune fonctionnalité ne correspond à cette recherche.');
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         for (final group in allowed.map((x) => x.group).toSet()) ...[
           Padding(padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1104,7 +1189,7 @@ class _WorkspaceState extends State<Workspace> {
 
   Widget filter(String label, String value, List<FilterChoice> options, ValueChanged<String> changed) =>
     InputDecorator(decoration: InputDecoration(labelText: label), child: DropdownButtonHideUnderline(
-      child: DropdownButton<String>(value: value, isExpanded: true,
+      child: DropdownButton<String>(value: options.any((x) => x.id == value) ? value : null, isExpanded: true,
         items: options.map((x) => DropdownMenuItem(value: x.id,
           child: Text(x.label, overflow: TextOverflow.ellipsis))).toList(),
         onChanged: busy ? null : (v) { if (v != null) changed(v); })));
@@ -1170,15 +1255,22 @@ class _WorkspaceState extends State<Workspace> {
     final payments = current?.monthly;
     final journal = current?.journal;
     final register = current?.register;
+    final header = liveHeader ?? current?.header;
     return Scaffold(
       appBar: AppBar(title: const Text('SCOLIA Pro'),
-        actions: [IconButton(tooltip: 'Actualiser', onPressed: busy || (register?.dirty ?? false) ? null :
+        actions: [
+          if (header != null) Tooltip(message: header.syncHint.isEmpty ? header.syncStatus : header.syncHint,
+            child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Icon(header.pending ? Icons.sync : header.offline ? Icons.cloud_off_outlined : Icons.cloud_done_outlined,
+                color: header.pending ? colors.primary : colors.onSurfaceVariant, size: 20))),
+          IconButton(tooltip: 'Actualiser', onPressed: busy || (register?.dirty ?? false) || current?.stage == Stage.enrollment || current?.stage == Stage.cashier ? null :
           () => listing != null ? listStudents(listing.page, listing.search)
             : payments != null ? listMonthly(current: payments, page: payments.page)
             : journal != null ? listReceipts(current: journal, page: journal.page)
             : register != null ? loadRegister(register.kind, current: register)
             : execute(Operation.snapshot), icon: const Icon(Icons.refresh))]),
       body: SafeArea(child: SingleChildScrollView(
+        controller: scroll,
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
         child: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 860),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -1191,7 +1283,12 @@ class _WorkspaceState extends State<Workspace> {
             ] else ...[
               if (current.notice.isNotEmpty) Padding(padding: const EdgeInsets.only(bottom: 12),
                 child: Text(current.notice)),
-              switch (current.stage) {
+              TweenAnimationBuilder<double>(
+                key: ValueKey('${current.stage.name}:${register?.kind ?? ""}'),
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 150),
+                builder: (context, value, child) => Opacity(opacity: value, child: child),
+                child: switch (current.stage) {
                 Stage.pairing => pairing(), Stage.login => login(current), Stage.home => home(current),
                 Stage.loading => heading('Ouverture de SCOLIA', 'Préparation sécurisée de votre espace de travail…'),
                 Stage.nativeScreen => heading('Interface SCOLIA', 'Cette opération utilise encore l’interface native existante.'),
@@ -1202,7 +1299,7 @@ class _WorkspaceState extends State<Workspace> {
                 Stage.cashier => cashier(current.cashier!),
                 Stage.receipts => receipts(current.journal!),
                 Stage.schoolRegister => schoolRegister(current.register!),
-              },
+              }),
             ],
           ]),
         )),

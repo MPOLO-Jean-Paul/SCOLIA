@@ -4,7 +4,7 @@ enum Stage { pairing, login, home, nativeScreen, loading, students, monthly, stu
 
 enum Operation {
   snapshot, scanQr, chooseServer, createSchool, signIn, recover,
-  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions, submitEnrollment, cashierSearch, cashierChoose, cashierPreview, cashierConfirm, cashierLeave, listReceipts, exportReceipts, openReceipt, listAttendance, listDiscipline, editAttendance, saveAttendance, attendanceAll, attendanceDay, disciplineExport, registerNative, listPersonnel, marksCheck, marksSave, academicExport, lmdFeeForm, lmdFeePreview, settingsForm, settingsSubmit, settingsPreview, userForm
+  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions, submitEnrollment, cashierSearch, cashierChoose, cashierPreview, cashierConfirm, cashierLeave, listReceipts, exportReceipts, openReceipt, listAttendance, listDiscipline, editAttendance, saveAttendance, attendanceAll, attendanceDay, disciplineExport, registerNative, listPersonnel, marksCheck, marksSave, academicExport, lmdFeeForm, lmdFeePreview, settingsForm, settingsSubmit, settingsPreview, userForm, workspaceStatus
 }
 
 class SchoolSession {
@@ -217,13 +217,14 @@ class StudentProfile {
 
 class WorkspaceHeader {
   const WorkspaceHeader({required this.greeting, required this.date, required this.initials,
-    required this.syncStatus, required this.syncHint, required this.offline, required this.pending});
-  final String greeting, date, initials, syncStatus, syncHint;
+    required this.syncStatus, required this.syncHint, required this.offline, required this.pending, this.contextId = ''});
+  final String greeting, date, initials, syncStatus, syncHint, contextId;
   final bool offline, pending;
   factory WorkspaceHeader.fromMap(Map<Object?, Object?> m) => WorkspaceHeader(
     greeting: m['greeting'] as String, date: m['date'] as String,
     initials: m['initials'] as String, syncStatus: m['syncStatus'] as String,
-    syncHint: m['syncHint'] as String, offline: m['offline'] as bool, pending: m['pending'] as bool);
+    syncHint: m['syncHint'] as String, offline: m['offline'] as bool, pending: m['pending'] as bool,
+    contextId: m['contextId'] as String? ?? '');
 }
 
 class ModuleEntry {
