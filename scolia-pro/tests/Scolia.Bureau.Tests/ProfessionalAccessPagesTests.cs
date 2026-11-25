@@ -65,6 +65,11 @@ public sealed class ProfessionalAccessPagesTests
         Assert.Equal("{DynamicResource MutedBrush}", Setting(StyleOf(nodes, "Grid.desktopconnect Button.authprimary:disabled TextBlock"), "Foreground"));
         Assert.Equal("{DynamicResource AccentBrush}", Setting(StyleOf(nodes, "Grid.desktopconnect Button.authsecondary TextBlock"), "Foreground"));
         Assert.Equal("{DynamicResource AccentBrush}", Setting(StyleOf(nodes, "Grid.desktopconnect Button.authlink TextBlock"), "Foreground"));
+        Assert.Equal("{DynamicResource OnAccentBrush}", Setting(StyleOf(nodes, "Grid.desktopconnect Button.authprimary mi|MaterialIcon"), "Foreground"));
+        var compact = Elements("Views/Phone/ConnectionCompactView.axaml");
+        Assert.Equal("{DynamicResource OnAccentBrush}", Setting(StyleOf(compact, "Button.connectmain TextBlock"), "Foreground"));
+        Assert.Equal("{DynamicResource MutedBrush}", Setting(StyleOf(compact, "Button.connectmain:disabled TextBlock"), "Foreground"));
+        Assert.Equal("{DynamicResource AccentBrush}", Setting(StyleOf(compact, "Button.connectsecondary TextBlock"), "Foreground"));
         var auth = Elements("Themes/Auth.axaml");
         Assert.Equal("{DynamicResource TextBrush}", Setting(StyleOf(auth, "TextBlock.authtitle"), "Foreground"));
         Assert.Equal("{DynamicResource MutedBrush}", Setting(StyleOf(auth, "TextBlock.authsubtitle"), "Foreground"));

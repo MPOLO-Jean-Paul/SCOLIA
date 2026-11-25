@@ -142,6 +142,18 @@
     <Style Selector="Grid.desktopconnect Button.authlink TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
     </Style>
+    <Style Selector="Grid.desktopconnect Button.authprimary mi|MaterialIcon">
+      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+    </Style>
+    <Style Selector="Grid.desktopconnect Button.authprimary:disabled mi|MaterialIcon">
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+    <Style Selector="Grid.desktopconnect Button.authsecondary mi|MaterialIcon">
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="Grid.desktopconnect Button.authlink mi|MaterialIcon">
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
     <Style Selector="Grid.desktopconnect Button.authsecondary TextBlock.authhint">
       <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     </Style>
