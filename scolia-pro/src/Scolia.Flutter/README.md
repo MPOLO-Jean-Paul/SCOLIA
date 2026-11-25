@@ -57,3 +57,6 @@ Le formulaire Flutter est généré à partir de la même instance FormViewModel
 
 ## Encaissement Flutter
 Recherche, sélection d'un payeur, échéances et frais, montant partiel, mode, référence, observation et aperçu utilisent l'instance CashierPage du Shell (réservation inter-postes conservée). Une modification invalide la confirmation dans Flutter. La commande finale délègue volontairement à PayAsync et à son dialogue natif, qui conserve le reçu et la clé d'idempotence. Le retour à l'accueil quitte la caisse native pour libérer sa réservation. Le parcours complet et les paiements hors ligne doivent encore être validés sur appareil ; le dialogue final et la présentation des reçus restent à porter.
+
+## Journal des reçus Flutter
+Recherche, dates, promotion, mode, statut, totaux du moteur et pagination locale de la sélection native (jusqu'à 200 lignes) ; les versements locaux restent identifiés comme en attente. Les exports Excel/PDF utilisent le filtre de l'instance native confirmée ; le détail, l'impression et l'annulation motivée restent dans l'écran natif. Aucun générateur ni modèle de cartes d'accès aux examens n'est modifié. Tests de compilation et sur appareil requis.

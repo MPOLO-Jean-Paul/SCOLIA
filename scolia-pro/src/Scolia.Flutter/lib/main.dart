@@ -78,6 +78,7 @@ class _WorkspaceState extends State<Workspace> {
   final confirm = TextEditingController();
   final form = GlobalKey<FormState>();
   final enrollmentValues = <String, String>{};
+  final journalSearch = TextEditingController();
   final cashierQuery = TextEditingController();
   final cashierAmount = TextEditingController();
   final cashierReference = TextEditingController();
@@ -92,7 +93,7 @@ class _WorkspaceState extends State<Workspace> {
   @override
   void dispose() {
     openingPoll?.cancel();
-    cashierQuery.dispose(); cashierAmount.dispose(); cashierReference.dispose(); cashierNote.dispose();
+    journalSearch.dispose(); cashierQuery.dispose(); cashierAmount.dispose(); cashierReference.dispose(); cashierNote.dispose();
     studentSearch.dispose(); paymentSearch.dispose(); username.dispose(); password.dispose(); recoveryCode.dispose(); confirm.dispose();
     super.dispose();
   }
@@ -106,6 +107,7 @@ class _WorkspaceState extends State<Workspace> {
       if (!mounted) return;
       setState(() {
         session = result;
+        journalSearch.text = result.journal?.search ?? '';
         if (result.cashier case final c?) {
           cashierFees..clear()..addAll(c.fees.where((x) => x.selected).map((x) => x.id));
           cashierAmount.text = c.amount;
@@ -263,6 +265,7 @@ class _WorkspaceState extends State<Workspace> {
   void openModule(String id) {
     if (id == 'students') { unawaited(listStudents(1, '')); }
     else if (id == 'monthly') { unawaited(listMonthly()); }
+    else if (id == 'receipts') { unawaited(listReceipts()); }
     else { unawaited(execute(Operation.openModule, {'module': id})); }
   }
 
@@ -380,6 +383,79 @@ class _WorkspaceState extends State<Workspace> {
       Expanded(child: Text('Page ${listing.page}', textAlign: TextAlign.center)),
       IconButton(tooltip: 'Page suivante', onPressed: busy || !listing.hasNext ? null :
         () => listStudents(listing.page + 1, listing.search), icon: const Icon(Icons.chevron_right)),
+    ]),
+  ]);
+
+  Future<void> listReceipts({ReceiptJournal? current, String? query, String? from,
+    String? to, String? method, String? status, String? promotion, int page = 1}) =>
+    execute(Operation.listReceipts, {'page': page.toString(), 'q': query ?? current?.search ?? '',
+      'from': from ?? current?.from ?? '', 'to': to ?? current?.to ?? '',
+      'method': method ?? current?.method ?? '', 'status': status ?? current?.status ?? '',
+      'promotion': promotion ?? current?.promotion ?? ''});
+
+  Future<void> chooseJournalDate(ReceiptJournal j, bool start) async {
+    final value = start ? j.from : j.to;
+    final initial = DateTime.tryParse(value) ?? DateTime.now();
+    final picked = await showDatePicker(context: context, initialDate: initial,
+      firstDate: DateTime(1900), lastDate: DateTime(2100, 12, 31));
+    if (!mounted || picked == null || !identical(session?.journal, j)) return;
+    final wire = picked.toIso8601String().substring(0, 10);
+    if (start) { await listReceipts(current: j, from: wire); }
+    else { await listReceipts(current: j, to: wire); }
+  }
+
+  Widget receipts(ReceiptJournal j) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    Align(alignment: Alignment.centerLeft, child: TextButton.icon(
+      onPressed: busy ? null : () => execute(Operation.snapshot),
+      icon: const Icon(Icons.arrow_back), label: const Text('Retour à l’accueil'))),
+    heading(j.title, j.subtitle),
+    TextField(controller: journalSearch, enabled: !busy, maxLength: 100, textInputAction: TextInputAction.search,
+      onChanged: (_) => setState(() {}), onSubmitted: (v) => listReceipts(current: j, query: v.trim()),
+      decoration: InputDecoration(labelText: 'Nom, matricule ou numéro de reçu', counterText: '',
+        prefixIcon: const Icon(Icons.search), suffixIcon: IconButton(tooltip: 'Appliquer la recherche',
+          onPressed: busy ? null : () => listReceipts(current: j, query: journalSearch.text.trim()),
+          icon: const Icon(Icons.arrow_forward)))),
+    const SizedBox(height: 12),
+    Wrap(spacing: 8, runSpacing: 8, children: [
+      OutlinedButton.icon(onPressed: busy ? null : () => chooseJournalDate(j, true),
+        icon: const Icon(Icons.calendar_today), label: Text(j.from.isEmpty ? 'Du' : j.from)),
+      OutlinedButton.icon(onPressed: busy ? null : () => chooseJournalDate(j, false),
+        icon: const Icon(Icons.calendar_today), label: Text(j.to.isEmpty ? 'Au' : j.to)),
+      if (j.from.isNotEmpty || j.to.isNotEmpty)
+        TextButton(onPressed: busy ? null : () => listReceipts(current: j, from: '', to: ''), child: const Text('Effacer les dates')),
+    ]),
+    const SizedBox(height: 12),
+    if (j.methods.isNotEmpty) filter('Mode de paiement', j.method, j.methods, (v) => listReceipts(current: j, method: v)),
+    const SizedBox(height: 8),
+    if (j.statuses.isNotEmpty) filter('Statut', j.status, j.statuses, (v) => listReceipts(current: j, status: v)),
+    const SizedBox(height: 8),
+    if (j.promotions.isNotEmpty) filter('Promotion', j.promotion, j.promotions, (v) => listReceipts(current: j, promotion: v)),
+    const SizedBox(height: 12),
+    Text('Exporter le journal selon les filtres appliqués', style: Theme.of(context).textTheme.bodySmall),
+    if (journalSearch.text.trim() != j.search) const Text('Appliquez la recherche avant d’exporter.'),
+    Wrap(spacing: 8, children: [
+      for (final (format, label) in [('xlsx', 'Excel'), ('pdf', 'PDF')])
+        OutlinedButton(onPressed: busy || journalSearch.text.trim() != j.search ? null :
+          () => execute(Operation.exportReceipts, {'format': format, 'page': j.page.toString()}), child: Text(label)),
+    ]),
+    const SizedBox(height: 12),
+    if (j.rows.isEmpty) const Text('Aucun reçu dans la sélection.'),
+    for (final row in j.rows) Card.outlined(margin: const EdgeInsets.only(bottom: 8),
+      child: InkWell(onTap: busy ? null : () => execute(Operation.openReceipt, {'receipt': row.id}),
+        child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(row.number, style: Theme.of(context).textTheme.titleSmall),
+          Text(row.student), Text([row.code, row.promotion, row.date].where((v) => v.isNotEmpty).join(' · ')),
+          const Divider(),
+          Text(row.amount, style: Theme.of(context).textTheme.titleMedium),
+          Text('${row.method} · ${row.status}'),
+          Text('Visé par : ${row.cashier}'),
+        ])))),
+    Row(children: [
+      IconButton(tooltip: 'Page précédente', onPressed: busy || !j.hasPrevious ? null :
+        () => listReceipts(current: j, page: j.page - 1), icon: const Icon(Icons.chevron_left)),
+      Expanded(child: Text('Page ${j.page}', textAlign: TextAlign.center)),
+      IconButton(tooltip: 'Page suivante', onPressed: busy || !j.hasNext ? null :
+        () => listReceipts(current: j, page: j.page + 1), icon: const Icon(Icons.chevron_right)),
     ]),
   ]);
 
@@ -618,11 +694,13 @@ class _WorkspaceState extends State<Workspace> {
     final current = session;
     final listing = current?.students;
     final payments = current?.monthly;
+    final journal = current?.journal;
     return Scaffold(
       appBar: AppBar(title: const Text('SCOLIA Pro'),
         actions: [IconButton(tooltip: 'Actualiser', onPressed: busy ? null :
           () => listing != null ? listStudents(listing.page, listing.search)
             : payments != null ? listMonthly(current: payments, page: payments.page)
+            : journal != null ? listReceipts(current: journal, page: journal.page)
             : execute(Operation.snapshot), icon: const Icon(Icons.refresh))]),
       body: SafeArea(child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
@@ -646,6 +724,7 @@ class _WorkspaceState extends State<Workspace> {
                 Stage.studentProfile => studentProfile(current.profile!),
                 Stage.enrollment => enrollment(current.enrollment!),
                 Stage.cashier => cashier(current.cashier!),
+                Stage.receipts => receipts(current.journal!),
               },
             ],
           ]),

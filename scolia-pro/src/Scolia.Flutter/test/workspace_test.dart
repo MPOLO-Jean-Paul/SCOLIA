@@ -162,6 +162,19 @@ void main() {
     expect(host.lastArgs['amount'], '50');
     expect(host.lastArgs['fees'], 'fee');
   });
+  testWidgets('journal preserves local receipt status and blocks unapplied export', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.receipts, journal: ReceiptJournal(
+      rows: [JournalRow(id: 'test', number: 'LOCAL-TEST', date: '25/11/2026', code: 'INF1',
+        student: 'Dossier test', promotion: 'INF1', amount: '50', method: 'Espèces',
+        status: 'À synchroniser', cashier: 'Compte')], count: 1)));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    expect(find.text('Espèces · À synchroniser'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'nouveau filtre');
+    await tester.pumpAndSettle();
+    expect(tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Excel')).onPressed, isNull);
+    expect(find.text('Appliquez la recherche avant d’exporter.'), findsOneWidget);
+  });
   testWidgets('catalog exposes authorised native modules only', (tester) async {
     final host = TestHost(const SchoolSession(stage: Stage.home,
       modules: ['page:CardsPage'], catalog: [

@@ -978,6 +978,21 @@ public sealed class ReceiptsPage : PageViewModel
         Raise(nameof(Subtitle));
     }
 
+    internal async Task LoadForFlutterAsync(string query, DateTime? start, DateTime? end,
+        string? mode, string? state, string? promotionId)
+    {
+        if (!ready) await LoadAsync();
+        search = query;
+        from = start;
+        to = end;
+        method = Methods.FirstOrDefault(x => x.Value == (mode ?? "")) ?? throw new ArgumentException("Mode invalide.");
+        status = Statuses.FirstOrDefault(x => x.Value == (state ?? "")) ?? throw new ArgumentException("Statut invalide.");
+        promotion = Promotions.FirstOrDefault(x => x.Value == (promotionId ?? "")) ?? throw new ArgumentException("Promotion invalide.");
+        await LoadAsync();
+    }
+
+    internal Task ExportForFlutterAsync(string format) => ExportAsync(format);
+
     private string Filters(int? size) => ScoliaClient.Query(
         ("search", Search.Trim()), ("from", ToDayOrNull(From)), ("to", ToDayOrNull(To)), ("method", Method?.Value),
         ("status", Status?.Value), ("promotionId", Promotion?.Value), ("page", 1), ("pageSize", size));

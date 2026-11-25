@@ -12,7 +12,38 @@ namespace Scolia.Bureau.Infrastructure;
 public sealed class FlutterCommandAdapter(ShellViewModel shell)
 {
     public sealed record Snapshot(int Protocol, string Stage, string School, string User,
-        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null, IReadOnlyList<ModuleEntry>? Catalog = null, WorkspaceHeader? Header = null, StudentProfile? Profile = null, EnrollmentForm? Enrollment = null, CashierScreen? Cashier = null);
+        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null, IReadOnlyList<ModuleEntry>? Catalog = null, WorkspaceHeader? Header = null, StudentProfile? Profile = null, EnrollmentForm? Enrollment = null, CashierScreen? Cashier = null, ReceiptJournal? Journal = null);
+
+    public sealed record JournalRow(string Id, string Number, string Date, string Code, string Student,
+        string Promotion, string Amount, string Method, string Status, string Cashier);
+    public sealed record ReceiptJournal(string Title, string Subtitle, string Search, string From, string To,
+        string Method, string Status, string Promotion, int Page, int Count, bool HasPrevious, bool HasNext,
+        IReadOnlyList<FilterChoice> Methods, IReadOnlyList<FilterChoice> Statuses,
+        IReadOnlyList<FilterChoice> Promotions, IReadOnlyList<JournalRow> Rows);
+    private ReceiptsPage? journalSelection;
+    private object? journalOwner;
+    private static string WireDate(DateTime? value) => value?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) ?? "";
+    private static DateTime? ReadDate(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return null;
+        if (!DateOnly.TryParseExact(value, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var day)) throw new ArgumentException("Date invalide.");
+        return day.ToDateTime(TimeOnly.MinValue);
+    }
+    private ReceiptJournal DescribeJournal(ReceiptsPage view, int requestedPage)
+    {
+        const int size = 25;
+        var count = view.Items.Count;
+        var page = Math.Clamp(requestedPage, 1, Math.Max(1, (count + size - 1) / size));
+        return new(view.Title, view.Subtitle, view.Search, WireDate(view.From), WireDate(view.To),
+            view.Method?.Value ?? "", view.Status?.Value ?? "", view.Promotion?.Value ?? "",
+            page, count, page > 1, page * size < count,
+            view.Methods.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+            view.Statuses.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+            view.Promotions.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+            view.Items.Skip((page - 1) * size).Take(size).Select(x => new JournalRow(x.Id.ToString(),
+                x.Number, x.Date, x.Matricule, x.Student, x.Promotion, x.Amount, x.Method, x.Status, x.Cashier)).ToArray());
+    }
 
     public sealed record CashierPayer(string Id, string Label, string Detail);
     public sealed record CashierFee(string Id, string Label, string Amount, string Deadline, bool Selected, bool Overdue);
@@ -169,6 +200,8 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         if (executing) throw new InvalidOperationException("Une commande SCOLIA est déjà en cours.");
         if (operation != "listMonthly" && operation != "exportMonthly") { monthlySelection = null; monthlyOwner = null; }
         if (operation is not ("listStudents" or "openStudent" or "cashierStudent" or "studentActions")) { visibleStudents.Clear(); studentOwner = null; }
+        if (operation is not ("listReceipts" or "exportReceipts" or "openReceipt"))
+        { journalSelection = null; journalOwner = null; }
         if (operation != "submitEnrollment") ClearEnrollment();
         if (operation == "snapshot") return ActiveCashier is { } active ? DescribeCashier(active) : Read();
         executing = true;
@@ -300,6 +333,46 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                             Profile = new(studentId.ToString(), detail.Title, detail.Subtitle, sections) };
                     }
                     return Read(native: true);
+                case "listReceipts":
+                {
+                    journalSelection = null; journalOwner = null;
+                    if (AllowedPage("receipts") is null || shell.Session is not { } ownerReceipt)
+                        throw new UnauthorizedAccessException("Journal non autorisé.");
+                    var queryReceipt = arguments.GetValueOrDefault("q", "").Trim();
+                    if (queryReceipt.Length > 100 || !int.TryParse(arguments.GetValueOrDefault("page", "1"), out var receiptPage)
+                        || receiptPage is < 1 or > 100000) throw new ArgumentException("Recherche invalide.");
+                    var start = ReadDate(arguments.GetValueOrDefault("from"));
+                    var end = ReadDate(arguments.GetValueOrDefault("to"));
+                    if (start > end) throw new ArgumentException("Période invalide.");
+                    var view = new ReceiptsPage(shell);
+                    await view.LoadForFlutterAsync(queryReceipt, start, end, arguments.GetValueOrDefault("method"),
+                        arguments.GetValueOrDefault("status"), arguments.GetValueOrDefault("promotion"));
+                    if (AllowedPage("receipts") is null || !ReferenceEquals(ownerReceipt, shell.Session))
+                        throw new UnauthorizedAccessException("Session modifiée.");
+                    journalSelection = view; journalOwner = ownerReceipt;
+                    return Read() with { Stage = "receipts", Journal = DescribeJournal(view, receiptPage) };
+                }
+                case "exportReceipts":
+                case "openReceipt":
+                {
+                    if (AllowedPage("receipts") is null || journalSelection is not { } journal ||
+                        !ReferenceEquals(journalOwner, shell.Session)) throw new UnauthorizedAccessException("Journal non autorisé.");
+                    if (operation == "openReceipt")
+                    {
+                        if (!Guid.TryParse(Required(arguments, "receipt", 36), out var receiptId) ||
+                            journal.Items.All(x => x.Id != receiptId)) throw new UnauthorizedAccessException("Reçu non proposé.");
+                        await shell.Open(() => new ReceiptDetailPage(shell, receiptId));
+                        journalSelection = null; journalOwner = null;
+                        return Read(native: true);
+                    }
+                    var receiptFormat = Required(arguments, "format", 4);
+                    if (receiptFormat is not ("pdf" or "xlsx")) throw new ArgumentException("Format invalide.");
+                    await journal.ExportForFlutterAsync(receiptFormat);
+                    if (AllowedPage("receipts") is null || !ReferenceEquals(journalOwner, shell.Session))
+                        throw new UnauthorizedAccessException("Session modifiée.");
+                    return Read() with { Stage = "receipts", Journal = DescribeJournal(journal,
+                        int.TryParse(arguments.GetValueOrDefault("page"), out var journalPage) ? journalPage : 1) };
+                }
                 case "cashierSearch":
                 case "cashierChoose":
                 case "cashierPreview":

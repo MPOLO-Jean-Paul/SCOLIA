@@ -1,15 +1,15 @@
 import 'package:flutter/services.dart';
 
-enum Stage { pairing, login, home, nativeScreen, loading, students, monthly, studentProfile, enrollment, cashier }
+enum Stage { pairing, login, home, nativeScreen, loading, students, monthly, studentProfile, enrollment, cashier, receipts }
 
 enum Operation {
   snapshot, scanQr, chooseServer, createSchool, signIn, recover,
-  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions, submitEnrollment, cashierSearch, cashierChoose, cashierPreview, cashierConfirm, cashierLeave
+  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions, submitEnrollment, cashierSearch, cashierChoose, cashierPreview, cashierConfirm, cashierLeave, listReceipts, exportReceipts, openReceipt
 }
 
 class SchoolSession {
   const SchoolSession({required this.stage, this.school = '', this.user = '',
-    this.year = '', this.modules = const [], this.notice = '', this.students, this.monthly, this.catalog = const [], this.header, this.profile, this.enrollment, this.cashier});
+    this.year = '', this.modules = const [], this.notice = '', this.students, this.monthly, this.catalog = const [], this.header, this.profile, this.enrollment, this.cashier, this.journal});
   final Stage stage;
   final String school, user, year, notice;
   final List<String> modules;
@@ -20,6 +20,7 @@ class SchoolSession {
   final StudentProfile? profile;
   final EnrollmentForm? enrollment;
   final CashierScreen? cashier;
+  final ReceiptJournal? journal;
 
   factory SchoolSession.fromMap(Map<Object?, Object?> value) {
     if (value['protocol'] != 1) {
@@ -38,7 +39,40 @@ class SchoolSession {
       monthly: stage == Stage.monthly ? MonthlyListing.fromMap(value['monthly'] as Map<Object?, Object?>) : null,
       profile: stage == Stage.studentProfile ? StudentProfile.fromMap(value['profile'] as Map<Object?, Object?>) : null,
       enrollment: stage == Stage.enrollment ? EnrollmentForm.fromMap(value['enrollment'] as Map<Object?, Object?>) : null,
-      cashier: stage == Stage.cashier ? CashierScreen.fromMap(value['cashier'] as Map<Object?, Object?>) : null);
+      cashier: stage == Stage.cashier ? CashierScreen.fromMap(value['cashier'] as Map<Object?, Object?>) : null,
+      journal: stage == Stage.receipts ? ReceiptJournal.fromMap(value['journal'] as Map<Object?, Object?>) : null);
+  }
+}
+
+class JournalRow {
+  const JournalRow({required this.id, required this.number, required this.date, required this.code,
+    required this.student, required this.promotion, required this.amount, required this.method,
+    required this.status, required this.cashier});
+  final String id, number, date, code, student, promotion, amount, method, status, cashier;
+  factory JournalRow.fromMap(Map<Object?, Object?> m) => JournalRow(id: m['id'] as String,
+    number: m['number'] as String, date: m['date'] as String, code: m['code'] as String,
+    student: m['student'] as String, promotion: m['promotion'] as String, amount: m['amount'] as String,
+    method: m['method'] as String, status: m['status'] as String, cashier: m['cashier'] as String);
+}
+class ReceiptJournal {
+  const ReceiptJournal({this.title = 'Journal des reçus', this.subtitle = '', this.search = '', this.from = '',
+    this.to = '', this.method = '', this.status = '', this.promotion = '', this.page = 1, this.count = 0,
+    this.hasPrevious = false, this.hasNext = false, this.methods = const [], this.statuses = const [],
+    this.promotions = const [], this.rows = const []});
+  final String title, subtitle, search, from, to, method, status, promotion;
+  final int page, count;
+  final bool hasPrevious, hasNext;
+  final List<FilterChoice> methods, statuses, promotions;
+  final List<JournalRow> rows;
+  factory ReceiptJournal.fromMap(Map<Object?, Object?> m) {
+    List<FilterChoice> choices(String key) => List<FilterChoice>.unmodifiable(
+      (m[key] as List<Object?>).map((v) => FilterChoice.fromMap(v as Map<Object?, Object?>)));
+    return ReceiptJournal(title: m['title'] as String, subtitle: m['subtitle'] as String, search: m['search'] as String,
+      from: m['from'] as String, to: m['to'] as String, method: m['method'] as String, status: m['status'] as String,
+      promotion: m['promotion'] as String, page: m['page'] as int, count: m['count'] as int,
+      hasPrevious: m['hasPrevious'] as bool, hasNext: m['hasNext'] as bool,
+      methods: choices('methods'), statuses: choices('statuses'), promotions: choices('promotions'),
+      rows: List<JournalRow>.unmodifiable((m['rows'] as List<Object?>).map((v) => JournalRow.fromMap(v as Map<Object?, Object?>))));
   }
 }
 
