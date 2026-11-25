@@ -42,11 +42,28 @@ class UpgradeGuardTests(unittest.TestCase):
                 "--candidate", str(self.new), "--aapt", "aapt", "--apksigner", "signer"]
         if require_flutter:
             argv.append("--require-flutter")
-        with patch.object(guard, "run", side_effect=fake), patch.object(sys, "argv", argv), redirect_stdout(io.StringIO()):
+        with patch.object(guard, "run", side_effect=fake), patch.object(guard, "verify_dex"), patch.object(sys, "argv", argv), redirect_stdout(io.StringIO()):
             guard.main()
 
     def test_valid_upgrade(self):
         self.check()
+
+    def test_dex_missing_relinker_is_rejected(self):
+        with zipfile.ZipFile(self.new, "a") as apk:
+            apk.writestr("classes.dex", b"fixture")
+        with zipfile.ZipFile(self.new) as apk, patch.object(guard.subprocess, "check_output",
+                return_value=b"  Class descriptor  : 'Lio/flutter/embedding/engine/FlutterEngine;'\n"):
+            with self.assertRaisesRegex(ValueError, "ReLinker"):
+                guard.verify_dex(apk, "dexdump")
+
+    def test_dex_definitions_accept_modified_utf8(self):
+        with zipfile.ZipFile(self.new, "a") as apk:
+            apk.writestr("classes.dex", b"fixture")
+        output = (b"\xed\xa0\x80\n  Class descriptor : 'Lio/flutter/embedding/engine/FlutterEngine;'\n"
+                  b"  Class descriptor : 'Lcom/getkeepsafe/relinker/ReLinker;'\n"
+                  b"  Class descriptor : 'Lcom/getkeepsafe/relinker/ReLinker$Logger;'\n")
+        with zipfile.ZipFile(self.new) as apk, patch.object(guard.subprocess, "check_output", return_value=output):
+            guard.verify_dex(apk, "dexdump")
 
     def test_wrong_certificate(self):
         with self.assertRaisesRegex(ValueError, "Signature différente"):

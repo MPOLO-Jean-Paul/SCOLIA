@@ -132,12 +132,12 @@ jobs:
           bash scripts/install-android-sdk-retry.sh
       # Les dépendances sont préparées avant le chargement de la clé historique.
       - uses: subosito/flutter-action@v2
-        if: ${{ vars.SCOLIA_FLUTTER_OFFICIAL == 'true' && ((github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103') || env.SCOLIA_RECOVERY_PR18 == 'true') }}
+        if: ${{ ((github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103') || env.SCOLIA_RECOVERY_PR18 == 'true') }}
         with:
           channel: stable
           flutter-version: '3.44.0'
       - name: Préparer le candidat Flutter officiel sans secret
-        if: ${{ vars.SCOLIA_FLUTTER_OFFICIAL == 'true' && ((github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103') || env.SCOLIA_RECOVERY_PR18 == 'true') }}
+        if: ${{ ((github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103') || env.SCOLIA_RECOVERY_PR18 == 'true') }}
         working-directory: scolia-pro/src/Scolia.Flutter
         run: |
           flutter pub get
@@ -201,7 +201,7 @@ jobs:
             echo "::notice::Compilation de validation : cette signature n'est pas destinee aux mises a jour officielles."
           fi
       - name: Activer Flutter uniquement avec la signature officielle confirmée
-        if: ${{ vars.SCOLIA_FLUTTER_OFFICIAL == 'true' && ((github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103') || env.SCOLIA_RECOVERY_PR18 == 'true') && env.SCOLIA_SIGNATURE_DELEGUEE_PR18 != 'true' }}
+        if: ${{ ((github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103') || env.SCOLIA_RECOVERY_PR18 == 'true') && env.SCOLIA_SIGNATURE_DELEGUEE_PR18 != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -278,8 +278,9 @@ jobs:
           gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern "SCOLIA_Pro_${old}_Android.apk" --dir "$RUNNER_TEMP/previous-scolia-apk"
           mapfile -t tools < <(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner | sort -V)
           signer="${tools[-1]}"
-          options=()
-          if [[ "${SCOLIA_FLUTTER_OFFICIAL:-false}" == "true" ]]; then options+=(--require-flutter); fi
+          # Never distribute an APK that silently fell back to the native-only build.
+          test "${SCOLIA_FLUTTER_OFFICIAL:-false}" = true
+          options=(--require-flutter)
           python3 src/Scolia.Flutter/android_bridge/verify_release_upgrade.py \
             --previous "$RUNNER_TEMP/previous-scolia-apk/SCOLIA_Pro_${old}_Android.apk" \
             --candidate "artifacts/android/SCOLIA_Pro_${version}_Android.apk" \
@@ -479,6 +480,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          SCOLIA_ROLLOUT_APPROVED_SHA: ${{ vars.SCOLIA_FLUTTER_ROLLOUT_APPROVED_SHA }}
         run: |
           set -euo pipefail
           version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -1)"
@@ -515,6 +517,12 @@ jobs:
           # Incrementez Version et AndroidVersionCode dans les sources avant une nouvelle release.
           if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
             echo "::notice::La version $tag est deja publiee : aucun remplacement d'APK ou d'EXE."
+            exit 0
+          fi
+          # The first Flutter rollout requires validation of the exact signed ARM candidate.
+          # This gate is scoped to the initial migration, and never replaces the certificate check.
+          if [[ "$version" == "1.3.0" && "${SCOLIA_ROLLOUT_APPROVED_SHA:-}" != "$SCOLIA_CHECKOUT_REF" ]]; then
+            echo "::notice::Candidat officiel 1.3.0 compilé et contrôlé. Diffusion suspendue jusqu'à validation sur appareil ARM du commit exact $SCOLIA_CHECKOUT_REF."
             exit 0
           fi
           # Notes de version en français, versionnées avec les sources (docs/RELEASE_<version>.md).

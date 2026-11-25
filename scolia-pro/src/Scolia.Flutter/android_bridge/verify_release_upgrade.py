@@ -3,6 +3,7 @@ import argparse
 import re
 import subprocess
 import zipfile
+import tempfile
 from pathlib import Path
 
 PACKAGE = "com.jpservices.scolia"
@@ -26,6 +27,20 @@ def identify(apk, aapt, signer):
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):
         raise ValueError("Version officielle invalide")
     return int(match.group(2)), fingerprints, tuple(int(x) for x in version.split("."))
+
+def verify_dex(apk, dexdump):
+    required = {b"Lio/flutter/embedding/engine/FlutterEngine;",
+                b"Lcom/getkeepsafe/relinker/ReLinker;",
+                b"Lcom/getkeepsafe/relinker/ReLinker$Logger;"}
+    with tempfile.TemporaryDirectory() as directory:
+        for name in sorted(n for n in apk.namelist() if re.fullmatch(r"classes(?:[0-9]+)?\.dex", n)):
+            path = Path(directory) / name
+            path.write_bytes(apk.read(name))
+            output = subprocess.check_output([str(dexdump), "-f", str(path)], stderr=subprocess.PIPE)
+            required -= set(re.findall(rb"(?m)^[ \t]*Class descriptor[ \t]*:[ \t]*'([^'\r\n]+)'", output))
+            if not required:
+                return
+    raise ValueError("Classes Flutter manquantes: " + ", ".join(sorted(x.decode("ascii") for x in required)))
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
@@ -52,6 +67,7 @@ def main():
                         raise ValueError(f"Flutter absent : {abi}/{lib}")
             if "assets/flutter_assets/AssetManifest.bin" not in files:
                 raise ValueError("Assets Flutter absents")
+            verify_dex(apk, Path(a.apksigner).with_name("dexdump"))
     print(f"PASS: package officiel, versionCode {previous} -> {candidate}, certificats identiques")
     print("La migration des données reste à vérifier sur un appareil de test.")
 
