@@ -4,6 +4,9 @@ on:
     paths:
       - 'scolia-pro/src/Scolia.Flutter/**'
       - '.github/workflows/scolia-flutter-module.yml'
+      - 'scolia-pro/src/Scolia.Flutter.AndroidBinding/**'
+      - 'scolia-pro/src/Scolia.Mobile/FlutterIntegration.cs'
+      - 'scolia-pro/src/Scolia.Bureau/Infrastructure/Flutter*'
   workflow_dispatch:
 permissions:
   contents: read
@@ -29,10 +32,18 @@ jobs:
       - run: flutter build aar --no-debug --no-profile
       - name: Compiler le pont Java contre le moteur Flutter réel
         run: python3 android_bridge/build_bridge.py
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Installer le workload Android pour la liaison .NET
+        run: dotnet workload install android
+      - name: Compiler la liaison .NET Android (bibliothèque de validation)
+        run: dotnet build ../Scolia.Flutter.AndroidBinding/Scolia.Flutter.AndroidBinding.csproj -c Release
       - uses: actions/upload-artifact@v4
         with:
           name: scolia-flutter-module-aar-validation
           path: |
             scolia-pro/src/Scolia.Flutter/build/host/outputs/repo/
             scolia-pro/src/Scolia.Flutter/build/bridge/scolia-flutter-bridge.jar
+            scolia-pro/src/Scolia.Flutter.AndroidBinding/bin/Release/net10.0-android/
           if-no-files-found: error
