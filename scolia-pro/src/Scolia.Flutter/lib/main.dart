@@ -77,6 +77,7 @@ class _WorkspaceState extends State<Workspace> {
   final recoveryCode = TextEditingController();
   final confirm = TextEditingController();
   final form = GlobalKey<FormState>();
+  final enrollmentValues = <String, String>{};
 
   @override
   void initState() { super.initState(); execute(Operation.snapshot); }
@@ -97,6 +98,12 @@ class _WorkspaceState extends State<Workspace> {
       if (!mounted) return;
       setState(() {
         session = result;
+        enrollmentValues.clear();
+        if (result.enrollment != null) {
+          for (final field in result.enrollment!.fields) {
+            if (field.kind != 'Header') enrollmentValues[field.key] = field.value;
+          }
+        }
         if (result.stage == Stage.students && result.students != null) {
           studentPage = result.students!.page;
           studentQuery = result.students!.search;
@@ -121,6 +128,7 @@ class _WorkspaceState extends State<Workspace> {
     } finally {
       if (mounted) {
         password.clear(); recoveryCode.clear(); confirm.clear();
+        if (session?.stage != Stage.enrollment) enrollmentValues.clear();
         setState(() => busy = false);
         if (session?.stage == Stage.loading && error == null) {
           openingPoll = Timer(const Duration(milliseconds: 750), () {
@@ -353,6 +361,58 @@ class _WorkspaceState extends State<Workspace> {
     ]),
   ]);
 
+  Widget enrollmentField(EnrollmentForm e, EnrollmentField f) {
+    final current = enrollmentValues[f.key] ?? '';
+    if (f.kind == 'Header') return Padding(padding: const EdgeInsets.only(top: 12, bottom: 4),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(f.label, style: Theme.of(context).textTheme.titleMedium),
+        if (f.hint.isNotEmpty) Text(f.hint, style: Theme.of(context).textTheme.bodySmall),
+      ]));
+    final decoration = InputDecoration(labelText: f.required ? '${f.label} *' : f.label,
+      helperText: f.hint.isEmpty ? null : f.hint, helperMaxLines: 3,
+      errorText: f.error.isEmpty ? null : f.error, errorMaxLines: 3);
+    if (f.kind == 'Choice') return InputDecorator(decoration: decoration,
+      child: DropdownButtonHideUnderline(child: DropdownButton<String>(
+        value: f.options.any((x) => x.id == current) ? current : null,
+        isExpanded: true, hint: const Text('Choisir'),
+        items: f.options.map((x) => DropdownMenuItem(value: x.id,
+          child: Text(x.label, overflow: TextOverflow.ellipsis))).toList(),
+        onChanged: busy ? null : (v) => setState(() => enrollmentValues[f.key] = v ?? ''))));
+    if (f.kind == 'Day') return InkWell(
+      onTap: busy ? null : () async {
+        final now = DateTime.now();
+        final first = DateTime(1900);
+        final last = DateTime(now.year + 5, 12, 31);
+        final parsed = DateTime.tryParse(current);
+        final initial = parsed != null && !parsed.isBefore(first) && !parsed.isAfter(last) ? parsed : now;
+        final picked = await showDatePicker(context: context, initialDate: initial, firstDate: first, lastDate: last);
+        if (!mounted || picked == null || session?.enrollment?.token != e.token) return;
+        setState(() => enrollmentValues[f.key] = picked.toIso8601String().substring(0, 10));
+      },
+      child: InputDecorator(decoration: decoration.copyWith(suffixIcon: const Icon(Icons.calendar_today)),
+        child: Text(current.isEmpty ? 'Choisir une date' : current)));
+    return TextFormField(key: ValueKey('${e.token}:${f.key}'), initialValue: current,
+      enabled: !busy, maxLength: f.kind == 'Phone' ? 10 : 500,
+      keyboardType: f.kind == 'Phone' ? TextInputType.phone : TextInputType.text,
+      inputFormatters: f.kind == 'Phone' ? [FilteringTextInputFormatter.digitsOnly] : null,
+      textCapitalization: TextCapitalization.words,
+      decoration: decoration.copyWith(counterText: ''),
+      onChanged: (v) => enrollmentValues[f.key] = v);
+  }
+
+  Widget enrollment(EnrollmentForm e) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    heading(e.title, e.subtitle),
+    if (e.error.isNotEmpty) Padding(padding: const EdgeInsets.only(bottom: 12),
+      child: Text(e.error, style: TextStyle(color: Theme.of(context).colorScheme.error))),
+    for (final field in e.fields)
+      Padding(padding: const EdgeInsets.only(bottom: 12), child: enrollmentField(e, field)),
+    FilledButton.icon(onPressed: busy ? null : () => execute(Operation.submitEnrollment,
+      {'token': e.token, ...enrollmentValues}), icon: const Icon(Icons.person_add_alt_1),
+      label: const Text('Inscrire')),
+    const SizedBox(height: 8),
+    action('Annuler', Icons.close, Operation.snapshot),
+  ]);
+
   Widget studentProfile(StudentProfile p) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
     Align(alignment: Alignment.centerLeft, child: TextButton.icon(
       onPressed: busy ? null : () => listStudents(studentPage, studentQuery),
@@ -490,6 +550,7 @@ class _WorkspaceState extends State<Workspace> {
                 Stage.students => students(current.students!),
                 Stage.monthly => monthly(current.monthly!),
                 Stage.studentProfile => studentProfile(current.profile!),
+                Stage.enrollment => enrollment(current.enrollment!),
               },
             ],
           ]),

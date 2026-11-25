@@ -12,7 +12,10 @@ namespace Scolia.Bureau.Infrastructure;
 public sealed class FlutterCommandAdapter(ShellViewModel shell)
 {
     public sealed record Snapshot(int Protocol, string Stage, string School, string User,
-        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null, IReadOnlyList<ModuleEntry>? Catalog = null, WorkspaceHeader? Header = null, StudentProfile? Profile = null);
+        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null, IReadOnlyList<ModuleEntry>? Catalog = null, WorkspaceHeader? Header = null, StudentProfile? Profile = null, EnrollmentForm? Enrollment = null);
+
+    public sealed record EnrollmentField(string Key, string Label, string Kind, bool Required, string Value, string Hint, string Error, IReadOnlyList<FilterChoice> Options);
+    public sealed record EnrollmentForm(string Token, string Title, string Subtitle, string Error, IReadOnlyList<EnrollmentField> Fields);
 
     public sealed record ProfileValue(string Label, string Value);
     public sealed record ProfileSection(string Title, IReadOnlyList<IReadOnlyList<ProfileValue>> Rows);
@@ -36,6 +39,20 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     private MonthlyPage? monthlySelection;
     private object? monthlyOwner;
     private bool executing;
+    private FormViewModel? enrollmentForm;
+    private object? enrollmentOwner;
+    private string? enrollmentToken;
+
+    private void ClearEnrollment() { enrollmentForm = null; enrollmentOwner = null; enrollmentToken = null; }
+
+    private EnrollmentForm DescribeEnrollment(FormViewModel form) => new(enrollmentToken!, form.Title, form.Subtitle, form.Error ?? "",
+        form.Fields.Select(field => new EnrollmentField(field.Key, field.Label, field.Kind.ToString(), field.Required,
+            field.Kind switch
+            {
+                FieldKind.Choice => field.Choice?.Value ?? "",
+                FieldKind.Day => field.Day?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) ?? field.Text,
+                _ => field.Text,
+            }, field.Hint ?? "", field.Error ?? "", field.Options.Select(x => new FilterChoice(x.Value, x.Label)).ToArray())).ToArray());
     private object? studentOwner;
     private HashSet<Guid> visibleStudents = [];
 
@@ -132,6 +149,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         if (executing) throw new InvalidOperationException("Une commande SCOLIA est déjà en cours.");
         if (operation != "listMonthly" && operation != "exportMonthly") { monthlySelection = null; monthlyOwner = null; }
         if (operation is not ("listStudents" or "openStudent" or "cashierStudent" or "studentActions")) { visibleStudents.Clear(); studentOwner = null; }
+        if (operation != "submitEnrollment") ClearEnrollment();
         if (operation == "snapshot") return Read();
         executing = true;
         try
@@ -261,15 +279,65 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                             Profile = new(studentId.ToString(), detail.Title, detail.Subtitle, sections) };
                     }
                     return Read(native: true);
+                case "submitEnrollment":
+                    if (AllowedPage("students") is null || !shell.Can(Perm.StudentsWrite) ||
+                        enrollmentForm is not { } form || !ReferenceEquals(enrollmentOwner, shell.Session) ||
+                        !string.Equals(enrollmentToken, Required(arguments, "token", 36), StringComparison.Ordinal))
+                        throw new UnauthorizedAccessException("Inscription non autorisée.");
+                    var fields = form.Fields.Where(x => x.Kind != FieldKind.Header).ToArray();
+                    if (arguments.Count != fields.Length + 1) throw new ArgumentException("Formulaire incomplet.");
+                    foreach (var field in fields)
+                    {
+                        if (!arguments.TryGetValue(field.Key, out var value) || value.Length > 500)
+                            throw new ArgumentException("Champ invalide.");
+                        if (field.Kind == FieldKind.Choice)
+                        {
+                            field.Choice = field.Options.FirstOrDefault(x => x.Value == value);
+                            if (value.Length > 0 && field.Choice is null) throw new ArgumentException("Choix invalide.");
+                        }
+                        else if (field.Kind == FieldKind.Day)
+                        {
+                            field.Text = value;
+                            field.Day = DateOnly.TryParseExact(value, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+                                System.Globalization.DateTimeStyles.None, out var date) ? date.ToDateTime(TimeOnly.MinValue) : null;
+                        }
+                        else field.Text = value;
+                    }
+                    await form.Submit.ExecuteAsync();
+                    if (AllowedPage("students") is null || !ReferenceEquals(enrollmentOwner, shell.Session))
+                    {
+                        ClearEnrollment();
+                        throw new UnauthorizedAccessException("Session modifiée.");
+                    }
+                    if (form.Completion.IsCompletedSuccessfully)
+                    {
+                        var accepted = form.Completion.Result;
+                        var notice = accepted ? form.Message : "Inscription non confirmée. Vérifiez le registre avant de réessayer.";
+                        ClearEnrollment();
+                        return Read(notice);
+                    }
+                    return Read() with { Stage = "enrollment", Enrollment = DescribeEnrollment(form) };
                 case "openModule":
                     var module = Required(arguments, "module", 80);
                     if (module == "enroll")
                     {
                         if (AllowedPage("students") is null || !shell.Can(Perm.StudentsWrite))
                             throw new UnauthorizedAccessException("Inscription non autorisée.");
-                        // Le formulaire natif conserve ses contrôles de doublons et la file hors ligne.
-                        _ = shell.Run(() => StudentForms.CreateAsync(shell));
-                        return Read(native: true);
+                        var ownerBefore = shell.Session;
+                        var enrollment = await StudentForms.CreateFlutterEnrollmentAsync(shell);
+                        if (AllowedPage("students") is null || !shell.Can(Perm.StudentsWrite) ||
+                            !ReferenceEquals(ownerBefore, shell.Session))
+                            throw new UnauthorizedAccessException("Session modifiée.");
+                        if (enrollment is null)
+                        {
+                            // Conserver l'assistant natif de création des promotions si nécessaire.
+                            _ = shell.Run(() => StudentForms.CreateAsync(shell));
+                            return Read(native: true);
+                        }
+                        enrollmentForm = enrollment;
+                        enrollmentOwner = ownerBefore;
+                        enrollmentToken = Guid.NewGuid().ToString();
+                        return Read() with { Stage = "enrollment", Enrollment = DescribeEnrollment(enrollment) };
                     }
                     var item = AllowedPage(module) ??
                         throw new UnauthorizedAccessException("Fonctionnalité non autorisée.");

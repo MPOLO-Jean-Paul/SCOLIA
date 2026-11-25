@@ -1,15 +1,15 @@
 import 'package:flutter/services.dart';
 
-enum Stage { pairing, login, home, nativeScreen, loading, students, monthly, studentProfile }
+enum Stage { pairing, login, home, nativeScreen, loading, students, monthly, studentProfile, enrollment }
 
 enum Operation {
   snapshot, scanQr, chooseServer, createSchool, signIn, recover,
-  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions
+  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions, submitEnrollment
 }
 
 class SchoolSession {
   const SchoolSession({required this.stage, this.school = '', this.user = '',
-    this.year = '', this.modules = const [], this.notice = '', this.students, this.monthly, this.catalog = const [], this.header, this.profile});
+    this.year = '', this.modules = const [], this.notice = '', this.students, this.monthly, this.catalog = const [], this.header, this.profile, this.enrollment});
   final Stage stage;
   final String school, user, year, notice;
   final List<String> modules;
@@ -18,6 +18,7 @@ class SchoolSession {
   final List<ModuleEntry> catalog;
   final WorkspaceHeader? header;
   final StudentProfile? profile;
+  final EnrollmentForm? enrollment;
 
   factory SchoolSession.fromMap(Map<Object?, Object?> value) {
     if (value['protocol'] != 1) {
@@ -34,8 +35,33 @@ class SchoolSession {
         (x) => ModuleEntry.fromMap(x as Map<Object?, Object?>))),
       students: stage == Stage.students ? StudentListing.fromMap(value['students'] as Map<Object?, Object?>) : null,
       monthly: stage == Stage.monthly ? MonthlyListing.fromMap(value['monthly'] as Map<Object?, Object?>) : null,
-      profile: stage == Stage.studentProfile ? StudentProfile.fromMap(value['profile'] as Map<Object?, Object?>) : null);
+      profile: stage == Stage.studentProfile ? StudentProfile.fromMap(value['profile'] as Map<Object?, Object?>) : null,
+      enrollment: stage == Stage.enrollment ? EnrollmentForm.fromMap(value['enrollment'] as Map<Object?, Object?>) : null);
   }
+}
+
+class EnrollmentField {
+  const EnrollmentField({required this.key, required this.label, required this.kind,
+    this.required = false, this.value = '', this.hint = '', this.error = '', this.options = const []});
+  final String key, label, kind, value, hint, error;
+  final bool required;
+  final List<FilterChoice> options;
+  factory EnrollmentField.fromMap(Map<Object?, Object?> m) => EnrollmentField(
+    key: m['key'] as String, label: m['label'] as String, kind: m['kind'] as String,
+    required: m['required'] as bool, value: m['value'] as String, hint: m['hint'] as String,
+    error: m['error'] as String, options: List<FilterChoice>.unmodifiable(
+      (m['options'] as List<Object?>).map((x) => FilterChoice.fromMap(x as Map<Object?, Object?>))));
+}
+
+class EnrollmentForm {
+  const EnrollmentForm({required this.token, required this.title, required this.subtitle,
+    this.error = '', required this.fields});
+  final String token, title, subtitle, error;
+  final List<EnrollmentField> fields;
+  factory EnrollmentForm.fromMap(Map<Object?, Object?> m) => EnrollmentForm(
+    token: m['token'] as String, title: m['title'] as String, subtitle: m['subtitle'] as String,
+    error: m['error'] as String, fields: List<EnrollmentField>.unmodifiable(
+      (m['fields'] as List<Object?>).map((x) => EnrollmentField.fromMap(x as Map<Object?, Object?>))));
 }
 
 class ProfileValue {

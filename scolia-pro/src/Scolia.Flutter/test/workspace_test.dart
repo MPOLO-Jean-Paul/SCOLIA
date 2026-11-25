@@ -130,6 +130,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(host.last, Operation.listStudents);
   });
+  testWidgets('enrollment sends native form token and typed values', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.enrollment,
+      enrollment: EnrollmentForm(token: 'test-token', title: 'Nouvelle inscription', subtitle: '',
+        fields: [EnrollmentField(key: 'nom', label: 'Nom', kind: 'Text', required: true)])));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Nom de test');
+    await tester.ensureVisible(find.text('Inscrire'));
+    await tester.tap(find.text('Inscrire'));
+    await tester.pumpAndSettle();
+    expect(host.last, Operation.submitEnrollment);
+    expect(host.lastArgs, {'token': 'test-token', 'nom': 'Nom de test'});
+  });
   testWidgets('catalog exposes authorised native modules only', (tester) async {
     final host = TestHost(const SchoolSession(stage: Stage.home,
       modules: ['page:CardsPage'], catalog: [

@@ -706,6 +706,20 @@ public static class StudentForms
             promotions = (await shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions")).Where(p => p.IsActive).ToList();
             if (promotions.Count == 0) return;
         }
+        var form = BuildEnrollmentForm(shell, promotions);
+        if (await shell.Ask(form) && shell.Current is StudentsPage page) await page.RefreshAsync();
+    }
+
+    // Flutter et Avalonia partagent le même formulaire, les mêmes validations
+    // et la même opération API (y compris la file d'attente hors ligne).
+    internal static async Task<FormViewModel?> CreateFlutterEnrollmentAsync(ShellViewModel shell)
+    {
+        var promotions = (await shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions")).Where(p => p.IsActive).ToList();
+        return promotions.Count == 0 ? null : BuildEnrollmentForm(shell, promotions);
+    }
+
+    private static FormViewModel BuildEnrollmentForm(ShellViewModel shell, IReadOnlyList<PromotionDto> promotions)
+    {
         string? confirmedIdentity = null;
         var form = new FormViewModel("Nouvelle inscription", "Le code anonyme actif sera repris automatiquement dans le champ Matricule après son attribution.", async f =>
         {
@@ -742,11 +756,13 @@ public static class StudentForms
                     enrolledOn = f.Day("inscription"),
                     confirmDuplicate = doubles.Count > 0 && confirmedIdentity == identityKey,
                 });
-                shell.Notify($"{shell.StudentTerms.SingularTitle} inscrit.");
+                f.Message = $"{shell.StudentTerms.SingularTitle} inscrit.";
+                shell.Notify(f.Message);
             }
             catch (OfflineQueuedException)
             {
-                shell.Notify("Inscription enregistrée sur cet appareil. Confirmation automatique au retour du serveur ; le code anonyme sera ensuite repris dans le champ Matricule.");
+                f.Message = "Inscription enregistrée sur cet appareil. Confirmation automatique au retour du serveur ; le code anonyme sera ensuite repris dans le champ Matricule.";
+                shell.Notify(f.Message);
             }
             return true;
         })
@@ -760,7 +776,7 @@ public static class StudentForms
         AddIdentityFields(shell, form, null);
         form.AddDay("inscription", "Date d'inscription", DateOnly.FromDateTime(DateTime.Today));
 
-        if (await shell.Ask(form) && shell.Current is StudentsPage page) await page.RefreshAsync();
+        return form;
     }
 
     private static List<DuplicateCandidateDto> LocalDuplicates(OfflineStore? store,
