@@ -79,6 +79,8 @@ class _WorkspaceState extends State<Workspace> {
   final form = GlobalKey<FormState>();
   final enrollmentValues = <String, String>{};
   final journalSearch = TextEditingController();
+  final marksCode = TextEditingController();
+  final marksScore = TextEditingController();
   final cashierQuery = TextEditingController();
   final cashierAmount = TextEditingController();
   final cashierReference = TextEditingController();
@@ -93,6 +95,7 @@ class _WorkspaceState extends State<Workspace> {
   @override
   void dispose() {
     openingPoll?.cancel();
+    marksCode.dispose(); marksScore.dispose();
     journalSearch.dispose(); cashierQuery.dispose(); cashierAmount.dispose(); cashierReference.dispose(); cashierNote.dispose();
     studentSearch.dispose(); paymentSearch.dispose(); username.dispose(); password.dispose(); recoveryCode.dispose(); confirm.dispose();
     super.dispose();
@@ -107,6 +110,8 @@ class _WorkspaceState extends State<Workspace> {
       if (!mounted) return;
       setState(() {
         session = result;
+        marksCode.text = result.register?.marks?.code ?? '';
+        marksScore.text = result.register?.marks?.score ?? '';
         journalSearch.text = result.journal?.search ?? '';
         if (result.cashier case final c?) {
           cashierFees..clear()..addAll(c.fees.where((x) => x.selected).map((x) => x.id));
@@ -272,6 +277,7 @@ class _WorkspaceState extends State<Workspace> {
     else if (id == 'page:StaffAttendancePage') { unawaited(loadRegister('pointage')); }
     else if (id == 'page:TeachingPage') { unawaited(loadRegister('teaching')); }
     else if (id == 'page:AnonymousCodesPage') { unawaited(loadRegister('codes')); }
+    else if (id == 'grades') { unawaited(loadRegister('marks')); }
     else { unawaited(execute(Operation.openModule, {'module': id})); }
   }
 
@@ -485,7 +491,69 @@ class _WorkspaceState extends State<Workspace> {
       ]))),
   ]);
 
+  Widget marksRegister(SchoolRegister r) {
+    final mark = r.marks!;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: busy ? null : () => leaveRegister(r),
+        icon: const Icon(Icons.arrow_back), label: const Text('Retour à l’accueil'))),
+      heading(r.title, r.subtitle),
+      if (r.promotions.isNotEmpty) filter('Promotion', r.promotion, r.promotions,
+        (v) => loadRegister(r.kind, current: r, promotion: v, date: '', measure: '')),
+      if (r.options.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        filter('Cours', r.date, [const FilterChoice('', 'Choisir un cours'), ...r.options],
+          (v) => loadRegister(r.kind, current: r, date: v, measure: '')),
+      ],
+      if (mark.kinds.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        filter('Période de cotation', r.measure, mark.kinds,
+          (v) => loadRegister(r.kind, current: r, measure: v)),
+      ],
+      const SizedBox(height: 12),
+      if (mark.rules.isNotEmpty) Text(mark.rules),
+      if (mark.announcement.isNotEmpty) Text(mark.announcement),
+      const SizedBox(height: 12),
+      if (r.date.isNotEmpty) ...[
+        Text(mark.sheet, style: Theme.of(context).textTheme.titleMedium),
+        Text(mark.hint),
+        const SizedBox(height: 12),
+        TextField(controller: marksCode, enabled: !busy, textCapitalization: TextCapitalization.characters,
+          maxLength: 64, decoration: const InputDecoration(labelText: 'Code anonyme', prefixIcon: Icon(Icons.search))),
+        ValueListenableBuilder<TextEditingValue>(valueListenable: marksCode, builder: (context, value, _) {
+          final query = value.text.trim().toUpperCase();
+          final validated = query.isNotEmpty && query == mark.validatedCode.toUpperCase();
+          final suggestions = query.isEmpty || validated ? <RegisterRow>[] :
+            r.rows.where((x) => x.code.toUpperCase().startsWith(query)).take(15).toList();
+          return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            if (suggestions.isNotEmpty) Wrap(spacing: 8, children: [
+              for (final row in suggestions) ActionChip(label: Text(row.code), onPressed: busy ? null : () {
+                marksCode.text = row.code;
+                execute(Operation.marksCheck, {'token': r.token, 'code': row.code});
+              }),
+            ]),
+            OutlinedButton.icon(onPressed: busy || query.isEmpty ? null : () => execute(Operation.marksCheck,
+              {'token': r.token, 'code': query}), icon: const Icon(Icons.verified_outlined), label: const Text('Vérifier le code')),
+            if (mark.feedback.isNotEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(mark.feedback)),
+            if (validated && r.canWrite) ...[
+              TextField(controller: marksScore, enabled: !busy,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true), maxLength: 32,
+                decoration: InputDecoration(labelText: mark.maximum, prefixIcon: const Icon(Icons.edit_outlined))),
+              ValueListenableBuilder<TextEditingValue>(valueListenable: marksScore, builder: (context, score, _) =>
+                FilledButton.icon(onPressed: busy || score.text.trim().isEmpty ? null : () => execute(Operation.marksSave,
+                  {'token': r.token, 'code': mark.validatedCode, 'score': score.text.trim()}),
+                  icon: const Icon(Icons.save_outlined), label: const Text('Enregistrer la cote'))),
+            ],
+            if (!r.canWrite) const Text('Feuille non modifiable.'),
+          ]);
+        }),
+      ],
+      const SizedBox(height: 12),
+      action('Feuille complète et autres actions', Icons.more_horiz, Operation.registerNative, args: {'token': r.token}),
+    ]);
+  }
+
   Widget schoolRegister(SchoolRegister r) {
+    if (r.kind == 'marks') return marksRegister(r);
     if (r.kind == 'codes') return codesRegister(r);
     if (r.kind != 'attendance' && r.kind != 'discipline') return personnelRegister(r);
     final attendance = r.kind == 'attendance';

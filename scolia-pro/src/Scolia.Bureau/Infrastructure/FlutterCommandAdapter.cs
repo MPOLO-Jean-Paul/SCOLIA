@@ -18,11 +18,24 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         IReadOnlyList<ProfileValue> Details);
     public sealed record SchoolRegister(string Kind, string Title, string Subtitle, string Promotion, string Date,
         string Measure, bool Summary, bool CanWrite, bool Pending, bool Dirty, string Token,
-        IReadOnlyList<FilterChoice> Promotions, IReadOnlyList<FilterChoice> Options, IReadOnlyList<RegisterRow> Rows);
+        IReadOnlyList<FilterChoice> Promotions, IReadOnlyList<FilterChoice> Options, IReadOnlyList<RegisterRow> Rows, MarkInput? Marks = null);
     private StaffPage? staffDraft;
     private StaffAttendancePage? pointageDraft;
     private TeachingPage? teachingDraft;
     private AnonymousCodesPage? codesDraft;
+    private MarksPage? marksDraft;
+    public sealed record MarkInput(string Rules, string Announcement, string Sheet, string Hint, string Maximum,
+        string Code, string ValidatedCode, string Score, string Feedback, IReadOnlyList<FilterChoice> Kinds);
+    private SchoolRegister DescribeMarks(MarksPage p) => new("marks", p.Title, p.Subtitle,
+        p.Promotion?.Value ?? "", p.Course?.Id.ToString() ?? "", p.Kind?.Value ?? "",
+        false, p.FlutterMayEncode, false, false, registerToken,
+        p.Promotions.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+        p.Courses.Select(x => new FilterChoice(x.Id.ToString(), $"{x.Number}. {x.Name}")).ToArray(),
+        p.Rows.Where(x => !string.IsNullOrWhiteSpace(x.Code) && x.Code != "—")
+            .Select(x => new RegisterRow("", "", x.Code, "", "", [])).ToArray(),
+        new(p.EncodingRules, p.Notice, p.SheetTitle, p.SheetHint, p.ScoreMaximumText,
+            p.CodeQuery, p.FlutterValidatedCode, p.ScoreText, p.CodeFeedback,
+            p.Course is null ? [] : p.Kinds.Select(x => new FilterChoice(x.Value, x.Label)).ToArray()));
 
     private SchoolRegister DescribeCodes(AnonymousCodesPage p) => new("codes", p.Title, p.Subtitle, p.Promotion?.Value ?? "", "", "",
         false, false, false, false, registerToken,
@@ -60,7 +73,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     private bool registerDirty;
     private void ClearRegister()
     {
-        attendanceDraft = null; disciplineDraft = null; staffDraft = null; pointageDraft = null; teachingDraft = null; codesDraft = null; registerOwner = null; registerToken = ""; registerDirty = false;
+        attendanceDraft = null; disciplineDraft = null; staffDraft = null; pointageDraft = null; teachingDraft = null; codesDraft = null; marksDraft = null; registerOwner = null; registerToken = ""; registerDirty = false;
     }
     private SchoolRegister DescribeAttendance(AttendancePage page) => new("attendance", page.Title, page.Subtitle,
         page.Promotion?.Value ?? "", WireDate(page.Day), "", page.ShowSummary,
@@ -266,7 +279,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         if (operation is not ("listStudents" or "openStudent" or "cashierStudent" or "studentActions")) { visibleStudents.Clear(); studentOwner = null; }
         if (operation is not ("listReceipts" or "exportReceipts" or "openReceipt"))
         { journalSelection = null; journalOwner = null; }
-        if (operation is not ("listAttendance" or "editAttendance" or "saveAttendance" or "attendanceAll" or "attendanceDay" or "listDiscipline" or "disciplineExport" or "registerNative" or "listPersonnel"))
+        if (operation is not ("listAttendance" or "editAttendance" or "saveAttendance" or "attendanceAll" or "attendanceDay" or "listDiscipline" or "disciplineExport" or "registerNative" or "listPersonnel" or "marksCheck" or "marksSave"))
             ClearRegister();
         if (operation != "submitEnrollment") ClearEnrollment();
         if (operation == "snapshot") return ActiveCashier is { } active ? DescribeCashier(active) : Read();
@@ -399,14 +412,43 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                             Profile = new(studentId.ToString(), detail.Title, detail.Subtitle, sections) };
                     }
                     return Read(native: true);
+                case "marksCheck":
+                case "marksSave":
+                {
+                    if (marksDraft is not { } marks || !shell.TeacherOnly || AllowedPage("grades") is null ||
+                        !ReferenceEquals(registerOwner, shell.Session) || Required(arguments, "token", 36) != registerToken)
+                        throw new UnauthorizedAccessException("Feuille non confirmée.");
+                    var code = Required(arguments, "code", 64);
+                    if (operation == "marksCheck") await marks.CheckForFlutterAsync(code);
+                    else await marks.SaveForFlutterAsync(code, Required(arguments, "score", 32));
+                    if (!shell.TeacherOnly || AllowedPage("grades") is null || !ReferenceEquals(registerOwner, shell.Session))
+                    { ClearRegister(); throw new UnauthorizedAccessException("Session modifiée."); }
+                    return Read() with { Stage = "schoolRegister", Register = DescribeMarks(marks) };
+                }
                 case "listPersonnel":
                 {
                     ClearRegister();
                     var kind = Required(arguments, "kind", 20);
                     var moduleId = kind switch { "staff" => "page:StaffPage", "pointage" => "page:StaffAttendancePage",
-                        "teaching" => "page:TeachingPage", "codes" => "page:AnonymousCodesPage", _ => throw new ArgumentException("Module invalide.") };
+                        "teaching" => "page:TeachingPage", "codes" => "page:AnonymousCodesPage", "marks" => "grades", _ => throw new ArgumentException("Module invalide.") };
                     if (AllowedPage(moduleId) is null || (kind == "codes" && shell.TeacherOnly) || shell.Session is not { } personnelOwner)
                         throw new UnauthorizedAccessException("Module non autorisé.");
+                    if (kind == "marks")
+                    {
+                        // Les autres profils conservent la feuille nominative native.
+                        if (!shell.TeacherOnly)
+                        {
+                            await AllowedPage(moduleId)!.Open.ExecuteAsync();
+                            return Read(native: true);
+                        }
+                        var p = new MarksPage(shell);
+                        await p.LoadTeacherForFlutterAsync(arguments.GetValueOrDefault("promotion"),
+                            arguments.GetValueOrDefault("date"), arguments.GetValueOrDefault("measure"));
+                        if (!shell.TeacherOnly || AllowedPage(moduleId) is null || !ReferenceEquals(personnelOwner, shell.Session))
+                        { ClearRegister(); throw new UnauthorizedAccessException("Session modifiée."); }
+                        marksDraft = p; registerOwner = personnelOwner; registerToken = Guid.NewGuid().ToString();
+                        return Read() with { Stage = "schoolRegister", Register = DescribeMarks(p) };
+                    }
                     var summary = arguments.GetValueOrDefault("summary") == "true";
                     if (kind == "staff")
                     {
@@ -477,6 +519,13 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     if (!ReferenceEquals(registerOwner, shell.Session) || !MayShowWorkspace ||
                         Required(arguments, "token", 36) != registerToken)
                         throw new UnauthorizedAccessException("Registre non confirmé.");
+                    if (operation == "registerNative" && marksDraft is { } marks && shell.TeacherOnly && AllowedPage("grades") is not null)
+                    {
+                        await shell.Open(() => new MarksPage(shell,
+                            marks.Promotion is { } promotion ? Guid.Parse(promotion.Value) : null, marks.Course?.Id));
+                        ClearRegister();
+                        return Read(native: true);
+                    }
                     if (operation == "registerNative" && (staffDraft is not null || pointageDraft is not null || teachingDraft is not null || codesDraft is not null))
                     {
                         var row = arguments.GetValueOrDefault("row", "");

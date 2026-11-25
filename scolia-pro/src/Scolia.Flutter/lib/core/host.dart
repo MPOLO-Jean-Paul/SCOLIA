@@ -4,7 +4,7 @@ enum Stage { pairing, login, home, nativeScreen, loading, students, monthly, stu
 
 enum Operation {
   snapshot, scanQr, chooseServer, createSchool, signIn, recover,
-  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions, submitEnrollment, cashierSearch, cashierChoose, cashierPreview, cashierConfirm, cashierLeave, listReceipts, exportReceipts, openReceipt, listAttendance, listDiscipline, editAttendance, saveAttendance, attendanceAll, attendanceDay, disciplineExport, registerNative, listPersonnel
+  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions, submitEnrollment, cashierSearch, cashierChoose, cashierPreview, cashierConfirm, cashierLeave, listReceipts, exportReceipts, openReceipt, listAttendance, listDiscipline, editAttendance, saveAttendance, attendanceAll, attendanceDay, disciplineExport, registerNative, listPersonnel, marksCheck, marksSave
 }
 
 class SchoolSession {
@@ -54,21 +54,35 @@ class RegisterRow {
     m['code'] as String, m['status'] as String, m['note'] as String,
     (m['details'] as List<Object?>).map((v) => ProfileValue.fromMap(v as Map<Object?, Object?>)).toList());
 }
+class MarkInput {
+  const MarkInput({this.rules = '', this.announcement = '', this.sheet = '', this.hint = '', this.maximum = '',
+    this.code = '', this.validatedCode = '', this.score = '', this.feedback = '', this.kinds = const []});
+  final String rules, announcement, sheet, hint, maximum, code, validatedCode, score, feedback;
+  final List<FilterChoice> kinds;
+  factory MarkInput.fromMap(Map<Object?, Object?> m) => MarkInput(
+    rules: m['rules'] as String, announcement: m['announcement'] as String,
+    sheet: m['sheet'] as String, hint: m['hint'] as String, maximum: m['maximum'] as String,
+    code: m['code'] as String, validatedCode: m['validatedCode'] as String, score: m['score'] as String,
+    feedback: m['feedback'] as String, kinds: (m['kinds'] as List<Object?>)
+      .map((v) => FilterChoice.fromMap(v as Map<Object?, Object?>)).toList());
+}
 class SchoolRegister {
   const SchoolRegister({required this.kind, required this.title, this.subtitle = '', this.promotion = '',
     this.date = '', this.measure = '', this.summary = false, this.canWrite = false, this.pending = false,
-    this.dirty = false, this.token = '', this.promotions = const [], this.options = const [], this.rows = const []});
+    this.dirty = false, this.token = '', this.promotions = const [], this.options = const [], this.rows = const [], this.marks});
   final String kind, title, subtitle, promotion, date, measure, token;
   final bool summary, canWrite, pending, dirty;
   final List<FilterChoice> promotions, options;
   final List<RegisterRow> rows;
+  final MarkInput? marks;
   factory SchoolRegister.fromMap(Map<Object?, Object?> m) {
     List<FilterChoice> choices(String key) => (m[key] as List<Object?>).map((v) => FilterChoice.fromMap(v as Map<Object?, Object?>)).toList();
     return SchoolRegister(kind: m['kind'] as String, title: m['title'] as String, subtitle: m['subtitle'] as String,
       promotion: m['promotion'] as String, date: m['date'] as String, measure: m['measure'] as String,
       summary: m['summary'] as bool, canWrite: m['canWrite'] as bool, pending: m['pending'] as bool,
       dirty: m['dirty'] as bool, token: m['token'] as String, promotions: choices('promotions'), options: choices('options'),
-      rows: (m['rows'] as List<Object?>).map((v) => RegisterRow.fromMap(v as Map<Object?, Object?>)).toList());
+      rows: (m['rows'] as List<Object?>).map((v) => RegisterRow.fromMap(v as Map<Object?, Object?>)).toList(),
+      marks: m['marks'] == null ? null : MarkInput.fromMap(m['marks'] as Map<Object?, Object?>));
   }
 }
 

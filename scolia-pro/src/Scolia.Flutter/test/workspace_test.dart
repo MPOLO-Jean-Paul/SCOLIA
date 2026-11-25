@@ -40,6 +40,20 @@ void main() {
     expect(host.lastArgs, {'token': 'test-token', 'row': 'id1'});
     expect(tester.takeException(), isNull);
   });
+  testWidgets('teacher mark entry sends only validated anonymous code and score', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.schoolRegister,
+      register: SchoolRegister(kind: 'marks', title: 'Mes cours', token: 'test-token',
+        date: 'course1', canWrite: true,
+        marks: MarkInput(code: 'ABC123', validatedCode: 'ABC123', maximum: 'Note sur 20', score: '12'))));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Enregistrer la cote'));
+    await tester.tap(find.text('Enregistrer la cote'));
+    await tester.pumpAndSettle();
+    expect(host.last, Operation.marksSave);
+    expect(host.lastArgs, {'token': 'test-token', 'code': 'ABC123', 'score': '12'});
+    expect(tester.takeException(), isNull);
+  });
   test('reject incompatible protocol', () {
     expect(() => SchoolSession.fromMap({'protocol': 2, 'stage': 'home'}), throwsFormatException);
   });

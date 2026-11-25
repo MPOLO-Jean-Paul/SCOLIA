@@ -75,7 +75,7 @@ public sealed class AnonymousCodesPage : PageViewModel
             ready = true;
             Raise(nameof(Promotions));
         }
-        promotion = string.IsNullOrEmpty(promotionId) ? Promotions.FirstOrDefault()
+        promotion = string.IsNullOrEmpty(promotionId) ? (Promotions.Count > 0 ? Promotions[0] : null)
             : Promotions.FirstOrDefault(p => p.Value == promotionId) ?? throw new ArgumentException("Promotion invalide.");
         Raise(nameof(Promotion));
         await LoadAsync();
@@ -376,6 +376,46 @@ public sealed class MarksPage : PageViewModel
             ResetCodeEntry();
             CodeFeedback = $"Note {value:0.##}/{ScoreMaximum:0.##} pour {code} en attente de synchronisation avec le serveur.";
         }
+    }
+
+    // Sélection séquentielle pour Flutter : ne pas déclencher les chargements asynchrones des setters UI.
+    internal async Task LoadTeacherForFlutterAsync(string? promotionId, string? courseId, string? markKind)
+    {
+        if (!teacher) throw new UnauthorizedAccessException("Espace enseignant requis.");
+        await LoadAsync();
+        if (!string.IsNullOrEmpty(promotionId) && Promotion?.Value != promotionId)
+        {
+            promotion = Promotions.FirstOrDefault(p => p.Value == promotionId)
+                ?? throw new ArgumentException("Promotion non attribuée.");
+            await LoadAsync();
+        }
+        if (string.IsNullOrEmpty(courseId)) return;
+        course = Courses.FirstOrDefault(c => c.Id.ToString() == courseId)
+            ?? throw new ArgumentException("Cours non attribué.");
+        Kinds = AllKinds.Where(k => Accepts(course.Source.Semester, k.Value)).ToList();
+        kind = string.IsNullOrEmpty(markKind) ? Kinds[0]
+            : Kinds.FirstOrDefault(k => k.Value == markKind) ?? throw new ArgumentException("Période invalide.");
+        await LoadSheetAsync();
+    }
+
+    internal bool FlutterMayEncode => teacher && currentSheet is { EncodingOpen: true, Locked: false, SubmittedAtUtc: null };
+    internal string FlutterValidatedCode => validatedCode;
+
+    internal async Task CheckForFlutterAsync(string code)
+    {
+        if (!teacher || !ShowCodeEntry) throw new UnauthorizedAccessException("Cours non sélectionné.");
+        ResetCodeEntry();
+        CodeQuery = code.Trim().ToUpperInvariant();
+        if (CodeQuery == "—") { CodeFeedback = "Code anonyme non attribué."; return; }
+        await CheckCodeAsync();
+    }
+
+    internal async Task SaveForFlutterAsync(string code, string score)
+    {
+        if (!FlutterMayEncode || !ShowScoreInput || !string.Equals(validatedCode, code, StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException("Code ou feuille non confirmé.");
+        ScoreText = score;
+        await SaveCodeAsync();
     }
 
     /// <summary>Espace enseignant : seulement ses cours attribués, en feuille anonyme.</summary>
