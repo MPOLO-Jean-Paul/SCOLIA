@@ -285,3 +285,35 @@ public sealed class HomePage : PageViewModel
         while (Tools.Count > 6) Tools.RemoveAt(Tools.Count - 1);
     }
 }
+
+
+/// <summary>Point d'entrée léger : aucune requête de rapport avant le choix explicite d'Accueil.</summary>
+public sealed class StartPage : PageViewModel
+{
+    public StartPage(ShellViewModel shell) : base(shell)
+    {
+        OpenHome = new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new HomePage(Shell))));
+        var actions = new List<ToolCardVm>();
+        if (Shell.Can(Perm.StudentsWrite))
+            actions.Add(new ToolCardVm("Inscrire", $"Créer le dossier d'un {Shell.StudentTerms.Singular}.",
+                MaterialIconKind.AccountPlus, ThemeBrush.Get("ToneBlue"),
+                new AsyncCommand(() => Shell.Run(() => StudentForms.CreateAsync(Shell)))));
+        if (Shell.Can(Perm.PaymentsCreate))
+            actions.Add(new ToolCardVm("Encaisser", "Enregistrer un versement et préparer son reçu.",
+                MaterialIconKind.HandCoin, ThemeBrush.Get("ToneGreen"),
+                new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new CashierPage(Shell))))));
+        NewActions = actions;
+    }
+
+    public override string Title => "Démarrer";
+    public override string Subtitle => Shell.SchoolHeaderTitle;
+    public override MaterialIconKind Glyph => MaterialIconKind.ViewDashboard;
+    public string Greeting => $"Bienvenue, {Shell.AccountName}";
+    public string School => Shell.SchoolHeaderTitle;
+    public string SchoolYear => Shell.SchoolYearLine;
+    public IReadOnlyList<ToolCardVm> NewActions { get; }
+    public bool HasNewActions => NewActions.Count > 0;
+    public AsyncCommand OpenHome { get; }
+    public SyncCenter Sync => Shell.Sync;
+    public RelayCommand Network => Shell.NetworkCommand;
+}

@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             x:Class="Scolia.Bureau.Views.StartView">
+  <UserControl.Styles>
+    <Style Selector="Button.starttile">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="16" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="MinHeight" Value="90" />
+    </Style>
+    <Style Selector="Button.starttile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="Button.starttile:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+  </UserControl.Styles>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel MaxWidth="1040" HorizontalAlignment="Stretch" Spacing="22" Margin="12,18,12,20">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" infra:Adaptive.StackBelow="520">
+        <StackPanel Spacing="7">
+          <TextBlock Text="SCOLIA PRO" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AccentBrush}" />
+          <TextBlock Text="{Binding Greeting}" FontSize="26" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding School}" TextWrapping="Wrap" Classes="muted" />
+          <TextBlock Text="{Binding SchoolYear}" Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+        <Button Grid.Column="1" Classes="ghost" Command="{Binding Network}" HorizontalAlignment="Left" ToolTip.Tip="{Binding Sync.StatusDetail}">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <mi:MaterialIcon Kind="{Binding Sync.StatusIcon}" Foreground="{Binding Sync.StatusBrush}" Width="18" Height="18" />
+            <TextBlock Grid.Column="1" Text="{Binding Sync.StatusText}" TextWrapping="Wrap" />
+          </Grid>
+        </Button>
+      </Grid>
+      <StackPanel IsVisible="{Binding HasNewActions}" Spacing="10">
+        <TextBlock Text="Nouveau" FontSize="18" FontWeight="SemiBold" />
+        <ItemsControl ItemsSource="{Binding NewActions}">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" infra:Adaptive.MinItemWidth="245" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate><DataTemplate>
+            <Button Classes="starttile" Command="{Binding Open}" Margin="0,0,8,8" AutomationProperties.Name="{Binding Title}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <mi:MaterialIcon Kind="{Binding Icon}" Width="30" Height="30" Foreground="{Binding Brush}" VerticalAlignment="Top" />
+                <StackPanel Grid.Column="1" Spacing="6">
+                  <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+            </Button>
+          </DataTemplate></ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+      <StackPanel Spacing="10">
+        <TextBlock Text="Espace de travail" FontSize="18" FontWeight="SemiBold" />
+        <Button x:Name="OpenHome" Classes="starttile" Command="{Binding OpenHome}" AutomationProperties.Name="Accueil">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+            <mi:MaterialIcon Kind="HomeOutline" Width="28" Height="28" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Spacing="6">
+              <TextBlock Text="Accueil" FontSize="17" FontWeight="SemiBold" />
+              <TextBlock Text="Consulter les indicateurs, les opérations récentes et les outils de l’établissement." Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+            <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

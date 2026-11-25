@@ -1956,18 +1956,36 @@ if (args.Length > 3 && args[3] == "accueil-powerbi")
     }
     finally { ShellViewModel.MinimumOpening = opening; }
     shell.Sync.Stop();
+    if (shell.Current is not StartPage start || start.NewActions.Count != 2)
+        throw new InvalidOperationException("La connexion doit ouvrir Démarrer avec les deux commandes autorisées.");
     var homeSizes = Preferences.MobileLayout ? new[] { (320, 568), (360, 740), (412, 892) } : new[] { (1024, 720), (1366, 768), (1600, 900), (1920, 1080) };
     foreach (var (width, height) in homeSizes)
     {
         window.Width = width;
         window.Height = height;
         prefs.Theme = "light";
-        Wait(shell.Open(() => new HomePage(shell)));
+        Wait(shell.Open(() => new StartPage(shell)));
+        window.UpdateLayout();
+        Save(window, $"demarrer-{width}x{height}-clair.png");
+        var launch = (StartPage)shell.Current!;
+        launch.OpenHome.Execute(null);
+        // La commande ouvre immédiatement la page ; attendre son chargement avant la capture.
+        Wait(((HomePage)shell.Current!).RefreshAsync());
         var home = shell.Current as HomePage;
         if (home is null || home.Kpis.Count != 4 || home.QuickActions.Count < 2)
             throw new InvalidOperationException($"Accueil Power BI {width}x{height} : indicateurs ou commandes absents.");
         window.UpdateLayout();
         Save(window, $"accueil-powerbi-{width}x{height}-clair.png");
+        if (!Preferences.MobileLayout)
+        {
+            var texts = window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).ToArray();
+            var header = texts.Single(t => t.Name == "RecentAmountHeader");
+            var values = texts.Where(t => t.Name == "RecentAmountValue").ToArray();
+            double Right(TextBlock t) => t.TransformToVisual(window) is { } matrix
+                ? new Rect(t.Bounds.Size).TransformToAABB(matrix).Right : -1000;
+            if (values.Length != home.Receipts.Count || values.Any(t => Math.Abs(Right(t) - Right(header)) > 1))
+                throw new InvalidOperationException($"Montants récents désalignés à {width}x{height}.");
+        }
         home.ShowAllTools.Execute(null);
         window.UpdateLayout();
         Save(window, $"accueil-powerbi-{width}x{height}-catalogue.png");
