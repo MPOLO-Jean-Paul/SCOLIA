@@ -12,7 +12,15 @@ namespace Scolia.Bureau.Infrastructure;
 public sealed class FlutterCommandAdapter(ShellViewModel shell)
 {
     public sealed record Snapshot(int Protocol, string Stage, string School, string User,
-        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null, IReadOnlyList<ModuleEntry>? Catalog = null, WorkspaceHeader? Header = null, StudentProfile? Profile = null, EnrollmentForm? Enrollment = null);
+        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null, IReadOnlyList<ModuleEntry>? Catalog = null, WorkspaceHeader? Header = null, StudentProfile? Profile = null, EnrollmentForm? Enrollment = null, CashierScreen? Cashier = null);
+
+    public sealed record CashierPayer(string Id, string Label, string Detail);
+    public sealed record CashierFee(string Id, string Label, string Amount, string Deadline, bool Selected, bool Overdue);
+    public sealed record CashierAllocation(string Label, string Amount, string Remaining);
+    public sealed record CashierScreen(string Student, string Info, string Balance, string Overdue, string Hint, string SearchStatus,
+        string Amount, string Method, string Reference, string Note, string Total, string BalanceAfter, string Receipt,
+        bool HasStudent, bool CanPay, bool NeedsReference, bool HasReceipt, IReadOnlyList<CashierPayer> Payers,
+        IReadOnlyList<CashierFee> Fees, IReadOnlyList<FilterChoice> Methods, IReadOnlyList<CashierAllocation> Allocations);
 
     public sealed record EnrollmentField(string Key, string Label, string Kind, bool Required, string Value, string Hint, string Error, IReadOnlyList<FilterChoice> Options);
     public sealed record EnrollmentForm(string Token, string Title, string Subtitle, string Error, IReadOnlyList<EnrollmentField> Fields);
@@ -35,6 +43,18 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         string Status, string Search, int Page, int Count, bool HasPrevious, bool HasNext,
         IReadOnlyList<FilterChoice> Periods, IReadOnlyList<FilterChoice> Promotions,
         IReadOnlyList<FilterChoice> States, IReadOnlyList<PaymentEntry> Rows, string ExportScope);
+
+    private CashierPage? ActiveCashier => AllowedPage("cashier") is not null && shell.Can(Perm.PaymentsCreate)
+        ? shell.Current as CashierPage : null;
+
+    private Snapshot DescribeCashier(CashierPage page) => Read() with { Stage = "cashier", Cashier = new(
+        page.StudentName, page.StudentInfo, page.Balance, page.Overdue, page.Hint ?? page.LockedBy ?? "",
+        page.SearchStatus ?? "", page.AmountText, page.Method?.Value ?? "", page.Reference, page.Note,
+        page.Total, page.BalanceAfter, page.ReceiptText, page.HasStudent, page.CanPay, page.NeedsExternalReference,
+        page.HasReceipt, page.Results.Select(x => new CashierPayer(x.StudentId.ToString(), x.Label, x.Detail)).ToArray(),
+        page.Months.Select(x => new CashierFee(x.Id.ToString(), x.Label, x.AmountText, x.Deadline, x.IsSelected, x.Overdue)).ToArray(),
+        page.Methods.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+        page.Allocations.Select(x => new CashierAllocation(x.Label, x.Amount, x.Remaining)).ToArray()) };
 
     private MonthlyPage? monthlySelection;
     private object? monthlyOwner;
@@ -150,7 +170,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         if (operation != "listMonthly" && operation != "exportMonthly") { monthlySelection = null; monthlyOwner = null; }
         if (operation is not ("listStudents" or "openStudent" or "cashierStudent" or "studentActions")) { visibleStudents.Clear(); studentOwner = null; }
         if (operation != "submitEnrollment") ClearEnrollment();
-        if (operation == "snapshot") return Read();
+        if (operation == "snapshot") return ActiveCashier is { } active ? DescribeCashier(active) : Read();
         executing = true;
         try
         {
@@ -245,6 +265,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                         if (AllowedPage("cashier") is null || !shell.Can(Perm.PaymentsCreate))
                             throw new UnauthorizedAccessException("Encaissement non autorisé.");
                         await shell.Open(() => new CashierPage(shell, studentId));
+                        return ActiveCashier is { } opened ? DescribeCashier(opened) : Read(native: true);
                     }
                     else if (operation == "studentActions")
                         await shell.Open(() => new StudentDetailPage(shell, studentId));
@@ -279,6 +300,58 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                             Profile = new(studentId.ToString(), detail.Title, detail.Subtitle, sections) };
                     }
                     return Read(native: true);
+                case "cashierSearch":
+                case "cashierChoose":
+                case "cashierPreview":
+                case "cashierConfirm":
+                case "cashierLeave":
+                    if (ActiveCashier is not { } cashier || shell.Session is not { } cashierOwner)
+                        throw new UnauthorizedAccessException("Caisse non autorisée.");
+                    if (operation == "cashierSearch")
+                    {
+                        // A new search opens a new native page, releasing the previous page's lock.
+                        var term = Required(arguments, "q", 100);
+                        await shell.Open(() => new CashierPage(shell));
+                        cashier = ActiveCashier ?? throw new UnauthorizedAccessException("Caisse indisponible.");
+                        await cashier.SearchForFlutterAsync(term);
+                    }
+                    else if (operation == "cashierChoose")
+                    {
+                        if (!Guid.TryParse(Required(arguments, "student", 36), out var payerId))
+                            throw new ArgumentException("Dossier invalide.");
+                        var payer = cashier.Results.FirstOrDefault(x => x.StudentId == payerId)
+                            ?? throw new UnauthorizedAccessException("Dossier non proposé.");
+                        await cashier.ChooseAsync(payer);
+                    }
+                    else if (operation == "cashierPreview")
+                    {
+                        var ids = new HashSet<Guid>();
+                        foreach (var value in arguments.GetValueOrDefault("fees", "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            if (ids.Count >= 100 || !Guid.TryParse(value, out var feeId) || !ids.Add(feeId))
+                                throw new ArgumentException("Échéances invalides.");
+                        }
+                        await cashier.PrepareForFlutterAsync(ids, arguments.GetValueOrDefault("amount", ""),
+                            Required(arguments, "method", 60), arguments.GetValueOrDefault("reference", ""),
+                            arguments.GetValueOrDefault("note", ""));
+                    }
+                    else if (operation == "cashierConfirm")
+                    {
+                        if (!cashier.CanPay || cashier.HasReceipt)
+                            throw new InvalidOperationException("Aperçu non valide.");
+                        // Le dialogue natif garde exactement la confirmation, l'idempotence et le reçu.
+                        _ = shell.Run(cashier.PayAsync);
+                        return Read(native: true);
+                    }
+                    else
+                    {
+                        // Retour explicite au Shell : Left() libère la réservation du dossier.
+                        await shell.Open(() => new HomePage(shell));
+                        return Read();
+                    }
+                    if (!ReferenceEquals(cashierOwner, shell.Session) || !ReferenceEquals(cashier, ActiveCashier))
+                        throw new UnauthorizedAccessException("Session modifiée.");
+                    return DescribeCashier(cashier);
                 case "submitEnrollment":
                     if (AllowedPage("students") is null || !shell.Can(Perm.StudentsWrite) ||
                         enrollmentForm is not { } form || !ReferenceEquals(enrollmentOwner, shell.Session) ||
@@ -342,7 +415,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     var item = AllowedPage(module) ??
                         throw new UnauthorizedAccessException("Fonctionnalité non autorisée.");
                     await item.Open.ExecuteAsync();
-                    return Read(native: true);
+                    return module == "cashier" && ActiveCashier is { } cashierPage ? DescribeCashier(cashierPage) : Read(native: true);
                 case "signOut" when MayShowWorkspace:
                     await shell.LogoutAsync();
                     return Read();

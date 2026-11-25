@@ -143,6 +143,25 @@ void main() {
     expect(host.last, Operation.submitEnrollment);
     expect(host.lastArgs, {'token': 'test-token', 'nom': 'Nom de test'});
   });
+  testWidgets('cashier keeps confirmation unavailable until new preview', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.cashier,
+      cashier: CashierScreen(student: 'Dossier test', hasStudent: true, canPay: true,
+        amount: '100', method: 'Especes', total: '100',
+        methods: [FilterChoice('Especes', 'Espèces')],
+        fees: [CashierFee('fee', 'Octobre', '100', 'Échéance', true, false)])));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.widgetWithText(TextField, 'Montant reçu'));
+    await tester.enterText(find.widgetWithText(TextField, 'Montant reçu'), '50');
+    await tester.pumpAndSettle();
+    expect(find.text('Confirmer 100'), findsNothing);
+    await tester.ensureVisible(find.text('Vérifier la répartition'));
+    await tester.tap(find.text('Vérifier la répartition'));
+    await tester.pumpAndSettle();
+    expect(host.last, Operation.cashierPreview);
+    expect(host.lastArgs['amount'], '50');
+    expect(host.lastArgs['fees'], 'fee');
+  });
   testWidgets('catalog exposes authorised native modules only', (tester) async {
     final host = TestHost(const SchoolSession(stage: Stage.home,
       modules: ['page:CardsPage'], catalog: [

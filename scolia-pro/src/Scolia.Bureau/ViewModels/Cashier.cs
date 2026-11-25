@@ -417,6 +417,31 @@ public sealed class CashierPage : PageViewModel
         }
     }
 
+    internal Task SearchForFlutterAsync(string term)
+    {
+        search = term;
+        return SearchAsync();
+    }
+
+    internal async Task PrepareForFlutterAsync(IReadOnlySet<Guid> ids, string amount, string methodId,
+        string externalReference, string observation)
+    {
+        if (!HasStudent || HasReceipt || ids.Any(id => !Months.Any(m => m.Id == id)))
+            throw new InvalidOperationException("Sélection indisponible.");
+        var choice = Methods.FirstOrDefault(m => m.Value == methodId)
+            ?? throw new ArgumentException("Mode de paiement inconnu.");
+        updatingMonthSelection = true;
+        try { foreach (var month in Months) month.IsSelected = ids.Contains(month.Id); }
+        finally { updatingMonthSelection = false; }
+        MonthsChanged();
+        AmountText = amount;
+        Method = choice;
+        if (!IsCash) Reference = externalReference;
+        Note = observation;
+        previewValid = false;
+        await PreviewAsync();
+    }
+
     private Task<OfflineStudentSearch.Result?> FindLocallyAsync(string term)
     {
         var store = Shell.Api.Offline;

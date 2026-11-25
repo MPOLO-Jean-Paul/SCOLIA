@@ -1,15 +1,15 @@
 import 'package:flutter/services.dart';
 
-enum Stage { pairing, login, home, nativeScreen, loading, students, monthly, studentProfile, enrollment }
+enum Stage { pairing, login, home, nativeScreen, loading, students, monthly, studentProfile, enrollment, cashier }
 
 enum Operation {
   snapshot, scanQr, chooseServer, createSchool, signIn, recover,
-  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions, submitEnrollment
+  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions, submitEnrollment, cashierSearch, cashierChoose, cashierPreview, cashierConfirm, cashierLeave
 }
 
 class SchoolSession {
   const SchoolSession({required this.stage, this.school = '', this.user = '',
-    this.year = '', this.modules = const [], this.notice = '', this.students, this.monthly, this.catalog = const [], this.header, this.profile, this.enrollment});
+    this.year = '', this.modules = const [], this.notice = '', this.students, this.monthly, this.catalog = const [], this.header, this.profile, this.enrollment, this.cashier});
   final Stage stage;
   final String school, user, year, notice;
   final List<String> modules;
@@ -19,6 +19,7 @@ class SchoolSession {
   final WorkspaceHeader? header;
   final StudentProfile? profile;
   final EnrollmentForm? enrollment;
+  final CashierScreen? cashier;
 
   factory SchoolSession.fromMap(Map<Object?, Object?> value) {
     if (value['protocol'] != 1) {
@@ -36,7 +37,51 @@ class SchoolSession {
       students: stage == Stage.students ? StudentListing.fromMap(value['students'] as Map<Object?, Object?>) : null,
       monthly: stage == Stage.monthly ? MonthlyListing.fromMap(value['monthly'] as Map<Object?, Object?>) : null,
       profile: stage == Stage.studentProfile ? StudentProfile.fromMap(value['profile'] as Map<Object?, Object?>) : null,
-      enrollment: stage == Stage.enrollment ? EnrollmentForm.fromMap(value['enrollment'] as Map<Object?, Object?>) : null);
+      enrollment: stage == Stage.enrollment ? EnrollmentForm.fromMap(value['enrollment'] as Map<Object?, Object?>) : null,
+      cashier: stage == Stage.cashier ? CashierScreen.fromMap(value['cashier'] as Map<Object?, Object?>) : null);
+  }
+}
+
+class CashierPayer {
+  const CashierPayer(this.id, this.label, this.detail);
+  final String id, label, detail;
+  factory CashierPayer.fromMap(Map<Object?, Object?> m) => CashierPayer(m['id'] as String, m['label'] as String, m['detail'] as String);
+}
+class CashierFee {
+  const CashierFee(this.id, this.label, this.amount, this.deadline, this.selected, this.overdue);
+  final String id, label, amount, deadline;
+  final bool selected, overdue;
+  factory CashierFee.fromMap(Map<Object?, Object?> m) => CashierFee(m['id'] as String, m['label'] as String,
+    m['amount'] as String, m['deadline'] as String, m['selected'] as bool, m['overdue'] as bool);
+}
+class CashierAllocation {
+  const CashierAllocation(this.label, this.amount, this.remaining);
+  final String label, amount, remaining;
+  factory CashierAllocation.fromMap(Map<Object?, Object?> m) => CashierAllocation(m['label'] as String, m['amount'] as String, m['remaining'] as String);
+}
+class CashierScreen {
+  const CashierScreen({this.student = '', this.info = '', this.balance = '', this.overdue = '', this.hint = '',
+    this.searchStatus = '', this.amount = '', this.method = '', this.reference = '', this.note = '', this.total = '',
+    this.balanceAfter = '', this.receipt = '', this.hasStudent = false, this.canPay = false,
+    this.needsReference = false, this.hasReceipt = false, this.payers = const [], this.fees = const [],
+    this.methods = const [], this.allocations = const []});
+  final String student, info, balance, overdue, hint, searchStatus, amount, method, reference, note, total, balanceAfter, receipt;
+  final bool hasStudent, canPay, needsReference, hasReceipt;
+  final List<CashierPayer> payers;
+  final List<CashierFee> fees;
+  final List<FilterChoice> methods;
+  final List<CashierAllocation> allocations;
+  factory CashierScreen.fromMap(Map<Object?, Object?> m) {
+    List<T> read<T>(String k, T Function(Map<Object?, Object?>) parse) => List<T>.unmodifiable(
+      (m[k] as List<Object?>).map((v) => parse(v as Map<Object?, Object?>)));
+    return CashierScreen(student: m['student'] as String, info: m['info'] as String, balance: m['balance'] as String,
+      overdue: m['overdue'] as String, hint: m['hint'] as String, searchStatus: m['searchStatus'] as String,
+      amount: m['amount'] as String, method: m['method'] as String, reference: m['reference'] as String,
+      note: m['note'] as String, total: m['total'] as String, balanceAfter: m['balanceAfter'] as String,
+      receipt: m['receipt'] as String, hasStudent: m['hasStudent'] as bool, canPay: m['canPay'] as bool,
+      needsReference: m['needsReference'] as bool, hasReceipt: m['hasReceipt'] as bool,
+      payers: read('payers', CashierPayer.fromMap), fees: read('fees', CashierFee.fromMap),
+      methods: read('methods', FilterChoice.fromMap), allocations: read('allocations', CashierAllocation.fromMap));
   }
 }
 

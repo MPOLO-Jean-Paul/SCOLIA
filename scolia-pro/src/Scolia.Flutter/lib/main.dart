@@ -78,6 +78,13 @@ class _WorkspaceState extends State<Workspace> {
   final confirm = TextEditingController();
   final form = GlobalKey<FormState>();
   final enrollmentValues = <String, String>{};
+  final cashierQuery = TextEditingController();
+  final cashierAmount = TextEditingController();
+  final cashierReference = TextEditingController();
+  final cashierNote = TextEditingController();
+  final cashierFees = <String>{};
+  String cashierMethod = '';
+  bool cashierDirty = true;
 
   @override
   void initState() { super.initState(); execute(Operation.snapshot); }
@@ -85,6 +92,7 @@ class _WorkspaceState extends State<Workspace> {
   @override
   void dispose() {
     openingPoll?.cancel();
+    cashierQuery.dispose(); cashierAmount.dispose(); cashierReference.dispose(); cashierNote.dispose();
     studentSearch.dispose(); paymentSearch.dispose(); username.dispose(); password.dispose(); recoveryCode.dispose(); confirm.dispose();
     super.dispose();
   }
@@ -98,6 +106,17 @@ class _WorkspaceState extends State<Workspace> {
       if (!mounted) return;
       setState(() {
         session = result;
+        if (result.cashier case final c?) {
+          cashierFees..clear()..addAll(c.fees.where((x) => x.selected).map((x) => x.id));
+          cashierAmount.text = c.amount;
+          cashierReference.text = c.reference;
+          cashierNote.text = c.note;
+          cashierMethod = c.method;
+          cashierDirty = false;
+        } else {
+          cashierFees.clear(); cashierAmount.clear(); cashierReference.clear(); cashierNote.clear(); cashierQuery.clear();
+          cashierDirty = true;
+        }
         enrollmentValues.clear();
         if (result.enrollment != null) {
           for (final field in result.enrollment!.fields) {
@@ -129,6 +148,9 @@ class _WorkspaceState extends State<Workspace> {
       if (mounted) {
         password.clear(); recoveryCode.clear(); confirm.clear();
         if (session?.stage != Stage.enrollment) enrollmentValues.clear();
+        if (session?.stage != Stage.cashier) {
+          cashierFees.clear(); cashierAmount.clear(); cashierReference.clear(); cashierNote.clear(); cashierQuery.clear();
+        }
         setState(() => busy = false);
         if (session?.stage == Stage.loading && error == null) {
           openingPoll = Timer(const Duration(milliseconds: 750), () {
@@ -361,6 +383,78 @@ class _WorkspaceState extends State<Workspace> {
     ]),
   ]);
 
+  Widget cashier(CashierScreen c) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    Align(alignment: Alignment.centerLeft, child: TextButton.icon(
+      onPressed: busy ? null : () => execute(Operation.cashierLeave),
+      icon: const Icon(Icons.arrow_back), label: const Text('Retour à l’accueil'))),
+    heading('Encaisser', 'Échéances, montant, mode et reçu'),
+    TextField(controller: cashierQuery, enabled: !busy, maxLength: 100,
+      textInputAction: TextInputAction.search,
+      onSubmitted: (v) { if (v.trim().length >= 2) unawaited(execute(Operation.cashierSearch, {'q': v.trim()})); },
+      decoration: InputDecoration(labelText: 'Nom ou matricule', counterText: '',
+        prefixIcon: const Icon(Icons.search), suffixIcon: IconButton(tooltip: 'Rechercher un payeur',
+          onPressed: busy ? null : () {
+            if (cashierQuery.text.trim().length >= 2) {
+              unawaited(execute(Operation.cashierSearch, {'q': cashierQuery.text.trim()}));
+            }
+          }, icon: const Icon(Icons.arrow_forward)))),
+    if (c.searchStatus.isNotEmpty) Text(c.searchStatus),
+    if (!c.hasStudent) for (final payer in c.payers)
+      ListTile(title: Text(payer.label), subtitle: Text(payer.detail), trailing: const Icon(Icons.chevron_right),
+        onTap: busy ? null : () => execute(Operation.cashierChoose, {'student': payer.id})),
+    if (c.hint.isNotEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(c.hint)),
+    if (c.hasStudent) ...[
+      const SizedBox(height: 12),
+      Card.outlined(child: Padding(padding: const EdgeInsets.all(12), child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(c.student, style: Theme.of(context).textTheme.titleMedium), Text(c.info),
+          const Divider(), Text('Solde : ${c.balance}'), Text('Exigible : ${c.overdue}'),
+        ]))),
+      if (c.hasReceipt) Text(c.receipt)
+      else ...[
+        const SizedBox(height: 12),
+        Text('Échéances', style: Theme.of(context).textTheme.titleMedium),
+        for (final fee in c.fees)
+          CheckboxListTile(contentPadding: EdgeInsets.zero, title: Text(fee.label),
+            subtitle: Text('${fee.amount} · ${fee.deadline}'), value: cashierFees.contains(fee.id),
+            onChanged: busy ? null : (v) => setState(() {
+              if (v == true) { cashierFees.add(fee.id); } else { cashierFees.remove(fee.id); }
+              cashierDirty = true;
+            })),
+        TextField(controller: cashierAmount, enabled: !busy, keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: 'Montant reçu'),
+          onChanged: (_) => setState(() => cashierDirty = true)),
+        const SizedBox(height: 12),
+        filter('Mode de paiement', cashierMethod, c.methods, (v) => setState(() {
+          cashierMethod = v; cashierReference.clear(); cashierDirty = true;
+        })),
+        if (cashierMethod != 'Especes' && cashierMethod != 'Cash') ...[
+          const SizedBox(height: 12),
+          TextField(controller: cashierReference, enabled: !busy, maxLength: 120,
+            decoration: const InputDecoration(labelText: 'Référence du paiement'),
+            onChanged: (_) => setState(() => cashierDirty = true)),
+        ],
+        const SizedBox(height: 12),
+        TextField(controller: cashierNote, enabled: !busy, maxLength: 250,
+          decoration: const InputDecoration(labelText: 'Observation'),
+          onChanged: (_) => setState(() => cashierDirty = true)),
+        action('Vérifier la répartition', Icons.calculate_outlined, Operation.cashierPreview,
+          args: {'fees': cashierFees.join(','), 'amount': cashierAmount.text, 'method': cashierMethod,
+            'reference': cashierReference.text, 'note': cashierNote.text}),
+        if (!cashierDirty) ...[
+          const SizedBox(height: 12),
+          for (final allocation in c.allocations)
+            ListTile(contentPadding: EdgeInsets.zero, title: Text(allocation.label),
+              subtitle: Text('Reste : ${allocation.remaining}'), trailing: Text(allocation.amount)),
+          Text('Solde après versement : ${c.balanceAfter}'),
+          const SizedBox(height: 8),
+          FilledButton.icon(onPressed: busy || !c.canPay ? null : () => execute(Operation.cashierConfirm),
+            icon: const Icon(Icons.check), label: Text('Confirmer ${c.total}')),
+        ],
+      ],
+    ],
+  ]);
+
   Widget enrollmentField(EnrollmentForm e, EnrollmentField f) {
     final current = enrollmentValues[f.key] ?? '';
     if (f.kind == 'Header') return Padding(padding: const EdgeInsets.only(top: 12, bottom: 4),
@@ -551,6 +645,7 @@ class _WorkspaceState extends State<Workspace> {
                 Stage.monthly => monthly(current.monthly!),
                 Stage.studentProfile => studentProfile(current.profile!),
                 Stage.enrollment => enrollment(current.enrollment!),
+                Stage.cashier => cashier(current.cashier!),
               },
             ],
           ]),
