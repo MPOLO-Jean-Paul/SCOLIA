@@ -50,7 +50,7 @@
                           <ItemsControl.ItemTemplate>
                             <DataTemplate>
                               <!-- Icône au-dessus du libellé : trois actions tiennent sur un téléphone sans couper « Planifier ». -->
-                              <Button Command="{Binding Run}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="52" Margin="0,0,8,0" Padding="4,6">
+                              <Button Command="{Binding Run}" AutomationProperties.Name="{Binding Label}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="52" Margin="0,0,8,0" Padding="4,6">
                                 <StackPanel Spacing="2" HorizontalAlignment="Center">
                                   <mi:MaterialIcon Kind="{Binding Icon}" Width="18" Height="18" HorizontalAlignment="Center" />
                                   <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FsSmall}" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />

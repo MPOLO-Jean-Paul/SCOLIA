@@ -3,7 +3,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.ReportsView">
-  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="18" Margin="0,0,6,8">
 
       <!-- Critères communs : la période sert aux reçus et aux dépenses, la promotion aux listes -->
@@ -38,7 +38,9 @@
                       <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="16,10">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14" infra:Adaptive.StackBelow="560">
                           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                            <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24" Foreground="{Binding Brush}" VerticalAlignment="Top" />
+                            <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Top">
+                              <mi:MaterialIcon Kind="{Binding Icon}" />
+                            </Border>
                             <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
                               <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
                               <TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap" />
@@ -50,7 +52,12 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                               <DataTemplate>
-                                <Button Command="{Binding Run}" Content="{Binding Label}" MinWidth="72" Margin="0,0,6,4" />
+                                <Button Command="{Binding Run}" AutomationProperties.Name="{Binding Label}" MinWidth="82" MinHeight="40" Margin="0,0,6,4">
+                                  <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <mi:MaterialIcon Kind="{Binding Icon}" Width="17" Height="17" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                                  </StackPanel>
+                                </Button>
                               </DataTemplate>
                             </ItemsControl.ItemTemplate>
                           </ItemsControl>

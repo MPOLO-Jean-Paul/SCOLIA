@@ -11,7 +11,7 @@
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="CornerRadius" Value="6" />
       <Setter Property="Padding" Value="12" />
     </Style>
     <Style Selector="TextBlock.worksection">
@@ -25,7 +25,7 @@
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="CornerRadius" Value="6" />
       <Setter Property="Padding" Value="11,10" />
       <Setter Property="MinHeight" Value="116" />
       <Setter Property="Margin" Value="3,3" />
@@ -95,9 +95,12 @@
         <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" infra:Adaptive.MinItemWidth="140" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate><DataTemplate><Button Classes="workaction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding ShortTitle}">
               <StackPanel Spacing="7">
-                <Border Width="36" Height="36" CornerRadius="7" Background="{DynamicResource GroupBrush}" HorizontalAlignment="Left">
-                  <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24" Foreground="{Binding Brush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
+                <Grid Height="48" ClipToBounds="True">
+                  <Border Background="{Binding Brush}" Opacity="0.12" CornerRadius="3" />
+                  <Border Background="{Binding Brush}" Width="34" Height="34" CornerRadius="17" HorizontalAlignment="Center" VerticalAlignment="Center" infra:TileGlyph.Enabled="True">
+                    <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                </Grid>
                 <TextBlock Text="{Binding ShortTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
               </StackPanel>

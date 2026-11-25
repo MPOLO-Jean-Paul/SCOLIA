@@ -671,15 +671,15 @@
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
-    <Setter Property="BoxShadow" Value="0 5 24 0 #12000000" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
   </Style>
   <Style Selector="Button.heroaction">
-    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="6" />
     <Setter Property="Padding" Value="12,9" />
     <Setter Property="MinHeight" Value="44" />
     <Setter Property="FontWeight" Value="SemiBold" />
@@ -694,7 +694,7 @@
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="6" />
     <Setter Property="Padding" Value="16" />
   </Style>
   <!-- Les mêmes blocs de contenu sont utilisés par l'accueil du secrétariat
@@ -703,7 +703,7 @@
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="6" />
     <Setter Property="BoxShadow" Value="0 0 0 0 #00000000" />
     <Setter Property="Padding" Value="16" />
   </Style>
@@ -712,7 +712,7 @@
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="6" />
     <Setter Property="Padding" Value="16,12" />
   </Style>
   <!-- Icône façon Android 16 et macOS : pictogramme blanc plein sur un carré très arrondi de couleur franche.
@@ -724,7 +724,7 @@
     <Setter Property="Height" Value="24" />
     <Setter Property="CornerRadius" Value="7" />
     <Setter Property="VerticalAlignment" Value="Center" />
-    <Setter Property="BoxShadow" Value="0 1 2 0 #24000000" />
+    <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
     <Setter Property="infra:TileGlyph.Enabled" Value="True" />
   </Style>
   <Style Selector="Border.appicon > mi|MaterialIcon">
@@ -737,8 +737,8 @@
   <Style Selector="Border.appicon.large">
     <Setter Property="Width" Value="42" />
     <Setter Property="Height" Value="42" />
-    <Setter Property="CornerRadius" Value="12" />
-    <Setter Property="BoxShadow" Value="0 2 5 0 #26000000" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
   </Style>
   <Style Selector="Border.appicon.large > mi|MaterialIcon">
     <Setter Property="Width" Value="24" />
@@ -869,7 +869,7 @@
   <!-- Téléphone : une carte par ligne de tableau -->
   <Style Selector="Border.phonecard">
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
-    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="6" />
     <Setter Property="Padding" Value="14,12,8,12" />
     <Setter Property="Margin" Value="0,0,0,8" />
     <Setter Property="BorderThickness" Value="1" />
@@ -914,11 +914,11 @@
   </Style>
   <Style Selector="TextBlock.fieldlabel">
     <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
-    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
   </Style>
   <!-- Titre de rubrique : texte gras ordinaire, comme les en-têtes des Paramètres de Windows -->
   <Style Selector="TextBlock.section">
-    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Margin" Value="0,4,0,0" />
   </Style>
   <!-- Étiquette neutre : critère requis, format, catégorie -->
@@ -1104,7 +1104,7 @@
   </Style>
   <Style Selector="DataGridColumnHeader">
     <Setter Property="Background" Value="{DynamicResource TableHeadBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <!-- Le titre de colonne commence au même endroit que le texte des cellules -->
@@ -1542,7 +1542,7 @@
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="6" />
     <Setter Property="Padding" Value="18,18,18,16" />
     <Setter Property="MinHeight" Value="170" />
     <Setter Property="BoxShadow" Value="0 0 0 0 #00000000" />

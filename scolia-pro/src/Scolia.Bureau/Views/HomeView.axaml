@@ -40,7 +40,7 @@
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Padding" Value="14,12" />
-      <Setter Property="MinHeight" Value="172" />
+      <Setter Property="MinHeight" Value="184" />
       <Setter Property="Margin" Value="5,4" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -143,12 +143,12 @@
                     <Grid RowDefinitions="64,Auto,Auto" RowSpacing="7">
                       <Grid ClipToBounds="True">
                         <Border Background="{Binding Brush}" Opacity="0.12" CornerRadius="2" />
-                        <Ellipse Fill="{Binding Brush}" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        <mi:MaterialIcon Kind="{Binding Icon}" Width="25" Height="25" Foreground="White"
-                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Border Background="{Binding Brush}" Width="48" Height="48" CornerRadius="24" HorizontalAlignment="Center" VerticalAlignment="Center" infra:TileGlyph.Enabled="True">
+                          <mi:MaterialIcon Kind="{Binding Icon}" Width="25" Height="25" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
                       </Grid>
                       <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                        <TextBlock Text="{Binding ShortTitle}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <TextBlock Text="{Binding ShortTitle}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" />
                         <mi:MaterialIcon Grid.Column="1" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" />
                       </Grid>
                       <TextBlock Grid.Row="2" Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap"
@@ -245,12 +245,12 @@
                     <Grid RowDefinitions="64,Auto,Auto" RowSpacing="7">
                       <Grid ClipToBounds="True">
                         <Border Background="{Binding Brush}" Opacity="0.12" CornerRadius="2" />
-                        <Ellipse Fill="{Binding Brush}" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        <mi:MaterialIcon Kind="{Binding Icon}" Width="25" Height="25" Foreground="White"
-                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Border Background="{Binding Brush}" Width="48" Height="48" CornerRadius="24" HorizontalAlignment="Center" VerticalAlignment="Center" infra:TileGlyph.Enabled="True">
+                          <mi:MaterialIcon Kind="{Binding Icon}" Width="25" Height="25" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
                       </Grid>
                       <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                        <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" />
                         <mi:MaterialIcon Grid.Column="1" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" />
                       </Grid>
                       <TextBlock Grid.Row="2" Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap"

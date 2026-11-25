@@ -16,7 +16,7 @@
     <!-- Sur Android : présentation des configurations, sans minimum desktop ni débordement horizontal. -->
     <Style Selector="LayoutTransformControl.phone Border.sheet">
       <Setter Property="MinWidth" Value="0" />
-      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="CornerRadius" Value="6" />
       <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet Grid.formheader">
@@ -33,11 +33,11 @@
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet TextBox.w11, LayoutTransformControl.phone Border.sheet ComboBox.w11, LayoutTransformControl.phone Border.sheet CalendarDatePicker.w11">
       <Setter Property="MinHeight" Value="48" />
-      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="CornerRadius" Value="6" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet Button.formaction">
       <Setter Property="MinHeight" Value="48" />
-      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="CornerRadius" Value="6" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet StackPanel.formentry">
       <Setter Property="Margin" Value="0,0,0,12" />
@@ -46,9 +46,9 @@
       <Setter Property="Margin" Value="0,14,0,8" />
     </Style>
   </UserControl.Styles>
-  <!-- Feuille de dialogue macOS : titre gras, champs, boutons en capsule alignés à droite -->
-  <Border Classes="card sheet" infra:Adaptive.FitDialog="True" Classes.embedded="{Binding Embedded}" MaxWidth="620" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
-          BoxShadow="0 8 32 0 #3D000000">
+  <!-- Dialogue Fluent : titre lisible, surface simple, actions fixes et champs adaptatifs. -->
+  <Border Classes="card sheet" infra:Adaptive.FitDialog="True" Classes.embedded="{Binding Embedded}" MaxWidth="620" Padding="0" CornerRadius="8" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
+          BoxShadow="0 4 16 0 #22000000">
     <Grid RowDefinitions="Auto,*,Auto,Auto">
       <Grid Classes="formheader" ColumnDefinitions="Auto,*,Auto" Margin="24,22,18,0" IsVisible="{Binding !Embedded}">
         <Border Classes="appicon large" Background="{Binding HeaderBrush}" VerticalAlignment="Top" Margin="0,0,14,0">

@@ -60,6 +60,22 @@ public sealed class HomeAndBatchUsabilityTests
     }
 
     [Fact]
+    public void Les_vignettes_de_lancement_et_accueil_adaptent_le_pictogramme_au_contraste()
+    {
+        foreach (var (path, count) in new[] { ("Views/HomeView.axaml", 2), ("Views/StartView.axaml", 1), ("Views/Phone/HomeView.axaml", 1) })
+        {
+            var nodes = XDocument.Load(ViewFile(path)).Descendants().ToArray();
+            var tiles = nodes.Where(e => e.Attributes().Any(a => a.Name.LocalName == "TileGlyph.Enabled" && a.Value == "True")).ToArray();
+            Assert.Equal(count, tiles.Length);
+            Assert.All(tiles, tile =>
+            {
+                Assert.Equal("{Binding Brush}", (string?)tile.Attribute("Background"));
+                Assert.Contains(tile.Elements(), e => e.Name.LocalName == "MaterialIcon");
+            });
+        }
+    }
+
+    [Fact]
     public void Une_recherche_differee_ne_peut_pas_arreter_un_minuteur_plus_recent()
     {
         var students = File.ReadAllText(ViewFile("ViewModels/Students.cs"));
