@@ -4,7 +4,7 @@ enum Stage { pairing, login, home, nativeScreen, loading, students, monthly, stu
 
 enum Operation {
   snapshot, scanQr, chooseServer, createSchool, signIn, recover,
-  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions, submitEnrollment, cashierSearch, cashierChoose, cashierPreview, cashierConfirm, cashierLeave, listReceipts, exportReceipts, openReceipt, listAttendance, listDiscipline, editAttendance, saveAttendance, attendanceAll, attendanceDay, disciplineExport, registerNative, listPersonnel, marksCheck, marksSave, academicExport
+  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions, submitEnrollment, cashierSearch, cashierChoose, cashierPreview, cashierConfirm, cashierLeave, listReceipts, exportReceipts, openReceipt, listAttendance, listDiscipline, editAttendance, saveAttendance, attendanceAll, attendanceDay, disciplineExport, registerNative, listPersonnel, marksCheck, marksSave, academicExport, lmdFeeForm, lmdFeePreview
 }
 
 class SchoolSession {
@@ -178,12 +178,12 @@ class EnrollmentField {
 
 class EnrollmentForm {
   const EnrollmentForm({required this.token, required this.title, required this.subtitle,
-    this.error = '', required this.fields});
-  final String token, title, subtitle, error;
+    this.error = '', required this.fields, this.purpose = 'enrollment'});
+  final String token, title, subtitle, error, purpose;
   final List<EnrollmentField> fields;
   factory EnrollmentForm.fromMap(Map<Object?, Object?> m) => EnrollmentForm(
     token: m['token'] as String, title: m['title'] as String, subtitle: m['subtitle'] as String,
-    error: m['error'] as String, fields: List<EnrollmentField>.unmodifiable(
+    error: m['error'] as String, purpose: m['purpose'] as String? ?? 'enrollment', fields: List<EnrollmentField>.unmodifiable(
       (m['fields'] as List<Object?>).map((x) => EnrollmentField.fromMap(x as Map<Object?, Object?>))));
 }
 

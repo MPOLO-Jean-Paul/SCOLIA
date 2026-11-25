@@ -3,6 +3,7 @@ using System.Net.Http;
 using Material.Icons;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Bureau.Ribbon;
 using Scolia.Domain.School;
 
 namespace Scolia.Bureau.ViewModels;
@@ -73,6 +74,25 @@ public sealed class LmdPlanningPage : PageViewModel
         await LoadProgramAsync();
         subtitle = $"{Structures.Count} structure(s) · {Semesters.Count} semestre(s) · {Program.Count} ligne(s) de programme";
         Raise(nameof(Subtitle));
+    }
+
+    internal PromotionDto? FlutterPromotion { get; private set; }
+    internal string FlutterCurrency { get; private set; } = "";
+    internal async Task LoadForFlutterAsync(string? promotionId)
+    {
+        await LoadAsync();
+        if (!string.IsNullOrEmpty(promotionId) && SelectedPromotion?.Value != promotionId)
+        {
+            selectedPromotion = PromotionChoices.FirstOrDefault(p => p.Value == promotionId)
+                ?? throw new ArgumentException("Promotion invalide.");
+            Raise(nameof(SelectedPromotion));
+            await LoadProgramAsync();
+            subtitle = $"{Structures.Count} structure(s) · {Semesters.Count} semestre(s) · {Program.Count} ligne(s) de programme";
+            Raise(nameof(Subtitle));
+        }
+        var promotions = await Shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions");
+        FlutterPromotion = promotions.FirstOrDefault(p => p.IsActive && p.Id.ToString() == SelectedPromotion?.Value);
+        FlutterCurrency = (await Shell.Api.GetAsync<SchoolDto>("api/etablissement")).CurrencySymbol;
     }
 
     private async Task LoadProgramAsync()
@@ -233,8 +253,17 @@ public sealed class LmdPlanningPage : PageViewModel
     private async Task InstallmentsAsync()
     {
         if (SelectedPromotion is null) { Shell.Notify("Sélectionnez d'abord une promotion."); return; }
+        var form = await CreateInstallmentFormAsync();
+        if (await Shell.Ask(form)) await RefreshAsync();
+    }
+
+    internal async Task<FormViewModel> CreateInstallmentFormAsync()
+    {
+        if (!Shell.Can(Perm.SettingsWrite))
+            throw new UnauthorizedAccessException("Configuration des frais non autorisée.");
+        var selectedId = SelectedPromotion?.Value ?? throw new InvalidOperationException("Sélectionnez une promotion.");
         var promotions = await Shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions");
-        var promotion = promotions.First(p => p.Id.ToString() == SelectedPromotion.Value);
+        var promotion = promotions.First(p => p.IsActive && p.Id.ToString() == selectedId);
         var existing = promotion.Fees.Where(f => LmdInstallmentPlan.IsTranche(f.Label)).OrderBy(f => f.DueDate).ToList();
         var school = await Shell.Api.GetAsync<SchoolDto>("api/etablissement");
         var symbol = school.CurrencySymbol;
@@ -272,6 +301,6 @@ public sealed class LmdPlanningPage : PageViewModel
         }
         form.Changed = _ => Preview();
         Preview();
-        if (await Shell.Ask(form)) await RefreshAsync();
+        return form;
     }
 }

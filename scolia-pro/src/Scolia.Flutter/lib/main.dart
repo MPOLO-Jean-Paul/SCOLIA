@@ -280,6 +280,7 @@ class _WorkspaceState extends State<Workspace> {
     else if (id == 'grades') { unawaited(loadRegister('marks')); }
     else if (id == 'page:DeliberationPage') { unawaited(loadRegister('deliberation')); }
     else if (id == 'page:EncodingProgressPage') { unawaited(loadRegister('progress')); }
+    else if (id == 'lmd') { unawaited(loadRegister('lmd')); }
     else { unawaited(execute(Operation.openModule, {'module': id})); }
   }
 
@@ -610,7 +611,46 @@ class _WorkspaceState extends State<Workspace> {
     ]);
   }
 
+  Widget lmdRegister(SchoolRegister r) {
+    const groups = [('Tranche', 'Échéancier des frais'), ('Structure', 'Structures académiques'),
+      ('Semestre', 'Calendrier académique'), ('Programme', 'Maquette pédagogique UE / EC')];
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: busy ? null : () => leaveRegister(r),
+        icon: const Icon(Icons.arrow_back), label: const Text('Retour à l’accueil'))),
+      heading(r.title, r.subtitle),
+      if (r.promotions.isNotEmpty) filter('Promotion', r.promotion, r.promotions,
+        (v) => loadRegister(r.kind, current: r, promotion: v)),
+      const SizedBox(height: 12),
+      Card.outlined(margin: EdgeInsets.zero, child: Padding(padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text('Frais académiques annuels', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Text(r.overview, style: Theme.of(context).textTheme.headlineSmall),
+          if (r.canWrite) ...[const SizedBox(height: 12),
+            action('Configurer les tranches', Icons.payments_outlined, Operation.lmdFeeForm,
+              primary: true, args: {'token': r.token})],
+        ]))),
+      const SizedBox(height: 12),
+      action('Structures, calendrier et programme', Icons.account_tree_outlined,
+        Operation.registerNative, args: {'token': r.token}),
+      for (final group in groups) ...[
+        const SizedBox(height: 16),
+        Text(group.$2, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        if (!r.rows.any((x) => x.status == group.$1)) const Text('Aucun élément enregistré.'),
+        for (final row in r.rows.where((x) => x.status == group.$1))
+          Card.outlined(margin: const EdgeInsets.only(bottom: 8), child: Padding(
+            padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Text(row.name, style: Theme.of(context).textTheme.titleSmall),
+              if (row.code.isNotEmpty) Text(row.code),
+              for (final item in row.details) Text('${item.label} : ${item.value}'),
+            ]))),
+      ],
+    ]);
+  }
+
   Widget schoolRegister(SchoolRegister r) {
+    if (r.kind == 'lmd') return lmdRegister(r);
     if (r.kind == 'deliberation' || r.kind == 'progress') return academicRegister(r);
     if (r.kind == 'marks') return marksRegister(r);
     if (r.kind == 'codes') return codesRegister(r);
@@ -859,7 +899,8 @@ class _WorkspaceState extends State<Workspace> {
         child: Text(current.isEmpty ? 'Choisir une date' : current)));
     return TextFormField(key: ValueKey('${e.token}:${f.key}'), initialValue: current,
       enabled: !busy, maxLength: f.kind == 'Phone' ? 10 : 500,
-      keyboardType: f.kind == 'Phone' ? TextInputType.phone : TextInputType.text,
+      keyboardType: f.kind == 'Phone' ? TextInputType.phone : f.kind == 'Amount'
+        ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
       inputFormatters: f.kind == 'Phone' ? [FilteringTextInputFormatter.digitsOnly] : null,
       textCapitalization: TextCapitalization.words,
       decoration: decoration.copyWith(counterText: ''),
@@ -872,9 +913,24 @@ class _WorkspaceState extends State<Workspace> {
       child: Text(e.error, style: TextStyle(color: Theme.of(context).colorScheme.error))),
     for (final field in e.fields)
       Padding(padding: const EdgeInsets.only(bottom: 12), child: enrollmentField(e, field)),
-    FilledButton.icon(onPressed: busy ? null : () => execute(Operation.submitEnrollment,
-      {'token': e.token, ...enrollmentValues}), icon: const Icon(Icons.person_add_alt_1),
-      label: const Text('Inscrire')),
+    if (e.purpose == 'lmdFee') ...[
+      OutlinedButton.icon(onPressed: busy ? null : () => execute(Operation.lmdFeePreview,
+        {'token': e.token, ...enrollmentValues}), icon: const Icon(Icons.calculate_outlined),
+        label: const Text('Aperçu des tranches')),
+      const SizedBox(height: 8),
+    ],
+    FilledButton.icon(onPressed: busy ? null : () async {
+      if (e.purpose == 'lmdFee') {
+        final accepted = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
+          title: const Text('Confirmer les frais académiques'),
+          content: Text('Total annuel : ${enrollmentValues['annuel']} · ${enrollmentValues['tranches']} tranche(s).'),
+          actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirmer'))]));
+        if (!mounted || accepted != true || session?.enrollment?.token != e.token) return;
+      }
+      await execute(Operation.submitEnrollment, {'token': e.token, ...enrollmentValues});
+    }, icon: Icon(e.purpose == 'lmdFee' ? Icons.save_outlined : Icons.person_add_alt_1),
+      label: Text(e.purpose == 'lmdFee' ? 'Enregistrer les frais' : 'Inscrire')),
     const SizedBox(height: 8),
     action('Annuler', Icons.close, Operation.snapshot),
   ]);

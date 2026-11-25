@@ -1,6 +1,7 @@
 using Avalonia.Threading;
 using Scolia.Bureau.ViewModels;
 using Scolia.Bureau.Ribbon;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.Infrastructure;
 
@@ -26,6 +27,24 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     private MarksPage? marksDraft;
     private DeliberationPage? deliberationDraft;
     private EncodingProgressPage? progressDraft;
+    private LmdPlanningPage? lmdDraft;
+    private SchoolRegister DescribeLmd(LmdPlanningPage p)
+    {
+        var fees = p.FlutterPromotion?.Fees.Where(f => LmdInstallmentPlan.IsTranche(f.Label)).OrderBy(f => f.DueDate).ToList() ?? [];
+        var rows = p.Structures.Select(s => new RegisterRow("", s.Name, s.Code, "Structure", "", [
+            new("Type", TextCase.LmdKindLabel(s.Kind)), new("État", s.IsActive ? "Active" : "Inactive")]))
+            .Concat(p.Semesters.Select(s => new RegisterRow("", s.Code, "", "Semestre", "", [
+                new("Début", $"{s.StartDate:dd/MM/yyyy}"), new("Fin", $"{s.EndDate:dd/MM/yyyy}")])))
+            .Concat(p.Program.Select(s => new RegisterRow("", s.Name, s.Code, "Programme", "", [
+                new("Type", s.Kind == "TeachingUnit" ? "UE" : "EC")])))
+            .Concat(fees.Select(f => new RegisterRow("", f.Label, "", "Tranche", "", [
+                new("Montant", $"{f.Amount:0.##} {p.FlutterCurrency}"), new("Échéance", $"{f.DueDate:dd/MM/yyyy}")]))).ToArray();
+        return new("lmd", p.Title, p.Subtitle, p.SelectedPromotion?.Value ?? "", "", "", false,
+            p.FlutterPromotion is not null && shell.Can(Perm.SettingsWrite), false, false, registerToken,
+            p.PromotionChoices.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(), [], rows,
+            Overview: p.FlutterPromotion is null ? "Aucune promotion sélectionnée." :
+                $"{fees.Sum(f => f.Amount):0.##} {p.FlutterCurrency} · {fees.Count} tranche(s)");
+    }
     private SchoolRegister DescribeDeliberation(DeliberationPage p) => new("deliberation", p.Title, p.Subtitle,
         p.Promotion?.Value ?? "", p.Period?.Value ?? "", "", p.OnlyCases, false, false, false, registerToken,
         p.Promotions.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
@@ -91,7 +110,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     private bool registerDirty;
     private void ClearRegister()
     {
-        attendanceDraft = null; disciplineDraft = null; staffDraft = null; pointageDraft = null; teachingDraft = null; codesDraft = null; marksDraft = null; deliberationDraft = null; progressDraft = null; registerOwner = null; registerToken = ""; registerDirty = false;
+        attendanceDraft = null; disciplineDraft = null; staffDraft = null; pointageDraft = null; teachingDraft = null; codesDraft = null; marksDraft = null; deliberationDraft = null; progressDraft = null; lmdDraft = null; registerOwner = null; registerToken = ""; registerDirty = false;
     }
     private SchoolRegister DescribeAttendance(AttendancePage page) => new("attendance", page.Title, page.Subtitle,
         page.Promotion?.Value ?? "", WireDate(page.Day), "", page.ShowSummary,
@@ -149,7 +168,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         IReadOnlyList<CashierFee> Fees, IReadOnlyList<FilterChoice> Methods, IReadOnlyList<CashierAllocation> Allocations);
 
     public sealed record EnrollmentField(string Key, string Label, string Kind, bool Required, string Value, string Hint, string Error, IReadOnlyList<FilterChoice> Options);
-    public sealed record EnrollmentForm(string Token, string Title, string Subtitle, string Error, IReadOnlyList<EnrollmentField> Fields);
+    public sealed record EnrollmentForm(string Token, string Title, string Subtitle, string Error, IReadOnlyList<EnrollmentField> Fields, string Purpose = "enrollment");
 
     public sealed record ProfileValue(string Label, string Value);
     public sealed record ProfileSection(string Title, IReadOnlyList<IReadOnlyList<ProfileValue>> Rows);
@@ -188,8 +207,9 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     private FormViewModel? enrollmentForm;
     private object? enrollmentOwner;
     private string? enrollmentToken;
+    private string enrollmentPurpose = "enrollment";
 
-    private void ClearEnrollment() { enrollmentForm = null; enrollmentOwner = null; enrollmentToken = null; }
+    private void ClearEnrollment() { enrollmentForm = null; enrollmentOwner = null; enrollmentToken = null; enrollmentPurpose = "enrollment"; }
 
     private EnrollmentForm DescribeEnrollment(FormViewModel form) => new(enrollmentToken!, form.Title, form.Subtitle, form.Error ?? "",
         form.Fields.Select(field => new EnrollmentField(field.Key, field.Label, field.Kind.ToString(), field.Required,
@@ -198,7 +218,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                 FieldKind.Choice => field.Choice?.Value ?? "",
                 FieldKind.Day => field.Day?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) ?? field.Text,
                 _ => field.Text,
-            }, field.Hint ?? "", field.Error ?? "", field.Options.Select(x => new FilterChoice(x.Value, x.Label)).ToArray())).ToArray());
+            }, field.Hint ?? "", field.Error ?? "", field.Options.Select(x => new FilterChoice(x.Value, x.Label)).ToArray())).ToArray(), enrollmentPurpose);
     private object? studentOwner;
     private HashSet<Guid> visibleStudents = [];
 
@@ -297,9 +317,9 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         if (operation is not ("listStudents" or "openStudent" or "cashierStudent" or "studentActions")) { visibleStudents.Clear(); studentOwner = null; }
         if (operation is not ("listReceipts" or "exportReceipts" or "openReceipt"))
         { journalSelection = null; journalOwner = null; }
-        if (operation is not ("listAttendance" or "editAttendance" or "saveAttendance" or "attendanceAll" or "attendanceDay" or "listDiscipline" or "disciplineExport" or "registerNative" or "listPersonnel" or "marksCheck" or "marksSave" or "academicExport"))
+        if (operation is not ("listAttendance" or "editAttendance" or "saveAttendance" or "attendanceAll" or "attendanceDay" or "listDiscipline" or "disciplineExport" or "registerNative" or "listPersonnel" or "marksCheck" or "marksSave" or "academicExport" or "lmdFeeForm"))
             ClearRegister();
-        if (operation != "submitEnrollment") ClearEnrollment();
+        if (operation is not ("submitEnrollment" or "lmdFeePreview")) ClearEnrollment();
         if (operation == "snapshot") return ActiveCashier is { } active ? DescribeCashier(active) : Read();
         executing = true;
         try
@@ -466,13 +486,28 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     }
                     throw new UnauthorizedAccessException("Export non autorisé.");
                 }
+                case "lmdFeeForm":
+                {
+                    if (lmdDraft is not { } lmd || AllowedPage("lmd") is null || !shell.Can(Perm.SettingsWrite) ||
+                        !ReferenceEquals(registerOwner, shell.Session) || Required(arguments, "token", 36) != registerToken)
+                        throw new UnauthorizedAccessException("Promotion non confirmée.");
+                    var feeForm = await lmd.CreateInstallmentFormAsync();
+                    if (!ReferenceEquals(registerOwner, shell.Session) || AllowedPage("lmd") is null || !shell.Can(Perm.SettingsWrite))
+                        throw new UnauthorizedAccessException("Session modifiée.");
+                    enrollmentForm = feeForm;
+                    enrollmentOwner = shell.Session;
+                    enrollmentToken = Guid.NewGuid().ToString();
+                    enrollmentPurpose = "lmdFee";
+                    ClearRegister();
+                    return Read() with { Stage = "enrollment", Enrollment = DescribeEnrollment(feeForm) };
+                }
                 case "listPersonnel":
                 {
                     ClearRegister();
                     var kind = Required(arguments, "kind", 20);
                     var moduleId = kind switch { "staff" => "page:StaffPage", "pointage" => "page:StaffAttendancePage",
                         "teaching" => "page:TeachingPage", "codes" => "page:AnonymousCodesPage", "marks" => "grades", "deliberation" => "page:DeliberationPage",
-                        "progress" => "page:EncodingProgressPage", _ => throw new ArgumentException("Module invalide.") };
+                        "progress" => "page:EncodingProgressPage", "lmd" => "lmd", _ => throw new ArgumentException("Module invalide.") };
                     if (AllowedPage(moduleId) is null || ((kind is "codes" or "deliberation" or "progress") && shell.TeacherOnly) || shell.Session is not { } personnelOwner)
                         throw new UnauthorizedAccessException("Module non autorisé.");
                     if (kind == "marks")
@@ -492,7 +527,13 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                         return Read() with { Stage = "schoolRegister", Register = DescribeMarks(p) };
                     }
                     var summary = arguments.GetValueOrDefault("summary") == "true";
-                    if (kind == "deliberation")
+                    if (kind == "lmd")
+                    {
+                        var p = new LmdPlanningPage(shell);
+                        await p.LoadForFlutterAsync(arguments.GetValueOrDefault("promotion"));
+                        lmdDraft = p;
+                    }
+                    else if (kind == "deliberation")
                     {
                         var p = new DeliberationPage(shell);
                         await p.LoadForFlutterAsync(arguments.GetValueOrDefault("promotion"), arguments.GetValueOrDefault("date"), summary);
@@ -531,7 +572,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     if (AllowedPage(moduleId) is null || ((kind is "codes" or "deliberation" or "progress") && shell.TeacherOnly) || !ReferenceEquals(personnelOwner, shell.Session))
                     { ClearRegister(); throw new UnauthorizedAccessException("Session modifiée."); }
                     registerOwner = personnelOwner; registerToken = Guid.NewGuid().ToString();
-                    return Read() with { Stage = "schoolRegister", Register = deliberationDraft is { } board ? DescribeDeliberation(board)
+                    return Read() with { Stage = "schoolRegister", Register = lmdDraft is { } lmd ? DescribeLmd(lmd) : deliberationDraft is { } board ? DescribeDeliberation(board)
                         : progressDraft is { } progress ? DescribeProgress(progress) : staffDraft is { } personnel ? DescribeStaff(personnel)
                         : pointageDraft is { } pointage ? DescribePointage(pointage) : codesDraft is { } codes ? DescribeCodes(codes) : DescribeTeaching(teachingDraft!) };
                 }
@@ -574,6 +615,12 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     if (!ReferenceEquals(registerOwner, shell.Session) || !MayShowWorkspace ||
                         Required(arguments, "token", 36) != registerToken)
                         throw new UnauthorizedAccessException("Registre non confirmé.");
+                    if (operation == "registerNative" && lmdDraft is { } lmd && AllowedPage("lmd") is not null)
+                    {
+                        await shell.Open(() => lmd);
+                        ClearRegister();
+                        return Read(native: true);
+                    }
                     if (operation == "registerNative" && marksDraft is { } marks && shell.TeacherOnly && AllowedPage("grades") is not null)
                     {
                         await shell.Open(() => new MarksPage(shell,
@@ -783,8 +830,12 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     if (!ReferenceEquals(cashierOwner, shell.Session) || !ReferenceEquals(cashier, ActiveCashier))
                         throw new UnauthorizedAccessException("Session modifiée.");
                     return DescribeCashier(cashier);
+                case "lmdFeePreview":
                 case "submitEnrollment":
-                    if (AllowedPage("students") is null || !shell.Can(Perm.StudentsWrite) ||
+                    var lmdFee = enrollmentPurpose == "lmdFee";
+                    if ((lmdFee ? AllowedPage("lmd") is null || !shell.Can(Perm.SettingsWrite)
+                            : AllowedPage("students") is null || !shell.Can(Perm.StudentsWrite)) ||
+                        (operation == "lmdFeePreview" && !lmdFee) ||
                         enrollmentForm is not { } form || !ReferenceEquals(enrollmentOwner, shell.Session) ||
                         !string.Equals(enrollmentToken, Required(arguments, "token", 36), StringComparison.Ordinal))
                         throw new UnauthorizedAccessException("Inscription non autorisée.");
@@ -807,8 +858,12 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                         }
                         else field.Text = value;
                     }
+                    if (operation == "lmdFeePreview")
+                        return Read() with { Stage = "enrollment", Enrollment = DescribeEnrollment(form) };
                     await form.Submit.ExecuteAsync();
-                    if (AllowedPage("students") is null || !ReferenceEquals(enrollmentOwner, shell.Session))
+                    if ((lmdFee ? AllowedPage("lmd") is null || !shell.Can(Perm.SettingsWrite)
+                            : AllowedPage("students") is null || !shell.Can(Perm.StudentsWrite)) ||
+                        !ReferenceEquals(enrollmentOwner, shell.Session))
                     {
                         ClearEnrollment();
                         throw new UnauthorizedAccessException("Session modifiée.");
@@ -816,7 +871,8 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     if (form.Completion.IsCompletedSuccessfully)
                     {
                         var accepted = form.Completion.Result;
-                        var notice = accepted ? form.Message : "Inscription non confirmée. Vérifiez le registre avant de réessayer.";
+                        var notice = lmdFee ? (accepted ? "Configuration des frais confirmée." : "Modification des frais non confirmée.")
+                            : accepted ? form.Message : "Inscription non confirmée. Vérifiez le registre avant de réessayer.";
                         ClearEnrollment();
                         return Read(notice);
                     }
