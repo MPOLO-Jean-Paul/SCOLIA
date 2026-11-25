@@ -21,3 +21,6 @@ Registre en lecture seule, recherche explicite et pagination. L'adaptateur appel
 
 ## Suivi des paiements
 Écran Flutter : période, promotion, état, recherche, pagination de 30 lignes, export Excel/PDF/Word de la sélection entière. Le moteur réutilise la même instance MonthlyPage confirmée pour l'export (empreinte des identifiants déjà contrôlée côté serveur). Pas d'écriture financière nouvelle ; le raccordement Android effectif reste requis.
+
+## Transport Android — étape d'intégration
+Le canal utilise JSONMethodCodec des deux côtés. `android_bridge` contient un canal Java réel pour FlutterEngine et un script qui compile le JAR contre l'embedding référencé par le POM du module AAR. `FlutterJsonDispatcher` valide les arguments et sérialise les réponses de l'adaptateur en camelCase. Le canal est limité à une commande simultanée, n'affiche pas les exceptions internes et rejette les réponses tardives après fermeture. Il ne crée aucune session ni accès réseau indépendant. Il reste à intégrer le JAR et les dépendances Flutter dans le projet Android .NET, connecter le callback au dispatcher Avalonia, afficher la vue Flutter et valider le cycle de vie sur appareil. La compilation de l'APK officiel reste inchangée.

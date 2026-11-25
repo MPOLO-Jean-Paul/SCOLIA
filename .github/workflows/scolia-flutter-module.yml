@@ -27,8 +27,12 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - run: flutter build aar --no-debug --no-profile
+      - name: Compiler le pont Java contre le moteur Flutter réel
+        run: python3 android_bridge/build_bridge.py
       - uses: actions/upload-artifact@v4
         with:
           name: scolia-flutter-module-aar-validation
-          path: scolia-pro/src/Scolia.Flutter/build/host/outputs/repo/
+          path: |
+            scolia-pro/src/Scolia.Flutter/build/host/outputs/repo/
+            scolia-pro/src/Scolia.Flutter/build/bridge/scolia-flutter-bridge.jar
           if-no-files-found: error

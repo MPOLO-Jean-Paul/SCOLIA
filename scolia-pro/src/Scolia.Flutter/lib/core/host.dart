@@ -103,7 +103,7 @@ abstract interface class ScoliaHost {
 /// Host authorization, device pairing, offline queue and database remain authoritative.
 class NativeHost implements ScoliaHost {
   const NativeHost();
-  static const channel = MethodChannel('com.jpservices.scolia/mobile/v1');
+  static const channel = MethodChannel('com.jpservices.scolia/mobile/v1', JSONMethodCodec());
 
   @override
   Future<SchoolSession> execute(Operation operation,
