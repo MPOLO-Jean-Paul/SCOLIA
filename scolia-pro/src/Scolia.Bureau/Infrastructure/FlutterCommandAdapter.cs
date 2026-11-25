@@ -1,5 +1,6 @@
 using Avalonia.Threading;
 using Scolia.Bureau.ViewModels;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.Infrastructure;
 
@@ -11,9 +12,11 @@ namespace Scolia.Bureau.Infrastructure;
 public sealed class FlutterCommandAdapter(ShellViewModel shell)
 {
     public sealed record Snapshot(int Protocol, string Stage, string School, string User,
-        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null);
+        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null, IReadOnlyList<ModuleEntry>? Catalog = null);
 
-    public sealed record StudentEntry(string Name, string Code, string Promotion, string Status);
+    public sealed record ModuleEntry(string Id, string Label, string Group);
+
+    public sealed record StudentEntry(string Name, string Code, string Promotion, string Status, string Id);
     public sealed record StudentListing(string Title, string Subtitle, int Page, string Search,
         bool HasPrevious, bool HasNext, IReadOnlyList<StudentEntry> Rows);
 
@@ -27,6 +30,8 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     private MonthlyPage? monthlySelection;
     private object? monthlyOwner;
     private bool executing;
+    private object? studentOwner;
+    private HashSet<Guid> visibleStudents = [];
 
     private MonthlyListing DescribeMonthly(MonthlyPage view, int requestedPage)
     {
@@ -66,8 +71,27 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
 
     private NavItemVm? AllowedPage(string id)
     {
-        if (!MayShowWorkspace || !Pages.TryGetValue(id, out var page)) return null;
-        return shell.Navigation.SelectMany(g => g.Items).FirstOrDefault(i => i.PageType == page);
+        if (!MayShowWorkspace) return null;
+        if (Pages.TryGetValue(id, out var page))
+            return shell.Navigation.SelectMany(g => g.Items).FirstOrDefault(i => i.PageType == page);
+        return shell.Navigation.SelectMany(g => g.Items)
+            .FirstOrDefault(i => string.Equals("page:" + i.PageType.Name, id, StringComparison.Ordinal));
+    }
+
+    private IReadOnlyList<ModuleEntry> Catalog()
+    {
+        var result = new List<ModuleEntry>();
+        if (!MayShowWorkspace) return result;
+        if (shell.Can(Perm.StudentsWrite) && AllowedPage("students") is not null)
+            result.Add(new("enroll", "Inscrire", "Actions rapides"));
+        foreach (var group in shell.Navigation)
+            foreach (var item in group.Items)
+            {
+                var id = Pages.FirstOrDefault(x => x.Value == item.PageType).Key ?? "page:" + item.PageType.Name;
+                if (result.Any(x => x.Id == id)) continue;
+                result.Add(new(id, item.Label, group.Title.Length > 0 ? group.Title : "Espace de travail"));
+            }
+        return result;
     }
 
     private Snapshot Read(string? notice = null, bool native = false)
@@ -81,7 +105,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
             return new(1, "nativeScreen", "", "", "", [], notice ?? "");
         if (MayShowWorkspace && shell.Session is { } session)
             return new(1, "home", session.SchoolName, session.DisplayName, shell.SchoolYearLine,
-                Pages.Keys.Where(id => AllowedPage(id) is not null).ToArray(), notice ?? "");
+                Catalog().Select(x => x.Id).ToArray(), notice ?? "", Catalog: Catalog());
         if (shell.ShowLogin)
             return new(1, "login", shell.Login.SchoolName, "", "", [], notice ?? "");
         if (shell.ShowConnection || shell.ShowSetup)
@@ -95,6 +119,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         Dispatcher.UIThread.VerifyAccess();
         if (executing) throw new InvalidOperationException("Une commande SCOLIA est déjà en cours.");
         if (operation != "listMonthly" && operation != "exportMonthly") { monthlySelection = null; monthlyOwner = null; }
+        if (operation is not ("listStudents" or "openStudent" or "cashierStudent")) { visibleStudents.Clear(); studentOwner = null; }
         if (operation == "snapshot") return Read();
         executing = true;
         try
@@ -131,6 +156,8 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                 case "createSchool" when shell.ShowSetup && !shell.IsLoggedIn:
                     return Read(native: true);
                 case "listStudents":
+                    visibleStudents.Clear();
+                    studentOwner = null;
                     if (AllowedPage("students") is null || shell.Session is not { } owner)
                         throw new UnauthorizedAccessException("Registre non autorisé.");
                     var query = arguments.TryGetValue("q", out var term) ? term.Trim() : "";
@@ -142,9 +169,11 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     await students.LoadForFlutterAsync(query, page);
                     if (AllowedPage("students") is null || !ReferenceEquals(owner, shell.Session))
                         throw new UnauthorizedAccessException("Session modifiée.");
+                    visibleStudents = students.Items.Select(r => r.Id).ToHashSet();
+                    studentOwner = owner;
                     return Read() with { Stage = "students", Students = new StudentListing(students.Title,
                         students.Subtitle, students.FlutterPage, query, students.CanPrevious, students.CanNext,
-                        students.Items.Select(r => new StudentEntry(r.Name, r.Matricule, r.Promotion, r.Status)).ToArray()) };
+                        students.Items.Select(r => new StudentEntry(r.Name, r.Matricule, r.Promotion, r.Status, r.Id.ToString())).ToArray()) };
                 case "listMonthly":
                     monthlySelection = null;
                     monthlyOwner = null;
@@ -174,8 +203,31 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                         throw new UnauthorizedAccessException("Session modifiée.");
                     var exportPage = int.TryParse(arguments.GetValueOrDefault("page"), out var ep) ? ep : 1;
                     return Read() with { Stage = "monthly", Monthly = DescribeMonthly(selected, exportPage) };
+                case "openStudent":
+                case "cashierStudent":
+                    if (AllowedPage("students") is null || !ReferenceEquals(studentOwner, shell.Session) ||
+                        !Guid.TryParse(Required(arguments, "student", 36), out var studentId) ||
+                        !visibleStudents.Contains(studentId))
+                        throw new UnauthorizedAccessException("Dossier non autorisé.");
+                    if (operation == "cashierStudent")
+                    {
+                        if (AllowedPage("cashier") is null || !shell.Can(Perm.PaymentsCreate))
+                            throw new UnauthorizedAccessException("Encaissement non autorisé.");
+                        await shell.Open(() => new CashierPage(shell, studentId));
+                    }
+                    else await shell.Open(() => new StudentDetailPage(shell, studentId));
+                    return Read(native: true);
                 case "openModule":
-                    var item = AllowedPage(Required(arguments, "module", 40)) ??
+                    var module = Required(arguments, "module", 80);
+                    if (module == "enroll")
+                    {
+                        if (AllowedPage("students") is null || !shell.Can(Perm.StudentsWrite))
+                            throw new UnauthorizedAccessException("Inscription non autorisée.");
+                        // Le formulaire natif conserve ses contrôles de doublons et la file hors ligne.
+                        _ = shell.Run(() => StudentForms.CreateAsync(shell));
+                        return Read(native: true);
+                    }
+                    var item = AllowedPage(module) ??
                         throw new UnauthorizedAccessException("Fonctionnalité non autorisée.");
                     await item.Open.ExecuteAsync();
                     return Read(native: true);

@@ -106,6 +106,21 @@ void main() {
     expect(find.text('Appliquez la recherche avant d’exporter.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('catalog exposes authorised native modules only', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.home,
+      modules: ['page:CardsPage'], catalog: [
+        ModuleEntry('page:CardsPage', 'Cartes d’accès', 'Scolarité'),
+        ModuleEntry('page:UsersPage', 'Utilisateurs', 'Administration'),
+      ]));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    expect(find.text('Cartes d’accès'), findsOneWidget);
+    expect(find.text('Utilisateurs'), findsNothing);
+    await tester.tap(find.text('Cartes d’accès'));
+    await tester.pumpAndSettle();
+    expect(host.last, Operation.openModule);
+    expect(host.lastArgs['module'], 'page:CardsPage');
+  });
   testWidgets('native screen never exposes workspace actions', (tester) async {
     final host = TestHost(const SchoolSession(stage: Stage.nativeScreen,
       modules: ['cashier', 'students']));

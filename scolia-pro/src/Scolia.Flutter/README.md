@@ -42,3 +42,6 @@ L'adaptateur de commandes est conservé par Shell entre les recréations de la v
 
 ### Coexistence du paquet de validation
 Le serveur local du paquet expérimental utilise le port 15080, tandis que le port de production reste inchangé. Un premier lancement sans configuration prépare un contexte local de validation au lieu de joindre automatiquement le premier établissement découvert. Les tests doivent néanmoins être réalisés sur un téléphone ou un réseau de test, sans compte ni données scolaires réels. La connexion volontaire à un serveur distant reste possible et n'est pas une isolation réseau totale. Les deux modifications sont réservées à la compilation SCOLIA_FLUTTER_EXPERIMENT.
+
+## Couverture fonctionnelle du catalogue
+L'accueil Flutter reçoit maintenant tout le catalogue métier autorisé par Sidebar (ITM/IEM, EPST, LMD et rôles spécifiques), avec les libellés réels et les groupes. Les modules non portés sont ouverts dans leur interface Avalonia opérationnelle ; aucune permission supplémentaire n'est créée. Inscription et accès à la fiche ou à l'encaissement d'un dossier visible utilisent les formulaires et commandes existants. Ce parcours hybride ne constitue pas encore la migration graphique complète : chaque formulaire et écran métier reste à porter en Flutter et à tester sur appareil.

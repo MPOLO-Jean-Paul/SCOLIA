@@ -203,6 +203,17 @@ class _WorkspaceState extends State<Workspace> {
     'lmd': ('Organisation LMD', Icons.account_tree_outlined),
   };
 
+  List<ModuleEntry> catalog(SchoolSession s) => s.catalog.isNotEmpty
+    ? s.catalog.where((x) => s.modules.contains(x.id)).toList()
+    : moduleLabels.entries.where((x) => s.modules.contains(x.key))
+        .map((x) => ModuleEntry(x.key, x.value.$1, 'Espace de travail')).toList();
+
+  void openModule(String id) {
+    if (id == 'students') { unawaited(listStudents(1, '')); }
+    else if (id == 'monthly') { unawaited(listMonthly()); }
+    else { unawaited(execute(Operation.openModule, {'module': id})); }
+  }
+
   Widget home(SchoolSession s) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     heading('Bienvenue, ${s.user}', [s.school, s.year].where((v) => v.isNotEmpty).join(' · ')),
     Text('Espace de travail', style: Theme.of(context).textTheme.titleMedium),
@@ -210,15 +221,20 @@ class _WorkspaceState extends State<Workspace> {
     LayoutBuilder(builder: (context, constraints) {
       final width = constraints.maxWidth;
       final columns = width >= 680 ? 3 : width >= 330 ? 2 : 1;
-      final allowed = moduleLabels.entries.where((e) => s.modules.contains(e.key)).toList();
+      final allowed = catalog(s);
       if (allowed.isEmpty) return const Text('Aucune fonctionnalité autorisée pour ce compte.');
-      return Wrap(spacing: 12, runSpacing: 12, children: [
-        for (final entry in allowed)
-          SizedBox(width: (width - 12 * (columns - 1)) / columns,
-            child: ModuleTile(label: entry.value.$1, icon: entry.value.$2,
-              onTap: busy ? null : () => entry.key == 'students'
-                ? listStudents(1, '') : entry.key == 'monthly' ? listMonthly()
-                : execute(Operation.openModule, {'module': entry.key}))),
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        for (final group in allowed.map((x) => x.group).toSet()) ...[
+          Padding(padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(group, style: Theme.of(context).textTheme.titleSmall)),
+          Wrap(spacing: 12, runSpacing: 12, children: [
+            for (final entry in allowed.where((x) => x.group == group))
+              SizedBox(width: (width - 12 * (columns - 1)) / columns,
+                child: ModuleTile(label: entry.label,
+                  icon: moduleLabels[entry.id]?.$2 ?? Icons.apps_outlined,
+                  onTap: busy ? null : () => openModule(entry.id))),
+          ]),
+        ],
       ]);
     }),
     const SizedBox(height: 24),
@@ -233,6 +249,11 @@ class _WorkspaceState extends State<Workspace> {
       onPressed: busy ? null : () => execute(Operation.snapshot),
       icon: const Icon(Icons.arrow_back), label: const Text('Retour à l’accueil'))),
     heading(listing.title, listing.subtitle),
+    if (session?.modules.contains('enroll') ?? false) ...[
+      action('Nouvelle inscription', Icons.person_add_alt_1, Operation.openModule,
+        primary: true, args: {'module': 'enroll'}),
+      const SizedBox(height: 12),
+    ],
     TextField(controller: studentSearch, enabled: !busy, maxLength: 100,
       textInputAction: TextInputAction.search,
       onSubmitted: (q) => listStudents(1, q),
@@ -252,6 +273,13 @@ class _WorkspaceState extends State<Workspace> {
             Text(row.name, style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 5),
             Text([row.code, row.promotion, row.status].where((v) => v.isNotEmpty).join(' · ')),
+            if (row.id.isNotEmpty) Wrap(spacing: 8, children: [
+              TextButton(onPressed: busy ? null : () => execute(Operation.openStudent, {'student': row.id}),
+                child: const Text('Fiche')),
+              if (session?.modules.contains('cashier') ?? false)
+                TextButton(onPressed: busy ? null : () => execute(Operation.cashierStudent, {'student': row.id}),
+                  child: const Text('Encaisser')),
+            ]),
           ])),
         ]))),
     const SizedBox(height: 12),

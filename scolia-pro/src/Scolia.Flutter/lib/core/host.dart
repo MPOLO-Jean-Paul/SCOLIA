@@ -4,17 +4,18 @@ enum Stage { pairing, login, home, nativeScreen, loading, students, monthly }
 
 enum Operation {
   snapshot, scanQr, chooseServer, createSchool, signIn, recover,
-  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly
+  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent
 }
 
 class SchoolSession {
   const SchoolSession({required this.stage, this.school = '', this.user = '',
-    this.year = '', this.modules = const [], this.notice = '', this.students, this.monthly});
+    this.year = '', this.modules = const [], this.notice = '', this.students, this.monthly, this.catalog = const []});
   final Stage stage;
   final String school, user, year, notice;
   final List<String> modules;
   final StudentListing? students;
   final MonthlyListing? monthly;
+  final List<ModuleEntry> catalog;
 
   factory SchoolSession.fromMap(Map<Object?, Object?> value) {
     if (value['protocol'] != 1) {
@@ -26,17 +27,26 @@ class SchoolSession {
       user: value['user'] as String? ?? '', year: value['year'] as String? ?? '',
       notice: value['notice'] as String? ?? '',
       modules: List<String>.unmodifiable(modules),
+      catalog: List<ModuleEntry>.unmodifiable((value['catalog'] as List<Object?>? ?? []).map(
+        (x) => ModuleEntry.fromMap(x as Map<Object?, Object?>))),
       students: stage == Stage.students ? StudentListing.fromMap(value['students'] as Map<Object?, Object?>) : null,
       monthly: stage == Stage.monthly ? MonthlyListing.fromMap(value['monthly'] as Map<Object?, Object?>) : null);
   }
 }
 
+class ModuleEntry {
+  const ModuleEntry(this.id, this.label, this.group);
+  final String id, label, group;
+  factory ModuleEntry.fromMap(Map<Object?, Object?> m) => ModuleEntry(
+    m['id'] as String, m['label'] as String, m['group'] as String);
+}
+
 class StudentEntry {
-  const StudentEntry({required this.name, required this.code, required this.promotion, required this.status});
-  final String name, code, promotion, status;
+  const StudentEntry({required this.name, required this.code, required this.promotion, required this.status, this.id = ''});
+  final String name, code, promotion, status, id;
   factory StudentEntry.fromMap(Map<Object?, Object?> data) => StudentEntry(
     name: data['name'] as String, code: data['code'] as String,
-    promotion: data['promotion'] as String, status: data['status'] as String);
+    promotion: data['promotion'] as String, status: data['status'] as String, id: data['id'] as String);
 }
 
 class StudentListing {
