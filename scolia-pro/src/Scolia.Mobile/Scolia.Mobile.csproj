@@ -51,7 +51,7 @@
 
   <!-- Liaison expérimentale, désactivée pour toutes les versions officielles. -->
   <PropertyGroup Condition="'$(ScoliaFlutterExperiment)' == 'true'">
-    <DefineConstants>$(DefineConstants);SCOLIA_FLUTTER_EXPERIMENT</DefineConstants>
+    <DefineConstants>$(DefineConstants);SCOLIA_FLUTTER_EXPERIMENT;SCOLIA_FLUTTER_UI</DefineConstants>
     <ApplicationId>com.jpservices.scolia.fluttervalidation</ApplicationId>
     <ApplicationTitle>SCOLIA Flutter Validation</ApplicationTitle>
     <AndroidManifest>../Scolia.Flutter/build/bridge/AndroidManifest.validation.xml</AndroidManifest>
@@ -63,7 +63,16 @@
   <PropertyGroup Condition="'$(ScoliaFlutterExperiment)' == 'true' And '$(ScoliaFlutterEmulator)' == 'true'">
     <RuntimeIdentifiers>android-x64</RuntimeIdentifiers>
   </PropertyGroup>
-  <ItemGroup Condition="'$(ScoliaFlutterExperiment)' == 'true'">
+  <!-- Mode candidat officiel : opt-in explicite, aucun changement de package ni de stockage. -->
+  <PropertyGroup Condition="'$(ScoliaFlutterOfficial)' == 'true' And '$(ScoliaFlutterExperiment)' != 'true'">
+    <DefineConstants>$(DefineConstants);SCOLIA_FLUTTER_UI</DefineConstants>
+  </PropertyGroup>
+  <Target Name="GuardOfficialFlutter" BeforeTargets="PrepareForBuild" Condition="'$(ScoliaFlutterOfficial)' == 'true'">
+    <Error Condition="'$(ScoliaFlutterExperiment)' == 'true' Or '$(ScoliaFlutterEmulator)' == 'true'" Text="Le mode officiel ne peut pas utiliser le package expérimental." />
+    <Error Condition="'$(Configuration)' != 'Release' Or '$(SCOLIA_KEYSTORE)' == '' Or '$(AndroidKeyStore)' != 'true'" Text="Flutter officiel exige la compilation Release et la clé de distribution existante." />
+    <Error Condition="'$(ApplicationId)' != 'com.jpservices.scolia'" Text="Identifiant officiel SCOLIA modifié." />
+  </Target>
+  <ItemGroup Condition="'$(ScoliaFlutterExperiment)' == 'true' Or '$(ScoliaFlutterOfficial)' == 'true'">
     <ProjectReference Include="../Scolia.Flutter.AndroidBinding/Scolia.Flutter.AndroidBinding.csproj" />
     <AndroidLibrary Include="../Scolia.Flutter/build/bridge/flutter-module.aar" Bind="false" />
     <AndroidNativeLibrary Condition="'$(ScoliaFlutterEmulator)' != 'true'" Include="../Scolia.Flutter/build/bridge/native/arm64-v8a/libflutter.so" Abi="arm64-v8a" />

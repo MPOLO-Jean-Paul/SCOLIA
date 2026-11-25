@@ -231,6 +231,32 @@ jobs:
           else
             echo "officiel=false" >> "$GITHUB_OUTPUT"
           fi
+      - name: Comparer l'APK signé à la dernière version officielle installable
+        if: steps.signature_officielle.outputs.officiel == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props)"
+          # Choisir uniquement une release stable du client, jamais la console ou un paquet de test.
+          tag="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '[.[] | select(.draft == false and .prerelease == false and (.tag_name | test("^scolia-pro-v[0-9]+\\.[0-9]+\\.[0-9]+$")))] | sort_by(.tag_name | ltrimstr("scolia-pro-v") | split(".") | map(tonumber)) | last | .tag_name // empty')"
+          test -n "$tag"
+          old="${tag#scolia-pro-v}"
+          if [[ "$old" == "$version" ]]; then
+            echo "::notice::Cette version est déjà publiée : aucune nouvelle mise à jour n'est annoncée."
+            exit 0
+          fi
+          mkdir -p "$RUNNER_TEMP/previous-scolia-apk"
+          gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern "SCOLIA_Pro_${old}_Android.apk" --dir "$RUNNER_TEMP/previous-scolia-apk"
+          mapfile -t tools < <(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner | sort -V)
+          signer="${tools[-1]}"
+          options=()
+          if [[ "${SCOLIA_FLUTTER_OFFICIAL:-false}" == "true" ]]; then options+=(--require-flutter); fi
+          python3 src/Scolia.Flutter/android_bridge/verify_release_upgrade.py \
+            --previous "$RUNNER_TEMP/previous-scolia-apk/SCOLIA_Pro_${old}_Android.apk" \
+            --candidate "artifacts/android/SCOLIA_Pro_${version}_Android.apk" \
+            --aapt "$(dirname "$signer")/aapt" --apksigner "$signer" "${options[@]}"
       - uses: actions/upload-artifact@v4
         with:
           name: SCOLIA_Natif_Android_APK
