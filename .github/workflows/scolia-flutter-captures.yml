@@ -1,0 +1,37 @@
+name: SCOLIA Flutter - captures des interfaces
+on:
+  pull_request:
+    paths:
+      - 'scolia-pro/src/Scolia.Flutter/**'
+      - '.github/workflows/scolia-flutter-captures.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  captures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: scolia-pro/src/Scolia.Flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.44.0'
+      - run: flutter pub get
+      - name: Capturer les interfaces réelles en thèmes clair et sombre
+        env:
+          SCOLIA_CAPTURE_PREVIEWS: '1'
+        run: |
+          export FLUTTER_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v flutter)")")")"
+          flutter test --update-goldens test/visual_preview_test.dart
+          test "$(find test/captures -name '*.png' | wc -l)" -eq 18
+          printf 'Captures des widgets Flutter réels. Les noms et montants sont des données fictives de test. Ne constituent pas une preuve de connexion ni de fonctionnement métier sur téléphone.\n' > test/captures/LIRE-MOI.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA-Flutter-captures
+          path: scolia-pro/src/Scolia.Flutter/test/captures/
+          if-no-files-found: error

@@ -52,13 +52,9 @@ jobs:
           target: google_apis
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: |
-            cd scolia-pro/src/Scolia.Flutter
-            sdk="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
-            tools="$(find "$sdk/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
-            python3 android_bridge/device_smoke.py --serial emulator-5554 --apk build/validation/SCOLIA_Flutter_VALIDATION.apk --aapt "$tools/aapt" --apksigner "$tools/apksigner" --isolated-device --offline-resume
+          script: bash scolia-pro/src/Scolia.Flutter/android_bridge/run_device_smoke.sh
       - uses: actions/upload-artifact@v4
-        if: success()
+        if: always()
         with:
           name: scolia-flutter-emulator-validation
           path: scolia-pro/src/Scolia.Flutter/build/validation/

@@ -28,6 +28,7 @@ def main():
                         help="Confirm dedicated test device, isolated from real school servers")
     parser.add_argument("--offline-resume", action="store_true",
                         help="Disable external network on a disposable emulator before resume")
+    parser.add_argument('--capture-dir', type=Path)
     args = parser.parse_args()
 
     if not args.apk.is_file():
@@ -88,8 +89,19 @@ def main():
             time.sleep(2)
         raise RuntimeError("No verified foreground Flutter frame and native snapshot within timeout")
 
+    def capture(name):
+        if args.capture_dir is None:
+            return
+        args.capture_dir.mkdir(parents=True, exist_ok=True)
+        result = subprocess.run(["adb", "-s", args.serial, "exec-out", "screencap", "-p"],
+                                capture_output=True, check=True, timeout=20)
+        if not result.stdout.startswith(b"\x89PNG\r\n\x1a\n"):
+            raise RuntimeError("Invalid Android screenshot")
+        (args.capture_dir / (name + ".png")).write_bytes(result.stdout)
+
     launch()
     first = observe()
+    capture("android-01-demarrage")
     print("PASS: cold startup, Flutter first frame, real .NET bridge response")
     adb("shell", "input", "keyevent", "KEYCODE_HOME")
     time.sleep(3)
@@ -99,6 +111,7 @@ def main():
     try:
         launch()
         observe(first)
+        capture('android-02-reprise')
         print("PASS: background/foreground recovery with new frame and native response")
         if args.offline_resume:
             print("PASS: Flutter and native channel resume with Wi-Fi/mobile data disabled")
