@@ -365,6 +365,7 @@ public sealed class ShellViewModel : Observable
             RemoteWaiting = false;
             Raise(nameof(HasPage));
             Raise(nameof(IsStartPage));
+            Raise(nameof(ShowWorkspaceTab));
             Raise(nameof(StartNavigation));
             Raise(nameof(SidebarShown));
             // Le sens du passage est connu avant la nouvelle page : la transition part du bon côté.
@@ -384,6 +385,7 @@ public sealed class ShellViewModel : Observable
     }
     public bool HasPage => current is not null;
     public bool IsStartPage => current is StartPage;
+    public bool ShowWorkspaceTab => HasPage && !IsStartPage;
     public StartPage? StartNavigation => current as StartPage;
 
     /// <summary>Boîte de dialogue ouverte : formulaire, recherche. Null quand aucune n'est affichée.</summary>
@@ -1245,6 +1247,8 @@ public sealed class ShellViewModel : Observable
 
     private void ClearHistory()
     {
+        // Les raccourcis récents ne doivent jamais passer d'un compte à l'autre.
+        recents.Clear();
         backStack.Clear();
         forwardStack.Clear();
         Raise(nameof(CanGoBack));
