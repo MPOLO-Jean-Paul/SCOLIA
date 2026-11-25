@@ -31,6 +31,7 @@ public partial class MainView : UserControl
     private TopLevel? backHost;
     private bool fitActionsQueued;
     private bool fittingWindow;
+    private bool resizeQueued;
     private bool themeChanging;
     private CancellationTokenSource? themeFadeCancellation;
     private readonly Func<IReadOnlyList<string>, Task<PickedFile?>> pickFileHandler;
@@ -54,12 +55,7 @@ public partial class MainView : UserControl
         AddHandler(PointerWheelChangedEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(KeyDownEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(TextInputEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
-        SizeChanged += (_, e) =>
-        {
-            FitWindow(e.NewSize);
-            if (Shell?.HeaderFinderOpen == true)
-                Avalonia.Threading.Dispatcher.UIThread.Post(PlaceHeaderFinder);
-        };
+        SizeChanged += (_, _) => QueueResize();
         AttachedToVisualTree += (_, _) =>
         {
             ShowThemeIcon();
@@ -352,6 +348,20 @@ public partial class MainView : UserControl
             await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(clipboard, text);
     }
 
+    // Plusieurs événements de taille pendant une même passe de rendu ne demandent qu'un seul recalcul.
+    private void QueueResize()
+    {
+        if (resizeQueued) return;
+        resizeQueued = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            resizeQueued = false;
+            if (subscribedShell is null) return;
+            FitWindow(Bounds.Size);
+            if (Shell?.HeaderFinderOpen == true) PlaceHeaderFinder();
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
     private void QueueFitPageActions()
     {
         if (fitActionsQueued) return;
@@ -520,7 +530,7 @@ public partial class MainView : UserControl
     /// <summary>Fondu entre les pages, désactivé par la préférence « Animations ».</summary>
     private void ApplyPageTransition(Preferences prefs) =>
         PageHost.PageTransition = prefs.Animations && prefs.PageTransitions
-            ? new SharedAxisTransition(TimeSpan.FromMilliseconds(Math.Clamp(240 * prefs.SpeedFactor, 170, 340)), 12)
+            ? new SharedAxisTransition(TimeSpan.FromMilliseconds(Math.Clamp(160 * prefs.SpeedFactor, 110, 240)), 8, lightweight: true)
             : null;
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;

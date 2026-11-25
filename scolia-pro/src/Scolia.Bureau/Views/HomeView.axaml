@@ -39,8 +39,11 @@
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="8" />
-      <Setter Property="Padding" Value="13,13" />
-      <Setter Property="MinHeight" Value="86" />
+      <Setter Property="Padding" Value="14,12" />
+      <Setter Property="MinHeight" Value="112" />
+      <Setter Property="Margin" Value="5,4" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="Cursor" Value="Hand" />
@@ -56,7 +59,10 @@
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Padding" Value="15,13" />
-      <Setter Property="MinHeight" Value="114" />
+      <Setter Property="MinHeight" Value="124" />
+      <Setter Property="Margin" Value="5,4" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="Cursor" Value="Hand" />
@@ -78,6 +84,9 @@
     <Style Selector="Button.pbiRow:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
     </Style>
+    <Style Selector="Button.pbiAction:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.pbiMetric:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.pbiRow:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
     <Style Selector="Button.pbiState">
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
       <Setter Property="BorderThickness" Value="0" />
@@ -87,13 +96,13 @@
     </Style>
   </UserControl.Styles>
 
-  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Spacing="18" Margin="4,2,7,22">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="14" Margin="4,2,7,20">
       <!-- Bandeau de contexte, comme l'accueil récent de Power BI Desktop : sobre, dense et utile. -->
       <Grid x:Name="WelcomeLayout" ColumnDefinitions="*,Auto" ColumnSpacing="12"
             infra:Adaptive.StackBelow="610">
         <StackPanel Spacing="5">
-          <TextBlock Text="ESPACE DE TRAVAIL / ACCUEIL" FontSize="11" FontWeight="SemiBold"
+          <TextBlock Text="ESPACE DE TRAVAIL" FontSize="11" FontWeight="SemiBold"
                      Foreground="{DynamicResource AccentBrush}" />
           <TextBlock Text="Accueil" Classes="pbiTitle" />
           <TextBlock Text="{Binding HeaderSchoolLine}" Classes="pbiMuted"
@@ -115,74 +124,73 @@
         </StackPanel>
       </Grid>
 
-      <!-- Démarrage rapide : commandes réellement exécutables, pas de fausses tuiles. -->
-      <Grid ColumnDefinitions="2*,*" ColumnSpacing="14" infra:Adaptive.StackBelow="820">
-        <Border Classes="pbiPanel" Padding="18">
-          <StackPanel Spacing="13">
-            <StackPanel Spacing="3">
-              <TextBlock Text="Démarrer" Classes="pbiSection" />
-              <TextBlock Text="Choisissez une opération pour commencer votre travail." Classes="pbiMuted" TextWrapping="Wrap" />
-            </StackPanel>
-            <ItemsControl x:Name="WelcomeQuickActions" ItemsSource="{Binding QuickActions}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <UniformGrid Columns="2" infra:Adaptive.MinItemWidth="180" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Button Classes="pbiAction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}"
-                          Margin="0,0,10,2">
-                    <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
-                      <mi:MaterialIcon Kind="{Binding Icon}" Width="25" Height="25"
-                                       Foreground="{Binding Brush}" />
-                      <TextBlock Grid.Row="1" Text="{Binding ShortTitle}" FontSize="14"
-                                 FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                      <TextBlock Grid.Row="2" Text="{Binding Description}" Classes="pbiMuted"
-                                 TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" />
+      <!-- Actions et outils : même grille, même gabarit, mêmes espacements. -->
+      <StackPanel Spacing="8" IsVisible="{Binding !!Tools.Count}">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <TextBlock Text="Actions rapides" Classes="pbiSection" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Classes="link" Content="{Binding AllToolsLabel}" Command="{Binding ShowAllTools}"
+                  ToolTip.Tip="Afficher les fonctionnalités autorisées du compte" />
+        </Grid>
+        <ItemsControl x:Name="WelcomeQuickActions" ItemsSource="{Binding QuickActions}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Columns="2" infra:Adaptive.MinItemWidth="240" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                  <Button Classes="pbiAction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding ShortTitle}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                      <Border Width="48" Height="48" CornerRadius="8" VerticalAlignment="Center">
+                        <Grid>
+                          <Border Background="{Binding Brush}" Opacity="0.12" CornerRadius="8" />
+                          <mi:MaterialIcon Kind="{Binding Icon}" Width="27" Height="27" Foreground="{Binding Brush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                      </Border>
+                      <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding ShortTitle}" FontSize="15" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <TextBlock Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap"
+                                   MaxLines="2" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                      <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
+                                       Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
                     </Grid>
                   </Button>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <Button Classes="link" Content="{Binding AllToolsLabel}" Command="{Binding ShowAllTools}"
-                    HorizontalAlignment="Left" ToolTip.Tip="Afficher les fonctionnalités autorisées du compte" />
-          </StackPanel>
-        </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
 
-        <!-- Panneau de session : connexion et état de caisse, ancré à droite comme les volets Power BI. -->
-        <Border Grid.Column="1" Classes="pbiPanel" Padding="17">
-          <StackPanel Spacing="12">
-            <StackPanel Spacing="3">
-              <TextBlock Text="État de la session" Classes="pbiSection" />
-              <TextBlock Text="{Binding AccountContextLine}" Classes="pbiMuted"
-                         TextWrapping="Wrap" MaxLines="2" />
-            </StackPanel>
-            <Button Classes="pbiState" Command="{Binding Network}" ToolTip.Tip="{Binding Sync.StatusDetail}">
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="11">
-                <mi:MaterialIcon Kind="{Binding Sync.StatusIcon}" Foreground="{Binding Sync.StatusBrush}"
-                                 Width="24" Height="24" VerticalAlignment="Center" />
-                <StackPanel Grid.Column="1" Spacing="4">
-                  <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold"
-                             TextTrimming="CharacterEllipsis" MaxLines="1" />
-                  <TextBlock Text="{Binding Sync.StatusHint}" Classes="pbiMuted"
-                             TextWrapping="Wrap" MaxLines="2" />
-                </StackPanel>
-              </Grid>
-            </Button>
-            <Border Classes="pbiInfo" IsVisible="{Binding HasCashLine}">
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                <mi:MaterialIcon Kind="CashRegister" Width="22" Height="22"
-                                 Foreground="{Binding CashBrush}" VerticalAlignment="Center" />
-                <StackPanel Grid.Column="1" Spacing="3">
-                  <TextBlock Text="Situation de la caisse" Classes="pbiMuted" />
-                  <TextBlock Text="{Binding CashLine}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                </StackPanel>
-              </Grid>
-            </Border>
+      <!-- Une seule bande de session, indépendante de la grille des cartes. -->
+      <Border Classes="pbiPanel" Padding="14">
+        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14" infra:Adaptive.StackBelow="820">
+          <StackPanel Spacing="4" VerticalAlignment="Center">
+            <TextBlock Text="État de la session" Classes="pbiSection" />
+            <TextBlock Text="{Binding AccountContextLine}" Classes="pbiMuted" TextWrapping="Wrap" MaxLines="2" />
           </StackPanel>
-        </Border>
-      </Grid>
+          <Button Grid.Column="1" Classes="pbiState" Command="{Binding Network}" ToolTip.Tip="{Binding Sync.StatusDetail}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <mi:MaterialIcon Kind="{Binding Sync.StatusIcon}" Foreground="{Binding Sync.StatusBrush}"
+                               Width="24" Height="24" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Spacing="4">
+                <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                <TextBlock Text="{Binding Sync.StatusHint}" Classes="pbiMuted" TextWrapping="Wrap" MaxLines="2" />
+              </StackPanel>
+            </Grid>
+          </Button>
+          <Border Grid.Column="2" Classes="pbiInfo" IsVisible="{Binding HasCashLine}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <mi:MaterialIcon Kind="CashRegister" Width="22" Height="22" Foreground="{Binding CashBrush}" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Spacing="3">
+                <TextBlock Text="Situation de la caisse" Classes="pbiMuted" />
+                <TextBlock Text="{Binding CashLine}" FontWeight="SemiBold" TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
+          </Border>
+        </Grid>
+      </Border>
 
       <Border Classes="pbiInfo" IsVisible="{Binding OverviewUnavailable}">
         <TextBlock Text="Les indicateurs ne sont pas disponibles pour le moment. Vos outils restent accessibles." Classes="pbiMuted" TextWrapping="Wrap" />
@@ -203,20 +211,19 @@
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Button Classes="pbiMetric" Command="{Binding Open}" ToolTip.Tip="Ouvrir l'indicateur"
-                      Margin="0,0,10,5">
-                <StackPanel Spacing="7">
-                  <Grid ColumnDefinitions="*,Auto">
+              <Button Classes="pbiMetric" Command="{Binding Open}" ToolTip.Tip="Ouvrir l’indicateur" AutomationProperties.Name="{Binding Label}">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="7">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
                     <TextBlock Text="{Binding Label}" Classes="pbiMuted" VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis" MaxLines="1" />
-                    <mi:MaterialIcon Grid.Column="1" Kind="{Binding Icon}" Width="20" Height="20"
-                                     Foreground="{Binding Brush}" />
+                    <Border Grid.Column="1" Width="32" Height="32" CornerRadius="7" Background="{DynamicResource GroupBrush}">
+                      <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" Foreground="{Binding Brush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
                   </Grid>
-                  <TextBlock Text="{Binding Value}" FontSize="22" FontWeight="SemiBold"
-                             TextWrapping="Wrap"
-                             Foreground="{DynamicResource TextBrush}" />
-                  <TextBlock Text="{Binding Hint}" Classes="pbiMuted" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                </StackPanel>
+                  <TextBlock Grid.Row="1" Text="{Binding Value}" FontSize="22" FontWeight="SemiBold"
+                             TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" />
+                  <TextBlock Grid.Row="2" Text="{Binding Hint}" Classes="pbiMuted" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                </Grid>
               </Button>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
@@ -232,28 +239,30 @@
         <ItemsControl x:Name="FeatureCards" ItemsSource="{Binding MoreTools}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
-              <UniformGrid Columns="4" infra:Adaptive.MinItemWidth="175" />
+              <UniformGrid Columns="2" infra:Adaptive.MinItemWidth="240" />
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Button Classes="pbiAction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}"
-                      Margin="0,0,10,4">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                  <Border Width="40" Height="40" CornerRadius="8"
-                          Background="{DynamicResource AccentSoftBrush}" VerticalAlignment="Top">
-                    <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24"
-                                     Foreground="{Binding Brush}" HorizontalAlignment="Center"
-                                     VerticalAlignment="Center" />
-                  </Border>
-                  <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13"
-                               TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap"
-                               MaxLines="2" TextTrimming="CharacterEllipsis" />
-                  </StackPanel>
-                </Grid>
-              </Button>
+              <Button Classes="pbiAction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding Title}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                      <Border Width="48" Height="48" CornerRadius="8" VerticalAlignment="Center">
+                        <Grid>
+                          <Border Background="{Binding Brush}" Opacity="0.12" CornerRadius="8" />
+                          <mi:MaterialIcon Kind="{Binding Icon}" Width="27" Height="27" Foreground="{Binding Brush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                      </Border>
+                      <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <TextBlock Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap"
+                                   MaxLines="2" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                      <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
+                                       Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                    </Grid>
+                  </Button>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>

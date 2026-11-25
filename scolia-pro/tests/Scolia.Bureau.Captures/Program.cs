@@ -1959,6 +1959,17 @@ if (args.Length > 3 && args[3] == "accueil-powerbi")
     if (shell.Current is not StartPage start || start.NewActions.Count != 2)
         throw new InvalidOperationException("La session doit ouvrir Démarrer avec les deux commandes métier autorisées.");
     Save(window, "demarrer-clair.png");
+    if (!Preferences.MobileLayout)
+    {
+        var entries = window.GetVisualDescendants().OfType<Button>()
+            .Where(b => b.IsEffectivelyVisible && b.Classes.Contains("startentry")).ToList();
+        if (entries.Count != 3 || entries.Any(b => Math.Abs(b.Bounds.Width - entries[0].Bounds.Width) > 1 ||
+            Math.Abs(b.Bounds.Height - entries[0].Bounds.Height) > 1))
+            throw new InvalidOperationException("Démarrer : Accueil, Inscrire et Encaisser doivent avoir le même gabarit.");
+    }
+    prefs.Theme = "dark";
+    Save(window, "demarrer-sombre.png");
+    prefs.Theme = "light";
     var homeSizes = Preferences.MobileLayout ? new[] { (320, 568), (360, 740), (412, 892) } : new[] { (1024, 720), (1366, 768), (1600, 900), (1920, 1080) };
     foreach (var (width, height) in homeSizes)
     {
@@ -1973,6 +1984,13 @@ if (args.Length > 3 && args[3] == "accueil-powerbi")
         Save(window, $"accueil-powerbi-{width}x{height}-clair.png");
         if (!Preferences.MobileLayout)
         {
+            var cards = window.GetVisualDescendants().OfType<Button>()
+                .Where(b => b.IsEffectivelyVisible && b.Classes.Contains("pbiAction")).ToList();
+            if (cards.Count != home.QuickActions.Count + home.MoreTools.Count ||
+                cards.Any(b => Math.Abs(b.Bounds.Width - cards[0].Bounds.Width) > 2 ||
+                               Math.Abs(b.Bounds.Height - cards[0].Bounds.Height) > 2))
+                throw new InvalidOperationException($"Accueil {width}x{height} : les cartes d'action n'ont pas le même gabarit.");
+
             var header = window.GetVisualDescendants().OfType<TextBlock>()
                 .FirstOrDefault(t => t.Name == "RecentAmountHeader" && t.IsEffectivelyVisible);
             var values = window.GetVisualDescendants().OfType<TextBlock>()

@@ -364,6 +364,10 @@ public sealed class ShellViewModel : Observable
             Notice = null;
             RemoteWaiting = false;
             Raise(nameof(HasPage));
+            Raise(nameof(IsStartPage));
+            Raise(nameof(ShowWorkspaceTab));
+            Raise(nameof(StartNavigation));
+            Raise(nameof(SidebarShown));
             // Le sens du passage est connu avant la nouvelle page : la transition part du bon côté.
             Raise(nameof(NavigatingBack));
             Raise(nameof(DesktopPage));
@@ -380,6 +384,9 @@ public sealed class ShellViewModel : Observable
         }
     }
     public bool HasPage => current is not null;
+    public bool IsStartPage => current is StartPage;
+    public bool ShowWorkspaceTab => HasPage && !IsStartPage;
+    public StartPage? StartNavigation => current as StartPage;
 
     /// <summary>Boîte de dialogue ouverte : formulaire, recherche. Null quand aucune n'est affichée.</summary>
     public object? Dialog
@@ -1240,6 +1247,8 @@ public sealed class ShellViewModel : Observable
 
     private void ClearHistory()
     {
+        // Les raccourcis récents ne doivent jamais passer d'un compte à l'autre.
+        recents.Clear();
         backStack.Clear();
         forwardStack.Clear();
         Raise(nameof(CanGoBack));
@@ -1817,6 +1826,7 @@ public sealed class ShellViewModel : Observable
         set
         {
             if (!Set(ref phone, value)) return;
+            Raise(nameof(SidebarShown));
             Raise(nameof(FullScreenDialog));
             Raise(nameof(CenteredDialog));
             Raise(nameof(CenteredDialogContent));
@@ -2111,10 +2121,12 @@ public sealed class ShellViewModel : Observable
     public bool ShowStatusBar => Prefs.StatusBar && !phone;
 
     /// <summary>Volet affiché : le choix enregistré en fenêtre large, une ouverture passagère en fenêtre étroite.</summary>
-    public bool SidebarShown => narrow ? narrowSidebarOpen : Prefs.Sidebar;
+    public bool SidebarShown => IsStartPage && !Phone || (narrow ? narrowSidebarOpen : Prefs.Sidebar);
 
     public void ToggleSidebar()
     {
+        // Sur Démarrer, le volet contient les seules commandes : il reste accessible.
+        if (IsStartPage && !Phone) return;
         if (narrow)
         {
             narrowSidebarOpen = !narrowSidebarOpen;

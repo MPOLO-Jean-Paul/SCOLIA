@@ -199,6 +199,13 @@ public sealed class ProfessionalAccessPagesTests
         var frame = File.ReadAllText(Source("Views/PhoneFrame.axaml.cs"));
         Assert.Contains("lightweight: true", frame, StringComparison.Ordinal);
         Assert.Contains("Math.Clamp(150 * shell.Prefs.SpeedFactor, 110, 220)", frame, StringComparison.Ordinal);
+        var desktop = File.ReadAllText(Source("Views/MainView.axaml.cs"));
+        Assert.Contains("160 * prefs.SpeedFactor, 110, 240", desktop, StringComparison.Ordinal);
+        Assert.Contains("8, lightweight: true", desktop, StringComparison.Ordinal);
+        Assert.Contains("if (resizeQueued) return;", desktop, StringComparison.Ordinal);
+        var startPhone = File.ReadAllText(Source("Views/Phone/StartView.axaml"));
+        Assert.DoesNotContain("<ScrollViewer", startPhone, StringComparison.Ordinal);
+        Assert.Contains("Command=\"{Binding OpenHome}\"", startPhone, StringComparison.Ordinal);
         var axis = File.ReadAllText(Source("Infrastructure/SharedAxisTransition.cs"));
         Assert.Contains("if (from is not null) from.IsVisible = false;", axis, StringComparison.Ordinal);
         // Pas d'apparition en cascade ni d'ombre floue sur la carte d'accueil du téléphone.
@@ -214,6 +221,34 @@ public sealed class ProfessionalAccessPagesTests
         Assert.DoesNotContain("featureavatar mini\"><Ellipse Classes=\"halo\" Fill=\"{Binding Brush}", home, StringComparison.Ordinal);
         // La vue d'un écran n'est cherchée par réflexion qu'une fois.
         Assert.Contains("ConcurrentDictionary", File.ReadAllText(Source("Views/ViewLocator.cs")), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Demarrer_windows_separe_les_commandes_du_contenu_visuel()
+    {
+        var shell = File.ReadAllText(Source("ViewModels/Shell.cs"));
+        Assert.Contains("public bool IsStartPage => current is StartPage;", shell, StringComparison.Ordinal);
+        Assert.Contains("Raise(nameof(StartNavigation));", shell, StringComparison.Ordinal);
+        Assert.Contains("IsStartPage && !Phone", shell, StringComparison.Ordinal);
+        var frame = File.ReadAllText(Source("Views/MainView.axaml"));
+        Assert.Contains("StartNavigation.OpenHome", frame, StringComparison.Ordinal);
+        Assert.Contains("StartNavigation.NewActions", frame, StringComparison.Ordinal);
+        Assert.Contains("LayoutTransformControl.anim Border#StartHero", frame, StringComparison.Ordinal);
+        Assert.Contains("IsVisible=\"{Binding !IsStartPage}\"", frame, StringComparison.Ordinal);
+        var start = File.ReadAllText(Source("Views/StartView.axaml"));
+        Assert.DoesNotContain("Binding NewActions", start, StringComparison.Ordinal);
+        Assert.DoesNotContain("Binding OpenHome", start, StringComparison.Ordinal);
+        Assert.Contains("Binding Recommended", start, StringComparison.Ordinal);
+        Assert.Contains("Binding RecentTools", start, StringComparison.Ordinal);
+        Assert.Contains("RecommendationScroll", start, StringComparison.Ordinal);
+        Assert.Contains("Classes=\"startentry\"", frame, StringComparison.Ordinal);
+        Assert.Contains("ShowWorkspaceTab", frame, StringComparison.Ordinal);
+        var launch = File.ReadAllText(Source("ViewModels/Start.cs"));
+        Assert.Contains("Shell.Recents", launch, StringComparison.Ordinal);
+        Assert.Contains("i.PageType != typeof(CashierPage)", launch, StringComparison.Ordinal);
+        Assert.Contains("recents.Clear();", shell, StringComparison.Ordinal);
+        Assert.Contains("Binding Greeting", start, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"StartHero\"", start, StringComparison.Ordinal);
     }
 
     [Fact]
