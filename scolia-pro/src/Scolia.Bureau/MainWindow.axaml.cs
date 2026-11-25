@@ -242,7 +242,8 @@ public partial class MainWindow : Window
         if ((Screens.ScreenFromWindow(this) ?? Screens.Primary) is not { } screen) return;
         var area = screen.WorkingArea.Size.ToSize(screen.Scaling);
         var outside = !Screens.All.Any(s => s.WorkingArea.Intersects(new PixelRect(Position.X + 40, Position.Y, 200, 30)));
-        if (!outside && Width <= area.Width + 1 && Height <= area.Height + 1) return;
+        var fillsScreen = Width >= area.Width * 0.97 && Height >= area.Height * 0.97;
+        if (!outside && !fillsScreen && Width <= area.Width + 1 && Height <= area.Height + 1) return;
         var fit = Fit(area);
         Width = fit.Width;
         Height = fit.Height;

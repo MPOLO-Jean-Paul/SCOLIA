@@ -42,7 +42,7 @@ public sealed class PhoneHeaderSearchVm : Observable
     // À chaque ouverture, le micro suit le service vocal du moment (installé, coupé ou refusé entre-temps).
     public bool IsOpen { get => isOpen; private set { if (Set(ref isOpen, value) && value) Raise(nameof(VoiceAvailable)); } }
     public bool HasQuery => Query.Length > 0;
-    public bool IsVisible => shell.PhoneMenuOpen || shell.Current is HomePage or PromoterDashboardPage or SettingsPage ||
+    public bool IsVisible => shell.PhoneMenuOpen || shell.Current is StartPage or HomePage or PromoterDashboardPage or SettingsPage ||
                              Scope(shell.Current).Length > 0;
     public bool IsContextual => Scope(shell.Current).Length > 0 && !shell.PhoneMenuOpen;
     public string ShortcutText => IsContextual ? "Filtre" : "Ctrl+K";
@@ -117,7 +117,7 @@ public sealed class PhoneHeaderSearchVm : Observable
             shell.SettingsSearch.Activate.Execute(null);
             return;
         }
-        if (shell.Current is HomePage or PromoterDashboardPage)
+        if (shell.Current is StartPage or HomePage or PromoterDashboardPage)
         {
             // L'accueil est le seul écran dont le champ recherche aussi les dossiers
             // et les fonctionnalités de toute l'application (selon les permissions).

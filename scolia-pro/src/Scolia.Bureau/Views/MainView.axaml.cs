@@ -48,7 +48,7 @@ public partial class MainView : UserControl
         InitializeComponent();
         Keyboard = new KeyboardAvoidance(this, RootContent);
         // Onde au toucher sur les boutons et les lignes, comme sur Android ; coupée avec les animations.
-        TouchFeedback.Attach(this, () => Shell?.Prefs.Animations ?? true);
+        TouchFeedback.Attach(this, () => Platform.IsMobile && (Shell?.Prefs.Animations ?? true));
         // Toute activité repousse la mise en veille : toucher, clic, molette, frappe.
         AddHandler(PointerPressedEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(PointerWheelChangedEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
@@ -380,7 +380,7 @@ public partial class MainView : UserControl
         var size = Scaler.Bounds.Size;
         // Une capture bitmap du plein écran est coûteuse sur Android : la plateforme
         // applique le thème directement, sans surcharge GPU ni gel de la saisie.
-        if (shell.Phone || Platform.IsMobile || !shell.Prefs.Animations || size.Width <= 0 || size.Height <= 0)
+        if (OperatingSystem.IsWindows() || shell.Phone || Platform.IsMobile || !shell.Prefs.Animations || size.Width <= 0 || size.Height <= 0)
         {
             shell.Prefs.Theme = next;
             return;
