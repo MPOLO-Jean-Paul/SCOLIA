@@ -29,6 +29,7 @@ def main():
     parser.add_argument("--offline-resume", action="store_true",
                         help="Disable external network on a disposable emulator before resume")
     parser.add_argument('--capture-dir', type=Path)
+    parser.add_argument('--previous', type=Path, help='Native-only isolated seed APK for the upgrade test')
     args = parser.parse_args()
 
     if not args.apk.is_file():
@@ -55,14 +56,57 @@ def main():
     for package in (PRODUCTION, PACKAGE):
         if "package:" in adb("shell", "pm", "path", package, check=False):
             raise RuntimeError("Refusing a device with a pre-existing SCOLIA installation")
-    if "Success" not in adb("install", "-g", str(args.apk), timeout=240):
+    def resolved_component():
+        component = adb("shell", "cmd", "package", "resolve-activity", "--brief",
+                        "-a", "android.intent.action.MAIN", "-c",
+                        "android.intent.category.LAUNCHER", PACKAGE).splitlines()[-1]
+        if not component.startswith(PACKAGE + "/"):
+            raise RuntimeError("Cannot resolve isolated launcher")
+        return component
+
+    def wait_marker(marker):
+        deadline = time.monotonic() + 180
+        while time.monotonic() < deadline:
+            logs = adb("logcat", "-d", "-s", "SCOLIA-Migration:I", "AndroidRuntime:E")
+            if marker in logs:
+                return
+            if "FATAL EXCEPTION" in logs:
+                raise RuntimeError("Migration fixture crashed: " + logs[-5000:])
+            time.sleep(2)
+        raise RuntimeError("Missing migration marker: " + marker)
+
+    if args.previous:
+        if not args.offline_resume or adb("shell", "getprop", "ro.kernel.qemu") != "1":
+            raise RuntimeError("Upgrade test requires a disposable offline emulator")
+        old_info = run(args.aapt, "dump", "badging", str(args.previous))
+        if not old_info.startswith(f"package: name='{PACKAGE}' "):
+            raise RuntimeError("Refusing a non-isolated seed APK")
+        def metadata(value):
+            return int(re.search(r"versionCode='(\d+)'", value).group(1))
+        if metadata(info) <= metadata(old_info):
+            raise RuntimeError("Upgrade versionCode must increase")
+        def cert(apk):
+            return set(re.findall(r"(?im)^.*Signer.*certificate SHA-256 digest:\s*([0-9a-f:]+)",
+                                  run(args.apksigner, "verify", "--print-certs", str(apk))))
+        old_cert, new_cert = cert(args.previous), cert(args.apk)
+        if not old_cert or old_cert != new_cert:
+            raise RuntimeError("Isolated APK signatures differ")
+        adb("shell", "svc", "wifi", "disable")
+        adb("shell", "svc", "data", "disable")
+        if "Success" not in adb("install", "-g", str(args.previous), timeout=240):
+            raise RuntimeError("Native seed installation failed")
+        adb("logcat", "-c")
+        adb("shell", "am", "start", "-W", "-n", resolved_component(), timeout=120, check=False)
+        wait_marker("validation:legacy-seeded")
+        adb("shell", "am", "force-stop", PACKAGE)
+        adb("logcat", "-c")
+        if "Success" not in adb("install", "-r", "-g", str(args.apk), timeout=240):
+            raise RuntimeError("In-place APK update failed")
+        print("PASS: Android accepted native-to-Flutter update with same test certificate")
+    elif "Success" not in adb("install", "-g", str(args.apk), timeout=240):
         raise RuntimeError("Validation APK installation failed")
 
-    component = adb("shell", "cmd", "package", "resolve-activity", "--brief",
-                    "-a", "android.intent.action.MAIN", "-c",
-                    "android.intent.category.LAUNCHER", PACKAGE).splitlines()[-1]
-    if not component.startswith(PACKAGE + "/"):
-        raise RuntimeError("Cannot resolve isolated launcher")
+    component = resolved_component()
 
     def launch():
         # am start -W can time out on a slow first managed-runtime startup.
@@ -105,6 +149,9 @@ def main():
     try:
         launch()
         first = observe()
+        if args.previous:
+            wait_marker("validation:encrypted-data-preserved")
+            print("PASS: encrypted SQLite cache, offline account, pending payment, sync checkpoint and account isolation preserved after native-to-Flutter upgrade")
         capture("android-01-demarrage")
         print("PASS: cold startup, Flutter first frame, real .NET bridge response")
         adb("shell", "input", "keyevent", "KEYCODE_HOME")
@@ -123,7 +170,7 @@ def main():
             if args.offline_resume:
                 adb("shell", "svc", "wifi", "enable")
                 adb("shell", "svc", "data", "enable")
-        print("No school data, no real login, no uninstall or data clearing performed.")
+        print("Synthetic test data only, no production login, no uninstall or data clearing performed.")
     except Exception:
         if args.offline_resume and adb("shell", "getprop", "ro.kernel.qemu") == "1":
             # CI emulator only, no actual school accounts or personal logs.

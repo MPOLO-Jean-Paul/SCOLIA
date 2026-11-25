@@ -36,6 +36,9 @@ public sealed class MainActivity : AvaloniaMainActivity
         AndroidQrScanner.Attach(this);
         // Le fond du thème couvre aussi la préparation d'Avalonia dans base.OnCreate.
         base.OnCreate(savedInstanceState);
+#if SCOLIA_FLUTTER_MIGRATION_TEST
+        FlutterMigrationProbe.Check(this);
+#endif
         // Activer le service AVANT toute attente de synchronisation, d'écran de
         // connexion ou de chargement Avalonia. L'utilisateur peut toucher Accueil
         // immédiatement : l'hébergement reste indépendant de cette activité.

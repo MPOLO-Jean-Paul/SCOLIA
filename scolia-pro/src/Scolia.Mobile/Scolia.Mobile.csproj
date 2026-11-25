@@ -51,7 +51,10 @@
 
   <!-- Liaison expérimentale, désactivée pour toutes les versions officielles. -->
   <PropertyGroup Condition="'$(ScoliaFlutterExperiment)' == 'true'">
-    <DefineConstants>$(DefineConstants);SCOLIA_FLUTTER_EXPERIMENT;SCOLIA_FLUTTER_UI</DefineConstants>
+    <DefineConstants>$(DefineConstants);SCOLIA_FLUTTER_EXPERIMENT</DefineConstants>
+    <DefineConstants Condition="'$(ScoliaFlutterMigrationSeed)' != 'true'">$(DefineConstants);SCOLIA_FLUTTER_UI</DefineConstants>
+    <DefineConstants Condition="'$(ScoliaFlutterMigrationTest)' == 'true'">$(DefineConstants);SCOLIA_FLUTTER_MIGRATION_TEST</DefineConstants>
+    <DefineConstants Condition="'$(ScoliaFlutterMigrationSeed)' == 'true'">$(DefineConstants);SCOLIA_FLUTTER_MIGRATION_SEED</DefineConstants>
     <ApplicationId>com.jpservices.scolia.fluttervalidation</ApplicationId>
     <ApplicationTitle>SCOLIA Flutter Validation</ApplicationTitle>
     <AndroidManifest>../Scolia.Flutter/build/bridge/AndroidManifest.validation.xml</AndroidManifest>
@@ -72,7 +75,11 @@
     <Error Condition="'$(Configuration)' != 'Release' Or '$(SCOLIA_KEYSTORE)' == '' Or '$(AndroidKeyStore)' != 'true'" Text="Flutter officiel exige la compilation Release et la clé de distribution existante." />
     <Error Condition="'$(ApplicationId)' != 'com.jpservices.scolia'" Text="Identifiant officiel SCOLIA modifié." />
   </Target>
-  <ItemGroup Condition="'$(ScoliaFlutterExperiment)' == 'true' Or '$(ScoliaFlutterOfficial)' == 'true'">
+  <Target Name="GuardMigrationFixture" BeforeTargets="PrepareForBuild" Condition="'$(ScoliaFlutterMigrationTest)' == 'true' Or '$(ScoliaFlutterMigrationSeed)' == 'true'">
+    <Error Condition="'$(ScoliaFlutterExperiment)' != 'true' Or '$(ScoliaFlutterEmulator)' != 'true' Or '$(ScoliaFlutterOfficial)' == 'true' Or '$(ApplicationId)' != 'com.jpservices.scolia.fluttervalidation'" Text="Migration fixtures are restricted to an isolated emulator APK." />
+    <Error Condition="'$(ScoliaFlutterMigrationSeed)' == 'true' And '$(ScoliaFlutterMigrationTest)' != 'true'" Text="Migration seed requires explicit test mode." />
+  </Target>
+  <ItemGroup Condition="('$(ScoliaFlutterExperiment)' == 'true' And '$(ScoliaFlutterMigrationSeed)' != 'true') Or '$(ScoliaFlutterOfficial)' == 'true'">
     <ProjectReference Include="../Scolia.Flutter.AndroidBinding/Scolia.Flutter.AndroidBinding.csproj" />
     <AndroidLibrary Include="../Scolia.Flutter/build/bridge/flutter-module.aar" Bind="false" />
     <AndroidNativeLibrary Condition="'$(ScoliaFlutterEmulator)' != 'true'" Include="../Scolia.Flutter/build/bridge/native/arm64-v8a/libflutter.so" Abi="arm64-v8a" />
