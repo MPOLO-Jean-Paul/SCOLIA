@@ -54,6 +54,25 @@ public sealed class ProfessionalAccessPagesTests
     }
 
     [Fact]
+    public void Le_jumelage_existant_ne_force_plus_de_texte_blanc_sur_fond_clair()
+    {
+        var nodes = Elements("Views/ConnectionView.axaml");
+        Assert.DoesNotContain(nodes, e => Attr(e, "Selector") is "Grid.desktopconnect TextBlock" or "Grid.desktopconnect TextBlock.muted");
+        var expander = StyleOf(nodes, "Grid.desktopconnect Expander");
+        Assert.Equal("{DynamicResource TextBrush}", Setting(expander, "Foreground"));
+        Assert.Equal("{DynamicResource SurfaceBrush}", Setting(expander, "Background"));
+        Assert.Equal("{DynamicResource OnAccentBrush}", Setting(StyleOf(nodes, "Grid.desktopconnect Button.authprimary TextBlock"), "Foreground"));
+        Assert.Equal("{DynamicResource MutedBrush}", Setting(StyleOf(nodes, "Grid.desktopconnect Button.authprimary:disabled TextBlock"), "Foreground"));
+        Assert.Equal("{DynamicResource AccentBrush}", Setting(StyleOf(nodes, "Grid.desktopconnect Button.authsecondary TextBlock"), "Foreground"));
+        Assert.Equal("{DynamicResource AccentBrush}", Setting(StyleOf(nodes, "Grid.desktopconnect Button.authlink TextBlock"), "Foreground"));
+        var auth = Elements("Themes/Auth.axaml");
+        Assert.Equal("{DynamicResource TextBrush}", Setting(StyleOf(auth, "TextBlock.authtitle"), "Foreground"));
+        Assert.Equal("{DynamicResource MutedBrush}", Setting(StyleOf(auth, "TextBlock.authsubtitle"), "Foreground"));
+        foreach (var name in new[] { "IosQrOptions", "IosNearbyServers", "IosWifiOptions" })
+            Assert.False(string.IsNullOrWhiteSpace(Attr(Named(nodes, name), "Header")));
+    }
+
+    [Fact]
     public void Le_style_commun_suit_le_theme_et_reste_sans_carte_sur_grand_ecran()
     {
         var nodes = Elements("Themes/Auth.axaml");

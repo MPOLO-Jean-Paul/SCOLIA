@@ -119,23 +119,31 @@
         </Transitions>
       </Setter>
     </Style>
-    <!-- Palette de jumelage Windows, indépendante du thème clair/sombre du poste. -->
-    <Style Selector="Grid.desktopconnect TextBlock">
-      <Setter Property="Foreground" Value="#FFFFFF" />
-    </Style>
-    <Style Selector="Grid.desktopconnect TextBlock.muted">
-      <Setter Property="Foreground" Value="#DDE9FF" />
-    </Style>
-    <Style Selector="Grid.desktopconnect Button.iosconnectprimary TextBlock">
-      <Setter Property="Foreground" Value="#1846A6" />
-    </Style>
+    <!-- Le fond du jumelage suit désormais le thème : aucun texte blanc global.
+         Les titres, aides et champs gardent les couleurs du thème Auth partagé.
+         Les libellés des boutons suivent leur propre surface, y compris dans les options. -->
     <Style Selector="Grid.desktopconnect Expander">
-      <Setter Property="Foreground" Value="#FFFFFF" />
-      <Setter Property="Background" Value="#244CA5" />
-      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     </Style>
-    <Style Selector="Grid.desktopconnect Button.iosconnectsecondary TextBlock">
-      <Setter Property="Foreground" Value="#FFFFFF" />
+    <Style Selector="Grid.desktopconnect Expander /template/ ToggleButton">
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="Grid.desktopconnect Button.authprimary TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+    </Style>
+    <Style Selector="Grid.desktopconnect Button.authprimary:disabled TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+    <Style Selector="Grid.desktopconnect Button.authsecondary TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="Grid.desktopconnect Button.authlink TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="Grid.desktopconnect Button.authsecondary TextBlock.authhint">
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     </Style>
   </UserControl.Styles>
   <Grid Background="{DynamicResource BgBrush}">
