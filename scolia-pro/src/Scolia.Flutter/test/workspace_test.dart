@@ -47,6 +47,15 @@ void main() {
     expect(host.last, Operation.openModule);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('native screen never exposes workspace actions', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.nativeScreen,
+      modules: ['cashier', 'students']));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    expect(find.text('Encaisser'), findsNothing);
+    expect(find.text('Dossiers scolaires'), findsNothing);
+    expect(find.text('Interface SCOLIA'), findsOneWidget);
+  });
   testWidgets('pairing and login validation', (tester) async {
     final host = TestHost(const SchoolSession(stage: Stage.pairing));
     await tester.pumpWidget(ScoliaApp(host: host));

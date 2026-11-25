@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
@@ -49,6 +51,7 @@ class _WorkspaceState extends State<Workspace> {
   SchoolSession? session;
   bool busy = true, hidePassword = true, recovery = false;
   String? error;
+  Timer? openingPoll;
   final username = TextEditingController();
   final password = TextEditingController();
   final recoveryCode = TextEditingController();
@@ -60,12 +63,14 @@ class _WorkspaceState extends State<Workspace> {
 
   @override
   void dispose() {
+    openingPoll?.cancel();
     username.dispose(); password.dispose(); recoveryCode.dispose(); confirm.dispose();
     super.dispose();
   }
 
   Future<void> execute(Operation operation,
       [Map<String, String> args = const {}]) async {
+    openingPoll?.cancel();
     setState(() { busy = true; error = null; });
     try {
       final result = await widget.host.execute(operation, args);
@@ -88,6 +93,11 @@ class _WorkspaceState extends State<Workspace> {
       if (mounted) {
         password.clear(); recoveryCode.clear(); confirm.clear();
         setState(() => busy = false);
+        if (session?.stage == Stage.loading && error == null) {
+          openingPoll = Timer(const Duration(milliseconds: 750), () {
+            if (mounted && !busy) unawaited(execute(Operation.snapshot));
+          });
+        }
       }
     }
   }
@@ -229,7 +239,7 @@ class _WorkspaceState extends State<Workspace> {
                 child: Text(current.notice)),
               switch (current.stage) {
                 Stage.pairing => pairing(), Stage.login => login(current), Stage.home => home(current),
-                Stage.loading => heading('Ouverture de SCOLIA', 'Actualisez lorsque le moteur est prêt.'),
+                Stage.loading => heading('Ouverture de SCOLIA', 'Préparation sécurisée de votre espace de travail…'),
                 Stage.nativeScreen => heading('Interface SCOLIA', 'Cette opération utilise encore l’interface native existante.'),
               },
             ],

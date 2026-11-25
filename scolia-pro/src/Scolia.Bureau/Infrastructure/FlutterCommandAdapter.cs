@@ -80,8 +80,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     await shell.Login.Submit.ExecuteAsync();
                     return Read(shell.Login.Error is null ? null : "Connexion refusée ou indisponible.");
                 case "recover" when shell.ShowLogin && !shell.IsLocked && !shell.SwitchingAccount:
-                    shell.Login.UserName = Required(arguments, "userName", 40);
-                    if (!shell.Login.RecoveryOpen) shell.Login.ToggleRecoveryHelp.Execute(null);
+                    shell.Login.ShowRecoveryHelp(Required(arguments, "userName", 40));
                     shell.Login.RecoveryCode = Required(arguments, "recoveryCode", 256);
                     shell.Login.NewPassword = Required(arguments, "password", 256);
                     shell.Login.ConfirmPassword = Required(arguments, "confirmation", 256);
@@ -92,7 +91,9 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     if (!shell.Login.CanUseBiometricSignIn) throw new InvalidOperationException("Empreinte non configurée.");
                     await shell.Login.SignInWithBiometrics.ExecuteAsync();
                     return Read(shell.Login.Error is null ? null : "Authentification indisponible.");
-                case "scanQr" when shell.ShowConnection && !shell.IsLoggedIn:
+                case "scanQr" when !shell.IsLoggedIn && (shell.ShowConnection || shell.ShowSetup):
+                    if (!shell.ShowConnection) await shell.ChooseServerAsync();
+                    if (!shell.ShowConnection) return Read();
                     await shell.Connection.ScanCode.ExecuteAsync();
                     return Read(native: shell.ShowConnection);
                 case "chooseServer" when !shell.IsLoggedIn && (shell.ShowSetup || shell.ShowConnection || shell.ShowLogin):
