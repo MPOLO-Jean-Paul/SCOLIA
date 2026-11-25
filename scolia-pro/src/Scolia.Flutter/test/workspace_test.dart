@@ -175,6 +175,17 @@ void main() {
     expect(tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Excel')).onPressed, isNull);
     expect(find.text('Appliquez la recherche avant d’exporter.'), findsOneWidget);
   });
+  testWidgets('attendance reader cannot submit an attendance sheet', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.schoolRegister, register: SchoolRegister(
+      kind: 'attendance', title: 'Présences', date: '2026-11-25',
+      rows: [RegisterRow('id', 'Dossier test', 'INF1', 'Present', '', [])],
+      options: [FilterChoice('Present', 'Présent')])));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    expect(find.text('Dossier test'), findsOneWidget);
+    expect(find.text('Enregistrer l’appel'), findsNothing);
+    expect(find.text('Présent'), findsOneWidget);
+  });
   testWidgets('catalog exposes authorised native modules only', (tester) async {
     final host = TestHost(const SchoolSession(stage: Stage.home,
       modules: ['page:CardsPage'], catalog: [

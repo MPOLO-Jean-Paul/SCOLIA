@@ -491,19 +491,37 @@ public sealed class AttendancePage : PageViewModel
         await Shell.Ask(form);
     }
 
-    public async Task SaveAsync()
+    internal async Task LoadForFlutterAsync(string? promotionId, DateTime date, bool summary)
     {
-        if (Promotion is null) return;
+        if (!ready) await LoadAsync();
+        promotion = string.IsNullOrEmpty(promotionId) ? Promotions.FirstOrDefault() :
+            Promotions.FirstOrDefault(p => p.Value == promotionId) ?? throw new ArgumentException("Promotion invalide.");
+        day = date;
+        showSummary = summary;
+        await LoadAsync();
+    }
+
+    internal Task ConfirmForFlutterAsync(bool confirm) => ConfirmDayAsync(confirm);
+
+    public async Task SaveAsync() => _ = await SaveForFlutterAsync();
+
+    internal async Task<string> SaveForFlutterAsync()
+    {
+        if (Promotion is null || ShowSummary || !Shell.Can(Perm.AcademicsWrite))
+            throw new InvalidOperationException("Feuille d'appel indisponible.");
         var date = ToDay(Day);
         var rows = Rows.Select(r => new { enrollmentId = r.EnrollmentId, status = r.Status.Value, note = string.IsNullOrWhiteSpace(r.Note) ? null : r.Note.Trim() }).ToList();
         try
         {
             await Shell.Api.SendAsync(HttpMethod.Put, "api/scolarite/presences" + ScoliaClient.Query(("promotionId", Guid.Parse(Promotion.Value)), ("date", date)), rows);
             Shell.Notify("Appel enregistré.");
+            return "Appel enregistré.";
         }
         catch (OfflineQueuedException)
         {
-            Shell.Notify("Appel enregistré sur cet appareil ; transmission automatique dès que le serveur revient.");
+            const string notice = "Appel enregistré sur cet appareil ; transmission automatique dès que le serveur revient.";
+            Shell.Notify(notice);
+            return notice;
         }
     }
 }
@@ -584,6 +602,16 @@ public sealed class DisciplinePage : PageViewModel
         subtitle = $"{Format.Count(rows.Count, "décision", "décisions")} · {definitive} renvoi(s) définitif(s)";
         Raise(nameof(Subtitle));
     }
+
+    internal async Task LoadForFlutterAsync(string? promotionId, string? measureId)
+    {
+        if (!ready) await LoadAsync();
+        promotion = Promotions.FirstOrDefault(p => p.Value == (promotionId ?? "")) ?? throw new ArgumentException("Promotion invalide.");
+        measure = Measures.FirstOrDefault(m => m.Value == (measureId ?? "")) ?? throw new ArgumentException("Mesure invalide.");
+        await LoadAsync();
+    }
+
+    internal Task ExportForFlutterAsync() => ExportAsync();
 
     private static string Day(DateOnly? day) => day is { } d ? Format.Date(d) : "—";
 

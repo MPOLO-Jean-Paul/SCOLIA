@@ -60,3 +60,6 @@ Recherche, sélection d'un payeur, échéances et frais, montant partiel, mode, 
 
 ## Journal des reçus Flutter
 Recherche, dates, promotion, mode, statut, totaux du moteur et pagination locale de la sélection native (jusqu'à 200 lignes) ; les versements locaux restent identifiés comme en attente. Les exports Excel/PDF utilisent le filtre de l'instance native confirmée ; le détail, l'impression et l'annulation motivée restent dans l'écran natif. Aucun générateur ni modèle de cartes d'accès aux examens n'est modifié. Tests de compilation et sur appareil requis.
+
+## Présences et discipline Flutter
+Feuille d'appel et bilan 30 jours utilisent AttendancePage, les statuts et le moteur de validation existants. Les modifications sont gardées dans la session du formulaire, liées à la promotion et à la date ; enregistrer appelle la même opération native (avec distinction de la mise en attente hors ligne). Le registre disciplinaire reprend les mesures, motifs, périodes, statuts et export CSV. Les décisions, convocations et annulations restent dans l'interface native jusqu'à portage ; aucun modèle de carte d'accès n'est modifié. Validation CI et appareil requise.

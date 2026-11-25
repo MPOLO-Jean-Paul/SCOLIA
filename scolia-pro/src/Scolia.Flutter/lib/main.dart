@@ -266,6 +266,8 @@ class _WorkspaceState extends State<Workspace> {
     if (id == 'students') { unawaited(listStudents(1, '')); }
     else if (id == 'monthly') { unawaited(listMonthly()); }
     else if (id == 'receipts') { unawaited(listReceipts()); }
+    else if (id == 'attendance') { unawaited(loadRegister('attendance')); }
+    else if (id == 'page:DisciplinePage') { unawaited(loadRegister('discipline')); }
     else { unawaited(execute(Operation.openModule, {'module': id})); }
   }
 
@@ -385,6 +387,102 @@ class _WorkspaceState extends State<Workspace> {
         () => listStudents(listing.page + 1, listing.search), icon: const Icon(Icons.chevron_right)),
     ]),
   ]);
+
+  Future<void> loadRegister(String kind, {SchoolRegister? current, String? promotion, String? date,
+    String? measure, bool? summary}) => execute(kind == 'attendance' ? Operation.listAttendance : Operation.listDiscipline,
+      {'promotion': promotion ?? current?.promotion ?? '', 'date': date ?? current?.date ?? '',
+        'measure': measure ?? current?.measure ?? '', 'summary': (summary ?? current?.summary ?? false).toString()});
+
+  Future<void> leaveRegister(SchoolRegister r) async {
+    if (r.dirty) {
+      final discard = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
+        title: const Text('Abandonner les modifications ?'),
+        content: const Text('Les changements non enregistrés seront perdus.'),
+        actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Rester')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Abandonner'))]));
+      if (discard != true || !mounted) return;
+    }
+    await execute(Operation.snapshot);
+  }
+
+  Future<void> editAttendanceNote(SchoolRegister r, RegisterRow row) async {
+    String note = row.note;
+    final result = await showDialog<String>(context: context, builder: (context) => AlertDialog(
+      title: Text(row.name), content: TextFormField(initialValue: row.note, maxLength: 500,
+        maxLines: 3, decoration: const InputDecoration(labelText: 'Remarque'), onChanged: (v) => note = v),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
+        TextButton(onPressed: () => Navigator.pop(context, note), child: const Text('Appliquer'))]));
+    if (!mounted || result == null || session?.register?.token != r.token) return;
+    await execute(Operation.editAttendance, {'token': r.token, 'row': row.id, 'status': row.status, 'note': result});
+  }
+
+  Widget schoolRegister(SchoolRegister r) {
+    final attendance = r.kind == 'attendance';
+    final locked = busy || r.dirty;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: busy ? null : () => leaveRegister(r),
+        icon: const Icon(Icons.arrow_back), label: const Text('Retour à l’accueil'))),
+      heading(r.title, r.subtitle),
+      if (r.promotions.isNotEmpty) IgnorePointer(ignoring: locked, child: filter('Promotion', r.promotion, r.promotions,
+        (v) => loadRegister(r.kind, current: r, promotion: v))),
+      const SizedBox(height: 12),
+      if (attendance) ...[
+        OutlinedButton.icon(onPressed: locked ? null : () async {
+          final picked = await showDatePicker(context: context, initialDate: DateTime.tryParse(r.date) ?? DateTime.now(),
+            firstDate: DateTime(1900), lastDate: DateTime(2100, 12, 31));
+          if (!mounted || picked == null || session?.register?.token != r.token) return;
+          await loadRegister(r.kind, current: r, date: picked.toIso8601String().substring(0, 10));
+        }, icon: const Icon(Icons.calendar_today), label: Text(r.date)),
+        const SizedBox(height: 8),
+        SegmentedButton<bool>(segments: const [
+          ButtonSegment(value: false, label: Text('Appel')),
+          ButtonSegment(value: true, label: Text('Bilan 30 jours')),
+        ], selected: {r.summary}, onSelectionChanged: locked ? null : (v) => loadRegister(r.kind, current: r, summary: v.first)),
+        if (r.pending) const Padding(padding: EdgeInsets.symmetric(vertical: 8),
+          child: Text('Appel pas encore fait. Présents par défaut : vérifiez avant d’enregistrer.')),
+        if (r.dirty) const Text('Modifications non enregistrées'),
+        if (r.canWrite && r.rows.isNotEmpty) ...[
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            OutlinedButton(onPressed: busy ? null : () => execute(Operation.attendanceAll, {'token': r.token}),
+              child: const Text('Tous présents')),
+            FilledButton(onPressed: busy || (!r.dirty && !r.pending) ? null : () =>
+              execute(Operation.saveAttendance, {'token': r.token}), child: const Text('Enregistrer l’appel')),
+          ]),
+          Wrap(spacing: 8, children: [
+            TextButton(onPressed: locked ? null : () => execute(Operation.attendanceDay,
+              {'token': r.token, 'confirm': 'true'}), child: const Text('Confirmer le jour de cours')),
+            TextButton(onPressed: locked ? null : () => execute(Operation.attendanceDay,
+              {'token': r.token, 'confirm': 'false'}), child: const Text('Retirer la confirmation')),
+          ]),
+        ],
+      ] else ...[
+        if (r.options.isNotEmpty) filter('Mesure', r.measure, r.options, (v) => loadRegister(r.kind, current: r, measure: v)),
+        action('Exporter en CSV', Icons.download_outlined, Operation.disciplineExport, args: {'token': r.token}),
+      ],
+      OutlinedButton.icon(onPressed: locked ? null : () => execute(Operation.registerNative, {'token': r.token}),
+        icon: const Icon(Icons.more_horiz), label: Text(attendance ? 'Alertes et autres actions' : 'Décisions et autres actions')),
+      const SizedBox(height: 12),
+      if (r.rows.isEmpty) const Text('Aucun élément dans la sélection.'),
+      for (final row in r.rows) Card.outlined(margin: const EdgeInsets.only(bottom: 8),
+        child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text(row.name, style: Theme.of(context).textTheme.titleSmall),
+          Text(row.code),
+          if (attendance && !r.summary) ...[
+            const SizedBox(height: 8),
+            if (r.canWrite) filter('Statut', row.status, r.options, (v) =>
+              execute(Operation.editAttendance, {'token': r.token, 'row': row.id, 'status': v, 'note': row.note}))
+            else Text(r.options.where((x) => x.id == row.status).map((x) => x.label).firstOrNull ?? row.status),
+            if (r.canWrite) TextButton(onPressed: busy ? null : () => editAttendanceNote(r, row),
+              child: Text(row.note.isEmpty ? 'Ajouter une remarque' : row.note))
+            else if (row.note.isNotEmpty) Text(row.note),
+          ] else ...[
+            if (row.status.isNotEmpty) Text(row.status),
+            if (row.note.isNotEmpty) Text(row.note),
+            for (final field in row.details) Text('${field.label} : ${field.value}'),
+          ],
+        ]))),
+    ]);
+  }
 
   Future<void> listReceipts({ReceiptJournal? current, String? query, String? from,
     String? to, String? method, String? status, String? promotion, int page = 1}) =>
@@ -695,12 +793,14 @@ class _WorkspaceState extends State<Workspace> {
     final listing = current?.students;
     final payments = current?.monthly;
     final journal = current?.journal;
+    final register = current?.register;
     return Scaffold(
       appBar: AppBar(title: const Text('SCOLIA Pro'),
-        actions: [IconButton(tooltip: 'Actualiser', onPressed: busy ? null :
+        actions: [IconButton(tooltip: 'Actualiser', onPressed: busy || (register?.dirty ?? false) ? null :
           () => listing != null ? listStudents(listing.page, listing.search)
             : payments != null ? listMonthly(current: payments, page: payments.page)
             : journal != null ? listReceipts(current: journal, page: journal.page)
+            : register != null ? loadRegister(register.kind, current: register)
             : execute(Operation.snapshot), icon: const Icon(Icons.refresh))]),
       body: SafeArea(child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
@@ -725,6 +825,7 @@ class _WorkspaceState extends State<Workspace> {
                 Stage.enrollment => enrollment(current.enrollment!),
                 Stage.cashier => cashier(current.cashier!),
                 Stage.receipts => receipts(current.journal!),
+                Stage.schoolRegister => schoolRegister(current.register!),
               },
             ],
           ]),

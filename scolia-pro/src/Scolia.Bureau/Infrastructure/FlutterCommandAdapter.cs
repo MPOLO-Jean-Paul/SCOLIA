@@ -12,7 +12,37 @@ namespace Scolia.Bureau.Infrastructure;
 public sealed class FlutterCommandAdapter(ShellViewModel shell)
 {
     public sealed record Snapshot(int Protocol, string Stage, string School, string User,
-        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null, IReadOnlyList<ModuleEntry>? Catalog = null, WorkspaceHeader? Header = null, StudentProfile? Profile = null, EnrollmentForm? Enrollment = null, CashierScreen? Cashier = null, ReceiptJournal? Journal = null);
+        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null, IReadOnlyList<ModuleEntry>? Catalog = null, WorkspaceHeader? Header = null, StudentProfile? Profile = null, EnrollmentForm? Enrollment = null, CashierScreen? Cashier = null, ReceiptJournal? Journal = null, SchoolRegister? Register = null);
+
+    public sealed record RegisterRow(string Id, string Name, string Code, string Status, string Note,
+        IReadOnlyList<ProfileValue> Details);
+    public sealed record SchoolRegister(string Kind, string Title, string Subtitle, string Promotion, string Date,
+        string Measure, bool Summary, bool CanWrite, bool Pending, bool Dirty, string Token,
+        IReadOnlyList<FilterChoice> Promotions, IReadOnlyList<FilterChoice> Options, IReadOnlyList<RegisterRow> Rows);
+    private AttendancePage? attendanceDraft;
+    private DisciplinePage? disciplineDraft;
+    private object? registerOwner;
+    private string registerToken = "";
+    private bool registerDirty;
+    private void ClearRegister()
+    {
+        attendanceDraft = null; disciplineDraft = null; registerOwner = null; registerToken = ""; registerDirty = false;
+    }
+    private SchoolRegister DescribeAttendance(AttendancePage page) => new("attendance", page.Title, page.Subtitle,
+        page.Promotion?.Value ?? "", WireDate(page.Day), "", page.ShowSummary,
+        shell.Can(Perm.AcademicsWrite) && !page.ShowSummary, page.CallPending && !page.ShowSummary, registerDirty, registerToken,
+        page.Promotions.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+        page.Statuses.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+        page.ShowSummary ? page.Summary.Select(x => new RegisterRow("", x.Name, x.Matricule, "", "", [
+            new("Présent", x.Present), new("Retard", x.Late), new("Absent", x.Absent), new("Justifié", x.Justified), new("Assiduité", x.Rate)])).ToArray()
+            : page.Rows.Select(x => new RegisterRow(x.EnrollmentId.ToString(), x.FullName, x.Matricule, x.Status.Value, x.Note, [])).ToArray());
+    private SchoolRegister DescribeDiscipline(DisciplinePage page) => new("discipline", page.Title, page.Subtitle,
+        page.Promotion?.Value ?? "", "", page.Measure?.Value ?? "", false, shell.Can(Perm.AcademicsWrite), false, false, registerToken,
+        page.Promotions.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+        page.Measures.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+        page.Items.Select(x => new RegisterRow(x.Id.ToString(), x.Name, x.Matricule, x.State, x.Reason, [
+            new("Mesure", x.Measure), new("Décidé le", x.Date), new("Période", x.Period), new("Durée", x.Duration),
+            new("Retour", x.ReturnFrom), new("Réception", x.Reception), new("Statut effectif", x.Status), new("Origine", x.Origin)])).ToArray());
 
     public sealed record JournalRow(string Id, string Number, string Date, string Code, string Student,
         string Promotion, string Amount, string Method, string Status, string Cashier);
@@ -202,6 +232,8 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         if (operation is not ("listStudents" or "openStudent" or "cashierStudent" or "studentActions")) { visibleStudents.Clear(); studentOwner = null; }
         if (operation is not ("listReceipts" or "exportReceipts" or "openReceipt"))
         { journalSelection = null; journalOwner = null; }
+        if (operation is not ("listAttendance" or "editAttendance" or "saveAttendance" or "attendanceAll" or "attendanceDay" or "listDiscipline" or "disciplineExport" or "registerNative"))
+            ClearRegister();
         if (operation != "submitEnrollment") ClearEnrollment();
         if (operation == "snapshot") return ActiveCashier is { } active ? DescribeCashier(active) : Read();
         executing = true;
@@ -333,6 +365,106 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                             Profile = new(studentId.ToString(), detail.Title, detail.Subtitle, sections) };
                     }
                     return Read(native: true);
+                case "listAttendance":
+                case "listDiscipline":
+                {
+                    ClearRegister();
+                    var isAttendance = operation == "listAttendance";
+                    var id = isAttendance ? "attendance" : "page:DisciplinePage";
+                    if (AllowedPage(id) is null || shell.Session is not { } schoolOwner)
+                        throw new UnauthorizedAccessException("Registre non autorisé.");
+                    if (isAttendance)
+                    {
+                        var view = new AttendancePage(shell);
+                        await view.LoadForFlutterAsync(arguments.GetValueOrDefault("promotion"),
+                            ReadDate(arguments.GetValueOrDefault("date")) ?? DateTime.Today,
+                            arguments.GetValueOrDefault("summary") == "true");
+                        attendanceDraft = view;
+                    }
+                    else
+                    {
+                        var view = new DisciplinePage(shell);
+                        await view.LoadForFlutterAsync(arguments.GetValueOrDefault("promotion"), arguments.GetValueOrDefault("measure"));
+                        disciplineDraft = view;
+                    }
+                    if (AllowedPage(id) is null || !ReferenceEquals(schoolOwner, shell.Session))
+                    { ClearRegister(); throw new UnauthorizedAccessException("Session modifiée."); }
+                    registerOwner = schoolOwner;
+                    registerToken = Guid.NewGuid().ToString();
+                    return Read() with { Stage = "schoolRegister", Register = isAttendance
+                        ? DescribeAttendance(attendanceDraft!) : DescribeDiscipline(disciplineDraft!) };
+                }
+                case "editAttendance":
+                case "saveAttendance":
+                case "attendanceAll":
+                case "attendanceDay":
+                case "disciplineExport":
+                case "registerNative":
+                {
+                    if (!ReferenceEquals(registerOwner, shell.Session) || !MayShowWorkspace ||
+                        Required(arguments, "token", 36) != registerToken)
+                        throw new UnauthorizedAccessException("Registre non confirmé.");
+                    if (attendanceDraft is { } attendance && AllowedPage("attendance") is not null)
+                    {
+                        if (operation == "registerNative")
+                        {
+                            await shell.Open(() => attendance);
+                            ClearRegister();
+                            return Read(native: true);
+                        }
+                        if (!shell.Can(Perm.AcademicsWrite) || attendance.ShowSummary || attendance.Promotion is null)
+                            throw new UnauthorizedAccessException("Modification non autorisée.");
+                        var notice = "";
+                        if (operation == "editAttendance")
+                        {
+                            if (!Guid.TryParse(Required(arguments, "row", 36), out var rowId))
+                                throw new ArgumentException("Ligne invalide.");
+                            var row = attendance.Rows.FirstOrDefault(r => r.EnrollmentId == rowId)
+                                ?? throw new UnauthorizedAccessException("Ligne non proposée.");
+                            var state = row.Choices.FirstOrDefault(x => x.Value == Required(arguments, "status", 40))
+                                ?? throw new ArgumentException("Statut invalide.");
+                            var note = arguments.GetValueOrDefault("note", "");
+                            if (note.Length > 500) throw new ArgumentException("Remarque trop longue.");
+                            row.Status = state; row.Note = note; registerDirty = true;
+                        }
+                        else if (operation == "attendanceAll")
+                        {
+                            foreach (var row in attendance.Rows) row.Status = attendance.Statuses[0];
+                            registerDirty = true;
+                        }
+                        else if (operation == "saveAttendance")
+                        {
+                            if (!registerDirty && !attendance.CallPending) throw new InvalidOperationException("Aucun changement.");
+                            notice = await attendance.SaveForFlutterAsync();
+                            registerDirty = false;
+                            await attendance.LoadAsync();
+                        }
+                        else if (operation == "attendanceDay")
+                        {
+                            if (registerDirty) throw new InvalidOperationException("Enregistrez d'abord l'appel.");
+                            await attendance.ConfirmForFlutterAsync(Required(arguments, "confirm", 5) == "true");
+                        }
+                        else throw new ArgumentException("Commande invalide.");
+                        if (AllowedPage("attendance") is null || !ReferenceEquals(registerOwner, shell.Session))
+                        { ClearRegister(); throw new UnauthorizedAccessException("Session modifiée."); }
+                        return Read(notice) with { Stage = "schoolRegister", Register = DescribeAttendance(attendance) };
+                    }
+                    if (disciplineDraft is { } discipline && AllowedPage("page:DisciplinePage") is not null)
+                    {
+                        if (operation == "registerNative")
+                        {
+                            await shell.Open(() => discipline);
+                            ClearRegister();
+                            return Read(native: true);
+                        }
+                        if (operation != "disciplineExport") throw new ArgumentException("Commande invalide.");
+                        await discipline.ExportForFlutterAsync();
+                        if (!ReferenceEquals(registerOwner, shell.Session) || AllowedPage("page:DisciplinePage") is null)
+                            throw new UnauthorizedAccessException("Session modifiée.");
+                        return Read() with { Stage = "schoolRegister", Register = DescribeDiscipline(discipline) };
+                    }
+                    throw new UnauthorizedAccessException("Registre indisponible.");
+                }
                 case "listReceipts":
                 {
                     journalSelection = null; journalOwner = null;

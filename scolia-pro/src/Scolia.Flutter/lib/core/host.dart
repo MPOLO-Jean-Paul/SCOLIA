@@ -1,15 +1,15 @@
 import 'package:flutter/services.dart';
 
-enum Stage { pairing, login, home, nativeScreen, loading, students, monthly, studentProfile, enrollment, cashier, receipts }
+enum Stage { pairing, login, home, nativeScreen, loading, students, monthly, studentProfile, enrollment, cashier, receipts, schoolRegister }
 
 enum Operation {
   snapshot, scanQr, chooseServer, createSchool, signIn, recover,
-  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions, submitEnrollment, cashierSearch, cashierChoose, cashierPreview, cashierConfirm, cashierLeave, listReceipts, exportReceipts, openReceipt
+  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions, submitEnrollment, cashierSearch, cashierChoose, cashierPreview, cashierConfirm, cashierLeave, listReceipts, exportReceipts, openReceipt, listAttendance, listDiscipline, editAttendance, saveAttendance, attendanceAll, attendanceDay, disciplineExport, registerNative
 }
 
 class SchoolSession {
   const SchoolSession({required this.stage, this.school = '', this.user = '',
-    this.year = '', this.modules = const [], this.notice = '', this.students, this.monthly, this.catalog = const [], this.header, this.profile, this.enrollment, this.cashier, this.journal});
+    this.year = '', this.modules = const [], this.notice = '', this.students, this.monthly, this.catalog = const [], this.header, this.profile, this.enrollment, this.cashier, this.journal, this.register});
   final Stage stage;
   final String school, user, year, notice;
   final List<String> modules;
@@ -21,6 +21,7 @@ class SchoolSession {
   final EnrollmentForm? enrollment;
   final CashierScreen? cashier;
   final ReceiptJournal? journal;
+  final SchoolRegister? register;
 
   factory SchoolSession.fromMap(Map<Object?, Object?> value) {
     if (value['protocol'] != 1) {
@@ -40,7 +41,34 @@ class SchoolSession {
       profile: stage == Stage.studentProfile ? StudentProfile.fromMap(value['profile'] as Map<Object?, Object?>) : null,
       enrollment: stage == Stage.enrollment ? EnrollmentForm.fromMap(value['enrollment'] as Map<Object?, Object?>) : null,
       cashier: stage == Stage.cashier ? CashierScreen.fromMap(value['cashier'] as Map<Object?, Object?>) : null,
-      journal: stage == Stage.receipts ? ReceiptJournal.fromMap(value['journal'] as Map<Object?, Object?>) : null);
+      journal: stage == Stage.receipts ? ReceiptJournal.fromMap(value['journal'] as Map<Object?, Object?>) : null,
+      register: stage == Stage.schoolRegister ? SchoolRegister.fromMap(value['register'] as Map<Object?, Object?>) : null);
+  }
+}
+
+class RegisterRow {
+  const RegisterRow(this.id, this.name, this.code, this.status, this.note, this.details);
+  final String id, name, code, status, note;
+  final List<ProfileValue> details;
+  factory RegisterRow.fromMap(Map<Object?, Object?> m) => RegisterRow(m['id'] as String, m['name'] as String,
+    m['code'] as String, m['status'] as String, m['note'] as String,
+    (m['details'] as List<Object?>).map((v) => ProfileValue.fromMap(v as Map<Object?, Object?>)).toList());
+}
+class SchoolRegister {
+  const SchoolRegister({required this.kind, required this.title, this.subtitle = '', this.promotion = '',
+    this.date = '', this.measure = '', this.summary = false, this.canWrite = false, this.pending = false,
+    this.dirty = false, this.token = '', this.promotions = const [], this.options = const [], this.rows = const []});
+  final String kind, title, subtitle, promotion, date, measure, token;
+  final bool summary, canWrite, pending, dirty;
+  final List<FilterChoice> promotions, options;
+  final List<RegisterRow> rows;
+  factory SchoolRegister.fromMap(Map<Object?, Object?> m) {
+    List<FilterChoice> choices(String key) => (m[key] as List<Object?>).map((v) => FilterChoice.fromMap(v as Map<Object?, Object?>)).toList();
+    return SchoolRegister(kind: m['kind'] as String, title: m['title'] as String, subtitle: m['subtitle'] as String,
+      promotion: m['promotion'] as String, date: m['date'] as String, measure: m['measure'] as String,
+      summary: m['summary'] as bool, canWrite: m['canWrite'] as bool, pending: m['pending'] as bool,
+      dirty: m['dirty'] as bool, token: m['token'] as String, promotions: choices('promotions'), options: choices('options'),
+      rows: (m['rows'] as List<Object?>).map((v) => RegisterRow.fromMap(v as Map<Object?, Object?>)).toList());
   }
 }
 
