@@ -70,6 +70,16 @@
       </Setter>
     </Style>
 
+    <!-- Illustration de démarrage : une apparition finie, selon la préférence Animations. -->
+    <Style Selector="LayoutTransformControl.anim Border#StartHero">
+      <Style.Animations>
+        <Animation Duration="0:0:0.32" Easing="{x:Static infra:Motion.Spring}" FillMode="Both">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /><Setter Property="TranslateTransform.Y" Value="8" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /><Setter Property="TranslateTransform.Y" Value="0" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+
     <!-- Écran de connexion : il apparaît en fondu, la carte monte doucement -->
     <Style Selector="LayoutTransformControl.anim ContentControl#LoginHost[IsVisible=True]">
       <Style.Animations>
@@ -322,7 +332,7 @@
       <Border Grid.Row="0" Grid.ColumnSpan="2" Classes="pagebar appheader" x:Name="PageBar">
         <Grid ColumnDefinitions="Auto,Auto,3*,3*,Auto,Auto,Auto" IsVisible="{Binding HasPage}">
           <Button Classes="toolicon" Command="{Binding ToggleSidebarCommand}" Margin="0,0,8,0" VerticalAlignment="Center"
-                  ToolTip.Tip="Afficher ou masquer le volet (Ctrl+B)">
+                  ToolTip.Tip="Afficher ou masquer le volet (Ctrl+B)" IsEnabled="{Binding !IsStartPage}">
             <mi:MaterialIcon Kind="DockLeft" Width="18" Height="18" />
           </Button>
           <Border Grid.Column="1" Classes="navcapsule" VerticalAlignment="Center" Margin="0,0,14,0">
@@ -493,8 +503,38 @@
               </StackPanel>
             </Grid>
           </StackPanel>
-          <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <ItemsControl ItemsSource="{Binding NavigationBlocks}" Margin="10,4,10,12">
+          <Grid>
+            <!-- Démarrer est un espace de lancement, et non le menu métier complet. -->
+            <ScrollViewer IsVisible="{Binding IsStartPage}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+              <StackPanel Spacing="8" Margin="10,8,10,12">
+                <TextBlock Text="ESPACE DE TRAVAIL" Classes="navblocktitle" Margin="4,4,0,2" />
+                <Button x:Name="OpenHomeButton" Classes="navitem" Command="{Binding StartNavigation.OpenHome}"
+                        HorizontalContentAlignment="Stretch" MinHeight="48" AutomationProperties.Name="Accueil">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <mi:MaterialIcon Kind="HomeOutline" Width="23" Height="23" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="Accueil" FontWeight="SemiBold" VerticalAlignment="Center" />
+                  </Grid>
+                </Button>
+                <TextBlock Text="NOUVEAU" Classes="navblocktitle" Margin="4,14,0,2"
+                           IsVisible="{Binding StartNavigation.HasNewActions, FallbackValue=False}" />
+                <ItemsControl ItemsSource="{Binding StartNavigation.NewActions}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Button Classes="navitem" Command="{Binding Open}" HorizontalContentAlignment="Stretch" MinHeight="48"
+                              AutomationProperties.Name="{Binding Title}" ToolTip.Tip="{Binding Description}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                          <mi:MaterialIcon Kind="{Binding Icon}" Width="23" Height="23" Foreground="{Binding Brush}" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </ScrollViewer>
+            <ScrollViewer IsVisible="{Binding !IsStartPage}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+              <ItemsControl ItemsSource="{Binding NavigationBlocks}" Margin="10,4,10,12">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
                   <StackPanel Spacing="6" Margin="0,6,0,8">
@@ -542,8 +582,9 @@
                   </StackPanel>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </ScrollViewer>
+              </ItemsControl>
+            </ScrollViewer>
+          </Grid>
         </DockPanel>
       </Border>
 
