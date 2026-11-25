@@ -106,6 +106,17 @@ void main() {
     expect(find.text('Appliquez la recherche avant d’exporter.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('home displays actual native synchronisation status', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.home, school: 'Établissement test',
+      modules: ['network'], header: WorkspaceHeader(greeting: 'Bonjour, Compte', date: '25 novembre',
+        initials: 'C', syncStatus: 'Hors ligne', syncHint: 'Données locales disponibles',
+        offline: true, pending: false)));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    expect(find.text('Bonjour, Compte'), findsOneWidget);
+    expect(find.text('Hors ligne'), findsOneWidget);
+    expect(find.text('Données locales disponibles'), findsOneWidget);
+  });
   testWidgets('catalog exposes authorised native modules only', (tester) async {
     final host = TestHost(const SchoolSession(stage: Stage.home,
       modules: ['page:CardsPage'], catalog: [

@@ -11,18 +11,36 @@ class ScoliaApp extends StatelessWidget {
   const ScoliaApp({super.key, required this.host});
   final ScoliaHost host;
   ThemeData theme(Brightness brightness) {
-    final scheme = ColorScheme.fromSeed(seedColor: const Color(0xff345ab7),
-      brightness: brightness);
+    // Valeurs de Themes/Material3.axaml : continuité visuelle avec SCOLIA Android.
+    final dark = brightness == Brightness.dark;
+    final scheme = ColorScheme.fromSeed(seedColor: const Color(0xff0061a4),
+      brightness: brightness).copyWith(
+        primary: dark ? const Color(0xff9ecaff) : const Color(0xff0061a4),
+        onPrimary: dark ? const Color(0xff003258) : Colors.white,
+        primaryContainer: dark ? const Color(0xff00497d) : const Color(0xffd1e4ff),
+        surface: dark ? const Color(0xff1e2023) : Colors.white,
+        surfaceContainerLow: dark ? const Color(0xff1e2023) : Colors.white,
+        surfaceContainer: dark ? const Color(0xff282a2d) : const Color(0xffe6ebf2),
+        onSurface: dark ? const Color(0xffe2e2e6) : const Color(0xff1a1c1e),
+        onSurfaceVariant: dark ? const Color(0xffc3c7cf) : const Color(0xff43474e),
+        outline: dark ? const Color(0xff8d9199) : const Color(0xff73777f),
+        outlineVariant: dark ? const Color(0xff33363b) : const Color(0xffdde3ea));
     final base = ThemeData(useMaterial3: true, colorScheme: scheme);
-    final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(10));
+    final background = dark ? const Color(0xff111316) : const Color(0xfff3f6fb);
+    final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(8));
     return base.copyWith(
-      scaffoldBackgroundColor: scheme.surface,
-      appBarTheme: AppBarTheme(backgroundColor: scheme.surface, elevation: 0,
+      scaffoldBackgroundColor: background,
+      appBarTheme: AppBarTheme(backgroundColor: background, elevation: 0,
         centerTitle: false, scrolledUnderElevation: 0),
+      cardTheme: CardThemeData(color: scheme.surface, elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: scheme.outlineVariant))),
       inputDecorationTheme: InputDecorationTheme(filled: true,
-        fillColor: scheme.surfaceContainerLow,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17)),
+        fillColor: scheme.surface,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: scheme.outline)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16)),
       filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(
         minimumSize: const Size(48, 52), shape: shape)),
       outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(
@@ -214,14 +232,49 @@ class _WorkspaceState extends State<Workspace> {
     else { unawaited(execute(Operation.openModule, {'module': id})); }
   }
 
+  Widget welcome(SchoolSession s) {
+    final h = s.header;
+    final c = Theme.of(context).colorScheme;
+    return Card.outlined(margin: EdgeInsets.zero, child: Padding(
+      padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('ESPACE DE TRAVAIL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: c.primary)),
+            const SizedBox(height: 4),
+            Text(h?.greeting ?? 'Bienvenue, ${s.user}', style: Theme.of(context).textTheme.headlineSmall),
+            Text([s.school, s.year].where((v) => v.isNotEmpty).join(' · ')),
+            if (h != null) Text(h.date, style: TextStyle(color: c.onSurfaceVariant)),
+          ])),
+          if (h != null) CircleAvatar(backgroundColor: c.primaryContainer, child: Text(h.initials)),
+        ]),
+        if (h != null) ...[
+          const Divider(),
+          ListTile(contentPadding: EdgeInsets.zero,
+            leading: Icon(h.offline ? Icons.cloud_off_outlined : h.pending ? Icons.sync : Icons.cloud_done_outlined,
+              color: h.offline || h.pending ? c.onSurfaceVariant : c.primary),
+            title: Text(h.syncStatus), subtitle: Text(h.syncHint),
+            trailing: s.modules.contains('network') ? const Icon(Icons.chevron_right) : null,
+            onTap: busy || !s.modules.contains('network') ? null : () => openModule('network')),
+        ],
+      ])));
+  }
+
   Widget home(SchoolSession s) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    heading('Bienvenue, ${s.user}', [s.school, s.year].where((v) => v.isNotEmpty).join(' · ')),
-    Text('Espace de travail', style: Theme.of(context).textTheme.titleMedium),
+    welcome(s),
+    const SizedBox(height: 16),
+    Text('Démarrer', style: Theme.of(context).textTheme.titleMedium),
     const SizedBox(height: 12),
     LayoutBuilder(builder: (context, constraints) {
       final width = constraints.maxWidth;
       final columns = width >= 680 ? 3 : width >= 330 ? 2 : 1;
-      final allowed = catalog(s);
+      final all = catalog(s);
+      final quick = ['enroll', 'cashier', 'students', 'monthly'];
+      final allowed = [
+        for (final id in quick)
+          for (final item in all.where((x) => x.id == id))
+            ModuleEntry(item.id, item.label, 'Actions rapides'),
+        ...all.where((x) => !quick.contains(x.id)),
+      ];
       if (allowed.isEmpty) return const Text('Aucune fonctionnalité autorisée pour ce compte.');
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         for (final group in allowed.map((x) => x.group).toSet()) ...[
@@ -409,18 +462,19 @@ class ModuleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = Theme.of(context).colorScheme;
-    final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(10),
+    final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(8),
       side: BorderSide(color: c.outlineVariant));
-    return Material(color: c.surfaceContainerLow, shape: shape, clipBehavior: Clip.antiAlias,
-      child: InkWell(onTap: onTap, child: Padding(padding: const EdgeInsets.all(12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Container(height: 62, alignment: Alignment.center,
-            decoration: BoxDecoration(color: c.secondaryContainer, borderRadius: BorderRadius.circular(6)),
-            child: Icon(icon, color: c.onSecondaryContainer, size: 30)),
-          const SizedBox(height: 10),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w600),
-            maxLines: 2, overflow: TextOverflow.ellipsis),
-        ]),
-      )));
+    return Material(color: c.surface, shape: shape, clipBehavior: Clip.antiAlias,
+      child: InkWell(onTap: onTap, child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 116),
+        child: Padding(padding: const EdgeInsets.all(12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(width: 36, height: 36, alignment: Alignment.center,
+              decoration: BoxDecoration(color: c.primaryContainer, borderRadius: BorderRadius.circular(7)),
+              child: Icon(icon, color: c.onPrimaryContainer, size: 24)),
+            const SizedBox(height: 8),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+          ]),
+        ))));
   }
 }

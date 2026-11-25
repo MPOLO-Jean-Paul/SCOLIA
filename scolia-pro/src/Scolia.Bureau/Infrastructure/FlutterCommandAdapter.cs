@@ -1,6 +1,6 @@
 using Avalonia.Threading;
 using Scolia.Bureau.ViewModels;
-using Scolia.Domain.School;
+using Scolia.Bureau.Ribbon;
 
 namespace Scolia.Bureau.Infrastructure;
 
@@ -12,7 +12,9 @@ namespace Scolia.Bureau.Infrastructure;
 public sealed class FlutterCommandAdapter(ShellViewModel shell)
 {
     public sealed record Snapshot(int Protocol, string Stage, string School, string User,
-        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null, IReadOnlyList<ModuleEntry>? Catalog = null);
+        string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null, IReadOnlyList<ModuleEntry>? Catalog = null, WorkspaceHeader? Header = null);
+
+    public sealed record WorkspaceHeader(string Greeting, string Date, string Initials, string SyncStatus, string SyncHint, bool Offline, bool Pending);
 
     public sealed record ModuleEntry(string Id, string Label, string Group);
 
@@ -104,8 +106,14 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         if (native)
             return new(1, "nativeScreen", "", "", "", [], notice ?? "");
         if (MayShowWorkspace && shell.Session is { } session)
+        {
+            var catalog = Catalog();
+            var header = new WorkspaceHeader($"{(DateTime.Now.Hour >= 18 ? "Bonsoir" : "Bonjour")}, {shell.AccountName}",
+                Format.LongDate(DateOnly.FromDateTime(DateTime.Today)), shell.UserInitials,
+                shell.Sync.StatusText, shell.Sync.StatusHint, shell.Sync.Offline, shell.Sync.HasPending);
             return new(1, "home", session.SchoolName, session.DisplayName, shell.SchoolYearLine,
-                Catalog().Select(x => x.Id).ToArray(), notice ?? "", Catalog: Catalog());
+                catalog.Select(x => x.Id).ToArray(), notice ?? "", Catalog: catalog, Header: header);
+        }
         if (shell.ShowLogin)
             return new(1, "login", shell.Login.SchoolName, "", "", [], notice ?? "");
         if (shell.ShowConnection || shell.ShowSetup)

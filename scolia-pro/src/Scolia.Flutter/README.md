@@ -45,3 +45,6 @@ Le serveur local du paquet expérimental utilise le port 15080, tandis que le po
 
 ## Couverture fonctionnelle du catalogue
 L'accueil Flutter reçoit maintenant tout le catalogue métier autorisé par Sidebar (ITM/IEM, EPST, LMD et rôles spécifiques), avec les libellés réels et les groupes. Les modules non portés sont ouverts dans leur interface Avalonia opérationnelle ; aucune permission supplémentaire n'est créée. Inscription et accès à la fiche ou à l'encaissement d'un dossier visible utilisent les formulaires et commandes existants. Ce parcours hybride ne constitue pas encore la migration graphique complète : chaque formulaire et écran métier reste à porter en Flutter et à tester sur appareil.
+
+## Continuité visuelle et métier
+Flutter reprend les couleurs claires et sombres de Themes/Material3.axaml, les rayons des cartes (12) et champs (8), la présentation compacte de Phone/HomeView.axaml et les actions rapides autorisées. La carte d'accueil lit la véritable session et l'état du SyncCenter natif ; elle ne simule pas une connexion. Les modèles de calcul et d'export des cartes d'examen ne sont pas modifiés. Les autres pages gardent leur présentation native jusqu'à leur portage effectif. Les tests de compilation et de rendu sur téléphone restent indispensables pour confirmer la parité.

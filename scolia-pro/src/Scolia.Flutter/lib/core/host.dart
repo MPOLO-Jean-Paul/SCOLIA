@@ -9,13 +9,14 @@ enum Operation {
 
 class SchoolSession {
   const SchoolSession({required this.stage, this.school = '', this.user = '',
-    this.year = '', this.modules = const [], this.notice = '', this.students, this.monthly, this.catalog = const []});
+    this.year = '', this.modules = const [], this.notice = '', this.students, this.monthly, this.catalog = const [], this.header});
   final Stage stage;
   final String school, user, year, notice;
   final List<String> modules;
   final StudentListing? students;
   final MonthlyListing? monthly;
   final List<ModuleEntry> catalog;
+  final WorkspaceHeader? header;
 
   factory SchoolSession.fromMap(Map<Object?, Object?> value) {
     if (value['protocol'] != 1) {
@@ -27,11 +28,23 @@ class SchoolSession {
       user: value['user'] as String? ?? '', year: value['year'] as String? ?? '',
       notice: value['notice'] as String? ?? '',
       modules: List<String>.unmodifiable(modules),
+      header: value['header'] == null ? null : WorkspaceHeader.fromMap(value['header'] as Map<Object?, Object?>),
       catalog: List<ModuleEntry>.unmodifiable((value['catalog'] as List<Object?>? ?? []).map(
         (x) => ModuleEntry.fromMap(x as Map<Object?, Object?>))),
       students: stage == Stage.students ? StudentListing.fromMap(value['students'] as Map<Object?, Object?>) : null,
       monthly: stage == Stage.monthly ? MonthlyListing.fromMap(value['monthly'] as Map<Object?, Object?>) : null);
   }
+}
+
+class WorkspaceHeader {
+  const WorkspaceHeader({required this.greeting, required this.date, required this.initials,
+    required this.syncStatus, required this.syncHint, required this.offline, required this.pending});
+  final String greeting, date, initials, syncStatus, syncHint;
+  final bool offline, pending;
+  factory WorkspaceHeader.fromMap(Map<Object?, Object?> m) => WorkspaceHeader(
+    greeting: m['greeting'] as String, date: m['date'] as String,
+    initials: m['initials'] as String, syncStatus: m['syncStatus'] as String,
+    syncHint: m['syncHint'] as String, offline: m['offline'] as bool, pending: m['pending'] as bool);
 }
 
 class ModuleEntry {
