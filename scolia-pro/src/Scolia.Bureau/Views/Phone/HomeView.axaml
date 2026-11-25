@@ -27,7 +27,9 @@
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Padding" Value="11,10" />
-      <Setter Property="MinHeight" Value="88" />
+      <Setter Property="MinHeight" Value="116" />
+      <Setter Property="Margin" Value="3,3" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -91,11 +93,13 @@
       <TextBlock Text="Démarrer" Classes="worksection" />
       <ItemsControl x:Name="WelcomeQuickActions" ItemsSource="{Binding QuickActions}">
         <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" infra:Adaptive.MinItemWidth="140" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate><DataTemplate><Button Classes="workaction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" Margin="0,0,6,6">
+        <ItemsControl.ItemTemplate><DataTemplate><Button Classes="workaction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding ShortTitle}">
               <StackPanel Spacing="7">
-                <mi:MaterialIcon Kind="{Binding Icon}" Width="25" Height="25" Foreground="{Binding Brush}" HorizontalAlignment="Left" />
+                <Border Width="36" Height="36" CornerRadius="7" Background="{DynamicResource GroupBrush}" HorizontalAlignment="Left">
+                  <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24" Foreground="{Binding Brush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
                 <TextBlock Text="{Binding ShortTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
               </StackPanel>
             </Button></DataTemplate></ItemsControl.ItemTemplate>
       </ItemsControl>
@@ -105,7 +109,7 @@
       <ItemsControl ItemsSource="{Binding Kpis}">
         <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" infra:Adaptive.MinItemWidth="144" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate><DataTemplate>
-          <Button Classes="workaction" Command="{Binding Open}" Margin="0,0,6,6">
+          <Button Classes="workaction" Command="{Binding Open}" AutomationProperties.Name="{Binding Label}">
             <StackPanel Spacing="6">
               <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" Foreground="{Binding Brush}" HorizontalAlignment="Left" />
               <TextBlock Text="{Binding Label}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
