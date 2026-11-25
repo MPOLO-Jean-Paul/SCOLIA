@@ -149,7 +149,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Encaisser');
     await tester.pumpAndSettle();
-    expect(find.text('Encaisser'), findsOneWidget);
+    expect(find.descendant(of: find.byType(ModuleTile), matching: find.text('Encaisser')), findsOneWidget);
     expect(find.text('Dossiers scolaires'), findsNothing);
     expect(find.text('Configuration'), findsNothing);
   });
@@ -241,8 +241,10 @@ void main() {
     await tester.pumpWidget(ScoliaApp(host: host));
     await tester.pumpAndSettle();
     expect(find.text('Bonjour, Compte'), findsOneWidget);
-    expect(find.text('Hors ligne'), findsOneWidget);
-    expect(find.text('Données locales disponibles'), findsOneWidget);
+    expect(find.text('Synchronisation'), findsOneWidget);
+    expect(find.text('Gestion automatique des échanges'), findsOneWidget);
+    expect(find.byTooltip('Données locales disponibles'), findsOneWidget);
+    expect(find.text('Hors ligne'), findsNothing);
   });
   testWidgets('student profile renders actual sections without adding unauthorised cashier', (tester) async {
     final host = TestHost(const SchoolSession(stage: Stage.studentProfile, modules: ['students'],

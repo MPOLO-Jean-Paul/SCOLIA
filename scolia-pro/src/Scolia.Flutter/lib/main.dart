@@ -126,7 +126,7 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
   Future<void> readStatus(SchoolSession previous) async {
     try {
       final next = await widget.host.execute(Operation.workspaceStatus);
-      if (!mounted || !foreground || busy || !identical(session, previous)) return;
+      if (!mounted || !foreground || !identical(session, previous)) return;
       if (next.stage != Stage.home || next.header?.contextId != previous.header?.contextId ||
           next.school != previous.school || next.year != previous.year ||
           next.modules.length != previous.modules.length ||
@@ -137,7 +137,7 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
           enrollmentValues.clear(); marksCode.clear(); marksScore.clear();
           studentSearch.clear(); paymentSearch.clear(); journalSearch.clear();
         });
-      } else {
+      } else if (!busy) {
         setState(() {
           liveHeader = next.header;
           if (previous.stage == Stage.home) session = next;
@@ -162,13 +162,14 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
 
   Future<void> execute(Operation operation,
       [Map<String, String> args = const {}]) async {
-    if (!mounted) return;
+    if (!mounted || (busy && session != null)) return;
+    final before = session;
     openingPoll?.cancel();
     setState(() { busy = true; error = null; });
     try {
       final pending = statusRequest;
       if (pending != null) await pending;
-      if (!mounted) return;
+      if (!mounted || !identical(before, session)) return;
       final previous = session;
       final result = await widget.host.execute(operation, args);
       if (!mounted) return;
@@ -223,6 +224,7 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
     } finally {
       if (mounted) {
         password.clear(); recoveryCode.clear(); confirm.clear();
+        if (session == null) liveHeader = null;
         if (session?.stage != Stage.enrollment) enrollmentValues.clear();
         if (session?.stage != Stage.cashier) {
           cashierFees.clear(); cashierAmount.clear(); cashierReference.clear(); cashierNote.clear(); cashierQuery.clear();

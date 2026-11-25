@@ -252,7 +252,11 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     private CashierPage? ActiveCashier => AllowedPage("cashier") is not null && shell.Can(Perm.PaymentsCreate)
         ? shell.Current as CashierPage : null;
 
-    private Snapshot DescribeCashier(CashierPage page) => Read() with { Stage = "cashier", Cashier = new(
+    private Snapshot DescribeCashier(CashierPage page)
+    {
+        var state = Read();
+        if (state.Stage != "home" || AllowedPage("cashier") is null) return state;
+        return state with { Stage = "cashier", Cashier = new(
         page.StudentName, page.StudentInfo, page.Balance, page.Overdue, page.Hint ?? page.LockedBy ?? "",
         page.SearchStatus ?? "", page.AmountText, page.Method?.Value ?? "", page.Reference, page.Note,
         page.Total, page.BalanceAfter, page.ReceiptText, page.HasStudent, page.CanPay, page.NeedsExternalReference,
@@ -260,6 +264,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         page.Months.Select(x => new CashierFee(x.Id.ToString(), x.Label, x.AmountText, x.Deadline, x.IsSelected, x.Overdue)).ToArray(),
         page.Methods.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
         page.Allocations.Select(x => new CashierAllocation(x.Label, x.Amount, x.Remaining)).ToArray()) };
+    }
 
     private MonthlyPage? monthlySelection;
     private object? monthlyOwner;
