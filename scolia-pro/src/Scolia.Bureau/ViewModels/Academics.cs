@@ -494,7 +494,7 @@ public sealed class AttendancePage : PageViewModel
     internal async Task LoadForFlutterAsync(string? promotionId, DateTime date, bool summary)
     {
         if (!ready) await LoadAsync();
-        promotion = string.IsNullOrEmpty(promotionId) ? Promotions.FirstOrDefault() :
+        promotion = string.IsNullOrEmpty(promotionId) ? (Promotions.Count > 0 ? Promotions[0] : null) :
             Promotions.FirstOrDefault(p => p.Value == promotionId) ?? throw new ArgumentException("Promotion invalide.");
         day = date;
         showSummary = summary;

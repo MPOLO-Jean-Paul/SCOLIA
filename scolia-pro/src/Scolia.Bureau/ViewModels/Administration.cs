@@ -144,6 +144,16 @@ public sealed class StaffPage : PageViewModel
         Raise(nameof(Subtitle));
     }
 
+    internal async Task LoadForFlutterAsync(bool payroll, string? month)
+    {
+        var requested = string.IsNullOrEmpty(month) ? period : month;
+        periodChoice = Periods.FirstOrDefault(p => p.Value == requested)
+            ?? throw new ArgumentException("Mois de paie invalide.");
+        period = requested;
+        showPayroll = payroll;
+        await LoadAsync();
+    }
+
     private bool TryPeriod(out string key)
     {
         key = Period;

@@ -186,6 +186,20 @@ void main() {
     expect(find.text('Enregistrer l’appel'), findsNothing);
     expect(find.text('Présent'), findsOneWidget);
   });
+  testWidgets('personnel shows payroll data and keeps native row actions', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.schoolRegister, register: SchoolRegister(
+      kind: 'staff', title: 'Personnel et paie', summary: true, date: '2026-11', token: 'session-form',
+      options: [FilterChoice('2026-11', 'Novembre 2026')],
+      rows: [RegisterRow('row1', 'Membre test', 'P01', 'Payé', '', [ProfileValue('Net', '100')])])));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    expect(find.text('Net : 100'), findsOneWidget);
+    await tester.ensureVisible(find.text('Actions'));
+    await tester.tap(find.text('Actions'));
+    await tester.pumpAndSettle();
+    expect(host.last, Operation.registerNative);
+    expect(host.lastArgs, {'token': 'session-form', 'row': 'row1'});
+  });
   testWidgets('catalog exposes authorised native modules only', (tester) async {
     final host = TestHost(const SchoolSession(stage: Stage.home,
       modules: ['page:CardsPage'], catalog: [

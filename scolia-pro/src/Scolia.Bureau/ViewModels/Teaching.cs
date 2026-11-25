@@ -88,6 +88,15 @@ public sealed class TeachingPage : PageViewModel
         Selected = null;
     }
 
+    internal async Task LoadForFlutterAsync(string? promotionId, bool archived)
+    {
+        if (!ready) await LoadAsync();
+        promotion = string.IsNullOrEmpty(promotionId) ? (Promotions.Count > 0 ? Promotions[0] : null)
+            : Promotions.FirstOrDefault(p => p.Value == promotionId) ?? throw new ArgumentException("Promotion invalide.");
+        showArchived = archived;
+        await LoadAsync();
+    }
+
     private async Task EditCourseAsync()
     {
         if (Selected is not { } row)

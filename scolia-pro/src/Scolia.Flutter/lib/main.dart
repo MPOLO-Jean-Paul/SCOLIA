@@ -268,6 +268,9 @@ class _WorkspaceState extends State<Workspace> {
     else if (id == 'receipts') { unawaited(listReceipts()); }
     else if (id == 'attendance') { unawaited(loadRegister('attendance')); }
     else if (id == 'page:DisciplinePage') { unawaited(loadRegister('discipline')); }
+    else if (id == 'page:StaffPage') { unawaited(loadRegister('staff')); }
+    else if (id == 'page:StaffAttendancePage') { unawaited(loadRegister('pointage')); }
+    else if (id == 'page:TeachingPage') { unawaited(loadRegister('teaching')); }
     else { unawaited(execute(Operation.openModule, {'module': id})); }
   }
 
@@ -389,8 +392,8 @@ class _WorkspaceState extends State<Workspace> {
   ]);
 
   Future<void> loadRegister(String kind, {SchoolRegister? current, String? promotion, String? date,
-    String? measure, bool? summary}) => execute(kind == 'attendance' ? Operation.listAttendance : Operation.listDiscipline,
-      {'promotion': promotion ?? current?.promotion ?? '', 'date': date ?? current?.date ?? '',
+    String? measure, bool? summary}) => execute(kind == 'attendance' ? Operation.listAttendance : kind == 'discipline' ? Operation.listDiscipline : Operation.listPersonnel,
+      {'kind': kind, 'promotion': promotion ?? current?.promotion ?? '', 'date': date ?? current?.date ?? '',
         'measure': measure ?? current?.measure ?? '', 'summary': (summary ?? current?.summary ?? false).toString()});
 
   Future<void> leaveRegister(SchoolRegister r) async {
@@ -416,7 +419,50 @@ class _WorkspaceState extends State<Workspace> {
     await execute(Operation.editAttendance, {'token': r.token, 'row': row.id, 'status': row.status, 'note': result});
   }
 
+  Widget personnelRegister(SchoolRegister r) {
+    final staff = r.kind == 'staff';
+    final pointage = r.kind == 'pointage';
+    Widget rows(Iterable<RegisterRow> values) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      for (final row in values) Card.outlined(margin: const EdgeInsets.only(bottom: 8),
+        child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text(row.name, style: Theme.of(context).textTheme.titleSmall),
+          if (row.code.isNotEmpty || row.status.isNotEmpty) Text([row.code, row.status].where((x) => x.isNotEmpty).join(' · ')),
+          for (final value in row.details) Text('${value.label} : ${value.value}'),
+          if (row.id.isNotEmpty) Align(alignment: Alignment.centerRight, child: TextButton.icon(
+            onPressed: busy ? null : () => execute(Operation.registerNative, {'token': r.token, 'row': row.id}),
+            icon: const Icon(Icons.more_horiz), label: const Text('Actions'))),
+        ]))),
+    ]);
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: busy ? null : () => leaveRegister(r),
+        icon: const Icon(Icons.arrow_back), label: const Text('Retour à l’accueil'))),
+      heading(r.title, r.subtitle),
+      SegmentedButton<bool>(segments: [
+        ButtonSegment(value: false, label: Text(staff ? 'Personnel' : pointage ? 'Mois en cours' : 'Cours actifs')),
+        ButtonSegment(value: true, label: Text(staff ? 'Paie' : pointage ? 'Mois précédent' : 'Avec archives')),
+      ], selected: {r.summary}, onSelectionChanged: busy ? null : (v) => loadRegister(r.kind, current: r, summary: v.first)),
+      const SizedBox(height: 12),
+      if (staff && r.summary && r.options.isNotEmpty)
+        filter('Mois de paie', r.date, r.options, (v) => loadRegister(r.kind, current: r, date: v)),
+      if (!staff && !pointage && r.promotions.isNotEmpty)
+        filter('Promotion', r.promotion, r.promotions, (v) => loadRegister(r.kind, current: r, promotion: v)),
+      const SizedBox(height: 12),
+      action(staff ? 'Gestion du personnel et paie' : pointage ? 'Signatures et justifications' : 'Attributions et historique',
+        Icons.more_horiz, Operation.registerNative, args: {'token': r.token}),
+      const SizedBox(height: 12),
+      if (r.rows.isEmpty) const Text('Aucun élément dans la sélection.'),
+      if (pointage) Text('Pointage du jour', style: Theme.of(context).textTheme.titleMedium),
+      rows(r.rows.where((x) => x.id.isNotEmpty)),
+      if (!staff) ...[
+        const SizedBox(height: 12),
+        Text(pointage ? 'Bilan de la période' : 'Charges pédagogiques', style: Theme.of(context).textTheme.titleMedium),
+        rows(r.rows.where((x) => x.id.isEmpty)),
+      ],
+    ]);
+  }
+
   Widget schoolRegister(SchoolRegister r) {
+    if (r.kind != 'attendance' && r.kind != 'discipline') return personnelRegister(r);
     final attendance = r.kind == 'attendance';
     final locked = busy || r.dirty;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [

@@ -4,7 +4,7 @@ enum Stage { pairing, login, home, nativeScreen, loading, students, monthly, stu
 
 enum Operation {
   snapshot, scanQr, chooseServer, createSchool, signIn, recover,
-  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions, submitEnrollment, cashierSearch, cashierChoose, cashierPreview, cashierConfirm, cashierLeave, listReceipts, exportReceipts, openReceipt, listAttendance, listDiscipline, editAttendance, saveAttendance, attendanceAll, attendanceDay, disciplineExport, registerNative
+  biometric, openModule, signOut, listStudents, listMonthly, exportMonthly, openStudent, cashierStudent, studentActions, submitEnrollment, cashierSearch, cashierChoose, cashierPreview, cashierConfirm, cashierLeave, listReceipts, exportReceipts, openReceipt, listAttendance, listDiscipline, editAttendance, saveAttendance, attendanceAll, attendanceDay, disciplineExport, registerNative, listPersonnel
 }
 
 class SchoolSession {

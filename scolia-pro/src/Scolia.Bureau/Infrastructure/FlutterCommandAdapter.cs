@@ -19,6 +19,33 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     public sealed record SchoolRegister(string Kind, string Title, string Subtitle, string Promotion, string Date,
         string Measure, bool Summary, bool CanWrite, bool Pending, bool Dirty, string Token,
         IReadOnlyList<FilterChoice> Promotions, IReadOnlyList<FilterChoice> Options, IReadOnlyList<RegisterRow> Rows);
+    private StaffPage? staffDraft;
+    private StaffAttendancePage? pointageDraft;
+    private TeachingPage? teachingDraft;
+
+    private SchoolRegister DescribeStaff(StaffPage p) => new("staff", p.Title, p.Subtitle, "", p.Period, "",
+        p.ShowPayroll, false, false, false, registerToken, [],
+        p.Periods.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(),
+        p.ShowPayroll ? p.Payroll.Select(x => new RegisterRow(x.Id.ToString(), x.Name, x.Number, x.Status, "", [
+            new("Fonction", x.Function), new("Base", x.Base), new("Primes", x.Allowances), new("Retenues", x.Deductions),
+            new("Avances", x.Advances), new("Net", x.Net), new("Payé le", x.PaidOn)])).ToArray()
+        : p.Staff.Select(x => new RegisterRow(x.Id.ToString(), x.Name, x.Number, x.Status, "", [
+            new("Fonction", x.Function), new("Téléphone", x.Phone), new("Embauché le", x.Hired), new("Salaire", x.Salary)])).ToArray());
+    private SchoolRegister DescribePointage(StaffAttendancePage p) => new("pointage", p.Title, p.Subtitle, "", "", "",
+        p.PreviousMonth, false, false, false, registerToken, [], [],
+        p.Members.Select(x => new RegisterRow(x.Id.ToString(), x.Name, "", x.Today, "", [
+            new("Fonction", x.Function), new("Entrée aujourd’hui", x.Entry), new("Sortie aujourd’hui", x.Exit)]))
+        .Concat(p.Bilan.Select(x => new RegisterRow("", x.Name, "", "", "", [
+            new("Présences", x.Present), new("Retards", x.Late), new("Absences", x.Absent), new("Justifiées", x.Justified),
+            new("Conversions", x.Conversions), new("Déductibles", x.Deductible)]))).ToArray());
+    private SchoolRegister DescribeTeaching(TeachingPage p) => new("teaching", p.Title, p.Subtitle, p.Promotion?.Value ?? "", "", "",
+        p.ShowArchived, false, false, false, registerToken,
+        p.Promotions.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(), [],
+        p.Courses.Select(x => new RegisterRow(x.Id.ToString(), x.Name, x.Number, x.Status, "", [
+            new("Promotion", x.Promotion), new("Heures", x.Hours), new("Cotation", x.MaxScore), new("Enseignant", x.Teacher)]))
+        .Concat(p.Charges.Select(x => new RegisterRow("", x.Name, "", "", "", [
+            new("Cours", x.Courses), new("Promotions", x.Promotions), new("Heures", x.Hours)]))).ToArray());
+
     private AttendancePage? attendanceDraft;
     private DisciplinePage? disciplineDraft;
     private object? registerOwner;
@@ -26,7 +53,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
     private bool registerDirty;
     private void ClearRegister()
     {
-        attendanceDraft = null; disciplineDraft = null; registerOwner = null; registerToken = ""; registerDirty = false;
+        attendanceDraft = null; disciplineDraft = null; staffDraft = null; pointageDraft = null; teachingDraft = null; registerOwner = null; registerToken = ""; registerDirty = false;
     }
     private SchoolRegister DescribeAttendance(AttendancePage page) => new("attendance", page.Title, page.Subtitle,
         page.Promotion?.Value ?? "", WireDate(page.Day), "", page.ShowSummary,
@@ -232,7 +259,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         if (operation is not ("listStudents" or "openStudent" or "cashierStudent" or "studentActions")) { visibleStudents.Clear(); studentOwner = null; }
         if (operation is not ("listReceipts" or "exportReceipts" or "openReceipt"))
         { journalSelection = null; journalOwner = null; }
-        if (operation is not ("listAttendance" or "editAttendance" or "saveAttendance" or "attendanceAll" or "attendanceDay" or "listDiscipline" or "disciplineExport" or "registerNative"))
+        if (operation is not ("listAttendance" or "editAttendance" or "saveAttendance" or "attendanceAll" or "attendanceDay" or "listDiscipline" or "disciplineExport" or "registerNative" or "listPersonnel"))
             ClearRegister();
         if (operation != "submitEnrollment") ClearEnrollment();
         if (operation == "snapshot") return ActiveCashier is { } active ? DescribeCashier(active) : Read();
@@ -365,6 +392,39 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                             Profile = new(studentId.ToString(), detail.Title, detail.Subtitle, sections) };
                     }
                     return Read(native: true);
+                case "listPersonnel":
+                {
+                    ClearRegister();
+                    var kind = Required(arguments, "kind", 20);
+                    var moduleId = kind switch { "staff" => "page:StaffPage", "pointage" => "page:StaffAttendancePage",
+                        "teaching" => "page:TeachingPage", _ => throw new ArgumentException("Module invalide.") };
+                    if (AllowedPage(moduleId) is null || shell.Session is not { } personnelOwner)
+                        throw new UnauthorizedAccessException("Module non autorisé.");
+                    var summary = arguments.GetValueOrDefault("summary") == "true";
+                    if (kind == "staff")
+                    {
+                        var p = new StaffPage(shell);
+                        await p.LoadForFlutterAsync(summary, arguments.GetValueOrDefault("date"));
+                        staffDraft = p;
+                    }
+                    else if (kind == "pointage")
+                    {
+                        var p = new StaffAttendancePage(shell);
+                        await p.LoadForFlutterAsync(summary);
+                        pointageDraft = p;
+                    }
+                    else
+                    {
+                        var p = new TeachingPage(shell);
+                        await p.LoadForFlutterAsync(arguments.GetValueOrDefault("promotion"), summary);
+                        teachingDraft = p;
+                    }
+                    if (AllowedPage(moduleId) is null || !ReferenceEquals(personnelOwner, shell.Session))
+                    { ClearRegister(); throw new UnauthorizedAccessException("Session modifiée."); }
+                    registerOwner = personnelOwner; registerToken = Guid.NewGuid().ToString();
+                    return Read() with { Stage = "schoolRegister", Register = staffDraft is { } personnel ? DescribeStaff(personnel)
+                        : pointageDraft is { } pointage ? DescribePointage(pointage) : DescribeTeaching(teachingDraft!) };
+                }
                 case "listAttendance":
                 case "listDiscipline":
                 {
@@ -404,6 +464,36 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     if (!ReferenceEquals(registerOwner, shell.Session) || !MayShowWorkspace ||
                         Required(arguments, "token", 36) != registerToken)
                         throw new UnauthorizedAccessException("Registre non confirmé.");
+                    if (operation == "registerNative" && (staffDraft is not null || pointageDraft is not null || teachingDraft is not null))
+                    {
+                        var row = arguments.GetValueOrDefault("row", "");
+                        Guid? selectedId = string.IsNullOrEmpty(row) ? null : Guid.Parse(row);
+                        if (staffDraft is { } staff && AllowedPage("page:StaffPage") is not null)
+                        {
+                            if (selectedId is { } sid && !(staff.ShowPayroll ? staff.Payroll.Any(x => x.Id == sid) : staff.Staff.Any(x => x.Id == sid)))
+                                throw new UnauthorizedAccessException("Dossier non proposé.");
+                            await shell.Open(() => staff);
+                            if (staff.ShowPayroll) staff.SelectedPayroll = staff.Payroll.FirstOrDefault(x => x.Id == selectedId);
+                            else staff.SelectedStaff = staff.Staff.FirstOrDefault(x => x.Id == selectedId);
+                        }
+                        else if (pointageDraft is { } pointage && AllowedPage("page:StaffAttendancePage") is not null)
+                        {
+                            if (selectedId is { } sid && !pointage.Members.Any(x => x.Id == sid))
+                                throw new UnauthorizedAccessException("Membre non proposé.");
+                            await shell.Open(() => pointage);
+                            pointage.Selected = pointage.Members.FirstOrDefault(x => x.Id == selectedId);
+                        }
+                        else if (teachingDraft is { } teaching && AllowedPage("page:TeachingPage") is not null)
+                        {
+                            if (selectedId is { } sid && !teaching.Courses.Any(x => x.Id == sid))
+                                throw new UnauthorizedAccessException("Cours non proposé.");
+                            await shell.Open(() => teaching);
+                            teaching.Selected = teaching.Courses.FirstOrDefault(x => x.Id == selectedId);
+                        }
+                        else throw new UnauthorizedAccessException("Module non autorisé.");
+                        ClearRegister();
+                        return Read(native: true);
+                    }
                     if (attendanceDraft is { } attendance && AllowedPage("attendance") is not null)
                     {
                         if (operation == "registerNative")
