@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:mi="using:Material.Icons.Avalonia" xmlns:infra="using:Scolia.Bureau.Infrastructure" x:Class="Scolia.Bureau.Views.Phone.StartView">
+  <UserControl.Styles>
+    <Style Selector="Button.starttile">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="12" />
+      <Setter Property="MinHeight" Value="72" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.starttile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="Button.starttile:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+  </UserControl.Styles>
+    <StackPanel Spacing="18" Margin="0,6,0,16" HorizontalAlignment="Stretch">
+      <StackPanel Spacing="6">
+        <TextBlock Text="SCOLIA PRO" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" FontSize="12" />
+        <TextBlock Text="{Binding Greeting}" FontWeight="SemiBold" FontSize="23" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding School}" Classes="muted" TextWrapping="Wrap" />
+        <TextBlock Text="Choisissez une opération pour commencer." Classes="muted" TextWrapping="Wrap" />
+      </StackPanel>
+      <StackPanel Spacing="10" IsVisible="{Binding HasNewActions}">
+        <TextBlock Text="Nouveau" FontSize="18" FontWeight="SemiBold" />
+        <ItemsControl ItemsSource="{Binding NewActions}">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate><DataTemplate>
+            <Button Classes="starttile" Command="{Binding Open}" Margin="0" AutomationProperties.Name="{Binding Title}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                <mi:MaterialIcon Kind="{Binding Icon}" Width="30" Height="30" Foreground="{Binding Brush}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+            </Button>
+          </DataTemplate></ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+      <StackPanel Spacing="10">
+        <TextBlock Text="Espace de travail" FontSize="18" FontWeight="SemiBold" />
+        <Button Classes="starttile" Command="{Binding OpenHome}" x:Name="OpenHomeButton" AutomationProperties.Name="Accueil">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+            <mi:MaterialIcon Kind="HomeOutline" Width="30" Height="30" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
+              <TextBlock Text="Accueil" FontSize="16" FontWeight="SemiBold" />
+              <TextBlock Text="Consulter les indicateurs, les encaissements récents et les outils." Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+            <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+      </StackPanel>
+    </StackPanel>
+</UserControl>

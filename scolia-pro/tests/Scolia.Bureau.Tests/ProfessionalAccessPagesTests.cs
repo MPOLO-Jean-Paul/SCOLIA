@@ -199,6 +199,13 @@ public sealed class ProfessionalAccessPagesTests
         var frame = File.ReadAllText(Source("Views/PhoneFrame.axaml.cs"));
         Assert.Contains("lightweight: true", frame, StringComparison.Ordinal);
         Assert.Contains("Math.Clamp(150 * shell.Prefs.SpeedFactor, 110, 220)", frame, StringComparison.Ordinal);
+        var desktop = File.ReadAllText(Source("Views/MainView.axaml.cs"));
+        Assert.Contains("160 * prefs.SpeedFactor, 110, 240", desktop, StringComparison.Ordinal);
+        Assert.Contains("8, lightweight: true", desktop, StringComparison.Ordinal);
+        Assert.Contains("if (resizeQueued) return;", desktop, StringComparison.Ordinal);
+        var startPhone = File.ReadAllText(Source("Views/Phone/StartView.axaml"));
+        Assert.DoesNotContain("<ScrollViewer", startPhone, StringComparison.Ordinal);
+        Assert.Contains("Command=\"{Binding OpenHome}\"", startPhone, StringComparison.Ordinal);
         var axis = File.ReadAllText(Source("Infrastructure/SharedAxisTransition.cs"));
         Assert.Contains("if (from is not null) from.IsVisible = false;", axis, StringComparison.Ordinal);
         // Pas d'apparition en cascade ni d'ombre floue sur la carte d'accueil du téléphone.

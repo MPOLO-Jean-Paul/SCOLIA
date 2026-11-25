@@ -3,6 +3,8 @@
   <UserControl.Styles>
     <Style Selector="Button.starttile">
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="Cursor" Value="Hand" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="8" />
@@ -15,12 +17,15 @@
       <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     </Style>
+    <Style Selector="Button.starttile:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
   </UserControl.Styles>
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Spacing="22" Margin="8,12,8,24" MaxWidth="1100" HorizontalAlignment="Stretch">
+    <StackPanel Spacing="24" Margin="12,16,12,24" MaxWidth="1040" HorizontalAlignment="Left">
       <StackPanel Spacing="6">
         <TextBlock Text="SCOLIA PRO" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" FontSize="12" />
-        <TextBlock Text="{Binding Greeting}" FontWeight="SemiBold" FontSize="26" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding Greeting}" FontWeight="SemiBold" FontSize="30" TextWrapping="Wrap" />
         <TextBlock Text="{Binding School}" Classes="muted" TextWrapping="Wrap" />
         <TextBlock Text="Choisissez une opération pour commencer." Classes="muted" TextWrapping="Wrap" />
       </StackPanel>
@@ -29,7 +34,7 @@
         <ItemsControl ItemsSource="{Binding NewActions}">
           <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" infra:Adaptive.MinItemWidth="260" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate><DataTemplate>
-            <Button Classes="starttile" Command="{Binding Open}" Margin="0,0,8,8">
+            <Button Classes="starttile" Command="{Binding Open}" Margin="0,0,8,8" AutomationProperties.Name="{Binding Title}">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                 <mi:MaterialIcon Kind="{Binding Icon}" Width="30" Height="30" Foreground="{Binding Brush}" VerticalAlignment="Center" />
                 <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
@@ -43,7 +48,7 @@
       </StackPanel>
       <StackPanel Spacing="10">
         <TextBlock Text="Espace de travail" FontSize="18" FontWeight="SemiBold" />
-        <Button Classes="starttile" Command="{Binding OpenHome}" x:Name="OpenHomeButton">
+        <Button Classes="starttile" Command="{Binding OpenHome}" x:Name="OpenHomeButton" AutomationProperties.Name="Accueil">
           <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
             <mi:MaterialIcon Kind="HomeOutline" Width="30" Height="30" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
             <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">

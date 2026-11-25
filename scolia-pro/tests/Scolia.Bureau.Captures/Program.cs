@@ -1959,6 +1959,9 @@ if (args.Length > 3 && args[3] == "accueil-powerbi")
     if (shell.Current is not StartPage start || start.NewActions.Count != 2)
         throw new InvalidOperationException("La session doit ouvrir Démarrer avec les deux commandes métier autorisées.");
     Save(window, "demarrer-clair.png");
+    prefs.Theme = "dark";
+    Save(window, "demarrer-sombre.png");
+    prefs.Theme = "light";
     var homeSizes = Preferences.MobileLayout ? new[] { (320, 568), (360, 740), (412, 892) } : new[] { (1024, 720), (1366, 768), (1600, 900), (1920, 1080) };
     foreach (var (width, height) in homeSizes)
     {

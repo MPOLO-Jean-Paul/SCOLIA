@@ -97,7 +97,7 @@ public static class Adaptive
 
     private static void OnGridSize(object? sender, SizeChangedEventArgs e)
     {
-        if (sender is not Grid grid || e.NewSize.Width <= 0) return;
+        if (sender is not Grid grid || e.NewSize.Width <= 0 || Math.Abs(e.NewSize.Width - e.PreviousSize.Width) < 0.01) return;
         var state = Grids.GetValue(grid, _ => new GridState());
         if (state.Pending) return;
         state.Pending = true;
@@ -156,7 +156,7 @@ public static class Adaptive
 
     private static void OnUniformSize(object? sender, SizeChangedEventArgs e)
     {
-        if (sender is not UniformGrid grid || e.NewSize.Width <= 0) return;
+        if (sender is not UniformGrid grid || e.NewSize.Width <= 0 || Math.Abs(e.NewSize.Width - e.PreviousSize.Width) < 0.01) return;
         var state = Uniforms.GetValue(grid, g => new UniformState { Columns = g.Columns, Rows = g.Rows });
         if (state.Pending) return;
         state.Pending = true;
