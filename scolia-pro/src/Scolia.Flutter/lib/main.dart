@@ -84,15 +84,15 @@ class _WorkspaceState extends State<Workspace> {
         }
       });
     } on MissingPluginException {
-      if (mounted) setState(() => error =
-        'Le moteur SCOLIA natif n’est pas raccordé à ce module.');
+      if (mounted) setState(() { session = null; error =
+        'Le moteur SCOLIA natif n’est pas raccordé à ce module.'; });
     } on TimeoutException {
       if (mounted) setState(() { session = null; error = 'Le moteur SCOLIA ne répond pas. Réessayez.'; });
     } on PlatformException {
-      if (mounted) setState(() => error =
-        'Opération refusée ou indisponible. Vérifiez votre configuration.');
+      if (mounted) setState(() { session = null; error =
+        'Opération refusée ou indisponible. Vérifiez votre configuration.'; });
     } on Exception {
-      if (mounted) setState(() => error = 'Impossible de vérifier la réponse SCOLIA.');
+      if (mounted) setState(() { session = null; error = 'Impossible de vérifier la réponse SCOLIA.'; });
     } finally {
       if (mounted) {
         password.clear(); recoveryCode.clear(); confirm.clear();
@@ -264,10 +264,11 @@ class _WorkspaceState extends State<Workspace> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final current = session;
+    final listing = current?.students;
     return Scaffold(
       appBar: AppBar(title: const Text('SCOLIA Pro'),
         actions: [IconButton(tooltip: 'Actualiser', onPressed: busy ? null :
-          () => current?.students != null ? listStudents(current!.students!.page, current.students!.search)
+          () => listing != null ? listStudents(listing.page, listing.search)
             : execute(Operation.snapshot), icon: const Icon(Icons.refresh))]),
       body: SafeArea(child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),

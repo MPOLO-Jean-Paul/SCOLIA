@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scolia_flutter/core/host.dart';
@@ -30,6 +31,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Le moteur SCOLIA natif n’est pas raccordé à ce module.'), findsOneWidget);
     expect(find.text('Se connecter'), findsNothing);
+  });
+  testWidgets('unresponsive channel times out without exposing workspace', (tester) async {
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    final pending = Completer<Object?>();
+    messenger.setMockMethodCallHandler(NativeHost.channel, (_) => pending.future);
+    addTearDown(() {
+      if (!pending.isCompleted) pending.complete(null);
+      messenger.setMockMethodCallHandler(NativeHost.channel, null);
+    });
+    await tester.pumpWidget(const ScoliaApp(host: NativeHost()));
+    await tester.pump(const Duration(seconds: 61));
+    await tester.pumpAndSettle();
+    expect(find.text('Le moteur SCOLIA ne répond pas. Réessayez.'), findsOneWidget);
+    expect(find.text('Encaisser'), findsNothing);
   });
   testWidgets('permissions and narrow layout', (tester) async {
     tester.view.physicalSize = const Size(320, 720);
