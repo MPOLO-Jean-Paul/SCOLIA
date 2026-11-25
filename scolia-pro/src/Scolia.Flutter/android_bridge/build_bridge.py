@@ -44,3 +44,25 @@ subprocess.run(["javac", "--release", "17", "-cp", os.pathsep.join(
 subprocess.run(["jar", "--create", "--file", str(out / "scolia-flutter-bridge.jar"),
                 "-C", str(classes), "."], check=True)
 print("Android bridge JAR compiled against", version)
+
+# Collect only the release module and Flutter engine binaries. The .NET host
+# already owns AndroidX; dependency conflicts are checked by its own APK build.
+import shutil
+module_aars = list(repo.rglob("flutter_release-*.aar"))
+if len(module_aars) != 1:
+    raise RuntimeError("Expected exactly one release module AAR")
+shutil.copyfile(module_aars[0], out / "flutter-module.aar")
+for artifact, abi in (("arm64_v8a_release", "arm64-v8a"),
+                      ("armeabi_v7a_release", "armeabi-v7a")):
+    base = ("https://storage.googleapis.com/download.flutter.io/io/flutter/"
+            f"{artifact}/{version}/{artifact}-{version}")
+    target = out / f"{artifact}.jar"
+    with urllib.request.urlopen(base + ".jar", timeout=120) as response:
+        target.write_bytes(response.read())
+    with zipfile.ZipFile(target) as archive:
+        matches = [n for n in archive.namelist() if n.endswith(f"/{abi}/libflutter.so")]
+        if len(matches) != 1:
+            raise RuntimeError(f"Missing exact Flutter native engine for {abi}")
+        native = out / "native" / abi
+        native.mkdir(parents=True, exist_ok=True)
+        (native / "libflutter.so").write_bytes(archive.read(matches[0]))

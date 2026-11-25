@@ -55,6 +55,9 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(ScoliaFlutterExperiment)' == 'true'">
     <ProjectReference Include="../Scolia.Flutter.AndroidBinding/Scolia.Flutter.AndroidBinding.csproj" />
+    <AndroidLibrary Include="../Scolia.Flutter/build/bridge/flutter-module.aar" Bind="false" />
+    <AndroidNativeLibrary Include="../Scolia.Flutter/build/bridge/native/arm64-v8a/libflutter.so" Abi="arm64-v8a" />
+    <AndroidNativeLibrary Include="../Scolia.Flutter/build/bridge/native/armeabi-v7a/libflutter.so" Abi="armeabi-v7a" />
   </ItemGroup>
 
   <ItemGroup>

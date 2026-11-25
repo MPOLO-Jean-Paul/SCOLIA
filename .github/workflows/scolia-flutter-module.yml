@@ -6,6 +6,9 @@ on:
       - '.github/workflows/scolia-flutter-module.yml'
       - 'scolia-pro/src/Scolia.Flutter.AndroidBinding/**'
       - 'scolia-pro/src/Scolia.Mobile/FlutterIntegration.cs'
+      - 'scolia-pro/src/Scolia.Mobile/FlutterActivityHost.cs'
+      - 'scolia-pro/src/Scolia.Mobile/MainActivity.cs'
+      - 'scolia-pro/src/Scolia.Mobile/Scolia.Mobile.csproj'
       - 'scolia-pro/src/Scolia.Bureau/Infrastructure/Flutter*'
   workflow_dispatch:
 permissions:
@@ -39,6 +42,8 @@ jobs:
         run: dotnet workload install android
       - name: Compiler la liaison .NET Android (bibliothèque de validation)
         run: dotnet build ../Scolia.Flutter.AndroidBinding/Scolia.Flutter.AndroidBinding.csproj -c Release
+      - name: Compiler le client Android expérimental sans publication
+        run: dotnet build ../Scolia.Mobile/Scolia.Mobile.csproj -c Release -p:ScoliaFlutterExperiment=true
       - uses: actions/upload-artifact@v4
         with:
           name: scolia-flutter-module-aar-validation

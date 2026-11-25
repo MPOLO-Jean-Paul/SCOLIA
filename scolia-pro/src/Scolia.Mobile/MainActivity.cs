@@ -15,6 +15,9 @@ public sealed class MainActivity : AvaloniaMainActivity
 {
     private static bool launchPresented;
     private StartupScreen? startup;
+#if SCOLIA_FLUTTER_EXPERIMENT
+    private FlutterActivityHost? flutterHost;
+#endif
 
     // L'état réel du splash, pas une estimation basée sur un délai :
     // la vérification des mises à jour attend que cet écran ait disparu.
@@ -54,6 +57,9 @@ public sealed class MainActivity : AvaloniaMainActivity
     {
         base.OnResume();
         AndroidAlerts.SetForeground(true);
+#if SCOLIA_FLUTTER_EXPERIMENT
+        flutterHost ??= new FlutterActivityHost(this);
+#endif
         startup?.SetActive(true);
         // La recherche du serveur sur le Wi-Fi a besoin de recevoir les réponses en diffusion.
         MobilePlatform.HoldMulticast(true);
@@ -80,10 +86,16 @@ public sealed class MainActivity : AvaloniaMainActivity
         try { Synchronization.SyncWorker.ScheduleOnResume(this); }
         catch (Exception ex)
         { Android.Util.Log.Warn("SCOLIA-Sync", $"Reprise différée indisponible : {ex.GetType().Name}"); }
+#if SCOLIA_FLUTTER_EXPERIMENT
+        flutterHost?.Resume();
+#endif
     }
 
     protected override void OnPause()
     {
+ #if SCOLIA_FLUTTER_EXPERIMENT
+        flutterHost?.Pause();
+#endif
         AndroidAppUpdates.OnPause(this);
         AndroidAlerts.SetForeground(false);
         startup?.SetActive(false);
@@ -114,6 +126,10 @@ public sealed class MainActivity : AvaloniaMainActivity
 
     protected override void OnDestroy()
     {
+ #if SCOLIA_FLUTTER_EXPERIMENT
+        flutterHost?.Dispose();
+        flutterHost = null;
+#endif
         startup?.Close();
         startup = null;
         base.OnDestroy();
