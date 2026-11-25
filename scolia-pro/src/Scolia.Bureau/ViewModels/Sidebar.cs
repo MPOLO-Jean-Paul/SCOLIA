@@ -121,6 +121,8 @@ public static class Sidebar
         var groups = new[]
         {
             Group(string.Empty,
+                !shell.TeacherOnly && !(shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead))
+                    ? Item("Démarrer", MaterialIconKind.ViewDashboard, "ToneBlue", null, typeof(StartPage), () => new StartPage(shell)) : null,
                 // L'enseignant a son propre accueil : ses cours, ses annonces et les règles de l'encodage.
                 shell.TeacherOnly && !itm
                     ? Item("Mes branches et notes", MaterialIconKind.Pen, "TonePurple", null, typeof(TeacherCurriculumPage), () => new TeacherCurriculumPage(shell))

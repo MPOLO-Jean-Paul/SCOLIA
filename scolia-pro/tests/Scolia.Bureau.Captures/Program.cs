@@ -1956,6 +1956,9 @@ if (args.Length > 3 && args[3] == "accueil-powerbi")
     }
     finally { ShellViewModel.MinimumOpening = opening; }
     shell.Sync.Stop();
+    if (shell.Current is not StartPage start || start.NewActions.Count != 2)
+        throw new InvalidOperationException("La session doit ouvrir Démarrer avec les deux commandes métier autorisées.");
+    Save(window, "demarrer-clair.png");
     var homeSizes = Preferences.MobileLayout ? new[] { (320, 568), (360, 740), (412, 892) } : new[] { (1024, 720), (1366, 768), (1600, 900), (1920, 1080) };
     foreach (var (width, height) in homeSizes)
     {
@@ -1968,6 +1971,19 @@ if (args.Length > 3 && args[3] == "accueil-powerbi")
             throw new InvalidOperationException($"Accueil Power BI {width}x{height} : indicateurs ou commandes absents.");
         window.UpdateLayout();
         Save(window, $"accueil-powerbi-{width}x{height}-clair.png");
+        if (!Preferences.MobileLayout)
+        {
+            var header = window.GetVisualDescendants().OfType<TextBlock>()
+                .FirstOrDefault(t => t.Name == "RecentAmountHeader" && t.IsEffectivelyVisible);
+            var values = window.GetVisualDescendants().OfType<TextBlock>()
+                .Where(t => t.Name == "RecentAmountValue" && t.IsEffectivelyVisible).ToList();
+            if (header is null || values.Count == 0)
+                throw new InvalidOperationException("En-tête ou montants récents absents.");
+            var right = header.TranslatePoint(new Point(header.Bounds.Width, 0), window);
+            if (right is null || values.Any(v => v.TranslatePoint(new Point(v.Bounds.Width, 0), window) is not { } point ||
+                Math.Abs(point.X - right.Value.X) > 2))
+                throw new InvalidOperationException($"Colonne Montant désalignée à {width}x{height}.");
+        }
         home.ShowAllTools.Execute(null);
         window.UpdateLayout();
         Save(window, $"accueil-powerbi-{width}x{height}-catalogue.png");

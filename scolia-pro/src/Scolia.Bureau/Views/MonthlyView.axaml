@@ -27,11 +27,17 @@
     </Border>
 
     <!-- Bilan du mois pour la promotion choisie -->
-    <ItemsControl Grid.Row="1" ItemsSource="{Binding Totals}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
+    <StackPanel Grid.Row="1" Spacing="5">
+    <TextBlock Text="Mensualité sélectionnée : seuls les versements affectés à ce mois sont comptés ci-dessous." Classes="muted" TextWrapping="Wrap" />
+    <ItemsControl ItemsSource="{Binding Totals}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>
     </ItemsControl>
+    <Border Background="{DynamicResource GroupBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
+      <TextBlock Text="{Binding ReceiptActivity}" TextWrapping="Wrap" Classes="muted" />
+    </Border>
+    </StackPanel>
 
     <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" Margin="0,4,0,0">
       <DataGrid.Columns>

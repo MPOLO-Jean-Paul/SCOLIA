@@ -22,6 +22,7 @@ public sealed record ReceiptRowVm(Guid Id, string Number, string Date, string Ma
 public sealed class CashierPage : PageViewModel
 {
     private readonly Guid? initialStudent;
+    private Guid? requestedFee;
     private DispatcherTimer? searchTimer;
     private DispatcherTimer? previewTimer;
     private string search = string.Empty;
@@ -54,9 +55,10 @@ public sealed class CashierPage : PageViewModel
     private bool previewValid;
     private bool paying;
 
-    public CashierPage(ShellViewModel shell, Guid? studentId = null) : base(shell)
+    public CashierPage(ShellViewModel shell, Guid? studentId = null, Guid? feeItemId = null) : base(shell)
     {
         initialStudent = studentId;
+        requestedFee = feeItemId;
         method = Labels.Methods[0];
         Pay = new AsyncCommand(() => Shell.Run(PayAsync));
         Find = new AsyncCommand(() => Shell.Run(SearchAsync));
@@ -510,7 +512,15 @@ public sealed class CashierPage : PageViewModel
 
         // Un choix immédiat évite le formulaire vide : l'utilisateur peut toujours changer de mois
         // ou en cocher plusieurs. Les mois déjà soldés ne peuvent jamais être encaissés une deuxième fois.
-        if (Months.Count > 0)
+        if (requestedFee is { } exact)
+        {
+            requestedFee = null;
+            SelectedMonth = Months.FirstOrDefault(m => m.Id == exact);
+            MonthListStatus = SelectedMonth is null
+                ? "Le mois demandé est déjà réglé ou indisponible. Aucun autre mois n'a été coché."
+                : "Le mois choisi dans le suivi mensuel est coché. Vérifiez la répartition avant d'encaisser.";
+        }
+        else if (Months.Count > 0)
             SelectedMonth = Months.FirstOrDefault(m => m.Overdue) ?? Months[0];
         Raise(nameof(HasMonths));
         Raise(nameof(NoAvailableMonths));

@@ -4,7 +4,7 @@
         x:Class="Scolia.Bureau.MainWindow"
         Title="SCOLIA Pro"
         Width="1280" Height="820" MinWidth="760" MinHeight="520"
-        WindowState="Maximized" WindowStartupLocation="CenterScreen">
+        WindowState="Maximized" WindowStartupLocation="CenterScreen" SizeToContent="Manual" SystemDecorations="Full">
   <!-- L'interface est la même sur l'ordinateur et sur le téléphone : la fenêtre ne fait que l'accueillir. -->
   <views:MainView x:Name="View" />
 </Window>

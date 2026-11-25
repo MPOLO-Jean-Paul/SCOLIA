@@ -587,12 +587,12 @@
       <ProgressBar Grid.Row="2" Grid.Column="1" IsIndeterminate="True" IsVisible="{Binding Current.Busy}" VerticalAlignment="Top" Height="2" MinHeight="2" />
 
       <!-- Barre d'état : statut, serveur, zoom -->
-      <Border x:Name="DesktopStatusBar" Grid.Row="3" Grid.ColumnSpan="2" Classes="statusbar" IsVisible="{Binding ShowStatusBar}">
+      <Border x:Name="DesktopStatusBar" Grid.Row="3" Grid.ColumnSpan="2" Classes="statusbar" MinHeight="38" ZIndex="2" IsVisible="{Binding ShowStatusBar}">
         <Grid ColumnDefinitions="Auto,*,Auto,Auto">
           <TextBlock Text="{Binding Status}" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="460"
                      Margin="0,0,16,0" ToolTip.Tip="{Binding Status}" />
           <!-- Direct : autres postes, activité qui vient d'avoir lieu ailleurs, ou travail hors ligne -->
-          <Button Grid.Column="1" Classes="ghost" Padding="8,0" MinHeight="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Command="{Binding NetworkCommand}" ToolTip.Tip="Réseau et activité" Margin="0,0,16,0">
+          <Button Grid.Column="1" Classes="ghost" Padding="8,0" MinHeight="32" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Command="{Binding NetworkCommand}" ToolTip.Tip="Réseau et activité" Margin="0,0,16,0">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
               <Panel Width="15" Height="15">
               <Border Classes="livedot" Classes.pulse="{Binding Sync.Pulse}" VerticalAlignment="Center" IsVisible="{Binding Sync.Online}" />
@@ -607,7 +607,7 @@
           <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
             <!-- Licence de l'établissement : expiration en jours, toujours dans
                  la barre d'état, à côté du basculement de thème. -->
-            <Button Classes="ghost" Padding="8,0" MinHeight="0"
+            <Button Classes="ghost" Padding="8,0" MinHeight="32"
                     IsVisible="{Binding IsLoggedIn}"
                     Command="{Binding License.Open}"
                     ToolTip.Tip="{Binding License.Details}"
@@ -620,14 +620,14 @@
               </StackPanel>
             </Button>
             <!-- Bascule rapide du thème clair au thème sombre -->
-            <Button Classes="ghost" Padding="6,0" MinHeight="0" Click="OnThemeToggle" ToolTip.Tip="Thème clair ou sombre" Margin="0,0,10,0">
+            <Button Classes="ghost" Padding="8,4" MinWidth="32" MinHeight="32" Click="OnThemeToggle" ToolTip.Tip="Thème clair ou sombre" Margin="0,0,10,0">
               <mi:MaterialIcon x:Name="ThemeIcon" Kind="WeatherNightOutline" Width="16" Height="16" />
             </Button>
-            <Button Classes="ghost" Padding="4,2" MinHeight="0" Click="OnZoomOut" ToolTip.Tip="Réduire (Ctrl+-)">
+            <Button Classes="ghost" Padding="8,4" MinWidth="32" MinHeight="32" Click="OnZoomOut" ToolTip.Tip="Réduire (Ctrl+-)">
               <mi:MaterialIcon Kind="Minus" Width="16" Height="16" />
             </Button>
             <TextBlock Text="{Binding Prefs.ZoomLabel}" Classes="muted" VerticalAlignment="Center" MinWidth="48" TextAlignment="Center" />
-            <Button Classes="ghost" Padding="4,2" MinHeight="0" Click="OnZoomIn" ToolTip.Tip="Agrandir (Ctrl++)">
+            <Button Classes="ghost" Padding="8,4" MinWidth="32" MinHeight="32" Click="OnZoomIn" ToolTip.Tip="Agrandir (Ctrl++)">
               <mi:MaterialIcon Kind="Plus" Width="16" Height="16" />
             </Button>
           </StackPanel>
