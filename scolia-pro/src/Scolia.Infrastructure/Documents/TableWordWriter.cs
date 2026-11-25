@@ -23,13 +23,15 @@ public static class TableWordWriter
 
     public static byte[] Write(TableDocument table)
     {
-        var columns = table.Columns.Count == 0 ? new[] { "Information" } : table.Columns;
+        IReadOnlyList<string> columns = table.Columns.Count == 0 ? ["Information"] : table.Columns;
+        var columnWidth = (table.Landscape ? 15398 : 10466) / columns.Count;
         var content = new XElement(W + "tbl",
             new XElement(W + "tblPr",
                 new XElement(W + "tblW", new XAttribute(W + "w", "5000"), new XAttribute(W + "type", "pct")),
                 new XElement(W + "tblBorders", new[] { "top", "left", "bottom", "right", "insideH", "insideV" }
                     .Select(s => new XElement(W + s, new XAttribute(W + "val", "single"),
                         new XAttribute(W + "sz", "4"), new XAttribute(W + "color", "D5DCE5"))))),
+            new XElement(W + "tblGrid", Enumerable.Range(0, columns.Count).Select(_ => new XElement(W + "gridCol", new XAttribute(W + "w", columnWidth)))),
             Row(columns, columns.Count, header: true),
             table.Rows.Select(r => Row(r, columns.Count)),
             table.Rows.Count == 0 ? Row(["Aucune donnée pour les critères sélectionnés."], columns.Count) : null,
@@ -42,7 +44,8 @@ public static class TableWordWriter
                         new XAttribute(W + "h", table.Landscape ? 11906 : 16838),
                         table.Landscape ? new XAttribute(W + "orient", "landscape") : null),
                     new XElement(W + "pgMar", new XAttribute(W + "top", 720), new XAttribute(W + "bottom", 720),
-                        new XAttribute(W + "left", 720), new XAttribute(W + "right", 720))))));
+                        new XAttribute(W + "left", 720), new XAttribute(W + "right", 720),
+                        new XAttribute(W + "header", 360), new XAttribute(W + "footer", 360), new XAttribute(W + "gutter", 0))))));
         using var stream = new MemoryStream();
         using (var zip = new ZipArchive(stream, ZipArchiveMode.Create, true))
         {

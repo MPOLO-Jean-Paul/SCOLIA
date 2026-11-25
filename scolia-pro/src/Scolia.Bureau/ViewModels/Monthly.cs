@@ -5,6 +5,7 @@ using Material.Icons;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.Ribbon;
+using Scolia.Domain.Common;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -68,7 +69,9 @@ public sealed class MonthlyPage : PageViewModel
     public System.Windows.Input.ICommand ExportExcel => Actions.First(a => a.Label == "Excel").Command;
     public System.Windows.Input.ICommand ExportPdf => Actions.First(a => a.Label == "PDF").Command;
     public System.Windows.Input.ICommand ExportWord => Actions.First(a => a.Label == "Word").Command;
-    public string ExportScope => $"Export : {Month?.Label ?? "mois à choisir"} · {Promotion?.Label ?? "promotion à choisir"} · {State?.Label ?? "Tous les états"} · {Items.Count} ligne(s)";
+    public string ExportScope => $"Export : {Month?.Label ?? "mois à choisir"} · {Promotion?.Label ?? "promotion à choisir"} · {State?.Label ?? "Tous les états"} · " +
+        (string.Equals(loadedFilters, Filters(), StringComparison.Ordinal) && loadedFilters is not null
+            ? $"{Items.Count} ligne(s)" : "liste à actualiser");
 
     public ChoiceItem? Month { get => month; set { if (Set(ref month, value)) FilterChanged(); } }
     public ChoiceItem? Promotion { get => promotion; set { if (Set(ref promotion, value)) FilterChanged(); } }
@@ -108,23 +111,26 @@ public sealed class MonthlyPage : PageViewModel
         if (!ready)
         {
             Promotions = await PromotionChoicesAsync(withAll: true);
-            promotion = Promotions[0];
             Raise(nameof(Promotions));
+            promotion = Promotions[0];
             Raise(nameof(Promotion));
         }
 
+        if (ready && (Promotion is null || !Guid.TryParse(Month?.Value, out _))) return;
         var requestedFilters = Filters();
         var d = await Shell.Api.GetAsync<MonthlyFollowUpDto>("api/rapports/suivi-mensuel" + requestedFilters);
         // Ne jamais appliquer une réponse ancienne après un changement de filtre.
-        if (ready && !string.Equals(requestedFilters, Filters(), StringComparison.Ordinal)) return;
+        var changed = !string.Equals(requestedFilters, Filters(), StringComparison.Ordinal);
+        if (ready && (changed || !Guid.TryParse(Month?.Value, out var selectedPeriod) || selectedPeriod != d.PeriodId)) return;
         if (!ready)
         {
             // Le mois en cours est choisi d'office ; les autres mois de l'année restent à un clic.
             Months = d.Periods.Select(p => new ChoiceItem(p.Id.ToString(), p.Name)).ToList();
-            month = Months.FirstOrDefault(m => m.Value == d.PeriodId.ToString());
             Raise(nameof(Months));
+            month = Months.FirstOrDefault(m => m.Value == d.PeriodId.ToString());
             Raise(nameof(Month));
             ready = true;
+            if (changed) { await LoadAsync(); return; }
         }
 
         CollectionSync.Apply(Totals, new[] {
@@ -177,17 +183,19 @@ public sealed class MonthlyPage : PageViewModel
         if (timer is not null) { timer.Stop(); timer = null; }
         if (Busy || !string.Equals(loadedFilters, requested, StringComparison.Ordinal))
             await RefreshAsync();
-        if (!string.Equals(requested, Filters(), StringComparison.Ordinal) ||
+        if (Promotion is not { } selectedPromotion || !Guid.TryParse(Month?.Value, out var currentPeriod) || currentPeriod != periodId ||
+            !string.Equals(requested, Filters(), StringComparison.Ordinal) ||
             !string.Equals(loadedFilters, requested, StringComparison.Ordinal))
         {
             Shell.Notify("Les filtres ont changé ou la liste n’est pas actualisée. Vérifiez la sélection puis réessayez.");
             return;
         }
-        var promotionScope = Promotion.Value.Length == 0 ? "all" : Promotion.Value;
+        var promotionScope = selectedPromotion.Value.Length == 0 ? "all" : selectedPromotion.Value;
+        var fingerprint = MonthlyExportSelection.Fingerprint(Items.Select(r => (r.StudentId, r.FeeItemId)));
         var query = ScoliaClient.Query(("periodeId", periodId), ("promotionScope", promotionScope),
-            ("etat", State?.Value), ("q", Search.Trim()), ("expectedCount", Items.Count), ("format", format));
+            ("etat", State?.Value), ("q", Search.Trim()), ("expectedCount", Items.Count), ("expectedSelection", fingerprint), ("format", format));
         static string Safe(string text) => string.Concat(text.Select(c => char.IsLetterOrDigit(c) ? c : '-'));
-        var name = $"suivi-mensuel-{Safe(Month?.Label ?? "mois")}-{Safe(Promotion.Label)}.{format}";
+        var name = $"suivi-mensuel-{Safe(Month?.Label ?? "mois")}-{Safe(selectedPromotion.Label)}.{format}";
         await Shell.Download("api/rapports/suivi-mensuel/export/selection" + query, name);
     }
 

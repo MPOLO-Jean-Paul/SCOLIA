@@ -569,7 +569,7 @@ public static class ScoliaEndpoints
         g.MapGet("/suivi-mensuel/export", async ([AsParameters] MonthlyQuery q, string? format, ReportService r, CancellationToken ct) =>
             Table(await r.MonthlyTableAsync(q, ct), format, "suivi-mensuel-paiements", r));
         // Le client natif transmet une sélection explicite : aucun repli silencieux sur toutes les promotions.
-        g.MapGet("/suivi-mensuel/export/selection", async (Guid periodeId, string promotionScope, int expectedCount,
+        g.MapGet("/suivi-mensuel/export/selection", async (Guid periodeId, string promotionScope, int expectedCount, string expectedSelection,
             string? etat, string? q, string? format, ReportService r, CancellationToken ct) =>
         {
             Guid? promotionId = null;
@@ -579,11 +579,11 @@ public static class ScoliaEndpoints
                     return Results.BadRequest(new { title = "Promotion invalide : sélectionnez une promotion ou Toutes." });
                 promotionId = id;
             }
-            if (periodeId == Guid.Empty || expectedCount < 0 || format is not ("xlsx" or "pdf" or "docx"))
+            if (periodeId == Guid.Empty || expectedCount < 0 || expectedSelection.Length != 64 || format is not ("xlsx" or "pdf" or "docx"))
                 return Results.BadRequest(new { title = "Sélection d’export invalide." });
             if (!string.IsNullOrEmpty(etat) && etat is not ("nonpaye" or "retard" or "paye" or "couvert"))
                 return Results.BadRequest(new { title = "État de paiement invalide." });
-            var table = await r.MonthlyTableAsync(new MonthlyQuery(periodeId, promotionId, etat, q), ct);
+            var table = await r.MonthlyTableAsync(new MonthlyQuery(periodeId, promotionId, etat, q), ct, expectedSelection);
             if (table.Rows.Count != expectedCount)
                 return Results.Conflict(new { title = "La liste a changé. Actualisez le suivi mensuel avant d’exporter." });
             if (format == "docx")

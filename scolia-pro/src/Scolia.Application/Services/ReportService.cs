@@ -448,10 +448,13 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
     }
 
     /// <summary>Le suivi d'un mois en document : liste filtrée et totaux.</summary>
-    public async Task<TableDocument> MonthlyTableAsync(MonthlyQuery q, CancellationToken ct = default)
+    public async Task<TableDocument> MonthlyTableAsync(MonthlyQuery q, CancellationToken ct = default, string? expectedSelection = null)
     {
         var school = await YearContext.SchoolAsync(db, ct);
         var d = await MonthlyAsync(q, ct);
+        if (expectedSelection is not null && !string.Equals(expectedSelection,
+            MonthlyExportSelection.Fingerprint(d.Rows.Select(r => (r.StudentId, r.FeeItemId))), StringComparison.Ordinal))
+            throw new ConflictException("La sélection a changé. Actualisez le suivi mensuel avant d’exporter.");
         string M(decimal v) => Money.Display(v, school.CurrencySymbol);
         var scope = q.PromotionId is { } promotionId
             ? $"promotion {await db.Promotions.AsNoTracking().Where(p => p.Id == promotionId).Select(p => p.Code).FirstOrDefaultAsync(ct)}"
