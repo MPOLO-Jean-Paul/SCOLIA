@@ -16,7 +16,7 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
         string Year, IReadOnlyList<string> Modules, string Notice, StudentListing? Students = null, MonthlyListing? Monthly = null, IReadOnlyList<ModuleEntry>? Catalog = null, WorkspaceHeader? Header = null, StudentProfile? Profile = null, EnrollmentForm? Enrollment = null, CashierScreen? Cashier = null, ReceiptJournal? Journal = null, SchoolRegister? Register = null);
 
     public sealed record RegisterRow(string Id, string Name, string Code, string Status, string Note,
-        IReadOnlyList<ProfileValue> Details);
+        IReadOnlyList<ProfileValue> Details, double? Share = null, double? Track = null);
     public sealed record SchoolRegister(string Kind, string Title, string Subtitle, string Promotion, string Date,
         string Measure, bool Summary, bool CanWrite, bool Pending, bool Dirty, string Token,
         IReadOnlyList<FilterChoice> Promotions, IReadOnlyList<FilterChoice> Options, IReadOnlyList<RegisterRow> Rows, MarkInput? Marks = null, string Overview = "", string Context = "");
@@ -54,6 +54,35 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
             shell.Can(Perm.SettingsWrite) && p.SchoolSections.Any(x => x.Value == selected), false, false, registerToken,
             [], p.AllSections.Select(x => new FilterChoice(x.Value, x.Label)).ToArray(), rows,
             Overview: p.SectionTitle, Context: p.Subtitle);
+    }
+    private SchoolRegister DescribeDashboard(DashboardPage p)
+    {
+        var rows = p.Kpis.Select(x => new RegisterRow("", x.Label, x.Value, "Indicateurs", x.Hint, []))
+            .Concat(p.TodayStats.Select(x => new RegisterRow("", x.Label, x.Value, "Aujourd’hui", x.Hint, [])))
+            .Concat(p.Months.Select(x => new RegisterRow("", x.Label, x.Value, "Encaissements", "", [],
+                Math.Clamp(x.Height / 150, 0, 1), Math.Clamp(x.Track / 150, 0, 1))))
+            .Concat(p.Aging.Select(x => new RegisterRow("", x.Label, x.Value, "Ancienneté des retards", "", [],
+                Math.Clamp(x.Height / 100, 0, 1))))
+            .Concat(p.Promotions.Select(x => new RegisterRow("", x.Name, x.Code, "Promotions", x.Recovery, [
+                new("Effectif", x.Students), new("Payants", x.Paying), new("Pris en charge", x.Sponsored),
+                new("Attendu", x.Expected), new("Encaissé", x.Collected), new("Reste", x.Outstanding), new("Exigible", x.Overdue)],
+                Math.Clamp(x.RecoveryValue / 100, 0, 1))))
+            .Concat(p.Latest.Select(x => new RegisterRow("", x.Number, x.Amount, "Derniers reçus", x.Date, [new("Mode", x.Method)])))
+            .ToArray();
+        return new("dashboard", p.Title, p.Subtitle, "", "", "", false, false, false, false, "", [], [], rows,
+            Overview: p.GenderText, Context: p.BackupLine);
+    }
+    private static SchoolRegister DescribePromoter(PromoterDashboardPage p)
+    {
+        var rows = p.Kpis.Select(x => new RegisterRow("", x.Label, x.Value, "Indicateurs", x.Detail, []))
+            .Concat(p.SchoolPeriods.Select(x => new RegisterRow("", x.Period, x.Paid, "Échéances", x.IsCurrent ? "Période actuelle" : "", [
+                new("Dû", x.Due), new("Reste", x.Remaining), new("Encaissé durant la période", x.Collected)], x.PaidShare)))
+            .Concat(p.Promotions.Select(x => new RegisterRow("", x.Name, x.Code, "Promotions", x.YearShareText, [
+                new("Effectif", x.Students), new("Retards", x.LateDebtors), new("Aujourd’hui", x.CollectedToday),
+                new("Ce mois", x.CollectedMonth), new("Année", x.CollectedYear), new("Reste", x.Outstanding), new("Exigible", x.Overdue)], x.YearShare)))
+            .ToArray();
+        return new("promoter", p.Title, p.Subtitle, "", "", "", false, false, false, false, "", [], [], rows,
+            Overview: p.AsOf, Context: p.Attention);
     }
     private SchoolRegister DescribeUsers(UsersPage p) => new("users", p.Title, p.Subtitle, "", "", "", false, shell.Can(Perm.UsersManage), false, false,
         registerToken, [], [], p.Items.Select(x => new RegisterRow(x.Id.ToString(), x.DisplayName, x.UserName, x.Active, "", [
@@ -604,9 +633,27 @@ public sealed class FlutterCommandAdapter(ShellViewModel shell)
                     var kind = Required(arguments, "kind", 20);
                     var moduleId = kind switch { "staff" => "page:StaffPage", "pointage" => "page:StaffAttendancePage",
                         "teaching" => "page:TeachingPage", "codes" => "page:AnonymousCodesPage", "marks" => "grades", "deliberation" => "page:DeliberationPage",
-                        "progress" => "page:EncodingProgressPage", "lmd" => "lmd", "settings" => "settings", "users" => "page:UsersPage", _ => throw new ArgumentException("Module invalide.") };
+                        "progress" => "page:EncodingProgressPage", "lmd" => "lmd", "settings" => "settings", "users" => "page:UsersPage", "dashboard" => "dashboard", "promoter" => "page:PromoterDashboardPage", _ => throw new ArgumentException("Module invalide.") };
                     if (AllowedPage(moduleId) is null || ((kind is "codes" or "deliberation" or "progress") && shell.TeacherOnly) || shell.Session is not { } personnelOwner)
                         throw new UnauthorizedAccessException("Module non autorisé.");
+                    if (kind == "dashboard")
+                    {
+                        if (!shell.Can(Perm.ReportsRead)) throw new UnauthorizedAccessException("Rapports non autorisés.");
+                        var dashboard = new DashboardPage(shell);
+                        await dashboard.LoadAsync();
+                        if (!shell.Can(Perm.ReportsRead) || AllowedPage(moduleId) is null || !ReferenceEquals(personnelOwner, shell.Session))
+                            throw new UnauthorizedAccessException("Session modifiée.");
+                        return Read() with { Stage = "schoolRegister", Register = DescribeDashboard(dashboard) };
+                    }
+                    if (kind == "promoter")
+                    {
+                        if (!shell.Can(Perm.PilotageRead)) throw new UnauthorizedAccessException("Pilotage non autorisé.");
+                        var promoter = new PromoterDashboardPage(shell);
+                        await promoter.LoadAsync();
+                        if (!shell.Can(Perm.PilotageRead) || AllowedPage(moduleId) is null || !ReferenceEquals(personnelOwner, shell.Session))
+                            throw new UnauthorizedAccessException("Session modifiée.");
+                        return Read() with { Stage = "schoolRegister", Register = DescribePromoter(promoter) };
+                    }
                     if (kind == "marks")
                     {
                         // Les autres profils conservent la feuille nominative native.

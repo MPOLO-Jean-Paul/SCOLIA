@@ -283,6 +283,8 @@ class _WorkspaceState extends State<Workspace> {
     else if (id == 'lmd') { unawaited(loadRegister('lmd')); }
     else if (id == 'settings') { unawaited(loadRegister('settings')); }
     else if (id == 'page:UsersPage') { unawaited(loadRegister('users')); }
+    else if (id == 'dashboard') { unawaited(loadRegister('dashboard')); }
+    else if (id == 'page:PromoterDashboardPage') { unawaited(loadRegister('promoter')); }
     else { unawaited(execute(Operation.openModule, {'module': id})); }
   }
 
@@ -700,7 +702,58 @@ class _WorkspaceState extends State<Workspace> {
     ]);
   }
 
+  Widget dashboardRegister(SchoolRegister r) {
+    final promoter = r.kind == 'promoter';
+    final groups = r.rows.map((x) => x.status).toSet();
+    Widget metric(RegisterRow x) => Card.outlined(margin: EdgeInsets.zero, child: Padding(
+      padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text(x.name, style: Theme.of(context).textTheme.titleSmall),
+        if (x.code.isNotEmpty) ...[const SizedBox(height: 6), Text(x.code,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Theme.of(context).colorScheme.primary))],
+        if (x.note.isNotEmpty) ...[const SizedBox(height: 4), Text(x.note)],
+        if (x.share != null) ...[const SizedBox(height: 8),
+          if (x.track != null) ...[
+            LinearProgressIndicator(value: x.track!.clamp(0.0, 1.0).toDouble(),
+              color: Theme.of(context).colorScheme.outline, minHeight: 5),
+            const SizedBox(height: 4),
+          ],
+          LinearProgressIndicator(value: x.share!.clamp(0.0, 1.0).toDouble(), minHeight: 7),
+        ],
+        for (final item in x.details) if (item.value.isNotEmpty) Padding(
+          padding: const EdgeInsets.only(top: 4), child: Text('${item.label} : ${item.value}')),
+      ])));
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: busy ? null : () => leaveRegister(r),
+        icon: const Icon(Icons.arrow_back), label: const Text('Retour à l’accueil'))),
+      heading(r.title, r.subtitle),
+      if (promoter) const Text('Consultation uniquement · données agrégées'),
+      if (r.overview.isNotEmpty) Text(r.overview),
+      if (r.context.isNotEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Text(r.context, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+      if (r.rows.isEmpty) const Text('Aucune donnée disponible.'),
+      for (final group in groups) ...[
+        const SizedBox(height: 20),
+        Text(group, style: Theme.of(context).textTheme.titleMedium),
+        if (group == 'Encaissements') const Text('Piste grise : attendu · barre colorée : encaissé'),
+        const SizedBox(height: 8),
+        LayoutBuilder(builder: (context, constraints) {
+          final columns = (group == 'Indicateurs' || group == 'Aujourd’hui') && constraints.maxWidth >= 360
+            ? (constraints.maxWidth >= 720 ? 3 : 2) : 1;
+          final width = (constraints.maxWidth - (columns - 1) * 8) / columns;
+          return Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final x in r.rows.where((x) => x.status == group)) SizedBox(width: width, child: metric(x)),
+          ]);
+        }),
+      ],
+      if (!promoter && (session?.modules.contains('cashier') ?? false)) ...[
+        const SizedBox(height: 16),
+        action('Encaisser', Icons.payments_outlined, Operation.openModule, args: {'module': 'cashier'}, primary: true),
+      ],
+    ]);
+  }
+
   Widget schoolRegister(SchoolRegister r) {
+    if (r.kind == 'dashboard' || r.kind == 'promoter') return dashboardRegister(r);
     if (r.kind == 'settings' || r.kind == 'users') return administrationRegister(r);
     if (r.kind == 'lmd') return lmdRegister(r);
     if (r.kind == 'deliberation' || r.kind == 'progress') return academicRegister(r);

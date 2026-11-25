@@ -126,6 +126,18 @@ void main() {
     expect(host.lastArgs, {'token': 'users-token', 'row': 'user1', 'mode': 'reset'});
     expect(tester.takeException(), isNull);
   });
+  testWidgets('promoter dashboard shows aggregate data and no cashier action', (tester) async {
+    final host = TestHost(const SchoolSession(stage: Stage.schoolRegister,
+      modules: ['cashier'], register: SchoolRegister(kind: 'promoter', title: 'Vue d’ensemble',
+        rows: [RegisterRow('', 'Recettes', '300 FC', 'Indicateurs', '', []),
+          RegisterRow('', 'Promotion test', 'L1', 'Promotions', '', [], share: 0.5)])));
+    await tester.pumpWidget(ScoliaApp(host: host));
+    await tester.pumpAndSettle();
+    expect(find.text('300 FC'), findsOneWidget);
+    expect(find.text('Consultation uniquement · données agrégées'), findsOneWidget);
+    expect(find.text('Encaisser'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
   test('reject incompatible protocol', () {
     expect(() => SchoolSession.fromMap({'protocol': 2, 'stage': 'home'}), throwsFormatException);
   });

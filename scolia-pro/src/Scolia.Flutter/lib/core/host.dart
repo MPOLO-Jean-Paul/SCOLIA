@@ -47,12 +47,14 @@ class SchoolSession {
 }
 
 class RegisterRow {
-  const RegisterRow(this.id, this.name, this.code, this.status, this.note, this.details);
+  const RegisterRow(this.id, this.name, this.code, this.status, this.note, this.details, {this.share, this.track});
   final String id, name, code, status, note;
   final List<ProfileValue> details;
+  final double? share, track;
   factory RegisterRow.fromMap(Map<Object?, Object?> m) => RegisterRow(m['id'] as String, m['name'] as String,
     m['code'] as String, m['status'] as String, m['note'] as String,
-    (m['details'] as List<Object?>).map((v) => ProfileValue.fromMap(v as Map<Object?, Object?>)).toList());
+    (m['details'] as List<Object?>).map((v) => ProfileValue.fromMap(v as Map<Object?, Object?>)).toList(),
+    share: (m['share'] as num?)?.toDouble(), track: (m['track'] as num?)?.toDouble());
 }
 class MarkInput {
   const MarkInput({this.rules = '', this.announcement = '', this.sheet = '', this.hint = '', this.maximum = '',
