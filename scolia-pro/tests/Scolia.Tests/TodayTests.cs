@@ -154,6 +154,16 @@ public sealed class MonthlyFollowUpTests : IDisposable
         var october = overview.GetProperty("periods")[1].GetProperty("id").GetString()!;
         var next = await admin.GetAsync($"/api/rapports/suivi-mensuel?periodeId={october}").Ok();
         Assert.Equal(0, next.GetProperty("paidCount").GetInt32());
+        Assert.NotEqual(Guid.Empty, row.GetProperty("feeItemId").GetGuid());
+        var emitted = await admin.GetAsync("/api/rapports/suivi-mensuel").Ok();
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        if (emitted.GetProperty("period").GetString()!.EndsWith(today.Year.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal) &&
+            emitted.GetProperty("period").GetString()!.StartsWith(today.ToString("MMMM", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")), StringComparison.OrdinalIgnoreCase))
+        {
+            Assert.Equal(1, emitted.GetProperty("receiptCount").GetInt32());
+            Assert.Equal(1, emitted.GetProperty("payingStudentsByReceiptDate").GetInt32());
+            Assert.Equal(40000m, emitted.GetProperty("cashReceived").GetDecimal());
+        }
 
         var xlsx = await admin.GetAsync($"/api/rapports/suivi-mensuel/export?periodeId={periodId}&etat=nonpaye&format=xlsx");
         Assert.True(xlsx.IsSuccessStatusCode);

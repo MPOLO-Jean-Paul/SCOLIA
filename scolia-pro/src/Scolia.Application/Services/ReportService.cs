@@ -390,7 +390,7 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
         var map = await accounts.ComputeAsync(year.Id, null, today, ct);
         var rows = map.Values
             .Where(x => x.Enrollment.Status != EnrollmentStatus.Sorti && (q.PromotionId is null || x.Promotion.Id == q.PromotionId))
-            .Select(x => (Entry: x, Line: x.Account.Lines.FirstOrDefault(l => l.PeriodId == period.Id)))
+            .Select(x => (Entry: x, Line: x.Account.Lines.FirstOrDefault(l => l.PeriodId == period.Id && l.Kind == FeeKind.Mensualite)))
             .Where(x => x.Line is not null)
             .ToList();
 
@@ -423,7 +423,7 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
                 status, receipt?.Number, receipt?.Date, s.ParentPhone,
                 Reminders.MonthWhatsApp(school, s, Name(period), line.Remaining, AnonymousDisplay.Of(monthlyCodes, x.Entry.Enrollment.Id)),
                 Reminders.MonthSms(school, s, Name(period), line.Remaining, AnonymousDisplay.Of(monthlyCodes, x.Entry.Enrollment.Id)),
-                CoverageText.Of(x.Entry.Coverage));
+                CoverageText.Of(x.Entry.Coverage), line.FeeItemId);
         }).OrderBy(r => r.PromotionCode).ThenBy(r => r.Status == "Pris en charge").ThenBy(r => r.FullName).ToList();
 
         var wanted = StatusFilter(q.Etat);
@@ -433,9 +433,18 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
             .Where(r => search.Length == 0 || TextKey.Normalize($"{r.Matricule} {r.FullName}").Contains(search, StringComparison.Ordinal))
             .ToList();
 
+        // La date d'encaissement ne détermine pas le mois scolaire réglé.
+        var start = new DateOnly(period.CalendarYear, period.Month, 1);
+        var end = start.AddMonths(1);
+        var scopeIds = map.Values.Where(x => q.PromotionId is null || x.Promotion.Id == q.PromotionId)
+            .Select(x => x.Enrollment.Id).ToList();
+        var cashReceipts = await db.Receipts.AsNoTracking()
+            .Where(r => r.Status == OperationStatus.Valide && scopeIds.Contains(r.EnrollmentId) && r.Date >= start && r.Date < end)
+            .Select(r => new { r.StudentId, r.Amount }).ToListAsync(ct);
         return new MonthlyFollowUpDto(period.Id, Name(period), periods.Select(p => new PeriodChoiceDto(p.Id, Name(p), p.Id == current.Id)).ToList(),
             all.Count(r => r.Status == "Payé"), all.Count(r => r.Status is "Non payé" or "En retard" or "Partiel"), all.Count(r => r.Status == "En retard"),
-            all.Count(r => r.Status == "Pris en charge"), all.Sum(r => r.Amount), all.Sum(r => r.Paid), all.Sum(r => r.Remaining), list);
+            all.Count(r => r.Status == "Pris en charge"), all.Sum(r => r.Amount), all.Sum(r => r.Paid), all.Sum(r => r.Remaining), list,
+            cashReceipts.Count, cashReceipts.Select(r => r.StudentId).Distinct().Count(), cashReceipts.Sum(r => r.Amount));
     }
 
     /// <summary>Le suivi d'un mois en document : liste filtrée et totaux.</summary>

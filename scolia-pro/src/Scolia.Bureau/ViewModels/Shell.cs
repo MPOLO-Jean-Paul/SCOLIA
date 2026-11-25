@@ -1169,6 +1169,7 @@ public sealed class ShellViewModel : Observable
         navigatingBack = true;
         try { Show(page); }
         finally { navigatingBack = false; }
+        RefreshReturnedFinancePage(page);
     }
 
     private bool navigatingBack;
@@ -1205,7 +1206,15 @@ public sealed class ShellViewModel : Observable
         if (forwardStack.Count == 0 || current is null) return;
         backStack.Add(current);
         BackstageOpen = false;
-        Show(forwardStack.Pop());
+        var page = forwardStack.Pop();
+        Show(page);
+        RefreshReturnedFinancePage(page);
+    }
+
+    private void RefreshReturnedFinancePage(PageViewModel page)
+    {
+        if (page is MonthlyPage or HomePage or ReceiptsPage or DashboardPage or StudentsPage or StudentDetailPage or DebtorsPage or CashPage)
+            _ = Run(page.RefreshQuietlyAsync);
     }
 
     private bool rowTipShown;

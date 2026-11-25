@@ -70,7 +70,8 @@
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="6" />
-      <Setter Property="Padding" Value="9,8" />
+      <Setter Property="Padding" Value="10,8" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="Cursor" Value="Hand" />
     </Style>
@@ -313,10 +314,10 @@
                            TextAlignment="Right" />
               </Grid>
             </Border>
-            <ItemsControl ItemsSource="{Binding Receipts}">
+            <ItemsControl x:Name="RecentReceiptRows" ItemsSource="{Binding Receipts}" HorizontalAlignment="Stretch">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Button Classes="pbiRow" Command="{Binding Open}" ToolTip.Tip="Ouvrir le reçu">
+                  <Button Classes="pbiRow" Command="{Binding Open}" ToolTip.Tip="Ouvrir le reçu" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="10,8">
                     <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
                       <StackPanel Spacing="3" VerticalAlignment="Center">
                         <TextBlock Text="{Binding Student}" FontWeight="SemiBold"

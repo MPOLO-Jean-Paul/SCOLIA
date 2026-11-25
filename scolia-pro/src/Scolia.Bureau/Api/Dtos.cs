@@ -149,14 +149,14 @@ public sealed record PeriodChoiceDto(Guid Id, string Name, bool IsCurrent);
 
 public sealed record MonthlyRowDto(Guid StudentId, Guid EnrollmentId, string Matricule, string FullName, string PromotionCode,
     decimal Amount, decimal Paid, decimal Remaining, string Status, string? ReceiptNumber, DateOnly? PaidOn, string? GuardianPhone,
-    string? WhatsAppLink, string? SmsLink, string? Sponsorship = null)
+    string? WhatsAppLink, string? SmsLink, string? Sponsorship = null, Guid? FeeItemId = null)
 {
     public bool HasSponsorship => !string.IsNullOrEmpty(Sponsorship);
 }
 
 public sealed record MonthlyFollowUpDto(Guid PeriodId, string Period, IReadOnlyList<PeriodChoiceDto> Periods,
     int PaidCount, int UnpaidCount, int LateCount, int CoveredCount, decimal Expected, decimal Collected, decimal Remaining,
-    IReadOnlyList<MonthlyRowDto> Rows);
+    IReadOnlyList<MonthlyRowDto> Rows, int? ReceiptCount = null, int? PayingStudentsByReceiptDate = null, decimal? CashReceived = null);
 
 public sealed record TodayDto(DateOnly Date, int ReceiptsToday, decimal CollectedToday, decimal ExpensesToday, bool CashClosed,
     int AttendanceMarked, int SuspendedToday, IReadOnlyList<TodayPersonDto> Appointments, IReadOnlyList<TodayPersonDto> Birthdays);
