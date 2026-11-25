@@ -236,7 +236,8 @@ public sealed class LmdPlanningPage : PageViewModel
         var promotions = await Shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions");
         var promotion = promotions.First(p => p.Id.ToString() == SelectedPromotion.Value);
         var existing = promotion.Fees.Where(f => LmdInstallmentPlan.IsTranche(f.Label)).OrderBy(f => f.DueDate).ToList();
-        var symbol = Shell.Session?.CurrencySymbol ?? "$";
+        var school = await Shell.Api.GetAsync<SchoolDto>("api/etablissement");
+        var symbol = school.CurrencySymbol;
         var totalBefore = existing.Sum(f => f.Amount);
         var form = new FormViewModel($"Frais académiques — {promotion.Name}",
             "Montant annuel propre à cette promotion. Les premières tranches sont plus élevées ; les échéances sont réparties dans l’année. Les encaissements sont protégés.",
@@ -245,7 +246,7 @@ public sealed class LmdPlanningPage : PageViewModel
                 var total = f.Amount("annuel");
                 var count = int.Parse(f.ChoiceValue("tranches") ?? "3", System.Globalization.CultureInfo.InvariantCulture);
                 if (existing.Count > 0 && total == totalBefore && count == existing.Count) return true;
-                try { _ = LmdInstallmentPlan.Split(total, count); }
+                try { _ = LmdInstallmentPlan.Split(total, count, school.WholeAmountsOnly); }
                 catch (ArgumentException ex) { f.Find("annuel").Error = ex.Message; return false; }
                 await Shell.Api.SendAsync(HttpMethod.Put, $"api/etablissement/lmd/promotions/{promotion.Id}/tranches",
                     new { annualFee = new { annualTotal = total, count } });
@@ -266,7 +267,7 @@ public sealed class LmdPlanningPage : PageViewModel
                 annual.Hint = "Plan conservé : " + string.Join(" · ", existing.Select((f, i) => $"T{i + 1} : {f.Amount:0.##} {symbol}"));
                 return;
             }
-            try { annual.Hint = string.Join(" · ", LmdInstallmentPlan.Split(total, count).Select((a, i) => $"T{i + 1} : {a:0.##} {symbol}")); }
+            try { annual.Hint = string.Join(" · ", LmdInstallmentPlan.Split(total, count, school.WholeAmountsOnly).Select((a, i) => $"T{i + 1} : {a:0.##} {symbol}")); }
             catch (ArgumentException ex) { annual.Hint = ex.Message; }
         }
         form.Changed = _ => Preview();

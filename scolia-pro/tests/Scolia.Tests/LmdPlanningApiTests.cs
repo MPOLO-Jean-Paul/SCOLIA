@@ -27,6 +27,34 @@ public sealed class LmdPlanningApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Lmd_annual_fees_are_distinct_for_each_promotion()
+    {
+        var client = await InstallAsync();
+        async Task<System.Text.Json.JsonElement> Create(string code, decimal annual, int count) =>
+            await client.Post("/api/etablissement/promotions", new
+            {
+                code, name = code, level = 1, isActive = true, monthlyFee = 0m,
+                oneTimeFees = Array.Empty<object>(), lmdAnnualFee = new { annualTotal = annual, count }
+            }).Ok();
+        var a = await Create("LMD1", 600m, 3);
+        var b = await Create("LMD2", 900m, 2);
+        var aId = a.GetProperty("id").GetGuid();
+        var bId = b.GetProperty("id").GetGuid();
+        static decimal[] Amounts(System.Text.Json.JsonElement promotion) =>
+            promotion.GetProperty("fees").EnumerateArray().Select(x => x.GetProperty("amount").GetDecimal()).ToArray();
+        Assert.Equal(new[] { 300m, 200m, 100m }, Amounts(a));
+        Assert.Equal(new[] { 600m, 300m }, Amounts(b));
+        Assert.Equal(0m, a.GetProperty("monthlyFee").GetDecimal());
+        await client.Put($"/api/etablissement/lmd/promotions/{aId}/tranches", new
+        {
+            annualFee = new { annualTotal = 1200m, count = 3 }
+        }).Ok();
+        var list = await client.GetAsync("/api/etablissement/promotions").Ok();
+        Assert.Equal(new[] { 600m, 400m, 200m }, Amounts(list.EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == aId)));
+        Assert.Equal(new[] { 600m, 300m }, Amounts(list.EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == bId)));
+    }
+
+    [Fact]
     public async Task Lmd_can_define_faculty_department_pathway_semesters_and_ue_ec()
     {
         var client = await InstallAsync();

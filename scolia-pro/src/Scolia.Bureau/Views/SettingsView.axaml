@@ -498,7 +498,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                                        FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
                           </StackPanel>
                           <StackPanel Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="Mensualité" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                            <TextBlock Text="{Binding FeeLabel}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
                             <TextBlock Text="{Binding Monthly}" FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" />
                           </StackPanel>
                         </StackPanel>
@@ -528,7 +528,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <DataGridTextColumn infra:GridPriority.Level="2" Header="Section" Binding="{Binding Section}" Width="Auto" MinWidth="150" />
                 <DataGridTextColumn infra:GridPriority.Level="3" Header="Niveau" Binding="{Binding Level}" Width="Auto" MinWidth="99" />
                 <DataGridTextColumn infra:GridPriority.Level="2" Header="{infra:Terms 'Apprenants'}" Binding="{Binding Students}" Width="Auto" MinWidth="130" />
-                <DataGridTextColumn Header="Mensualité" Binding="{Binding Monthly}" Width="Auto" MinWidth="130" />
+                <DataGridTextColumn Header="Échéancier / mensualité" Binding="{Binding Monthly}" Width="Auto" MinWidth="130" />
                 <DataGridTextColumn infra:GridPriority.Level="3" Header="Total annuel" Binding="{Binding Annual}" Width="Auto" MinWidth="145" />
                 <DataGridTextColumn Header="Active" Binding="{Binding Active}" Width="Auto" MinWidth="99" />
               </DataGrid.Columns>

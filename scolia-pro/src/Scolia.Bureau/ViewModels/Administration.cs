@@ -295,7 +295,7 @@ public sealed record SectionRowVm(Guid Id, string Code, string Name, string Acti
 public sealed record FeeCategoryRowVm(Guid Id, string Name, string Amount, string DueDate, string Promotions, string Active, FeeCategoryDto Source);
 
 /// <summary>Promotion dans la liste des paramètres, avec ses frais.</summary>
-public sealed record PromotionRowVm(Guid Id, string Code, string Name, string Section, string Level, string Students, string Monthly, string Annual, string Active, PromotionDto Source);
+public sealed record PromotionRowVm(Guid Id, string Code, string Name, string Section, string Level, string Students, string Monthly, string Annual, string Active, PromotionDto Source, string FeeLabel = "Mensualité");
 
 /// <summary>Paramètres de l'établissement : identité, années scolaires, sections et promotions.</summary>
 /// <summary>Pastille d'une couleur d'accent : un clic l'applique, une coche marque la couleur choisie.</summary>
@@ -803,9 +803,10 @@ public sealed class SettingsPage : PageViewModel
         var promotions = await Shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions");
         var previouslySelectedId = SelectedPromotion?.Id;
         Promotions.Clear();
+        var university = Shell.Session?.InstitutionType == InstitutionProfiles.SuperieurLmd;
         foreach (var p in promotions)
             Promotions.Add(new PromotionRowVm(p.Id, p.Code, p.Name, p.SectionName ?? "—", $"{p.Level}", $"{p.StudentCount}",
-                Money(p.MonthlyFee), Money(p.AnnualTotal), p.IsActive ? "Oui" : "Non", p));
+                university ? $"{p.Fees.Count(f => LmdInstallmentPlan.IsTranche(f.Label))} tranche(s)" : Money(p.MonthlyFee), Money(p.AnnualTotal), p.IsActive ? "Oui" : "Non", p, university ? "Échéancier" : "Mensualité"));
         SelectedPromotion = Promotions.FirstOrDefault(p => p.Id == previouslySelectedId);
         Raise(nameof(HasPromotionRows));
         Raise(nameof(HasNoPromotions));
@@ -1198,6 +1199,9 @@ public sealed class SettingsPage : PageViewModel
             new ChoiceItem(c.Id.ToString(), c.Name)).ToList();
         // Université : chaque promotion appartient à une filière, un parcours ou une spécialité.
         var university = plan.InstitutionType == InstitutionProfiles.SuperieurLmd;
+        var school = university ? await shell.Api.GetAsync<SchoolDto>("api/etablissement") : null;
+        var wholeAmounts = school?.WholeAmountsOnly ?? false;
+        var currency = school?.CurrencySymbol ?? "$";
         var academicFees = existing?.Fees.Where(f => LmdInstallmentPlan.IsTranche(f.Label)).OrderBy(f => f.DueDate).ToList() ?? [];
         var annualTotal = academicFees.Sum(f => f.Amount);
         if (university) shown.RemoveAll(c => LmdInstallmentPlan.IsTranche(c.Name));
@@ -1226,7 +1230,7 @@ public sealed class SettingsPage : PageViewModel
                 newPlan = academicFees.Count == 0 || total != annualTotal || count != academicFees.Count;
                 if (newPlan)
                 {
-                    try { _ = LmdInstallmentPlan.Split(total, count); }
+                    try { _ = LmdInstallmentPlan.Split(total, count, wholeAmounts); }
                     catch (ArgumentException ex) { f.Find("annuel").Error = ex.Message; return false; }
                 }
                 else monthly = existing?.MonthlyFee ?? 0m;
@@ -1291,7 +1295,7 @@ public sealed class SettingsPage : PageViewModel
         if (university && !schoolIsPublic)
         {
             form.AddHeader("Frais académiques de la promotion", "La première tranche est la plus élevée. Les suivantes diminuent ; le total est conservé.");
-            form.Add("annuel", "Total annuel (USD)", FieldKind.Amount,
+            form.Add("annuel", $"Total annuel ({currency})", FieldKind.Amount,
                 annualTotal > 0 ? annualTotal.ToString("0.##", CultureInfo.InvariantCulture) : null, required: true);
             form.AddChoice("tranches", "Nombre de tranches", Enumerable.Range(1, LmdInstallmentPlan.MaxCount)
                 .Select(n => new ChoiceItem(n.ToString(CultureInfo.InvariantCulture), $"{n} tranche(s)")).ToList(),
@@ -1324,10 +1328,10 @@ public sealed class SettingsPage : PageViewModel
                 var count = int.Parse(form.ChoiceValue("tranches") ?? "3", CultureInfo.InvariantCulture);
                 if (academicFees.Count > 0 && total == annualTotal && count == academicFees.Count)
                 {
-                    annualField.Hint = "Plan existant conservé : " + string.Join(" · ", academicFees.Select((f, i) => $"T{i + 1} : {f.Amount:0.##} $"));
+                    annualField.Hint = "Plan existant conservé : " + string.Join(" · ", academicFees.Select((f, i) => $"T{i + 1} : {f.Amount:0.##} {currency}"));
                     return;
                 }
-                try { annualField.Hint = string.Join(" · ", LmdInstallmentPlan.Split(total, count).Select((a, i) => $"T{i + 1} : {a:0.##} $")); }
+                try { annualField.Hint = string.Join(" · ", LmdInstallmentPlan.Split(total, count, wholeAmounts).Select((a, i) => $"T{i + 1} : {a:0.##} {currency}")); }
                 catch (ArgumentException ex) { annualField.Hint = ex.Message; }
             }
             form.Changed = field => { previous?.Invoke(field); if (field.Key is "annuel" or "tranches") Preview(); };
