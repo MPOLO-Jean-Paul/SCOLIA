@@ -280,7 +280,7 @@
     <Grid x:Name="IosConnectionScreen" Classes="desktopconnect" IsVisible="False" Background="{DynamicResource BgBrush}">
       <ScrollViewer Classes="authpage" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
                     IsVisible="{Binding !PairingInProgress}">
-        <Grid Classes="authworkspace" ColumnDefinitions="Auto,Auto">
+        <Grid Classes="authworkspace" ColumnDefinitions="*,Auto">
         <StackPanel Classes="authbody">
           <Border Classes="authcard">
             <StackPanel Spacing="14">

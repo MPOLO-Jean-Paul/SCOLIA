@@ -41,8 +41,8 @@
 
   <!-- Composition commune Démarrer : volet informatif sur grand écran, formulaire sans cadre. -->
   <Style Selector="Grid.authworkspace">
-    <Setter Property="MaxWidth" Value="1000" />
-    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="MaxWidth" Value="820" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
   <Style Selector="Border.authrail">

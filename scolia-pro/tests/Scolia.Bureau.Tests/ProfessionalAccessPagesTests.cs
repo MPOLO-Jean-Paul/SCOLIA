@@ -96,6 +96,25 @@ public sealed class ProfessionalAccessPagesTests
     }
 
     [Fact]
+    public void Les_ecrans_avant_connexion_partagent_une_composition_Fluent_adaptative()
+    {
+        foreach (var (view, root) in new[] { ("LoginView.axaml", "IosLoginThemeScope"), ("ConnectionView.axaml", "IosConnectionThemeScope") })
+        {
+            var nodes = Rendered(view, root);
+            var layout = Assert.Single(nodes, e => Attr(e, "Classes") == "authworkspace");
+            Assert.Equal("*,Auto", Attr(layout, "ColumnDefinitions"));
+            Assert.Contains(layout.Descendants(), e => Attr(e, "Classes") == "authrail");
+        }
+        var login = Rendered("LoginView.axaml", "IosLoginThemeScope");
+        foreach (var name in new[] { "IosUserNameBox", "IosPasswordBox", "IosNewPasswordBox", "IosConfirmPasswordBox", "IosRecoveryCodeBox" })
+            Assert.Contains("withicon", Attr(Named(login, name), "Classes"), StringComparison.Ordinal);
+        Assert.Contains(login, e => Attr(e, "Classes") == "authinputicon");
+        var startup = Named(Elements("Views/MainView.axaml"), "OpeningHost");
+        Assert.DoesNotContain(startup.Descendants(), e => e.Name.LocalName == "LinearGradientBrush");
+        Assert.Contains(startup.Descendants(), e => Attr(e, "Background") == "{DynamicResource BgBrush}");
+    }
+
+    [Fact]
     public void La_connexion_est_courte_et_garde_ses_commandes()
     {
         var nodes = Rendered("LoginView.axaml", "IosLoginThemeScope");

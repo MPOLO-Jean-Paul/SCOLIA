@@ -335,7 +335,7 @@
     <ThemeVariantScope x:Name="IosLoginThemeScope" IsVisible="False">
     <ScrollViewer x:Name="IosLoginScroll" Classes="authpage" IsVisible="False"
                   HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-      <Grid Classes="authworkspace" ColumnDefinitions="Auto,Auto">
+      <Grid Classes="authworkspace" ColumnDefinitions="*,Auto">
       <StackPanel x:Name="IosLoginLayout" Classes="authbody">
         <Border x:Name="IosLoginCard" Classes="authcard">
           <StackPanel Spacing="14">
