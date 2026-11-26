@@ -48,7 +48,9 @@ def main():
     p.add_argument("--candidate", required=True, type=Path)
     p.add_argument("--aapt", required=True)
     p.add_argument("--apksigner", required=True)
-    p.add_argument("--require-flutter", action="store_true")
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument("--require-flutter", action="store_true")
+    mode.add_argument("--forbid-flutter", action="store_true")
     a = p.parse_args()
     previous, old_certs, old_version = identify(a.previous, a.aapt, a.apksigner)
     candidate, new_certs, new_version = identify(a.candidate, a.aapt, a.apksigner)
@@ -58,6 +60,12 @@ def main():
         raise ValueError("versionCode doit être strictement supérieur")
     if old_certs != new_certs:
         raise ValueError("Signature différente de l'APK officiel de référence")
+    if a.forbid_flutter:
+        with zipfile.ZipFile(a.candidate) as apk:
+            if any(n.startswith("assets/flutter_assets/") or
+                   re.fullmatch(r"lib/[^/]+/libflutter\.so", n)
+                   for n in apk.namelist()):
+                raise ValueError("Flutter interdit dans la version native de production")
     if a.require_flutter:
         with zipfile.ZipFile(a.candidate) as apk:
             files = set(apk.namelist())

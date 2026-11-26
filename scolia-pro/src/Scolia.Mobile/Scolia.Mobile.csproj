@@ -13,8 +13,8 @@
     <RootNamespace>Scolia.Mobile</RootNamespace>
     <ApplicationId>com.jpservices.scolia</ApplicationId>
     <ApplicationTitle>SCOLIA Phone</ApplicationTitle>
-    <ApplicationVersion>215</ApplicationVersion>
-    <ApplicationDisplayVersion>1.3.0</ApplicationDisplayVersion>
+    <ApplicationVersion>3630120</ApplicationVersion>
+    <ApplicationDisplayVersion>1.3.1</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <RuntimeIdentifiers>android-arm64;android-arm</RuntimeIdentifiers>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
@@ -71,6 +71,7 @@
     <DefineConstants>$(DefineConstants);SCOLIA_FLUTTER_UI</DefineConstants>
   </PropertyGroup>
   <Target Name="GuardOfficialFlutter" BeforeTargets="PrepareForBuild" Condition="'$(ScoliaFlutterOfficial)' == 'true'">
+    <Error Text="Flutter est suspendu en production : utiliser le paquet expérimental isolé." />
     <Error Condition="'$(ScoliaFlutterExperiment)' == 'true' Or '$(ScoliaFlutterEmulator)' == 'true'" Text="Le mode officiel ne peut pas utiliser le package expérimental." />
     <Error Condition="'$(Configuration)' != 'Release' Or '$(SCOLIA_KEYSTORE)' == '' Or '$(AndroidKeyStore)' != 'true'" Text="Flutter officiel exige la compilation Release et la clé de distribution existante." />
     <Error Condition="'$(ApplicationId)' != 'com.jpservices.scolia'" Text="Identifiant officiel SCOLIA modifié." />

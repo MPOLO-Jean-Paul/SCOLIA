@@ -27,7 +27,7 @@ class UpgradeGuardTests(unittest.TestCase):
             apk.writestr("assets/flutter_assets/AssetManifest.bin", b"fixture")
 
     def check(self, code=201, version="1.2.100", certificate=CERT,
-              package=guard.PACKAGE, require_flutter=True):
+              package=guard.PACKAGE, require_flutter=True, forbid_flutter=False):
         def fake(*args):
             old = args[-1] == str(self.old)
             if args[0] == "aapt":
@@ -42,6 +42,8 @@ class UpgradeGuardTests(unittest.TestCase):
                 "--candidate", str(self.new), "--aapt", "aapt", "--apksigner", "signer"]
         if require_flutter:
             argv.append("--require-flutter")
+        if forbid_flutter:
+            argv.append("--forbid-flutter")
         with patch.object(guard, "run", side_effect=fake), patch.object(guard, "verify_dex"), patch.object(sys, "argv", argv), redirect_stdout(io.StringIO()):
             guard.main()
 
@@ -87,6 +89,15 @@ class UpgradeGuardTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Flutter absent"):
             self.check()
         self.check(require_flutter=False)
+
+    def test_native_release_rejects_flutter(self):
+        with self.assertRaisesRegex(ValueError, "Flutter interdit"):
+            self.check(require_flutter=False, forbid_flutter=True)
+
+    def test_native_release_accepts_native_package(self):
+        with zipfile.ZipFile(self.new, "w") as apk:
+            apk.writestr("lib/arm64-v8a/libmonodroid.so", b"fixture")
+        self.check(require_flutter=False, forbid_flutter=True)
 
 if __name__ == "__main__":
     unittest.main()
