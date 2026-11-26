@@ -2,7 +2,16 @@
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Scolia.Bureau.Views.StudentDetailView">
-  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+  <UserControl.Styles>
+    <Style Selector="ScrollViewer#DetailScroll">
+      <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+    </Style>
+    <!-- Le cadre du téléphone possède déjà le défilement de la page. -->
+    <Style Selector="LayoutTransformControl.phone ScrollViewer#DetailScroll">
+      <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
+    </Style>
+  </UserControl.Styles>
+  <ScrollViewer x:Name="DetailScroll" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Spacing="16">
 
       <!-- Indicateurs du compte -->
