@@ -621,8 +621,11 @@
                         AutomationProperties.Name="Accueil" ToolTip.Tip="Ouvrir l’espace de travail">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
                     <Border Classes="workspaceglyph">
-                      <PathIcon Data="{x:Static infra:HomeGlyphs.Home}" Foreground="{DynamicResource AccentBrush}" />
-                    </Border>
+                        <Grid>
+                          <Border CornerRadius="7" Background="{DynamicResource AccentBrush}" Opacity="0.14" IsHitTestVisible="False" />
+                          <PathIcon Data="{x:Static infra:HomeGlyphs.Home}" Foreground="{DynamicResource AccentBrush}" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+                        </Grid>
+                      </Border>
                     <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                       <TextBlock Text="Accueil" FontWeight="SemiBold" TextWrapping="Wrap" />
                       <TextBlock Text="Espace de travail" Classes="muted" FontSize="{DynamicResource FsCaption}" TextWrapping="Wrap" />
@@ -638,8 +641,11 @@
                       <Button Classes="startentry" Command="{Binding Open}" AutomationProperties.Name="{Binding Title}" ToolTip.Tip="{Binding Description}">
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
                           <Border Classes="workspaceglyph">
-                            <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Foreground="{Binding Brush}" />
-                          </Border>
+                        <Grid>
+                          <Border CornerRadius="7" Background="{Binding Brush}" Opacity="0.14" IsHitTestVisible="False" />
+                          <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Foreground="{Binding Brush}" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+                        </Grid>
+                      </Border>
                           <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
                         </Grid>
                       </Button>
