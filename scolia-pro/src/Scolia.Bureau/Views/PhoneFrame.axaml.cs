@@ -41,6 +41,7 @@ public partial class PhoneFrame : UserControl
 
     private ShellViewModel? subscribedShell;
     private Func<Action>? captureScroll;
+    private long navigationRevision;
 
     private void AttachShell()
     {
@@ -58,10 +59,15 @@ public partial class PhoneFrame : UserControl
         {
             if (!shell.Phone) return () => { };
             var page = shell.PhonePage;
+            var revision = navigationRevision;
             var offset = PhoneScroll.Offset;
             return () => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                if (subscribedShell == shell && shell.PhonePage == page) PhoneScroll.Offset = offset;
+                // Même si l'utilisateur revient à la même page, une ancienne actualisation
+                // ne doit pas lui imposer la position d'une visite précédente.
+                if (ReferenceEquals(subscribedShell, shell) && ReferenceEquals(Shell, shell)
+                    && navigationRevision == revision && shell.PhonePage == page && shell.Phone
+                    && PhoneScroll.Offset != offset) PhoneScroll.Offset = offset;
             }, Avalonia.Threading.DispatcherPriority.Loaded);
         };
         shell.KeepScrollPosition = captureScroll;
@@ -69,6 +75,7 @@ public partial class PhoneFrame : UserControl
 
     private void ReleaseShell()
     {
+        navigationRevision++;
         if (subscribedShell is { } shell)
         {
             shell.Prefs.PropertyChanged -= OnPreferencesChanged;
@@ -111,7 +118,11 @@ public partial class PhoneFrame : UserControl
     private void OnShellChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
     {
         // Une nouvelle page s'ouvre en haut, sans toucher la position d'une page simplement actualisée.
-        if (args.PropertyName == nameof(ShellViewModel.PhonePage)) PhoneScroll.Offset = default;
+        if (args.PropertyName == nameof(ShellViewModel.PhonePage))
+        {
+            navigationRevision++;
+            if (PhoneScroll.Offset != default) PhoneScroll.Offset = default;
+        }
         if (args.PropertyName == nameof(ShellViewModel.PhoneTabs)) QueueAlignBottomTabs();
     }
 
