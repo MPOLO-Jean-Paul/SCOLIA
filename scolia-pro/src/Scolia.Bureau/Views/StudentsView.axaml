@@ -25,12 +25,9 @@
          Evite que les boutons de pagination recouvrent les champs aux petites largeurs. -->
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,12" Padding="14,12" CornerRadius="{DynamicResource RadiusCard}">
       <StackPanel Spacing="10">
-        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-          <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
-            <mi:MaterialIcon Kind="AccountGroupOutline" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" />
-            <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
-          </StackPanel>
-          <TextBlock Grid.Column="1" Text="{Binding PageText}" Classes="muted" VerticalAlignment="Center" />
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9" VerticalAlignment="Center">
+          <mi:MaterialIcon Kind="AccountGroupOutline" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" IsHitTestVisible="False" />
+          <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
         </Grid>
         <WrapPanel IsVisible="{Binding NotPhone}">
           <StackPanel Classes="field pagesearch">
@@ -99,15 +96,15 @@
               <Button Classes="ghost" Command="{Binding ClearFilters}" HorizontalAlignment="Stretch" Content="Effacer les filtres" />
           </StackPanel>
         </Expander>
-        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,0,2">
-          <TextBlock Text="{Binding PageText}" Classes="muted" VerticalAlignment="Center" Margin="0,0,8,0" />
-          <Button Classes="toolicon" Command="{Binding PreviousPage}" IsEnabled="{Binding CanPrevious}" ToolTip.Tip="Page précédente">
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4" VerticalAlignment="Center" Margin="0,0,0,2">
+          <TextBlock Text="{Binding PageText}" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,8,0" />
+          <Button Grid.Column="1" Classes="toolicon" Command="{Binding PreviousPage}" IsEnabled="{Binding CanPrevious}" ToolTip.Tip="Page précédente">
             <mi:MaterialIcon Kind="ChevronLeft" Width="20" Height="20" />
           </Button>
-          <Button Classes="toolicon" Command="{Binding NextPage}" IsEnabled="{Binding CanNext}" ToolTip.Tip="Page suivante">
+          <Button Grid.Column="2" Classes="toolicon" Command="{Binding NextPage}" IsEnabled="{Binding CanNext}" ToolTip.Tip="Page suivante">
             <mi:MaterialIcon Kind="ChevronRight" Width="20" Height="20" />
           </Button>
-        </StackPanel>
+        </Grid>
       </StackPanel>
     </Border>
     <!-- Android : cartes individuelles au lieu d'un tableau trop large pour un téléphone. -->
