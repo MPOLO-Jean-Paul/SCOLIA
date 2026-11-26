@@ -18,4 +18,15 @@ public sealed class AdaptiveTilesTests
     [InlineData(412, 1, 170, 4, true, 1)]
     public void Les_indicateurs_s_adaptent_aux_dimensions_et_aux_donnees(double width, int count, double minimum, int maximum, bool phone, int expected)
         => Assert.Equal(expected, AdaptiveTiles.ColumnsFor(width, count, minimum, maximum, phone));
+
+    [Theory]
+    [InlineData(320, 1)]
+    [InlineData(412, 1)]
+    [InlineData(679, 1)]
+    [InlineData(680, 2)]
+    [InlineData(1079, 2)]
+    [InlineData(1080, 3)]
+    public void Les_cartes_metier_ne_sont_pas_comprimees_sur_telephone(double width, int expected)
+        => Assert.Equal(expected, PhoneCards.ColumnsForWidth(width));
+
 }
