@@ -79,6 +79,27 @@
       <Setter Property="BorderThickness" Value="0,0,1,0" />
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     </Style>
+    <!-- Accueil : volet plat des paramètres Windows, sans cartes imbriquées. -->
+    <Style Selector="Border#DesktopSidebar.homepane">
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
+    </Style>
+    <Style Selector="Border#DesktopSidebar.homepane Border.navaccordion">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Border#DesktopSidebar.homepane Button.navitem">
+      <Setter Property="MinHeight" Value="38" />
+      <Setter Property="Margin" Value="0,1" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="Border#DesktopSidebar.homepane Button.navcategory">
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="Border#DesktopSidebar.homepane Border.appicon">
+      <Setter Property="CornerRadius" Value="5" />
+    </Style>
     <Style Selector="Border#DesktopSidebar.startpane">
       <Setter Property="Width" Value="176" />
       <Setter Property="Margin" Value="0" />
@@ -512,15 +533,24 @@
         </Grid>
       </Border>
 
-      <Border x:Name="DesktopSidebar" Grid.Row="2" Grid.Column="0" Classes="sidebar" Classes.startpane="{Binding IsStartPage}" IsVisible="{Binding SidebarShown}">
+      <Border x:Name="DesktopSidebar" Grid.Row="2" Grid.Column="0" Classes="sidebar" Classes.startpane="{Binding IsStartPage}" Classes.homepane="{Binding IsHomePage}" IsVisible="{Binding SidebarShown}">
         <DockPanel>
           <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="10,12,10,6" IsVisible="{Binding !IsStartPage}">
             <!-- En tête du volet : le logo SCOLIA et le nom de l'établissement. Le logo de l'école est pour les documents. -->
-            <Grid ColumnDefinitions="Auto,*" Margin="4,0,4,4">
+            <Grid ColumnDefinitions="Auto,*" Margin="4,0,4,4" IsVisible="{Binding !IsHomePage}">
               <Image Source="{DynamicResource ScoliaMark}" Width="32" Height="32" Margin="0,0,10,0" VerticalAlignment="Center" />
               <StackPanel Grid.Column="1" VerticalAlignment="Center">
                 <TextBlock Text="{Binding SchoolTitle}" ToolTip.Tip="{Binding SchoolTitle}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
                 <TextBlock Text="{Binding SchoolYearLine}" ToolTip.Tip="{Binding SchoolYearLine}" Classes="muted" FontSize="{DynamicResource FsCaption}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </Grid>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="4,0,4,4" IsVisible="{Binding IsHomePage}">
+              <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource AccentSoftBrush}">
+                <PathIcon Data="{x:Static infra:AuthGlyphs.Person}" Width="24" Height="24" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding AccountName}" />
+                <TextBlock Text="{Binding SchoolTitle}" Classes="muted" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding SchoolTitle}" />
               </StackPanel>
             </Grid>
           </StackPanel>
