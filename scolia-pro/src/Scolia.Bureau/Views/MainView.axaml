@@ -118,6 +118,13 @@
       <Setter Property="BorderThickness" Value="0,0,1,0" />
       <Setter Property="Background" Value="{DynamicResource BgBrush}" />
     </Style>
+    <Style Selector="Button.startentry Border.workspaceglyph">
+      <Setter Property="Width" Value="36" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="CornerRadius" Value="9" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
     <Style Selector="Button.startentry">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
@@ -596,17 +603,30 @@
               </Grid>
             </Button>
           </StackPanel>
+          <Border DockPanel.Dock="Bottom" IsVisible="{Binding IsStartPage}" Margin="12,8,12,14" Padding="9,11" CornerRadius="8" Background="{DynamicResource GroupBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <Image Source="{DynamicResource ScoliaMark}" Width="24" Height="24" VerticalAlignment="Top" />
+              <StackPanel Grid.Column="1" Spacing="3">
+                <TextBlock Text="SCOLIA Pro" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="Espace de travail" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsCaption}" />
+              </StackPanel>
+            </Grid>
+          </Border>
           <Grid>
             <!-- Démarrer est un espace de lancement, et non le menu métier complet. -->
             <ScrollViewer IsVisible="{Binding IsStartPage}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-              <StackPanel Spacing="4" Margin="10,12">
+              <StackPanel Spacing="5" Margin="10,12">
+                <TextBlock Text="Démarrer" FontWeight="SemiBold" FontSize="18" Margin="8,4,8,8" />
                 <Button x:Name="OpenHomeButton" Classes="startentry" Command="{Binding StartNavigation.OpenHome}"
                         AutomationProperties.Name="Accueil" ToolTip.Tip="Ouvrir l’espace de travail">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
                     <Border Classes="workspaceglyph">
                       <PathIcon Data="{x:Static infra:HomeGlyphs.Home}" Foreground="{DynamicResource AccentBrush}" />
                     </Border>
-                    <TextBlock Grid.Column="1" Text="Accueil" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                      <TextBlock Text="Accueil" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock Text="Espace de travail" Classes="muted" FontSize="{DynamicResource FsCaption}" TextWrapping="Wrap" />
+                    </StackPanel>
                   </Grid>
                 </Button>
                 <ItemsControl ItemsSource="{Binding StartNavigation.NewActions}" HorizontalAlignment="Stretch">
