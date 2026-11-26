@@ -104,6 +104,16 @@ public sealed class InstallerAndHomePolishTests
         }
         var shell = XDocument.Load(Source("src/Scolia.Bureau/Views/MainView.axaml"));
         Assert.Contains(shell.Descendants(), e => e.Attributes().Any(a => a.Name.LocalName == "Classes.homepane" && a.Value == "{Binding IsHomePage}"));
+        var search = Assert.Single(shell.Descendants(), e => e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "HomeSidebarSearch"));
+        Assert.Equal("{Binding SearchCommand}", (string?)search.Attribute("Command"));
+        Assert.Equal("{Binding IsHomePage}", (string?)search.Attribute("IsVisible"));
+        var actionStyle = Assert.Single(home.Descendants(), e => (string?)e.Attribute("Selector") == "Button.pbiAction");
+        Assert.Contains(actionStyle.Elements(), e => (string?)e.Attribute("Property") == "MinHeight" && (string?)e.Attribute("Value") == "120");
+        foreach (var title in panels.Descendants().Where(e => (string?)e.Attribute("Text") is "{Binding ShortTitle}" or "{Binding Title}"))
+        {
+            Assert.Equal("Wrap", (string?)title.Attribute("TextWrapping"));
+            Assert.Equal("2", (string?)title.Attribute("MaxLines"));
+        }
     }
 
     [Fact]
