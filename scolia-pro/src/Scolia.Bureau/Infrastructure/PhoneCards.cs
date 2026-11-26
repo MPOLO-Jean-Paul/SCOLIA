@@ -57,10 +57,17 @@ public static class PhoneCards
         var list = new ItemsControl { ItemTemplate = new FuncDataTemplate<object>((_, _) => Card(grid)) };
         UseColumns(list, 1);
         // Une tablette range les cartes sur deux ou trois colonnes ; un téléphone les garde sur une seule.
+        var resizePending = false;
         list.SizeChanged += (_, e) =>
         {
-            var columns = e.NewSize.Width >= ThreeColumnsFrom ? 3 : e.NewSize.Width >= TwoColumnsFrom ? 2 : 1;
-            if (columns != (list.Tag as int? ?? 1)) Avalonia.Threading.Dispatcher.UIThread.Post(() => UseColumns(list, columns));
+            if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) < 0.5 || resizePending) return;
+            resizePending = true;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                resizePending = false;
+                var columns = ColumnsForWidth(list.Bounds.Width);
+                if (columns != (list.Tag as int? ?? 1)) UseColumns(list, columns);
+            });
         };
         // Les cartes s'affichent par paquets : les premières tout de suite, les suivantes à la demande, en bas de la liste.
         // Une longue liste s'ouvre ainsi vite même sur un téléphone modeste, sans liste virtualisée qui ferait sauter la page.
@@ -111,6 +118,8 @@ public static class PhoneCards
     private const int QuickCards = 8;
     private const int StepCards = 8;
 
+    public static int ColumnsForWidth(double width) => width >= ThreeColumnsFrom ? 3 : width >= TwoColumnsFrom ? 2 : 1;
+
     private static void UseColumns(ItemsControl list, int columns)
     {
         list.Tag = columns;
@@ -139,6 +148,7 @@ public static class PhoneCards
 
         var body = new StackPanel { Spacing = 3 };
         var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), MinWidth = 0 };
+        if (amount is not null) Adaptive.SetStackBelow(head, 300);
         if (title is not null)
         {
             var main = Value(grid, title, emphasis: true);
@@ -173,6 +183,18 @@ public static class PhoneCards
             line.Children.Add(label);
             line.Children.Add(value);
             body.Children.Add(line);
+            // Une saisie doit disposer de toute la largeur, pas du reste après son étiquette.
+            // Cela concerne notamment les promotions cibles, les notes et les formulaires éditables.
+            if (value is TextBox or ComboBox or CalendarDatePicker ||
+                value.GetLogicalDescendants().Any(c => c is TextBox or ComboBox or CalendarDatePicker))
+            {
+                Grid.SetRow(value, 1);
+                Grid.SetColumn(value, 0);
+                Grid.SetColumnSpan(value, 2);
+                value.HorizontalAlignment = HorizontalAlignment.Stretch;
+                value.Margin = new Thickness(0, 4, 0, 2);
+                continue;
+            }
             // Une barre de progression (recouvrement…) se lit sous son étiquette, sur toute la largeur de la carte :
             // à droite de l'étiquette, elle n'aurait pas la place et chevaucherait le texte.
             if (value.GetLogicalDescendants().Prepend(value).OfType<ProgressBar>().Any())
