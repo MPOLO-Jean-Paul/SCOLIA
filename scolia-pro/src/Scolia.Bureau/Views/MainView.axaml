@@ -553,6 +553,16 @@
                 <TextBlock Text="{Binding SchoolTitle}" Classes="muted" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding SchoolTitle}" />
               </StackPanel>
             </Grid>
+            <Button x:Name="HomeSidebarSearch" IsVisible="{Binding IsHomePage}" Command="{Binding SearchCommand}"
+                    AutomationProperties.Name="Rechercher dans SCOLIA" ToolTip.Tip="{Binding GlobalSearchTip}"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" MinHeight="36" Padding="10,6"
+                    Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource FieldLineBrush}" BorderThickness="1" CornerRadius="6">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                <TextBlock Text="Rechercher dans SCOLIA" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+                <mi:MaterialIcon Grid.Column="1" Kind="Magnify" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+              </Grid>
+            </Button>
           </StackPanel>
           <Grid>
             <!-- Démarrer est un espace de lancement, et non le menu métier complet. -->
