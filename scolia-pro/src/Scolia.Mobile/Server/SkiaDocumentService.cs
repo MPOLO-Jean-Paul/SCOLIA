@@ -115,7 +115,7 @@ public sealed class SkiaDocumentService : IDocumentService
             y = top;
             var mode = $"Mode de paiement : {d.Method}" + (string.IsNullOrWhiteSpace(d.Reference) ? string.Empty : $" · Réf. {d.Reference}");
             y += f.DrawText(mode, S(8.5f), f.Left, y, leftW);
-            y += f.DrawText($"Reste à payer pour l'année : {M(d.BalanceAfter, cur)}", S(8.5f, true, d.BalanceAfter > 0 ? Amber : Green), f.Left, y, leftW);
+            y += f.DrawText($"{(d.BalanceAtIssue ? "Reste à payer à l’émission" : "Solde actuel (ancien reçu, recalculé)")} : {M(d.BalanceAfter, cur)}", S(8.5f, true, d.BalanceAfter > 0 ? Amber : Green), f.Left, y, leftW);
             y += 14;
             y += f.DrawText($"Le caissier : {d.Cashier}", S(8.5f), f.Left, y, leftW);
             y += 18;
