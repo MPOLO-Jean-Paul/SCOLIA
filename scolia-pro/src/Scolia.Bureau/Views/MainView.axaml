@@ -713,21 +713,21 @@
       <!-- Bannière : encaissement ou sauvegarde faits sur un autre poste. Elle apparaît, se lit, s'en va seule. -->
       <Border x:Name="AlertBanner" Classes="alertbanner" IsVisible="{Binding HasBanner}" MaxWidth="560">
         <Grid ColumnDefinitions="*,Auto">
-          <Button Classes="bannerbody" Command="{Binding OpenBanner}" ToolTip.Tip="Ouvrir">
+          <Button Classes="bannerbody" Command="{Binding OpenBanner}" AutomationProperties.Name="{Binding Banner.Title}" ToolTip.Tip="{Binding Banner.Text}">
             <Grid ColumnDefinitions="Auto,*">
               <Border Width="40" Height="40" CornerRadius="20" Background="{Binding BannerBrush}" Margin="0,0,12,0" VerticalAlignment="Top">
                 <mi:MaterialIcon Kind="{Binding Banner.Icon}" Width="22" Height="22" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
               <StackPanel Grid.Column="1" Spacing="2">
                 <TextBlock Text="{Binding Banner.Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding Banner.Text}" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding Banner.Text}" ToolTip.Tip="{Binding Banner.Text}" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
                 <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap">
                   <Run Text="{Binding Banner.Origin, Mode=OneWay}" /><Run Text=" · à l'instant" />
                 </TextBlock>
               </StackPanel>
             </Grid>
           </Button>
-          <Button Grid.Column="1" Classes="closex" Command="{Binding DismissBanner}" ToolTip.Tip="Masquer" VerticalAlignment="Top" Margin="0,8,8,0">
+          <Button Grid.Column="1" Classes="closex" Command="{Binding DismissBanner}" AutomationProperties.Name="Masquer la notification" ToolTip.Tip="Masquer" VerticalAlignment="Top" Margin="0,8,8,0">
             <mi:MaterialIcon Kind="Close" />
           </Button>
         </Grid>
@@ -758,7 +758,7 @@
         <Border Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="22,16" BoxShadow="0 8 28 0 #33000000">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <mi:MaterialIcon Kind="Loading" Classes="spin" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" />
-            <TextBlock Text="Traitement en cours…" VerticalAlignment="Center" FontWeight="SemiBold" />
+            <TextBlock Text="Traitement en cours…" VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap" />
           </StackPanel>
         </Border>
       </Border>

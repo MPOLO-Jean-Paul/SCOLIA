@@ -17,7 +17,7 @@
           <ItemsControl ItemsSource="{Binding Recent}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Button Classes="searchrow" Command="{Binding Use}" ToolTip.Tip="Reprendre cette recherche">
+                <Button Classes="searchrow" Command="{Binding Use}" AutomationProperties.Name="{Binding Text}" ToolTip.Tip="{Binding Text}">
                   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                     <Border Width="34" Height="34" CornerRadius="10" Background="{DynamicResource GroupBrush}" VerticalAlignment="Center">
                       <mi:MaterialIcon Kind="History" Width="18" Height="18"
@@ -40,7 +40,7 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Button Classes="searchtile" Command="{Binding Open}" ToolTip.Tip="{Binding Label}">
+                <Button Classes="searchtile" Command="{Binding Open}" AutomationProperties.Name="{Binding Label}" ToolTip.Tip="{Binding Label}">
                   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                     <Border Width="36" Height="36" CornerRadius="11" Background="{Binding Brush}" VerticalAlignment="Center">
                       <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20"
@@ -64,19 +64,19 @@
         <ItemsControl ItemsSource="{Binding Results}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Button Classes="searchrow" Command="{Binding Open}" MinHeight="66">
+              <Button Classes="searchrow" Command="{Binding Open}" AutomationProperties.Name="{Binding Title}" ToolTip.Tip="{Binding Title}" MinHeight="66">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11">
                   <Border Width="38" Height="38" CornerRadius="11" Background="{Binding Brush}" VerticalAlignment="Center">
                     <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" Foreground="White"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7">
                       <Border Classes="typepill" VerticalAlignment="Top">
                         <TextBlock Text="{Binding Type}" FontSize="11" FontWeight="Medium" />
                       </Border>
-                      <TextBlock Grid.Column="1" Text="{Binding Subtitle}" Classes="muted" FontSize="12"
+                      <TextBlock Grid.Column="1" Text="{Binding Subtitle}" ToolTip.Tip="{Binding Subtitle}" Classes="muted" FontSize="12"
                                  TextWrapping="Wrap" MaxLines="2" VerticalAlignment="Center" />
                     </Grid>
                   </StackPanel>

@@ -422,7 +422,7 @@
             <ItemsControl ItemsSource="{Binding Sheet.Items}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Button Classes="sheetitem" Classes.danger="{Binding Danger}" Classes.emphasis="{Binding Emphasis}" Command="{Binding Command}" HorizontalContentAlignment="Stretch">
+                  <Button Classes="sheetitem" Classes.danger="{Binding Danger}" Classes.emphasis="{Binding Emphasis}" Command="{Binding Command}" AutomationProperties.Name="{Binding Label}" HorizontalContentAlignment="Stretch">
                     <Grid ColumnDefinitions="Auto,*,Auto">
                       <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" Foreground="{Binding Brush}" Margin="0,0,14,0" />
                       <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1" Margin="0,6">
@@ -436,7 +436,7 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </ScrollViewer>
-          <Button x:Name="CancelSheetButton" Grid.Row="4" Classes="sheetitem" Click="OnSheetCancel" HorizontalContentAlignment="Center" Margin="0,6,0,0" Background="{DynamicResource GroupBrush}">
+          <Button x:Name="CancelSheetButton" AutomationProperties.Name="Annuler" Grid.Row="4" Classes="sheetitem" Click="OnSheetCancel" HorizontalContentAlignment="Center" Margin="0,6,0,0" Background="{DynamicResource GroupBrush}">
             <TextBlock Text="Annuler" FontWeight="SemiBold" />
           </Button>
         </Grid>

@@ -11,15 +11,15 @@
         <WrapPanel>
           <StackPanel Classes="field">
             <TextBlock Text="Du" Classes="fieldlabel" />
-            <CalendarDatePicker PlaceholderText="Début" SelectedDateFormat="Short" Width="170" SelectedDate="{Binding From}" />
+            <CalendarDatePicker PlaceholderText="Début" SelectedDateFormat="Short" Width="170" SelectedDate="{Binding From}" AutomationProperties.Name="Date de début du rapport" />
           </StackPanel>
           <StackPanel Classes="field">
             <TextBlock Text="Au" Classes="fieldlabel" />
-            <CalendarDatePicker PlaceholderText="Fin" SelectedDateFormat="Short" Width="170" SelectedDate="{Binding To}" />
+            <CalendarDatePicker PlaceholderText="Fin" SelectedDateFormat="Short" Width="170" SelectedDate="{Binding To}" AutomationProperties.Name="Date de fin du rapport" />
           </StackPanel>
           <StackPanel Classes="field">
             <TextBlock Text="Promotion" Classes="fieldlabel" />
-            <ComboBox Width="280" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+            <ComboBox Width="280" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" AutomationProperties.Name="Promotion du rapport" />
           </StackPanel>
           
         </WrapPanel>
@@ -30,13 +30,13 @@
         <ItemsControl.ItemTemplate>
           <DataTemplate>
             <StackPanel Spacing="6" Margin="0,0,0,16">
-              <TextBlock Text="{Binding Title}" Classes="section" />
+              <TextBlock Text="{Binding Title}" TextWrapping="Wrap" Classes="section" />
               <Border Classes="card" Padding="0">
                 <ItemsControl ItemsSource="{Binding Reports}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
                       <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="16,10">
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14" infra:Adaptive.StackBelow="560">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14" RowSpacing="8" infra:Adaptive.StackBelow="560">
                           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                             <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24" Foreground="{Binding Brush}" VerticalAlignment="Top" />
                             <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
@@ -50,7 +50,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                               <DataTemplate>
-                                <Button Command="{Binding Run}" Content="{Binding Label}" MinWidth="72" Margin="0,0,6,4" />
+                                <Button Command="{Binding Run}" AutomationProperties.Name="{Binding Label}" Content="{Binding Label}" MinWidth="72" Margin="0,0,6,4" />
                               </DataTemplate>
                             </ItemsControl.ItemTemplate>
                           </ItemsControl>
