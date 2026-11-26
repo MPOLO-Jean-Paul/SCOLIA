@@ -486,6 +486,7 @@ public sealed class StudentDetailPage : PageViewModel
         title = Format.FullName(student.LastName, student.MiddleName, student.FirstName);
         subtitle = Format.Line(Format.CodeLabel(student.Matricule), enrollment?.PromotionCode ?? "sans promotion", Labels.Status(enrollment?.Status ?? ""));
         Raise(nameof(Title));
+        Raise(nameof(Heading));
         Raise(nameof(Subtitle));
 
         Details.Clear();
@@ -506,13 +507,17 @@ public sealed class StudentDetailPage : PageViewModel
         Receipts.Clear();
         Sponsorships.Clear();
         Totals.Clear();
+        whatsAppLink = null;
         if (enrollment is null)
         {
             Totals.Add(new KpiVm("Compte", "Sans inscription", "Inscrivez " + Shell.StudentTerms.Elided + " pour ouvrir son compte.", ThemeBrush.Get("ToneNeutral"), MaterialIconKind.AccountOffOutline));
             return;
         }
 
-        var account = await Shell.Api.GetAsync<AccountDto>($"api/inscriptions/{enrollment.Id}/compte");
+        var accountTask = Shell.Api.GetAsync<AccountDto>($"api/inscriptions/{enrollment.Id}/compte");
+        var sponsorshipsTask = Shell.Api.GetAsync<List<SponsorshipDto>>($"api/inscriptions/{enrollment.Id}/prises-en-charge");
+        await Task.WhenAll(accountTask, sponsorshipsTask);
+        var account = await accountTask;
         whatsAppLink = account.WhatsAppLink;
         Totals.Add(new KpiVm("Solde à payer", Money(account.Balance), $"Total net de l'année {Money(account.TotalNet)}", ThemeBrush.Get(account.Balance > 0 ? "ToneOrange" : "ToneGreen"), MaterialIconKind.WalletOutline));
         Totals.Add(new KpiVm("Reste exigible", Money(account.Overdue), $"{account.OverdueCount} échéance(s) en retard", ThemeBrush.Get(account.Overdue > 0 ? "ToneRed" : "ToneGreen"), MaterialIconKind.AlertCircleOutline));
@@ -526,7 +531,7 @@ public sealed class StudentDetailPage : PageViewModel
         foreach (var r in account.Receipts)
             Receipts.Add(new ReceiptLineVm(r.Id, r.Number, Format.Date(r.Date), Money(r.Amount), Labels.Method(r.Method)));
 
-        var sponsorships = await Shell.Api.GetAsync<List<SponsorshipDto>>($"api/inscriptions/{enrollment.Id}/prises-en-charge");
+        var sponsorships = await sponsorshipsTask;
         foreach (var s in sponsorships)
             Sponsorships.Add(new SponsorshipRow(s.Id, s.SponsorName, s.Reason, Format.Date(s.EffectiveFrom), Money(s.CoveredTotal),
                 s.IsActive ? "Active" : "Terminée", s.IsActive, s.Type));
