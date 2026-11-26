@@ -145,7 +145,7 @@ public sealed record SchoolHeader(string Name, string? Motto, string? Address, s
 public sealed record ReceiptDocument(
     SchoolHeader School, string Number, DateOnly Date, string StudentName, string Matricule, string Promotion, string AcademicYear,
     decimal Amount, string AmountInWords, string Method, string? Reference, string? PayerName, string Cashier,
-    IReadOnlyList<(string Label, decimal Amount)> Allocations, decimal BalanceAfter, string VerificationUrl, bool Cancelled, string? CancellationReason);
+    IReadOnlyList<(string Label, decimal Amount)> Allocations, decimal BalanceAfter, string VerificationUrl, bool Cancelled, string? CancellationReason, bool BalanceAtIssue = true);
 
 public sealed record StatementDocument(
     SchoolHeader School, string StudentName, string Matricule, string Promotion, string AcademicYear, DateOnly AsOf,
