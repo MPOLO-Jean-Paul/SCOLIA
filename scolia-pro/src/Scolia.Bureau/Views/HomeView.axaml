@@ -12,7 +12,7 @@
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="CornerRadius" Value="8" />
     </Style>
     <Style Selector="Border.pbiInfo">
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
@@ -20,7 +20,7 @@
       <Setter Property="Padding" Value="11,9" />
     </Style>
     <Style Selector="TextBlock.pbiTitle">
-      <Setter Property="FontSize" Value="23" />
+      <Setter Property="FontSize" Value="28" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     </Style>
@@ -40,9 +40,9 @@
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="4" />
-      <Setter Property="Padding" Value="14,12" />
-      <Setter Property="MinHeight" Value="172" />
-      <Setter Property="Margin" Value="5,4" />
+      <Setter Property="Padding" Value="10,9" />
+      <Setter Property="MinHeight" Value="78" />
+      <Setter Property="Margin" Value="3,3" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -60,7 +60,7 @@
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Padding" Value="15,13" />
-      <Setter Property="MinHeight" Value="124" />
+      <Setter Property="MinHeight" Value="112" />
       <Setter Property="Margin" Value="5,4" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Stretch" />
@@ -98,16 +98,21 @@
   </UserControl.Styles>
 
   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-    <StackPanel Spacing="14" Margin="4,2,7,20">
+    <StackPanel Spacing="12" Margin="8,6,12,20">
       <!-- Bandeau de contexte, comme l'accueil récent de Power BI Desktop : sobre, dense et utile. -->
       <Grid x:Name="WelcomeLayout" ColumnDefinitions="*,Auto" ColumnSpacing="12"
             infra:Adaptive.StackBelow="610">
         <StackPanel Spacing="5">
-          <TextBlock Text="ESPACE DE TRAVAIL" FontSize="11" FontWeight="SemiBold"
-                     Foreground="{DynamicResource AccentBrush}" />
           <TextBlock Text="Accueil" Classes="pbiTitle" />
-          <TextBlock Text="{Binding HeaderSchoolLine}" Classes="pbiMuted"
-                     TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+            <Border Width="52" Height="52" CornerRadius="8" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
+              <Image Source="{DynamicResource ScoliaMark}" Width="34" Height="34" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+              <TextBlock Text="{Binding HeaderSchoolLine}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding AccountContextLine}" Classes="pbiMuted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
         </StackPanel>
         <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center"
               HorizontalAlignment="Right" MaxWidth="320">
@@ -125,42 +130,6 @@
           </Border>
         </Grid>
       </Grid>
-
-      <!-- Actions et outils : même grille, même gabarit, mêmes espacements. -->
-      <StackPanel Spacing="8" IsVisible="{Binding !!Tools.Count}">
-        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-          <TextBlock Text="Actions rapides" Classes="pbiSection" VerticalAlignment="Center" />
-          <Button Grid.Column="1" Classes="link" Content="{Binding AllToolsLabel}" Command="{Binding ShowAllTools}"
-                  ToolTip.Tip="Afficher les fonctionnalités autorisées du compte" />
-        </Grid>
-        <ItemsControl x:Name="WelcomeQuickActions" ItemsSource="{Binding QuickActions}">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <infra:AdaptiveTiles MinItemWidth="240" MaxColumns="2" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate>
-                  <Button Classes="pbiAction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding ShortTitle}">
-                    <Grid RowDefinitions="64,Auto,Auto" RowSpacing="7">
-                      <Grid ClipToBounds="True">
-                        <Border Background="{Binding Brush}" Opacity="0.12" CornerRadius="2" />
-                        <Ellipse Fill="{Binding Brush}" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        <mi:MaterialIcon Kind="{Binding Icon}" Width="25" Height="25" Foreground="White"
-                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
-                      </Grid>
-                      <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                        <TextBlock Text="{Binding ShortTitle}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" />
-                        <mi:MaterialIcon Grid.Column="1" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" />
-                      </Grid>
-                      <TextBlock Grid.Row="2" Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap"
-                                 MaxLines="2" TextTrimming="CharacterEllipsis" />
-                    </Grid>
-                  </Button>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </StackPanel>
 
       <!-- Une seule bande de session, indépendante de la grille des cartes. -->
       <Border Classes="pbiPanel" Padding="14">
@@ -190,6 +159,75 @@
           </Border>
         </Grid>
       </Border>
+
+      <!-- Accueil des paramètres Windows 11 : deux panneaux parallèles, une colonne si la fenêtre est étroite. -->
+      <Grid x:Name="HomeSettingsPanels" ColumnDefinitions="*,*" ColumnSpacing="10" infra:Adaptive.StackBelow="820">
+      <!-- Actions et outils : même grille, même gabarit, mêmes espacements. -->
+      <Border Classes="pbiPanel" Padding="14" IsVisible="{Binding !!Tools.Count}">
+      <StackPanel Spacing="8">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <TextBlock Text="Actions rapides" Classes="pbiSection" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Classes="link" Content="{Binding AllToolsLabel}" Command="{Binding ShowAllTools}"
+                  ToolTip.Tip="Afficher les fonctionnalités autorisées du compte" />
+        </Grid>
+        <ItemsControl x:Name="WelcomeQuickActions" ItemsSource="{Binding QuickActions}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <infra:AdaptiveTiles MinItemWidth="240" MaxColumns="2" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                  <Button Classes="pbiAction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding ShortTitle}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                      <Border Width="32" Height="32" CornerRadius="6" Background="{DynamicResource GroupBrush}" VerticalAlignment="Center">
+                        <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Width="22" Height="22" Foreground="{Binding Brush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding ShortTitle}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" ToolTip.Tip="{Binding ShortTitle}" />
+                        <TextBlock Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                      <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="14" Height="14" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                    </Grid>
+                  </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+      </Border>
+      <!-- Raccourcis recommandés : aucune illustration géante, vocabulaire métier conservé. -->
+      <Border Grid.Column="1" Classes="pbiPanel" Padding="14" IsVisible="{Binding !!MoreTools.Count}">
+      <StackPanel Spacing="8">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="Recommandé pour vous" Classes="pbiSection" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Text="Outils métier" Classes="pbiMuted" VerticalAlignment="Center" />
+        </Grid>
+        <ItemsControl x:Name="FeatureCards" ItemsSource="{Binding MoreTools}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <infra:AdaptiveTiles MinItemWidth="240" MaxColumns="2" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Button Classes="pbiAction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding Title}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                      <Border Width="32" Height="32" CornerRadius="6" Background="{DynamicResource GroupBrush}" VerticalAlignment="Center">
+                        <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Width="22" Height="22" Foreground="{Binding Brush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" ToolTip.Tip="{Binding Title}" />
+                        <TextBlock Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                      <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="14" Height="14" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                    </Grid>
+                  </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+      </Border>
+      </Grid>
 
       <Border Classes="pbiInfo" IsVisible="{Binding OverviewUnavailable}">
         <TextBlock Text="Les indicateurs ne sont pas disponibles pour le moment. Vos outils restent accessibles." Classes="pbiMuted" TextWrapping="Wrap" />
@@ -224,41 +262,6 @@
                   <TextBlock Grid.Row="2" Text="{Binding Hint}" Classes="pbiMuted" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" ToolTip.Tip="{Binding Hint}" />
                 </Grid>
               </Button>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </StackPanel>
-
-      <!-- Raccourcis recommandés : aucune illustration géante, vocabulaire métier conservé. -->
-      <StackPanel Spacing="10">
-        <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Text="Recommandé pour vous" Classes="pbiSection" VerticalAlignment="Center" />
-          <TextBlock Grid.Column="1" Text="Outils métier" Classes="pbiMuted" VerticalAlignment="Center" />
-        </Grid>
-        <ItemsControl x:Name="FeatureCards" ItemsSource="{Binding MoreTools}">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <infra:AdaptiveTiles MinItemWidth="240" MaxColumns="2" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate>
-              <Button Classes="pbiAction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding Title}">
-                    <Grid RowDefinitions="64,Auto,Auto" RowSpacing="7">
-                      <Grid ClipToBounds="True">
-                        <Border Background="{Binding Brush}" Opacity="0.12" CornerRadius="2" />
-                        <Ellipse Fill="{Binding Brush}" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        <mi:MaterialIcon Kind="{Binding Icon}" Width="25" Height="25" Foreground="White"
-                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
-                      </Grid>
-                      <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                        <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" />
-                        <mi:MaterialIcon Grid.Column="1" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" />
-                      </Grid>
-                      <TextBlock Grid.Row="2" Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap"
-                                 MaxLines="2" TextTrimming="CharacterEllipsis" />
-                    </Grid>
-                  </Button>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
