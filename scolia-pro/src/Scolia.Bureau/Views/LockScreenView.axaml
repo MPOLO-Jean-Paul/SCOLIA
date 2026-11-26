@@ -87,7 +87,7 @@
                      Text="{Binding Code}" PasswordChar="•" RevealPassword="{Binding ShowCode}"
                      PlaceholderText="Code PIN ou mot de passe" MaxLength="128" MinHeight="52"
                      TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
-                     IsEnabled="{Binding NotBusy}" />
+                     IsEnabled="{Binding NotBusy}" Padding="42,0,86,0" />
             <mi:MaterialIcon Classes="inicon" Kind="LockOutline" />
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="4" Margin="0,0,5,0">
               <Button Classes="fieldicon" Command="{Binding ToggleCode}"
@@ -187,7 +187,7 @@
                          PasswordChar="•" RevealPassword="{Binding ShowCode}" MaxLength="128"
                          TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                          PlaceholderText="Mot de passe ou code PIN"
-                         IsEnabled="{Binding NotBusy}" AutomationProperties.Name="Code de déverrouillage" />
+                         IsEnabled="{Binding NotBusy}" AutomationProperties.Name="Code de déverrouillage" Padding="46,0,54,0" />
                 <mi:MaterialIcon Classes="authinputicon" Kind="LockOutline" />
                 <Button Classes="autheye" Command="{Binding ToggleCode}" IsEnabled="{Binding NotBusy}"
                         ToolTip.Tip="Afficher ou masquer le code">

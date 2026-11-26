@@ -68,8 +68,6 @@
     <Setter Property="HorizontalAlignment" Value="Left" /><Setter Property="VerticalAlignment" Value="Center" />
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /><Setter Property="IsHitTestVisible" Value="False" />
   </Style>
-  <Style Selector="TextBox.authfield.withicon"><Setter Property="Padding" Value="40,0,14,0" /></Style>
-  <Style Selector="TextBox.authfield.withicon.witheye"><Setter Property="Padding" Value="40,0,48,0" /></Style>
   <!-- Connexion compacte : pictogramme ancré à gauche, zone de texte réservée,
        œil tactile à droite ; aucune icône ne reçoit la saisie. -->
   <Style Selector="ScrollViewer.authpage:not(.wide) Grid.authinput mi|MaterialIcon.authinputicon">
@@ -83,7 +81,7 @@
     <Setter Property="HorizontalContentAlignment" Value="Left" />
   </Style>
   <Style Selector="ScrollViewer.authpage:not(.wide) Grid.authinput TextBox.authfield.withicon.witheye">
-    <Setter Property="Padding" Value="46,0,52,0" />
+    <Setter Property="Padding" Value="46,0,54,0" />
   </Style>
   <Style Selector="Grid.authinput:focus-within mi|MaterialIcon.authinputicon">
     <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
@@ -147,7 +145,10 @@
     <Setter Property="MinHeight" Value="48" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
-  <Style Selector="TextBox.authfield.witheye"><Setter Property="Padding" Value="14,0,48,0" /></Style>
+  <Style Selector="TextBox.authfield.witheye"><Setter Property="Padding" Value="14,0,54,0" /></Style>
+  <!-- Après le style de base : même réserve en mode large et compact. -->
+  <Style Selector="TextBox.authfield.withicon"><Setter Property="Padding" Value="46,0,14,0" /></Style>
+  <Style Selector="TextBox.authfield.withicon.witheye"><Setter Property="Padding" Value="46,0,54,0" /></Style>
   <Style Selector="TextBox.authfield /template/ Border#PART_BorderElement">
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
