@@ -26,7 +26,7 @@
           <TextBlock Text="{Binding TodayTitle}" Classes="heading" Margin="16,12,16,8" />
           <ItemsControl ItemsSource="{Binding TodayStats}" Margin="16,0,16,14">
             <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
+              <ItemsPanelTemplate><infra:AdaptiveTiles MinItemWidth="170" /></ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate>
