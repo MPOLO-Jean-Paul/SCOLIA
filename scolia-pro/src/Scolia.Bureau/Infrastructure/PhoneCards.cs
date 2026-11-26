@@ -138,10 +138,11 @@ public static class PhoneCards
         var fields = others.Where(c => c != title && c != amount && c != subtitle).ToList();
 
         var body = new StackPanel { Spacing = 3 };
-        var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), MinWidth = 0 };
         if (title is not null)
         {
             var main = Value(grid, title, emphasis: true);
+            main.MinWidth = 0;
             head.Children.Add(main);
         }
         if (amount is not null)
@@ -162,7 +163,7 @@ public static class PhoneCards
         foreach (var column in fields)
         {
             var line = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), RowDefinitions = new RowDefinitions("Auto,Auto"), Margin = new Thickness(0, 2, 0, 0) };
-            var label = new TextBlock { Text = HeaderText(column), TextWrapping = TextWrapping.Wrap, MaxWidth = 150, VerticalAlignment = VerticalAlignment.Top };
+            var label = new TextBlock { Text = HeaderText(column), TextWrapping = TextWrapping.Wrap, MinWidth = 0, MaxWidth = 150, VerticalAlignment = VerticalAlignment.Top };
             label.Classes.Add("phonelabel");
             var value = Value(grid, column, emphasis: false);
             value.HorizontalAlignment = HorizontalAlignment.Right;
@@ -205,7 +206,8 @@ public static class PhoneCards
         var page = PageOf(grid);
         if (page is { RowActions.Count: > 0 })
         {
-            var more = new Button { Content = new MaterialIcon { Kind = MaterialIconKind.DotsHorizontal, Width = 20, Height = 20 }, VerticalAlignment = VerticalAlignment.Top };
+            var more = new Button { Content = new MaterialIcon { Kind = MaterialIconKind.DotsHorizontal, Width = 20, Height = 20, IsHitTestVisible = false }, VerticalAlignment = VerticalAlignment.Top };
+            ToolTip.SetTip(more, "Actions de la ligne");
             more.Classes.Add("phonemore");
             more.Click += (_, e) =>
             {
@@ -284,7 +286,7 @@ public static class PhoneCards
             }
             case DataGridTextColumn text:
             {
-                var block = new TextBlock { TextWrapping = TextWrapping.Wrap };
+                var block = new TextBlock { TextWrapping = TextWrapping.Wrap, MinWidth = 0 };
                 if (emphasis) block.Classes.Add("phonetitle");
                 if (text.Binding is { } b) block.Bind(TextBlock.TextProperty, b);
                 return block;
