@@ -13,7 +13,12 @@
     <!-- Windows 11 avec Mica confirmé : fond de page et bandeau translucides, cartes et volet opaques. -->
     <Style Selector="views|MainView"><Setter Property="Background" Value="{DynamicResource BgBrush}" /></Style>
     <Style Selector="views|MainView.mica"><Setter Property="Background" Value="{DynamicResource MicaBgBrush}" /></Style>
-    <Style Selector="views|MainView.mica Border.titlerow:not(.onbrand)"><Setter Property="Background" Value="{DynamicResource MicaHeaderBrush}" /></Style>
+    <Style Selector="views|MainView.mica Border.titlerow:not(.authchrome):not(.lockchrome)"><Setter Property="Background" Value="{DynamicResource MicaHeaderBrush}" /></Style>
+    <Style Selector="views|MainView.mica Border.titlerow.authchrome,
+                     views|MainView.mica views|LoginView Border.authbackdrop">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="views|MainView.mica views|LoginView ScrollViewer.authpage"><Setter Property="Background" Value="Transparent" /></Style>
     <Style Selector="views|MainView.mica Border.appheader"><Setter Property="Background" Value="{DynamicResource MicaHeaderBrush}" /></Style>
     <!-- Clavier ouvert sur le téléphone : la barre d'onglets du bas se retire pour laisser voir la saisie -->
     <Style Selector="views|MainView.keyboard Border.phonetabs"><Setter Property="MaxHeight" Value="0" /><Setter Property="ClipToBounds" Value="True" /></Style>
@@ -299,8 +304,9 @@
 
   <!-- Toute l'interface suit la taille de la fenêtre : la mise en page de 1280 × 720, agrandie ou réduite d'un bloc -->
   <Grid x:Name="RootContent" RowDefinitions="Auto,*">
-  <!-- Barre de titre de Windows dessinée par SCOLIA : bleu ciel comme le bandeau de la page, les trois boutons de la fenêtre à droite -->
-  <Border x:Name="TitleRow" Classes="titlerow" Classes.onbrand="{Binding ShowLogin}" IsVisible="False" chrome:WindowDecorationProperties.ElementRole="TitleBar">
+  <!-- Titre intégré quand l'hôte étend le contenu dans la zone de décoration. -->
+  <Border x:Name="TitleRow" Classes="titlerow" Classes.authchrome="{Binding ShowLogin}" Classes.lockchrome="{Binding ShowLockScreen}"
+          IsVisible="False" chrome:WindowDecorationProperties.ElementRole="TitleBar">
     <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="8" Margin="12,0,150,0" VerticalAlignment="Center" IsHitTestVisible="False">
       <Image Source="{DynamicResource ScoliaMark}" Width="16" Height="16" VerticalAlignment="Center" />
       <TextBlock Grid.Column="1" Text="SCOLIA Pro" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="NoWrap" />

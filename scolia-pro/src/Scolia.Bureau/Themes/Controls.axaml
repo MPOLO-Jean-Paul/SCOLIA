@@ -1665,17 +1665,15 @@
   <Style Selector="Border.titlerow TextBlock.muted">
     <Setter Property="Foreground" Value="{DynamicResource HeaderMutedBrush}" />
   </Style>
-  <!-- Connexion : la barre de titre prend le bleu du bandeau de l'établissement, juste en dessous -->
-  <Style Selector="Border.titlerow.onbrand">
-    <Setter Property="Background">
-      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-        <GradientStop Offset="0" Color="#1565E0" />
-        <GradientStop Offset="1" Color="#0C47B0" />
-      </LinearGradientBrush>
-    </Setter>
+  <!-- Écrans d'accès : prolonger le fond du formulaire dans le titre. -->
+  <Style Selector="Border.titlerow.authchrome, Border.titlerow.lockchrome">
+    <Setter Property="Background" Value="{DynamicResource BgBrush}" />
   </Style>
-  <Style Selector="Border.titlerow.onbrand TextBlock">
-    <Setter Property="Foreground" Value="White" />
+  <Style Selector="Border.titlerow.authchrome TextBlock, Border.titlerow.lockchrome TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+  </Style>
+  <Style Selector="Border.titlerow.lockchrome TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
   </Style>
   <Style Selector="Border.appheader">
     <Setter Property="Background" Value="{DynamicResource HeaderBrush}" />

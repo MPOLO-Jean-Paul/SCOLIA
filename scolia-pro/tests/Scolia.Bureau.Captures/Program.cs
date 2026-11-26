@@ -191,6 +191,13 @@ if (!Preferences.MobileLayout && Environment.GetEnvironmentVariable("SCOLIA_BARR
 // Emblème de connexion : compte de démonstration, aucune authentification ni appel à un établissement.
 if (args.Length > 3 && args[3] == "identite-connexion")
 {
+    // Le format bureau doit rester celui demandé même si l'hôte headless
+    // applique initialement la fenêtre compacte réservée aux autres systèmes.
+    if (!Preferences.MobileLayout)
+    {
+        window.Width = int.Parse(taille[0]);
+        window.Height = int.Parse(taille[1]);
+    }
     shell.Login.SchoolName = "Institut technique médical de démonstration";
     shell.Login.RememberAccount("secretariat");
     Save(window, "01-connexion-compte-reconnu.png");
