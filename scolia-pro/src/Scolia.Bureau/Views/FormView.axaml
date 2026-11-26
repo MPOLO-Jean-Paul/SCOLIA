@@ -130,7 +130,7 @@
                                      Foreground="{DynamicResource TextBrush}" />
                   </Button>
                 </Panel>
-                <TextBox Classes="w11" Classes.invalid="{Binding HasError}" AutomationProperties.Name="{Binding Caption}" IsVisible="{Binding IsMultiline}" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84" />
+                <TextBox Classes="w11" Classes.invalid="{Binding HasError}" AutomationProperties.Name="{Binding Caption}" IsVisible="{Binding IsMultiline}" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" MinHeight="84" />
                 <CalendarDatePicker Classes="w11" Classes.invalid="{Binding HasError}" AutomationProperties.Name="{Binding Caption}" PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" IsVisible="{Binding IsDay}" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" />
                 <ComboBox Classes="w11" Classes.invalid="{Binding HasError}" AutomationProperties.Name="{Binding Caption}" IsVisible="{Binding IsChoice}" ItemsSource="{Binding Options}" SelectedItem="{Binding Choice}" HorizontalAlignment="Stretch" />
                 <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding HasHint}" TextWrapping="Wrap" />
