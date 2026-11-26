@@ -23,7 +23,7 @@ public sealed class HomeAndBatchUsabilityTests
     {
         var doc = XDocument.Load(ViewFile("Views/HomeView.axaml"));
         var nodes = doc.Descendants().ToArray();
-        Assert.Contains(nodes, x => x.Name.LocalName == "UniformGrid"
+        Assert.Contains(nodes, x => x.Name.LocalName == "AdaptiveTiles"
             && x.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "190"));
         Assert.Contains(nodes, x => x.Name.LocalName == "ItemsControl"
             && (string?)x.Attribute("ItemsSource") == "{Binding QuickActions}");
@@ -48,8 +48,8 @@ public sealed class HomeAndBatchUsabilityTests
         Assert.Equal(2, lists.Length);
         foreach (var list in lists)
         {
-            var grid = Assert.Single(list.Descendants(), e => e.Name.LocalName == "UniformGrid");
-            Assert.Equal("2", (string?)grid.Attribute("Columns"));
+            var grid = Assert.Single(list.Descendants(), e => e.Name.LocalName == "AdaptiveTiles");
+            Assert.Equal("2", (string?)grid.Attribute("MaxColumns"));
             Assert.Contains(grid.Attributes(), a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "240");
             Assert.Contains(list.Descendants(), e => e.Name.LocalName == "Button" && (string?)e.Attribute("Classes") == "pbiAction");
         }
