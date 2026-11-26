@@ -11,7 +11,7 @@
     </Style>
   </UserControl.Styles>
   <!-- À propos : présentation de SCOLIA, puis l'éditeur et le développeur, comme dans la version 79 -->
-  <Border Classes="card" infra:Adaptive.FitDialog="True" Width="560" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True" BoxShadow="0 12 40 0 #33000000">
+  <Border Classes="dialogsurface" infra:Adaptive.FitDialog="True" Width="560">
     <!-- Sur un écran bas, la fiche défile au lieu d'être coupée -->
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
     <StackPanel>
@@ -22,7 +22,7 @@
           <TextBlock Text="{Binding Tagline}" Foreground="{DynamicResource Text2Brush}" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
           <Border Classes="chip" HorizontalAlignment="Center" Padding="10,3" Margin="0,4,0,0"><TextBlock Text="{Binding VersionLine}" /></Border>
         </StackPanel>
-        <Button Classes="closex" Command="{Binding Close}" HorizontalAlignment="Right" Margin="0,14,14,0"><mi:MaterialIcon Kind="Close" /></Button>
+        <Button Classes="closex" Command="{Binding Close}" HorizontalAlignment="Right" Margin="0,14,14,0"><PathIcon Data="{x:Static infra:HomeGlyphs.Dismiss}" /></Button>
       </Grid>
 
       <TextBlock Text="{Binding Description}" TextWrapping="Wrap" TextAlignment="Center" Classes="muted" Margin="32,10,32,12" />

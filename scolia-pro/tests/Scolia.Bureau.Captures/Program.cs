@@ -19,6 +19,7 @@ var dark = (args.Length > 3 && args[3] == "sombre") || Environment.GetEnvironmen
 Directory.CreateDirectory(output);
 
 Scolia.Bureau.Program.BuildAvaloniaApp()
+    .WithInterFont()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
     .SetupWithoutStarting();
 
@@ -190,6 +191,13 @@ if (!Preferences.MobileLayout && Environment.GetEnvironmentVariable("SCOLIA_BARR
 // Emblème de connexion : compte de démonstration, aucune authentification ni appel à un établissement.
 if (args.Length > 3 && args[3] == "identite-connexion")
 {
+    // Le format bureau doit rester celui demandé même si l'hôte headless
+    // applique initialement la fenêtre compacte réservée aux autres systèmes.
+    if (!Preferences.MobileLayout)
+    {
+        window.Width = int.Parse(taille[0]);
+        window.Height = int.Parse(taille[1]);
+    }
     shell.Login.SchoolName = "Institut technique médical de démonstration";
     shell.Login.RememberAccount("secretariat");
     Save(window, "01-connexion-compte-reconnu.png");
@@ -228,11 +236,34 @@ if (args.Length > 3 && args[3] == "identite-connexion")
     VerifyAuthFieldGeometry("nouveau compte");
     if (combined.IsEffectivelyVisible || !standalone.IsEffectivelyVisible)
         throw new InvalidOperationException("Le nouveau compte doit afficher le logo seul.");
+
+    using var fixture = new LayoutServer();
+    api.Retarget(fixture.Address);
+    ShellViewModel.MinimumOpening = TimeSpan.Zero;
+    Wait(shell.OpenSessionAsync(new SessionDto(Guid.NewGuid(), "secretariat", "Amina Kabeya",
+        "Secretaire", "Secrétariat", [], false,
+        "Institut technique médical de démonstration", "ITM Demo", "2026-2027", "FC", "+243")));
+    shell.Sync.Stop();
+    shell.LockNow();
+    Save(window, "04-session-verrouillee.png");
+    VerifyAuthFieldGeometry("verrouillage");
+    var lockCode = (TextBox)NamedIdentity("IosLockCode");
+    if (!shell.ShowLockScreen || !lockCode.IsEffectivelyVisible || lockCode.RevealPassword)
+        throw new InvalidOperationException("La session verrouillée doit afficher le champ masqué.");
+    shell.LockScreen.ToggleCode.Execute(null);
+    Dispatcher.UIThread.RunJobs();
+    if (!lockCode.RevealPassword)
+        throw new InvalidOperationException("La commande de visibilité du code doit mettre à jour le champ.");
+    shell.LockScreen.ToggleCode.Execute(null);
+    Dispatcher.UIThread.RunJobs();
+    if (lockCode.RevealPassword)
+        throw new InvalidOperationException("Le code doit pouvoir être masqué de nouveau.");
+
     void VerifyAuthFieldGeometry(string stage)
     {
         var fields = window.GetVisualDescendants().OfType<Grid>()
             .Where(g => g.IsEffectivelyVisible && g.Classes.Contains("authinput")).ToArray();
-        if (fields.Length == 0) throw new InvalidOperationException($"Aucun champ de connexion visible : {stage}.");
+        if (fields.Length == 0) throw new InvalidOperationException($"Aucun champ d'accès visible : {stage}.");
         foreach (var grid in fields)
         {
             var field = grid.Children.OfType<TextBox>().Single();
@@ -2075,7 +2106,12 @@ if (args.Length > 3 && args[3] == "accueil-powerbi")
     prefs.Theme = "dark";
     Save(window, "demarrer-sombre.png");
     prefs.Theme = "light";
-    var homeSizes = Preferences.MobileLayout ? new[] { (320, 568), (360, 740), (412, 892) } : new[] { (1024, 720), (1366, 768), (1600, 900), (1920, 1080) };
+    window.Width = Preferences.MobileLayout ? 320 : 760;
+    window.Height = Preferences.MobileLayout ? 568 : 520;
+    Save(window, "demarrer-compact.png");
+    var homeSizes = Preferences.MobileLayout
+        ? new[] { (320, 568), (360, 740), (412, 892) }
+        : new[] { (760, 520), (1024, 720), (1366, 768), (1600, 900), (1920, 1080) };
     foreach (var (width, height) in homeSizes)
     {
         window.Width = width;
@@ -2089,12 +2125,17 @@ if (args.Length > 3 && args[3] == "accueil-powerbi")
         Save(window, $"accueil-powerbi-{width}x{height}-clair.png");
         if (!Preferences.MobileLayout)
         {
-            var cards = window.GetVisualDescendants().OfType<Button>()
+            var panels = window.GetVisualDescendants().OfType<Grid>()
+                .Single(g => g.IsEffectivelyVisible && g.Name == "HomeSettingsPanels");
+            var threshold = Adaptive.GetStackBelow(panels);
+            if (panels.Bounds.Width < threshold && panels.ColumnDefinitions.Count != 1 ||
+                panels.Bounds.Width >= threshold + 8 && panels.ColumnDefinitions.Count != 2)
+                throw new InvalidOperationException($"Accueil {width}x{height} : les panneaux n'adoptent pas la disposition adaptée.");
+            var rows = panels.GetVisualDescendants().OfType<Button>()
                 .Where(b => b.IsEffectivelyVisible && b.Classes.Contains("pbiAction")).ToList();
-            if (cards.Count != home.QuickActions.Count + home.MoreTools.Count ||
-                cards.Any(b => Math.Abs(b.Bounds.Width - cards[0].Bounds.Width) > 2 ||
-                               Math.Abs(b.Bounds.Height - cards[0].Bounds.Height) > 2))
-                throw new InvalidOperationException($"Accueil {width}x{height} : les cartes d'action n'ont pas le même gabarit.");
+            if (rows.Count != home.QuickActions.Count + home.MoreTools.Count ||
+                rows.Any(row => Math.Abs(row.Bounds.Width - rows[0].Bounds.Width) > 2 || row.Bounds.Height < row.MinHeight))
+                throw new InvalidOperationException($"Accueil {width}x{height} : les lignes d'action n'ont pas le même gabarit.");
 
             var header = window.GetVisualDescendants().OfType<TextBlock>()
                 .FirstOrDefault(t => t.Name == "RecentAmountHeader" && t.IsEffectivelyVisible);
@@ -2118,7 +2159,49 @@ if (args.Length > 3 && args[3] == "accueil-powerbi")
     Wait(shell.Open(() => new HomePage(shell)));
     window.UpdateLayout();
     Save(window, $"accueil-powerbi-{window.Width}x{window.Height}-sombre.png");
-    Console.WriteLine("OK : accueil Power BI Windows 11, commandes, indicateurs et thèmes vérifiés.");
+    if (!Preferences.MobileLayout)
+    {
+        var search = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "HomeSidebarSearch");
+        var headerSearch = window.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "HeaderFinderBar");
+        if (search.IsEffectivelyVisible == headerSearch.IsEffectivelyVisible)
+            throw new InvalidOperationException("Accueil : un seul accès à la recherche générale doit être affiché.");
+        if (search.IsEffectivelyVisible) search.Command!.Execute(null);
+        else shell.ShowSearch();
+    }
+    else shell.ShowSearch();
+    if (shell.Dialog is not SearchViewModel)
+        throw new InvalidOperationException("L'accès à la recherche doit ouvrir l'interface de recherche.");
+    SaveWorkspaceDialog("fenetre-recherche.png");
+    shell.CloseDialog();
+    shell.ShowAppInfo();
+    SaveWorkspaceDialog("fenetre-informations.png");
+    shell.CloseDialog();
+
+    window.Width = Preferences.MobileLayout ? 320 : 760;
+    window.Height = Preferences.MobileLayout ? 568 : 520;
+    var workspaceForm = new FormViewModel("Inscrire un apprenant", "Institut technique médical", _ => Task.FromResult(true));
+    workspaceForm.Fields.Add(new FormField("nom", "Nom de famille", FieldKind.Text, true, "Nom figurant sur le dossier."));
+    workspaceForm.Fields.Add(new FormField("postnom", "Post-nom", FieldKind.Text, true, null));
+    workspaceForm.Fields.Add(new FormField("prenom", "Prénom", FieldKind.Text, true, null));
+    var completion = shell.Ask(workspaceForm);
+    SaveWorkspaceDialog("fenetre-formulaire.png");
+    workspaceForm.Cancel.Execute(null);
+    Wait(completion);
+    if (shell.HasDialog)
+        throw new InvalidOperationException("La fermeture du formulaire doit rendre l'accueil accessible.");
+
+    void SaveWorkspaceDialog(string name)
+    {
+        Save(window, name);
+        var surface = window.GetVisualDescendants().OfType<Border>()
+            .Single(b => b.IsEffectivelyVisible && b.Classes.Contains("dialogsurface"));
+        if (surface.TranslatePoint(default, window) is not { } origin || origin.X < -1 || origin.Y < -1 ||
+            origin.X + surface.Bounds.Width > window.Bounds.Width + 1 ||
+            origin.Y + surface.Bounds.Height > window.Bounds.Height + 1)
+            throw new InvalidOperationException($"La fenêtre {name} dépasse l'espace disponible.");
+    }
+
+    Console.WriteLine("OK : Accueil, Démarrer, commandes et fenêtres de dialogue.");
     shell.Sync.Stop();
     window.Close();
     return;

@@ -24,6 +24,41 @@ public sealed class MobileIosAuthenticationViewsTests
         node.Attributes().Any(a => (a.Name.LocalName == key || a.Name.LocalName.EndsWith("." + key, StringComparison.Ordinal)) && a.Value == value);
 
     [Fact]
+    public void Les_trois_ecrans_utilisent_les_vecteurs_Fluent_et_conservent_les_reserves_de_saisie()
+    {
+        foreach (var (file, scroll, fields) in new[]
+        {
+            ("LoginView.axaml", "IosLoginScroll", new[] { "IosUserNameBox", "IosPasswordBox", "IosNewPasswordBox", "IosConfirmPasswordBox", "IosRecoveryCodeBox" }),
+            ("LockScreenView.axaml", "IosLockScroll", new[] { "IosLockCode" }),
+        })
+        {
+            var active = Assert.Single(Elements(file), e => Attribute(e, "Name", scroll));
+            var nodes = active.Descendants().ToArray();
+            foreach (var name in fields)
+            {
+                var field = Assert.Single(nodes, e => Attribute(e, "Name", name));
+                var grid = field.Parent!;
+                Assert.Contains(grid.Elements(), e => e.Name.LocalName == "PathIcon" && Attribute(e, "Classes", "authinputicon"));
+                var secret = name != "IosUserNameBox";
+                Assert.True(Attribute(field, "Padding", secret ? "46,0,54,0" : "46,0,14,0"));
+                if (secret)
+                {
+                    Assert.True(Attribute(field, "IsSensitive", "True"));
+                    Assert.Contains(grid.Descendants(), e => e.Name.LocalName == "PathIcon" &&
+                        e.Attributes().Any(a => a.Value.Contains("AuthGlyphs.EyeConverter")));
+                }
+            }
+            Assert.Contains(nodes, e => e.Name.LocalName == "PathIcon" && Attribute(e, "Data", "{x:Static infra:AuthGlyphs.Fingerprint}"));
+        }
+        // La géométrie est construite par le moteur Avalonia lors des captures UI.
+        // Ce test sans plateforme vérifie les références distinctes dans le code source.
+        var glyphs = File.ReadAllText(Source("Infrastructure/AuthGlyphs.cs"));
+        foreach (var name in new[] { "Person", "Lock", "Fingerprint", "Eye", "EyeOff" })
+            Assert.Contains("Geometry " + name + " ", glyphs);
+        Assert.Contains("? EyeOff : Eye", glyphs);
+    }
+
+    [Fact]
     public void La_reprise_iOS_conserve_le_code_et_la_biometrie()
     {
         var nodes = Elements("LockScreenView.axaml");

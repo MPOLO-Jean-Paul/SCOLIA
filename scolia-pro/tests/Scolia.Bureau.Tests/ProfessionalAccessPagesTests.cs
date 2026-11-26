@@ -308,7 +308,8 @@ public sealed class ProfessionalAccessPagesTests
         Assert.DoesNotContain("Binding OpenHome", start, StringComparison.Ordinal);
         Assert.Contains("Binding Recommended", start, StringComparison.Ordinal);
         Assert.Contains("Binding RecentTools", start, StringComparison.Ordinal);
-        Assert.Contains("RecommendationScroll", start, StringComparison.Ordinal);
+        Assert.Contains("AdaptiveTiles MinItemWidth=\"226\" MaxColumns=\"2\"", start, StringComparison.Ordinal);
+        Assert.DoesNotContain("HorizontalScrollBarVisibility=\"Auto\"", start, StringComparison.Ordinal);
         Assert.Contains("Classes=\"startentry\"", frame, StringComparison.Ordinal);
         Assert.Contains("ShowWorkspaceTab", frame, StringComparison.Ordinal);
         var launch = File.ReadAllText(Source("ViewModels/Start.cs"));

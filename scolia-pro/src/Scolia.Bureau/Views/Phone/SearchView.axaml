@@ -3,20 +3,18 @@
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.Phone.SearchView">
-  <!-- Recherche de l'accueil, façon Google et Play Store : tout l'écran, le champ en haut avec le clavier ouvert,
-       le micro pour dicter, les recherches récentes et les accès rapides tant que rien n'est saisi, puis les résultats en lignes.
-       C'est le modèle de toutes les recherches de SCOLIA. -->
-  <Grid RowDefinitions="Auto,*" Background="{DynamicResource BgBrush}">
+  <Border Classes="dialogsurface">
+  <Grid RowDefinitions="Auto,*">
     <!-- Barre : retour, saisie, effacer, micro -->
     <Border Classes="googlebar">
       <Grid ColumnDefinitions="Auto,*,Auto,Auto">
         <Button Classes="baricon" Command="{Binding Close}" AutomationProperties.Name="Fermer la recherche" ToolTip.Tip="Retour">
-          <mi:MaterialIcon Kind="ArrowLeft" />
+          <PathIcon Data="{x:Static infra:AuthGlyphs.Back}" Width="20" Height="20" />
         </Button>
         <TextBox x:Name="QueryBox" AutomationProperties.Name="{Binding Placeholder}" Grid.Column="1" Classes="searchfield" MinWidth="0" Text="{Binding Query}" PlaceholderText="{Binding Placeholder}"
                  TextInputOptions.ReturnKeyType="Search" />
         <Button Grid.Column="2" Classes="baricon" Command="{Binding ClearQuery}" AutomationProperties.Name="Effacer la recherche" IsVisible="{Binding HasQuery}" ToolTip.Tip="Effacer">
-          <mi:MaterialIcon Kind="Close" />
+          <PathIcon Data="{x:Static infra:HomeGlyphs.Dismiss}" Width="20" Height="20" />
         </Button>
         <Button x:Name="MicButton" Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding Listening}" Command="{Binding Listen}"
                 IsVisible="{Binding VoiceAvailable}" ToolTip.Tip="Rechercher à la voix">
@@ -113,4 +111,5 @@
       </StackPanel>
     </ScrollViewer>
   </Grid>
+  </Border>
 </UserControl>

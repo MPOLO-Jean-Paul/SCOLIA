@@ -55,7 +55,7 @@ public sealed class HomeAndBatchUsabilityTests
         Assert.Contains(nodes, x => x.Name.LocalName == "ItemsControl"
             && (string?)x.Attribute("ItemsSource") == "{Binding AllToolGroups}");
         Assert.Contains(nodes, x => x.Name.LocalName == "Grid"
-            && x.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "820"));
+            && x.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "700"));
         Assert.Contains(nodes, x => x.Name.LocalName == "Button"
             && (string?)x.Attribute("Command") == "{Binding Network}");
         Assert.Contains(nodes, x => x.Name.LocalName == "TextBlock"
@@ -71,15 +71,14 @@ public sealed class HomeAndBatchUsabilityTests
         Assert.Equal(2, lists.Length);
         foreach (var list in lists)
         {
-            var grid = Assert.Single(list.Descendants(), e => e.Name.LocalName == "AdaptiveTiles");
-            Assert.Equal("2", (string?)grid.Attribute("MaxColumns"));
-            Assert.Contains(grid.Attributes(), a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "240");
+            var panel = Assert.Single(list.Descendants(), e => e.Name.LocalName == "ItemsPanelTemplate");
+            Assert.Equal("StackPanel", Assert.Single(panel.Elements()).Name.LocalName);
             Assert.Contains(list.Descendants(), e => e.Name.LocalName == "Button" && (string?)e.Attribute("Classes") == "pbiAction");
         }
         var main = XDocument.Load(ViewFile("Views/MainView.axaml")).Descendants().ToArray();
         var style = Assert.Single(main, e => e.Name.LocalName == "Style" && (string?)e.Attribute("Selector") == "Button.startentry");
-        Assert.Contains(style.Elements(), e => (string?)e.Attribute("Property") == "Height" && (string?)e.Attribute("Value") == "96");
-        Assert.Contains(style.Elements(), e => (string?)e.Attribute("Property") == "Padding" && (string?)e.Attribute("Value") == "0");
+        Assert.Contains(style.Elements(), e => (string?)e.Attribute("Property") == "MinHeight" && (string?)e.Attribute("Value") == "54");
+        Assert.DoesNotContain(style.Elements(), e => (string?)e.Attribute("Property") == "Height");
     }
 
     [Fact]
@@ -280,5 +279,38 @@ public sealed class HomeAndBatchUsabilityTests
             true, Guid.NewGuid(), "REC-2026-01", 100, null));
         Assert.False(line.Selected);
         Assert.Contains("REC-2026-01", line.Result);
+    }
+
+    [Fact]
+    public void Demarrer_garde_les_commandes_et_un_etat_vide_explicite()
+    {
+        var main = XDocument.Load(ViewFile("Views/MainView.axaml")).Descendants().ToArray();
+        Assert.Contains(main, e => (string?)e.Attribute("Command") == "{Binding StartNavigation.OpenHome}");
+        Assert.Contains(main, e => (string?)e.Attribute("ItemsSource") == "{Binding StartNavigation.NewActions}");
+        Assert.Contains(main, e => e.Name.LocalName == "Border"
+            && (string?)e.Attribute("DockPanel.Dock") == "Bottom"
+            && (string?)e.Attribute("IsVisible") == "{Binding IsStartPage}");
+        foreach (var path in new[] { "Views/StartView.axaml", "Views/Phone/StartView.axaml" })
+        {
+            var nodes = XDocument.Load(ViewFile(path)).Descendants().ToArray();
+            Assert.Contains(nodes, e => (string?)e.Attribute("IsVisible") == "{Binding !HasRecentTools}");
+            Assert.Contains(nodes, e => e.Name.LocalName == "PathIcon"
+                && (string?)e.Attribute("Data") == "{x:Static infra:HomeGlyphs.Calendar}");
+            Assert.Contains(nodes, e => e.Name.LocalName == "TextBlock"
+                && (string?)e.Attribute("Text") == "Une session prête à démarrer");
+        }
+    }
+
+    [Fact]
+    public void La_configuration_Windows_et_mobile_partage_les_pictogrammes_Fluent()
+    {
+        foreach (var path in new[] { "Views/SetupView.axaml", "Views/Phone/SetupView.axaml" })
+        {
+            var nodes = XDocument.Load(ViewFile(path)).Descendants().ToArray();
+            foreach (var glyph in new[] { "HomeGlyphs.School", "HomeGlyphs.Chevron", "AuthGlyphs.Shield" })
+                Assert.Contains(nodes, e => e.Name.LocalName == "PathIcon"
+                    && (string?)e.Attribute("Data") == "{x:Static infra:" + glyph + "}");
+            Assert.Equal(6, nodes.Count(e => (string?)e.Attribute("Classes") == "profileChoice"));
+        }
     }
 }

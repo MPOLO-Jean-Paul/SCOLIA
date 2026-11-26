@@ -6,19 +6,18 @@
              x:Class="Scolia.Bureau.Views.SearchView">
   <!-- Recherche de l'ordinateur : la recherche de l'accueil du téléphone, façon Google, dans une fenêtre.
        Même barre, mêmes récentes, mêmes accès rapides, mêmes lignes de résultats. Entrée ouvre le premier résultat. -->
-  <Border Classes="card" infra:Adaptive.FitDialog="True" Width="680" Padding="0" CornerRadius="18" Background="{DynamicResource BgBrush}"
-          BoxShadow="0 12 40 0 #33000000" ClipToBounds="True">
+  <Border Classes="dialogsurface" infra:Adaptive.FitDialog="True" Width="680">
     <Grid RowDefinitions="Auto,*">
       <!-- Barre : retour, saisie, effacer, micro -->
       <Border Classes="googlebar">
         <Grid ColumnDefinitions="Auto,*,Auto,Auto">
           <Button Classes="baricon" Command="{Binding Close}" AutomationProperties.Name="Fermer la recherche" ToolTip.Tip="Fermer la recherche (Échap)">
-            <mi:MaterialIcon Kind="ArrowLeft" />
+            <PathIcon Data="{x:Static infra:AuthGlyphs.Back}" Width="20" Height="20" />
           </Button>
           <TextBox x:Name="QueryBox" AutomationProperties.Name="{Binding Placeholder}" Grid.Column="1" Classes="searchfield" Text="{Binding Query}" PlaceholderText="{Binding Placeholder}"
                    TextInputOptions.ReturnKeyType="Search" />
           <Button Grid.Column="2" Classes="baricon" Command="{Binding ClearQuery}" AutomationProperties.Name="Effacer la recherche" IsVisible="{Binding HasQuery}" ToolTip.Tip="Effacer">
-            <mi:MaterialIcon Kind="Close" />
+            <PathIcon Data="{x:Static infra:HomeGlyphs.Dismiss}" Width="20" Height="20" />
           </Button>
           <Button x:Name="MicButton" Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding Listening}" Command="{Binding Listen}"
                   IsVisible="{Binding VoiceAvailable}" Focusable="False" ToolTip.Tip="{Binding VoiceTip}">

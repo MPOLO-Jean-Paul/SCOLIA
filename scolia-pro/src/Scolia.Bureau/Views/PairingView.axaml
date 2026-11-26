@@ -4,8 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.PairingView">
   <!-- Relier un autre appareil : le code QR en grand, blanc, au centre. Dessous, les voies qu'il contient. -->
-  <Border Classes="card" infra:Adaptive.FitDialog="True" Width="460" Padding="0" CornerRadius="18" Background="{DynamicResource SurfaceBrush}"
-          ClipToBounds="True" BoxShadow="0 12 40 0 #33000000">
+  <Border Classes="dialogsurface" infra:Adaptive.FitDialog="True" Width="460">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
       <StackPanel Margin="24,18,24,20" Spacing="14">
         <Grid ColumnDefinitions="Auto,*,Auto">
@@ -16,7 +15,7 @@
             <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" />
             <TextBlock Text="{Binding School}" Classes="muted" TextWrapping="Wrap" />
           </StackPanel>
-          <Button Grid.Column="2" Classes="closex" Command="{Binding Close}" VerticalAlignment="Top"><mi:MaterialIcon Kind="Close" /></Button>
+          <Button Grid.Column="2" Classes="closex" Command="{Binding Close}" VerticalAlignment="Top"><PathIcon Data="{x:Static infra:HomeGlyphs.Dismiss}" /></Button>
         </Grid>
 
         <TextBlock Text="{Binding ProgressText}" TextWrapping="Wrap" TextAlignment="Center" Classes="muted" IsVisible="{Binding Shared}" />

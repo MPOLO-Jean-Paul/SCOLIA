@@ -1,131 +1,103 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
- xmlns:mi="using:Material.Icons.Avalonia" x:Class="Scolia.Bureau.Views.StartView">
-  <UserControl.Styles>
-    <Style Selector="Button.launchcard">
-      <Setter Property="Width" Value="208" />
-      <Setter Property="Padding" Value="11" />
-      <Setter Property="Margin" Value="0,0,12,5" />
-      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="3" />
-      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-      <Setter Property="VerticalContentAlignment" Value="Stretch" />
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-      <Setter Property="Cursor" Value="Hand" />
-    </Style>
-    <Style Selector="Button.launchcard:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
-    </Style>
-    <Style Selector="Button.launchcard:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-    </Style>
-    <Style Selector="Button.launchrecent">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="2" />
-      <Setter Property="Padding" Value="10,9" />
-      <Setter Property="HorizontalAlignment" Value="Stretch" />
-      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-      <Setter Property="Cursor" Value="Hand" />
-    </Style>
-    <Style Selector="Button.launchrecent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
-    </Style>
-    <Style Selector="Button.launchrecent:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-    </Style>
-  </UserControl.Styles>
+             xmlns:infra="using:Scolia.Bureau.Infrastructure" x:Class="Scolia.Bureau.Views.StartView">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-    <StackPanel Spacing="28" Margin="18,22,12,26">
-      <!-- Un accueil plat : la place est réservée aux outils et aux récents, pas à un grand bandeau. -->
-      <Border x:Name="StartHero" Background="Transparent">
+    <StackPanel Spacing="16" Margin="14,16,14,24" MaxWidth="1180" HorizontalAlignment="Stretch">
+      <Border x:Name="StartHero" Classes="card" Padding="22">
         <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
-        <StackPanel Spacing="6">
-          <TextBlock Text="{Binding Greeting}" FontSize="28" FontWeight="SemiBold" TextWrapping="Wrap" />
-          <WrapPanel Orientation="Horizontal">
-            <TextBlock Text="{Binding School}" Classes="muted" TextWrapping="Wrap" Margin="0,0,9,0" />
-            <TextBlock Text="·" Classes="muted" Margin="0,0,9,0" />
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+          <Border Width="58" Height="58" CornerRadius="{DynamicResource RadiusCard}"
+                  Background="{DynamicResource AccentSoftBrush}" VerticalAlignment="Top">
+            <Image Source="{DynamicResource ScoliaMark}" Width="34" Height="34"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="5">
+            <TextBlock Text="{Binding Greeting}" FontSize="28" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding School}" Classes="muted" TextWrapping="Wrap" />
             <TextBlock Text="{Binding Year}" Classes="muted" TextWrapping="Wrap" />
-          </WrapPanel>
-          <TextBlock Text="Choisissez une opération dans le volet de gauche." Classes="muted" TextWrapping="Wrap" />
-        </StackPanel>
+          </StackPanel>
+        </Grid>
       </Border>
 
-      <!-- Power BI : une rangée horizontale de cartes à vignettes, sans duplication des actions de création. -->
-      <Expander IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" IsVisible="{Binding HasRecommended}">
-        <Expander.Header>
-          <TextBlock Text="Recommandé" FontSize="19" FontWeight="SemiBold" />
-        </Expander.Header>
-        <StackPanel Spacing="8">
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
-            <Button x:Name="PreviousRecommendation" Classes="toolicon" Click="OnPreviousRecommendation" ToolTip.Tip="Recommandations précédentes" AutomationProperties.Name="Recommandations précédentes" IsEnabled="False">
-              <mi:MaterialIcon Kind="ChevronLeft" Width="19" Height="19" />
-            </Button>
-            <Button x:Name="NextRecommendation" Classes="toolicon" Click="OnNextRecommendation" ToolTip.Tip="Recommandations suivantes" AutomationProperties.Name="Recommandations suivantes" IsEnabled="False">
-              <mi:MaterialIcon Kind="ChevronRight" Width="19" Height="19" />
-            </Button>
-          </StackPanel>
-          <ScrollViewer x:Name="RecommendationScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
-                        ScrollChanged="OnRecommendationScrollChanged">
+      <Grid x:Name="StartPanels" ColumnDefinitions="3*,2*" ColumnSpacing="12" infra:Adaptive.StackBelow="800">
+        <Border Classes="card" Padding="4" VerticalAlignment="Top" IsVisible="{Binding HasRecommended}">
+          <StackPanel Spacing="3">
+            <TextBlock Text="Outils recommandés" Classes="workspaceheading" />
+            <Border Height="1" Background="{DynamicResource LineBrush}" />
             <ItemsControl ItemsSource="{Binding Recommended}">
-              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><infra:AdaptiveTiles MinItemWidth="226" MaxColumns="2" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Button Classes="launchcard" Command="{Binding Open}" ToolTip.Tip="{Binding Label}" AutomationProperties.Name="{Binding Label}">
-                    <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
-                      <TextBlock Text="Outil de gestion" Classes="muted" FontSize="12" />
-                      <Grid Grid.Row="1" Height="112" ClipToBounds="True">
-                        <Border Background="{DynamicResource GroupBrush}" />
-                        <Border Background="{Binding Brush}" Opacity="0.12" />
-                        <Ellipse Width="72" Height="72" Fill="{Binding Brush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        <mi:MaterialIcon Kind="{Binding Icon}" Width="36" Height="36" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                      </Grid>
-                      <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="4">
-                        <TextBlock Text="{Binding Label}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" />
-                        <mi:MaterialIcon Grid.Column="1" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" />
-                      </Grid>
+                  <Button Classes="workspacerow" Command="{Binding Open}"
+                          ToolTip.Tip="{Binding Label}" AutomationProperties.Name="{Binding Label}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="9">
+                      <Border Classes="workspaceglyph">
+                        <Grid>
+                          <Border CornerRadius="7" Background="{Binding Brush}" Opacity="0.14" IsHitTestVisible="False" />
+                          <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Foreground="{Binding Brush}" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+                        </Grid>
+                      </Border>
+                      <TextBlock Grid.Column="1" Text="{Binding Label}" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center" />
+                      <PathIcon Grid.Column="2" Classes="workspacechevron" Data="{x:Static infra:HomeGlyphs.Chevron}" />
                     </Grid>
                   </Button>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-          </ScrollViewer>
-        </StackPanel>
-      </Expander>
+          </StackPanel>
+        </Border>
 
-      <StackPanel Spacing="12">
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <mi:MaterialIcon Kind="History" Width="19" Height="19" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
-          <TextBlock Text="Récents" FontSize="19" FontWeight="SemiBold" />
-        </StackPanel>
-        <Grid ColumnDefinitions="34,*,130" ColumnSpacing="8" Margin="10,0">
-          <mi:MaterialIcon Kind="FileDocumentOutline" Width="17" Height="17" Foreground="{DynamicResource MutedBrush}" />
-          <TextBlock Grid.Column="1" Text="Nom" FontWeight="SemiBold" FontSize="12" />
-          <TextBlock Grid.Column="2" Text="Emplacement" FontWeight="SemiBold" FontSize="12" />
+        <Border Grid.Column="1" Classes="card" Padding="4" VerticalAlignment="Top">
+          <StackPanel Spacing="3">
+            <TextBlock Text="Consultés récemment" Classes="workspaceheading" />
+            <Border Height="1" Background="{DynamicResource LineBrush}" />
+            <Border Margin="8,4,8,8" Padding="12" CornerRadius="8" Background="{DynamicResource GroupBrush}" IsVisible="{Binding !HasRecentTools}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Border Classes="workspaceglyph" Background="{DynamicResource AccentSoftBrush}">
+                  <PathIcon Data="{x:Static infra:HomeGlyphs.Calendar}" Foreground="{DynamicResource AccentBrush}" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                  <TextBlock Text="Une session prête à démarrer" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="Aucun outil consulté pendant cette session. Vos outils récents apparaîtront ici." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+            </Border>
+            <ItemsControl ItemsSource="{Binding RecentTools}" IsVisible="{Binding HasRecentTools}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="workspacerow" Command="{Binding Open}"
+                          ToolTip.Tip="{Binding Label}" AutomationProperties.Name="{Binding Label}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="9">
+                      <Border Classes="workspaceglyph">
+                        <Grid>
+                          <Border CornerRadius="7" Background="{Binding Brush}" Opacity="0.14" IsHitTestVisible="False" />
+                          <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Foreground="{Binding Brush}" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+                        </Grid>
+                      </Border>
+                      <TextBlock Grid.Column="1" Text="{Binding Label}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                      <PathIcon Grid.Column="2" Classes="workspacechevron" Data="{x:Static infra:HomeGlyphs.Chevron}" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </Grid>
+      <Border Classes="card" Padding="18" CornerRadius="{DynamicResource RadiusCard}">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+          <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource AccentSoftBrush}" VerticalAlignment="Top">
+            <PathIcon Data="{x:Static infra:HomeGlyphs.Apps}" Width="26" Height="26" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
+            <TextBlock Text="Votre espace SCOLIA" FontWeight="SemiBold" FontSize="17" TextWrapping="Wrap" />
+            <TextBlock Text="Retrouvez vos outils de travail, vos inscriptions et vos encaissements selon les accès de votre compte." Classes="muted" TextWrapping="Wrap" />
+            <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,5,0,1" />
+            <TextBlock Text="Choisissez une action dans le volet pour commencer." Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
         </Grid>
-        <Border Background="{DynamicResource LineBrush}" Height="1" />
-        <TextBlock Text="Les fonctionnalités consultées pendant cette session apparaîtront ici."
-                   Classes="muted" Margin="10,8" TextWrapping="Wrap" IsVisible="{Binding !HasRecentTools}" />
-        <ItemsControl ItemsSource="{Binding RecentTools}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate>
-              <StackPanel>
-                <Button Classes="launchrecent" Command="{Binding Open}" AutomationProperties.Name="{Binding Label}" ToolTip.Tip="{Binding Label}">
-                  <Grid ColumnDefinitions="34,*,130" ColumnSpacing="8">
-                    <mi:MaterialIcon Kind="{Binding Icon}" Foreground="{Binding Brush}" Width="21" Height="21" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Grid.Column="2" Text="Espace de travail" Classes="muted" VerticalAlignment="Center" TextWrapping="Wrap" />
-                  </Grid>
-                </Button>
-                <Border Background="{DynamicResource LineBrush}" Height="1" />
-              </StackPanel>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </StackPanel>
+      </Border>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

@@ -365,6 +365,7 @@ public sealed class ShellViewModel : Observable
             RemoteWaiting = false;
             Raise(nameof(HasPage));
             Raise(nameof(IsStartPage));
+            Raise(nameof(IsHomePage));
             Raise(nameof(ShowWorkspaceTab));
             Raise(nameof(StartNavigation));
             Raise(nameof(SidebarShown));
@@ -385,7 +386,8 @@ public sealed class ShellViewModel : Observable
     }
     public bool HasPage => current is not null;
     public bool IsStartPage => current is StartPage;
-    public bool ShowWorkspaceTab => HasPage && !IsStartPage;
+    public bool IsHomePage => current is HomePage;
+    public bool ShowWorkspaceTab => HasPage && !IsStartPage && !IsHomePage;
     public StartPage? StartNavigation => current as StartPage;
 
     /// <summary>Boîte de dialogue ouverte : formulaire, recherche. Null quand aucune n'est affichée.</summary>
@@ -1456,11 +1458,12 @@ public sealed class ShellViewModel : Observable
 
     /// <summary>
     /// Ctrl+K et « Rechercher » : sur l'ordinateur, le curseur va dans la barre du haut, sans autre fenêtre.
-    /// Le téléphone, ou une page dont la barre filtre déjà sa liste, garde la fenêtre de recherche.
+    /// Le volet d'accueil, le téléphone et les listes filtrées ouvrent la fenêtre de recherche.
     /// </summary>
     public void FindInHeader()
     {
-        if (!Phone && !HeaderSearch.IsOpen && !HasDialog && !BackstageOpen && HeaderFinderRequested is not null)
+        if (!Phone && !(IsHomePage && SidebarShown) && !HeaderSearch.IsOpen && !HasDialog
+            && !BackstageOpen && HeaderFinderRequested is not null)
         {
             HeaderFinderOpen = true;
             HeaderFinderRequested();

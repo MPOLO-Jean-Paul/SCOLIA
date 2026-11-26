@@ -87,6 +87,38 @@ public sealed class InstallerAndHomePolishTests
     }
 
     [Fact]
+    public void Accueil_Windows_Settings_conserve_les_actions_dans_deux_panneaux_adaptatifs()
+    {
+        var home = XDocument.Load(Source("src/Scolia.Bureau/Views/HomeView.axaml"));
+        var panels = Assert.Single(home.Descendants(), e => e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "HomeSettingsPanels"));
+        Assert.Equal("*,*", (string?)panels.Attribute("ColumnDefinitions"));
+        Assert.Contains(panels.Attributes(), a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "700");
+        Assert.Collection(panels.Elements(),
+            left => Assert.Contains(left.Descendants(), e => (string?)e.Attribute("ItemsSource") == "{Binding Kpis}"),
+            right => Assert.Equal("pbiPanel", (string?)right.Attribute("Classes")));
+        foreach (var binding in new[] { "QuickActions", "MoreTools" })
+        {
+            var items = Assert.Single(panels.Descendants(), e => e.Name.LocalName == "ItemsControl" &&
+                (string?)e.Attribute("ItemsSource") == "{Binding " + binding + "}");
+            Assert.Contains(items.Descendants(), e => e.Name.LocalName == "Button" && (string?)e.Attribute("Command") == "{Binding Open}");
+            Assert.Contains(items.Descendants(), e => e.Name.LocalName == "PathIcon" &&
+                e.Attributes().Any(a => a.Value.Contains("HomeGlyphs.Converter")));
+        }
+        var shell = XDocument.Load(Source("src/Scolia.Bureau/Views/MainView.axaml"));
+        Assert.Contains(shell.Descendants(), e => e.Attributes().Any(a => a.Name.LocalName == "Classes.homepane" && a.Value == "{Binding IsHomePage}"));
+        var search = Assert.Single(shell.Descendants(), e => e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "HomeSidebarSearch"));
+        Assert.Equal("{Binding SearchCommand}", (string?)search.Attribute("Command"));
+        Assert.Equal("{Binding IsHomePage}", (string?)search.Attribute("IsVisible"));
+        var actionStyle = Assert.Single(home.Descendants(), e => (string?)e.Attribute("Selector") == "Button.pbiAction");
+        Assert.Contains(actionStyle.Elements(), e => (string?)e.Attribute("Property") == "MinHeight" && (string?)e.Attribute("Value") == "64");
+        foreach (var title in panels.Descendants().Where(e => (string?)e.Attribute("Text") is "{Binding ShortTitle}" or "{Binding Title}"))
+        {
+            Assert.Equal("Wrap", (string?)title.Attribute("TextWrapping"));
+            Assert.Equal("2", (string?)title.Attribute("MaxLines"));
+        }
+    }
+
+    [Fact]
     public void Accueil_desktop_PowerBI_adopte_des_panneaux_Fluent_responsives()
     {
         var doc = XDocument.Load(Source("src/Scolia.Bureau/Views/HomeView.axaml"));
@@ -98,8 +130,9 @@ public sealed class InstallerAndHomePolishTests
             (string?)e.Attributes().FirstOrDefault(a => a.Name.LocalName == "Name")?.Value == "WelcomeLayout" &&
             (string?)e.Attribute("ColumnDefinitions") == "*,Auto" &&
             e.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "610"));
-        Assert.True(elements.Count(e => e.Name.LocalName == "Grid" &&
-            e.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "820")) >= 2);
+        foreach (var threshold in new[] { "580", "700" })
+            Assert.Contains(elements, e => e.Name.LocalName == "Grid" &&
+                e.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == threshold));
         Assert.Contains(elements, e => e.Name.LocalName == "ItemsControl" &&
             (string?)e.Attribute("ItemsSource") == "{Binding QuickActions}");
         Assert.Contains(elements, e => e.Name.LocalName == "AdaptiveTiles" &&
@@ -143,8 +176,9 @@ public sealed class InstallerAndHomePolishTests
         }
         Assert.Contains(desktopNodes, e => e.Name.LocalName == "mi:MaterialIcon" ||
             (e.Name.LocalName == "MaterialIcon" && (string?)e.Attribute("Kind") == "{Binding Icon}"));
-        Assert.Contains(desktopNodes, e => e.Name.LocalName == "TextBlock" &&
-            (string?)e.Attribute("Text") == "Recommandé pour vous");
+        foreach (var nodes in new[] { desktopNodes, phoneNodes })
+            Assert.Contains(nodes, e => e.Name.LocalName == "TextBlock" &&
+                (string?)e.Attribute("Text") == "Outils recommandés");
 
         // La connexion est toujours cliquable, même sans Internet, et les indicateurs
         // ouvrent les vraies pages de travail. Aucun chiffre de démonstration n'est codé.

@@ -92,6 +92,7 @@ public sealed class HomePage : PageViewModel
     /// <summary>Mobile : l'accueil montre l'état de la connexion et l'activité des autres postes.</summary>
     public SyncCenter Sync => Shell.Sync;
     public RelayCommand Network => Shell.NetworkCommand;
+    public AsyncCommand Refresh => Shell.ReloadCommand;
     public Avalonia.Media.Imaging.Bitmap? SchoolLogo => Shell.SchoolLogo;
     public bool HasSchoolLogo => Shell.HasSchoolLogo;
     public string Initials => Shell.UserInitials;

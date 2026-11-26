@@ -364,8 +364,8 @@
                     </Border>
                     <Border Classes="badge" ToolTip.Tip="Compte enregistré sur cet appareil"
                             AutomationProperties.Name="Compte enregistré sur cet appareil">
-                      <mi:MaterialIcon Kind="Check" Width="12" Height="12" Foreground="White"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      <PathIcon Data="{x:Static infra:AuthGlyphs.Check}" Width="12" Height="12" Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"  />
                     </Border>
                   </Grid>
                 </Grid>
@@ -378,7 +378,7 @@
               <Button Classes="authsecondary" Command="{Binding Resume}"
                       IsVisible="{Binding CanResume}" IsEnabled="{Binding NotBusy}">
                 <DockPanel LastChildFill="True">
-                  <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" Kind="ArrowLeft" Width="18" Height="18" />
+                  <PathIcon DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" Data="{x:Static infra:AuthGlyphs.Back}" Width="18" Height="18"  />
                   <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="{Binding ResumeText}" VerticalAlignment="Center" />
                 </DockPanel>
               </Button>
@@ -440,7 +440,7 @@
                     <TextBox x:Name="IosUserNameBox" Classes="authfield withicon" Text="{Binding UserName}"
                              PlaceholderText="Votre identifiant" MaxLength="40" IsEnabled="{Binding CanType}"
                              AutomationProperties.Name="Identifiant de connexion" Padding="46,0,14,0" />
-                    <mi:MaterialIcon Classes="authinputicon" Kind="AccountOutline" />
+                    <PathIcon Classes="authinputicon" Data="{x:Static infra:AuthGlyphs.Person}"  />
                   </Grid>
                 </StackPanel>
                 <StackPanel Spacing="6" IsVisible="{Binding ShowSignInPassword}">
@@ -451,10 +451,10 @@
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                              PlaceholderText="Votre mot de passe" IsEnabled="{Binding CanType}"
                              AutomationProperties.Name="Mot de passe de connexion" Padding="46,0,54,0" />
-                    <mi:MaterialIcon Classes="authinputicon" Kind="LockOutline" />
+                    <PathIcon Classes="authinputicon" Data="{x:Static infra:AuthGlyphs.Lock}"  />
                     <Button Classes="autheye" Command="{Binding ToggleEye}" IsEnabled="{Binding CanType}"
                             ToolTip.Tip="Afficher ou masquer le mot de passe" AutomationProperties.Name="Afficher ou masquer le mot de passe">
-                      <mi:MaterialIcon Kind="{Binding EyeIcon}" />
+                      <PathIcon Data="{Binding EyeIcon, Converter={x:Static infra:AuthGlyphs.EyeConverter}}"  />
                     </Button>
                   </Grid>
                 </StackPanel>
@@ -484,7 +484,7 @@
                           AutomationProperties.Name="Se connecter avec mon empreinte"
                           HorizontalAlignment="Right" Padding="12,0" MinHeight="40">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                      <mi:MaterialIcon Kind="Fingerprint" Width="20" Height="20" VerticalAlignment="Center" />
+                      <PathIcon Data="{x:Static infra:AuthGlyphs.Fingerprint}" Width="20" Height="20" VerticalAlignment="Center"  />
                       <TextBlock Text="Empreinte" VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
@@ -502,10 +502,11 @@
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                              PlaceholderText="Au moins 8 caractères" IsEnabled="{Binding NotBusy}"
                              AutomationProperties.Name="Nouveau mot de passe" Padding="46,0,54,0" />
-                    <mi:MaterialIcon Classes="authinputicon" Kind="LockOutline" />
+                    <PathIcon Classes="authinputicon" Data="{x:Static infra:AuthGlyphs.Lock}"  />
                     <Button Classes="autheye" Command="{Binding ToggleNewPasswordEye}"
-                            IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer le nouveau mot de passe">
-                      <mi:MaterialIcon Kind="{Binding NewPasswordEyeIcon}" />
+                            IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer le nouveau mot de passe"
+                            AutomationProperties.Name="Afficher ou masquer le nouveau mot de passe">
+                      <PathIcon Data="{Binding NewPasswordEyeIcon, Converter={x:Static infra:AuthGlyphs.EyeConverter}}"  />
                     </Button>
                   </Grid>
                   <TextBlock Classes="authhint" Text="{Binding RecoveryPasswordHint}" IsVisible="{Binding HasRecoveryPasswordHint}" />
@@ -518,10 +519,11 @@
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                              PlaceholderText="Répéter le mot de passe" IsEnabled="{Binding NotBusy}"
                              AutomationProperties.Name="Confirmation du nouveau mot de passe" Padding="46,0,54,0" />
-                    <mi:MaterialIcon Classes="authinputicon" Kind="LockOutline" />
+                    <PathIcon Classes="authinputicon" Data="{x:Static infra:AuthGlyphs.Lock}"  />
                     <Button Classes="autheye" Command="{Binding ToggleConfirmPasswordEye}"
-                            IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer la confirmation">
-                      <mi:MaterialIcon Kind="{Binding ConfirmPasswordEyeIcon}" />
+                            IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer la confirmation"
+                            AutomationProperties.Name="Afficher ou masquer la confirmation">
+                      <PathIcon Data="{Binding ConfirmPasswordEyeIcon, Converter={x:Static infra:AuthGlyphs.EyeConverter}}"  />
                     </Button>
                   </Grid>
                   <TextBlock Classes="authhint" Text="{Binding RecoveryConfirmationHint}" IsVisible="{Binding HasRecoveryConfirmationHint}" />
@@ -534,10 +536,11 @@
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                              PlaceholderText="Code confidentiel" IsEnabled="{Binding NotBusy}"
                              AutomationProperties.Name="Code de récupération confidentiel" Padding="46,0,54,0" />
-                    <mi:MaterialIcon Classes="authinputicon" Kind="ShieldCheckOutline" />
+                    <PathIcon Classes="authinputicon" Data="{x:Static infra:AuthGlyphs.Shield}"  />
                     <Button Classes="autheye" Command="{Binding ToggleRecoveryCodeEye}"
-                            IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer le code de secours">
-                      <mi:MaterialIcon Kind="{Binding RecoveryCodeEyeIcon}" />
+                            IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer le code de secours"
+                            AutomationProperties.Name="Afficher ou masquer le code de secours">
+                      <PathIcon Data="{Binding RecoveryCodeEyeIcon, Converter={x:Static infra:AuthGlyphs.EyeConverter}}"  />
                     </Button>
                   </Grid>
                 </StackPanel>
@@ -553,15 +556,18 @@
                   </Grid>
                   <Button Classes="authsecondary" Command="{Binding RecoverWithBiometrics}"
                           IsEnabled="{Binding CanRecoverWithBiometrics}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <mi:MaterialIcon Kind="Fingerprint" Width="20" Height="20" VerticalAlignment="Center" />
-                      <TextBlock Text="Valider avec mon empreinte" VerticalAlignment="Center" TextWrapping="Wrap" />
-                    </StackPanel>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                      <PathIcon Data="{x:Static infra:AuthGlyphs.Fingerprint}" Width="20" Height="20" VerticalAlignment="Center"  />
+                      <TextBlock Grid.Column="1" Text="Valider avec mon empreinte" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    </Grid>
                   </Button>
                 </StackPanel>
                 <Button Classes="authlink" Command="{Binding ToggleRecoveryHelp}" HorizontalAlignment="Center"
                         ToolTip.Tip="Revenir à la connexion" AutomationProperties.Name="Revenir à la connexion">
-                  <TextBlock Text="Revenir à la connexion" />
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                    <PathIcon Data="{x:Static infra:AuthGlyphs.Back}" Width="16" Height="16" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="Revenir à la connexion" VerticalAlignment="Center" />
+                  </Grid>
                 </Button>
               </StackPanel>
             </StackPanel>
@@ -576,13 +582,13 @@
             <!-- Messages, dans la carte pour rester près du formulaire -->
             <Border Classes="authmessage success" IsVisible="{Binding HasNotice}" ToolTip.Tip="{Binding Notice}">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                <mi:MaterialIcon Kind="InformationOutline" Width="18" Height="18" VerticalAlignment="Top" />
+                <PathIcon Data="{x:Static infra:AuthGlyphs.Info}" Width="18" Height="18" VerticalAlignment="Top"  />
                 <TextBlock Grid.Column="1" Text="{Binding Notice}" AutomationProperties.Name="{Binding Notice}" TextWrapping="Wrap" />
               </Grid>
             </Border>
             <Border Classes="authmessage error" IsVisible="{Binding HasError}">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" VerticalAlignment="Top" />
+                <PathIcon Data="{x:Static infra:AuthGlyphs.Error}" Width="18" Height="18" VerticalAlignment="Top"  />
                 <TextBlock Grid.Column="1" Text="{Binding Error}" TextWrapping="Wrap" />
               </Grid>
             </Border>
@@ -611,7 +617,7 @@
                               AutomationProperties.Name="Afficher ou masquer les options de connexion">
                   <StackPanel Orientation="Horizontal" Spacing="4">
                     <TextBlock Text="Autres options" VerticalAlignment="Center" />
-                    <mi:MaterialIcon Kind="ChevronDown" Width="16" Height="16" VerticalAlignment="Center" />
+                    <PathIcon Classes="authchevron" Data="{x:Static infra:AuthGlyphs.Expand}" Width="16" Height="16" VerticalAlignment="Center" />
                   </StackPanel>
                 </ToggleButton>
               </WrapPanel>
@@ -644,13 +650,13 @@
       <Border Grid.Column="1" Classes="authrail">
         <StackPanel Spacing="16" VerticalAlignment="Center">
           <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="4" Height="92">
-            <mi:MaterialIcon Kind="ShieldCheckOutline" Width="42" Height="42" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <PathIcon Data="{x:Static infra:AuthGlyphs.Shield}" Width="42" Height="42" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"  />
           </Border>
           <TextBlock Classes="authrailtitle" Text="Votre espace sécurisé" />
           <TextBlock Classes="authhint" Text="Connectez-vous avec votre compte personnel pour accéder à votre établissement." />
           <Border Height="1" Background="{DynamicResource LineBrush}" />
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9"><mi:MaterialIcon Kind="AccountOutline" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Classes="authhint" Text="Compte personnel" /></Grid>
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9"><mi:MaterialIcon Kind="LockOutline" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Classes="authhint" Text="Récupération protégée" /></Grid>
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9"><PathIcon Data="{x:Static infra:AuthGlyphs.Person}" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"  /><TextBlock Grid.Column="1" Classes="authhint" Text="Compte personnel" /></Grid>
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9"><PathIcon Data="{x:Static infra:AuthGlyphs.Lock}" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"  /><TextBlock Grid.Column="1" Classes="authhint" Text="Récupération protégée" /></Grid>
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9"><mi:MaterialIcon Kind="LanConnect" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Classes="authhint" Text="Liaison à votre serveur" /></Grid>
         </StackPanel>
       </Border>

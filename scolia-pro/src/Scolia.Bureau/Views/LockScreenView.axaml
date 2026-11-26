@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.LockScreenView">
   <!-- Même identité visuelle que la connexion : fond bleu et halo, sans lourde carte ni
@@ -70,7 +71,7 @@
                 <Ellipse Classes="halo" />
                 <Ellipse Classes="ring" />
                 <Border Classes="disc"><TextBlock Text="{Binding Initials}" /></Border>
-                <Border Classes="badge locked" ToolTip.Tip="Session verrouillée">
+                <Border Classes="badge locked" ToolTip.Tip="Session verrouillée" AutomationProperties.Name="Session verrouillée">
                   <mi:MaterialIcon Kind="Lock" Width="13" Height="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
               </Grid>
@@ -172,7 +173,7 @@
                 <Ellipse Classes="ring" />
                 <Border Classes="disc"><TextBlock Text="{Binding Initials}" /></Border>
                 <Border Classes="badge locked" ToolTip.Tip="Session verrouillée">
-                  <mi:MaterialIcon Kind="Lock" Width="11" Height="11" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <PathIcon Data="{x:Static infra:AuthGlyphs.Lock}" Width="11" Height="11" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"  />
                 </Border>
               </Grid>
               <TextBlock Classes="authtitle" Text="{Binding DisplayName}" ToolTip.Tip="{Binding DisplayName}" MaxLines="2" />
@@ -186,12 +187,12 @@
                 <TextBox x:Name="IosLockCode" Classes="authfield witheye withicon" Text="{Binding Code}"
                          PasswordChar="•" RevealPassword="{Binding ShowCode}" MaxLength="128"
                          TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
-                         PlaceholderText="Mot de passe ou code PIN"
+                         PlaceholderText="Mot de passe ou PIN"
                          IsEnabled="{Binding NotBusy}" AutomationProperties.Name="Code de déverrouillage" Padding="46,0,54,0" />
-                <mi:MaterialIcon Classes="authinputicon" Kind="LockOutline" />
+                <PathIcon Classes="authinputicon" Data="{x:Static infra:AuthGlyphs.Lock}"  />
                 <Button Classes="autheye" Command="{Binding ToggleCode}" IsEnabled="{Binding NotBusy}"
-                        ToolTip.Tip="Afficher ou masquer le code">
-                  <mi:MaterialIcon Kind="{Binding EyeIcon}" />
+                        ToolTip.Tip="Afficher ou masquer le code" AutomationProperties.Name="Afficher ou masquer le code">
+                  <PathIcon Data="{Binding EyeIcon, Converter={x:Static infra:AuthGlyphs.EyeConverter}}"  />
                 </Button>
               </Grid>
               <Button Classes="authprimary" Command="{Binding Unlock}" IsEnabled="{Binding CanUnlockCode}">
@@ -210,15 +211,15 @@
             </Button>
             <Button Classes="authsecondary" Command="{Binding UnlockWithBiometrics}"
                     IsVisible="{Binding CanUseBiometrics}" IsEnabled="{Binding NotBusy}">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="Fingerprint" Width="20" Height="20" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding BiometricLabel}" VerticalAlignment="Center" TextWrapping="Wrap" />
-              </StackPanel>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <PathIcon Data="{x:Static infra:AuthGlyphs.Fingerprint}" Width="20" Height="20" VerticalAlignment="Center"  />
+                <TextBlock Grid.Column="1" Text="{Binding BiometricLabel}" VerticalAlignment="Center" TextWrapping="Wrap" />
+              </Grid>
             </Button>
 
             <Border Classes="authmessage error" IsVisible="{Binding HasError}">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" VerticalAlignment="Top" />
+                <PathIcon Data="{x:Static infra:AuthGlyphs.Error}" Width="18" Height="18" VerticalAlignment="Top"  />
                 <TextBlock Grid.Column="1" Text="{Binding Error}" TextWrapping="Wrap" />
               </Grid>
             </Border>
@@ -226,22 +227,29 @@
             <WrapPanel HorizontalAlignment="Center">
               <Button Classes="authlink" Command="{Binding ForgotCode}" IsEnabled="{Binding NotBusy}"
                       ToolTip.Tip="Code ou mot de passe oublié ?" AutomationProperties.Name="Récupérer le compte">
-                <TextBlock Text="Mot de passe oublié ?" />
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <PathIcon Data="{x:Static infra:AuthGlyphs.Shield}" Width="16" Height="16" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="Mot de passe oublié ?" VerticalAlignment="Center" />
+                </Grid>
               </Button>
               <Button Classes="authlink" Command="{Binding SwitchAccount}" IsEnabled="{Binding NotBusy}"
                       ToolTip.Tip="Changer de compte" AutomationProperties.Name="Changer de compte">
-                <TextBlock Text="Autre compte" />
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <PathIcon Data="{x:Static infra:AuthGlyphs.Person}" Width="16" Height="16" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="Autre compte" VerticalAlignment="Center" />
+                </Grid>
               </Button>
             </WrapPanel>
           </StackPanel>
         </Border>
 
         <!-- Marque discrète : logo, application et établissement -->
-        <StackPanel Classes="authbrand" Margin="0,6,0,0">
-          <Image Source="{DynamicResource ScoliaMark}" />
-          <TextBlock Text="SCOLIA Pro" FontWeight="SemiBold" />
-          <TextBlock Text="·" />
-          <TextBlock Text="{Binding School}" ToolTip.Tip="{Binding School}" TextTrimming="CharacterEllipsis" MaxWidth="260" />
+        <StackPanel Spacing="4" Margin="0,6,0,0">
+          <StackPanel Classes="authbrand">
+            <Image Source="{DynamicResource ScoliaMark}" />
+            <TextBlock Text="SCOLIA Pro" FontWeight="SemiBold" />
+          </StackPanel>
+          <TextBlock Classes="authsubtitle" Text="{Binding School}" ToolTip.Tip="{Binding School}" />
         </StackPanel>
         <TextBlock Text="{Binding Footer}" Classes="authhint" FontSize="11" IsVisible="False"
                    HorizontalAlignment="Stretch" TextAlignment="Center" />

@@ -708,6 +708,58 @@
     <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="Padding" Value="16" />
   </Style>
+  <Style Selector="TextBlock.workspaceheading">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Margin" Value="12,12,12,9" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="Border.workspaceglyph">
+    <Setter Property="Width" Value="34" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.workspaceglyph > PathIcon">
+    <Setter Property="Width" Value="20" />
+    <Setter Property="Height" Value="20" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="PathIcon.workspacechevron">
+    <Setter Property="Width" Value="14" />
+    <Setter Property="Height" Value="14" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="Button.workspacerow">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="Padding" Value="10,8" />
+    <Setter Property="MinHeight" Value="52" />
+  </Style>
+  <Style Selector="Button.workspacerow:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+  <Style Selector="Button.workspacerow:pressed /template/ ContentPresenter#PART_ContentPresenter,
+                   Button.workspacerow:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+  </Style>
+  <Style Selector="LayoutTransformControl.anim Button.workspacerow /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.12" Easing="{x:Static infra:Motion.Smooth}" />
+      </Transitions>
+    </Setter>
+  </Style>
   <!-- Les mêmes blocs de contenu sont utilisés par l'accueil du secrétariat
        et l'espace enseignant, sans variation de surface ou de rayon. -->
   <Style Selector="Border.desktopgroup">
@@ -1424,6 +1476,10 @@
   <Style Selector="Button.navitem:pointerover">
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
   </Style>
+  <Style Selector="Button.navitem:focus-visible /template/ ContentPresenter#PART_ContentPresenter,
+                   Button.navcategory:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+  </Style>
   <!-- Sélection du volet de Windows 11 : fond discret et pastille d'accent de 3 × 16 px à gauche -->
   <Style Selector="Button.navitem.selected">
     <Setter Property="Background" Value="{DynamicResource NavSelectedBrush}" />
@@ -1456,6 +1512,22 @@
   </Style>
   <Style Selector="Border.scrim">
     <Setter Property="Background" Value="{DynamicResource ScrimBrush}" />
+  </Style>
+  <Style Selector="Border.dialogsurface">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="BoxShadow" Value="0 8 24 0 #29000000" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.dialogsurface">
+    <Setter Property="BoxShadow" Value="none" />
+  </Style>
+  <Style Selector="Border.fullscreendialog Border.dialogsurface">
+    <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
   </Style>
   <!-- Bannière d'alerte : carte claire qui descend du haut, comme les notifications d'Android 16 -->
   <Style Selector="Border.alertbanner">
@@ -1595,7 +1667,7 @@
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Padding" Value="13,13,13,12" />
   </Style>
-  <!-- Bouton Fermer des fenêtres : une croix ronde et discrète en haut à droite, comme sur macOS -->
+  <!-- Commande de fermeture des panneaux de l'application. -->
   <Style Selector="Button.closex">
     <Setter Property="Width" Value="28" />
     <Setter Property="Height" Value="28" />
@@ -1615,6 +1687,27 @@
   </Style>
   <Style Selector="Button.closex:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource SidebarSelectedBrush}" />
+  </Style>
+  <Style Selector="Border.dialogsurface Button.closex">
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="AutomationProperties.Name" Value="Fermer" />
+  </Style>
+  <Style Selector="Border.dialogsurface Button.closex PathIcon">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.dialogsurface Button.closex">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="44" />
+  </Style>
+  <Style Selector="Border.dialogsurface Button.closex:focus-visible /template/ ContentPresenter#PART_ContentPresenter,
+                   Border.dialogsurface Button.closex:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
   </Style>
 
   <!-- Carte cliquable : le bouton s'efface, la carte porte le survol -->
@@ -1665,23 +1758,21 @@
   <Style Selector="Border.titlerow TextBlock.muted">
     <Setter Property="Foreground" Value="{DynamicResource HeaderMutedBrush}" />
   </Style>
-  <!-- Connexion : la barre de titre prend le bleu du bandeau de l'établissement, juste en dessous -->
-  <Style Selector="Border.titlerow.onbrand">
-    <Setter Property="Background">
-      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-        <GradientStop Offset="0" Color="#1565E0" />
-        <GradientStop Offset="1" Color="#0C47B0" />
-      </LinearGradientBrush>
-    </Setter>
+  <!-- Écrans d'accès : prolonger le fond du formulaire dans le titre. -->
+  <Style Selector="Border.titlerow.authchrome, Border.titlerow.lockchrome">
+    <Setter Property="Background" Value="{DynamicResource BgBrush}" />
   </Style>
-  <Style Selector="Border.titlerow.onbrand TextBlock">
-    <Setter Property="Foreground" Value="White" />
+  <Style Selector="Border.titlerow.authchrome TextBlock, Border.titlerow.lockchrome TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+  </Style>
+  <Style Selector="Border.titlerow.lockchrome TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
   </Style>
   <Style Selector="Border.appheader">
     <Setter Property="Background" Value="{DynamicResource HeaderBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource HeaderLineBrush}" />
     <Setter Property="BorderThickness" Value="0,0,0,1" />
-    <Setter Property="Padding" Value="12,9,14,9" />
+    <Setter Property="Padding" Value="12,7,14,7" />
   </Style>
   <Style Selector="Border.appheader TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource HeaderTextBrush}" />

@@ -21,8 +21,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Border Classes="card" infra:Adaptive.FitDialog="True" Width="760" Padding="0" CornerRadius="16"
-          Background="{DynamicResource BgBrush}" BoxShadow="0 12 40 0 #33000000">
+  <Border Classes="dialogsurface" infra:Adaptive.FitDialog="True" Width="760">
     <Grid RowDefinitions="Auto,Auto,*">
       <!-- En-tête -->
       <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,16,14,8">
@@ -35,7 +34,7 @@
           <TextBlock Text="{Binding Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
         </StackPanel>
         <Button Grid.Column="2" Classes="closex" Command="{Binding Close}" VerticalAlignment="Top" ToolTip.Tip="Fermer">
-          <mi:MaterialIcon Kind="Close" />
+          <PathIcon Data="{x:Static infra:HomeGlyphs.Dismiss}" />
         </Button>
       </Grid>
       <!-- Recherche dans le catalogue -->

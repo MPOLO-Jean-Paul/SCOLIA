@@ -307,7 +307,7 @@
               <Button Classes="authlink" Command="{Binding Back}" IsVisible="{Binding CanGoBack}"
                       HorizontalAlignment="Left" Padding="0,0,8,0">
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                  <mi:MaterialIcon Kind="ArrowLeft" Width="18" Height="18" VerticalAlignment="Center" />
+                  <PathIcon Data="{x:Static infra:AuthGlyphs.Back}" Width="18" Height="18" VerticalAlignment="Center" />
                   <TextBlock Text="Retour" VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
@@ -375,7 +375,7 @@
                             <TextBlock Text="{Binding School}" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" />
                             <TextBlock Text="{Binding Detail}" Classes="authhint" MaxLines="2" ToolTip.Tip="{Binding Detail}" />
                           </StackPanel>
-                          <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
+                          <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="18" Height="18"
                                            Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
                         </Grid>
                       </Button>
@@ -414,14 +414,14 @@
       <Border Grid.Column="1" Classes="authrail">
         <StackPanel Spacing="16" VerticalAlignment="Center">
           <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="4" Height="92">
-            <mi:MaterialIcon Kind="ShieldCheckOutline" Width="42" Height="42" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <PathIcon Data="{x:Static infra:AuthGlyphs.Shield}" Width="42" Height="42" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock Classes="authrailtitle" Text="Relier votre appareil" />
           <TextBlock Classes="authhint" Text="Utilisez une invitation ou le réseau de votre établissement." />
           <Border Height="1" Background="{DynamicResource LineBrush}" />
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9"><mi:MaterialIcon Kind="QrcodeScan" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Classes="authhint" Text="Scanner une invitation" /></Grid>
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9"><mi:MaterialIcon Kind="LanConnect" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Classes="authhint" Text="Rechercher le serveur" /></Grid>
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9"><mi:MaterialIcon Kind="ShieldCheckOutline" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Classes="authhint" Text="Autorisation vérifiée" /></Grid>
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9"><PathIcon Data="{x:Static infra:AuthGlyphs.Shield}" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Classes="authhint" Text="Autorisation vérifiée" /></Grid>
         </StackPanel>
       </Border>
         </Grid>
