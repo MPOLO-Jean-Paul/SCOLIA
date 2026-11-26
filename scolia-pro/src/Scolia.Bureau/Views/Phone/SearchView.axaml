@@ -43,7 +43,7 @@
                         <mi:MaterialIcon Kind="History" Width="22" Height="22" Foreground="{DynamicResource MutedBrush}"
                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
                       </Border>
-                      <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="16" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="16" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Text}" />
                       <mi:MaterialIcon Grid.Column="2" Kind="ArrowTopLeft" Width="22" Height="22" Foreground="{DynamicResource MutedBrush}" />
                     </Grid>
                   </Button>
@@ -106,7 +106,7 @@
           <!-- Rien trouvé -->
           <StackPanel IsVisible="{Binding IsEmptyResult}" HorizontalAlignment="Center" Spacing="10" Margin="28,40,28,0">
             <mi:MaterialIcon Kind="Magnify" Width="40" Height="40" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" />
-            <TextBlock Text="Aucun résultat" FontSize="17" FontWeight="SemiBold" TextAlignment="Center" />
+            <TextBlock Text="Aucun résultat" FontSize="17" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
             <TextBlock Text="{Binding Message}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
           </StackPanel>
         </StackPanel>
