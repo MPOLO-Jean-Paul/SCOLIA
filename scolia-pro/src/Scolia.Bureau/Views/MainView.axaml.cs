@@ -508,7 +508,7 @@ public partial class MainView : UserControl
         if (actions.Count == 0) { page.FitActions(0); return; }
         var font = shell.Prefs.Factor * 13.5;
         // Le bloc du titre prend la largeur du titre ou du sous-titre, le plus long des deux, dans sa limite.
-        var heading = TextWidth(page.Heading, 17 * Shell.Prefs.Factor, FontWeight.Bold);
+        var heading = TextWidth(page.Heading, 17 * Shell.Prefs.Factor, FontWeight.SemiBold);
         var sub = TextWidth(page.Subtitle, 12 * Shell.Prefs.Factor, FontWeight.Normal);
         var title = Math.Clamp(Math.Max(heading, sub) + 8 + 42, 140, TitleMax);
         // Le bandeau garde aussi la recherche, au moins sur une largeur lisible, l'état du réseau et le compte.

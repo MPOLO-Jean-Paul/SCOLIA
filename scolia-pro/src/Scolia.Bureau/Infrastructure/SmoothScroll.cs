@@ -83,6 +83,8 @@ public static class SmoothScroll
         state.Target = Math.Clamp(from - e.Delta.Y * Step, 0, max);
         e.Handled = true;
         if (state.Running) return;
+        // Une destination déjà atteinte ne mérite pas de callback de rendu.
+        if (Math.Abs(state.Target - viewer.Offset.Y) < 0.5) return;
         state.Running = true;
         state.LastApplied = viewer.Offset.Y;
         var generation = ++state.Generation;
@@ -143,7 +145,9 @@ public static class SmoothScroll
             Jump(viewer, state);
             return;
         }
-        viewer.Offset = new Vector(viewer.Offset.X, next);
+        // Éviter une notification de défilement pour une image dont le mouvement est imperceptible.
+        if (Math.Abs(next - y) >= 0.01)
+            viewer.Offset = new Vector(viewer.Offset.X, next);
         state.LastApplied = viewer.Offset.Y;
         top.RequestAnimationFrame(_ => Tick(viewer, state, top, generation));
     }

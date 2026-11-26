@@ -68,6 +68,9 @@ public abstract class PageViewModel : Observable
     private const int MaxVisible = 2;
     /// <summary>Nombre de boutons fixé par la largeur de la fenêtre ; -1 tant qu'elle ne l'a pas mesuré.</summary>
     private int visibleCount = -1;
+    private IReadOnlyList<ActionVm>? headerActions;
+    private IReadOnlyList<ActionVm>? visibleActions;
+    private IReadOnlyList<ActionVm>? moreActions;
     private bool busy;
     private bool lastLoadSucceeded;
     private TaskCompletionSource? refreshCompletion;
@@ -77,6 +80,10 @@ public abstract class PageViewModel : Observable
         Shell = shell;
         Actions.CollectionChanged += (_, _) =>
         {
+            headerActions = null;
+            visibleActions = null;
+            moreActions = null;
+            Raise(nameof(HeaderActions));
             Raise(nameof(VisibleActions));
             Raise(nameof(MoreActions));
             Raise(nameof(HasMoreActions));
@@ -95,15 +102,16 @@ public abstract class PageViewModel : Observable
     public virtual MaterialIconKind Glyph => MaterialIconKind.FileDocumentOutline;
     public ObservableCollection<ActionVm> Actions { get; } = [];
     /// <summary>L'action principale et les plus courantes, affichées en boutons.</summary>
-    public IReadOnlyList<ActionVm> VisibleActions => HeaderActions.Take(Shown).ToList();
+    public IReadOnlyList<ActionVm> VisibleActions => visibleActions ??= Array.AsReadOnly(HeaderActions.Take(Shown).ToArray());
     /// <summary>Les autres actions, rangées dans le menu « Plus » pour garder un en-tête net.</summary>
-    public IReadOnlyList<ActionVm> MoreActions => HeaderActions.Skip(Shown).ToList();
+    public IReadOnlyList<ActionVm> MoreActions => moreActions ??= Array.AsReadOnly(HeaderActions.Skip(Shown).ToArray());
     public bool HasMoreActions => Shown < HeaderActions.Count;
 
     /// <summary>Actions de l'en-tête : toutes, sauf celles réservées au clic droit sur une ligne.</summary>
     /// <remarks>L'action principale vient toujours en tête : en fenêtre étroite, c'est elle qui reste visible.</remarks>
-    public IReadOnlyList<ActionVm> HeaderActions => Actions.Where(a => !a.MenuOnly).OrderByDescending(a => a.IsPrimary).ToList();
-    public bool HasHeaderActions => Actions.Any(a => !a.MenuOnly);
+    public IReadOnlyList<ActionVm> HeaderActions => headerActions ??=
+        Array.AsReadOnly(Actions.Where(a => !a.MenuOnly).OrderByDescending(a => a.IsPrimary).ToArray());
+    public bool HasHeaderActions => HeaderActions.Count > 0;
 
     /// <summary>
     /// Action principale de la page (« Nouvelle section », « Nouvelle inscription »…) : sur le téléphone, un bouton visible
@@ -117,7 +125,7 @@ public abstract class PageViewModel : Observable
     {
         get
         {
-            var count = Actions.Count(a => !a.MenuOnly);
+            var count = HeaderActions.Count;
             return visibleCount >= 0 ? Math.Min(visibleCount, count) : count <= MaxVisible + 1 ? count : MaxVisible;
         }
     }
@@ -130,7 +138,11 @@ public abstract class PageViewModel : Observable
     {
         count = Math.Clamp(count, 0, MaxVisible + 1);
         if (count == visibleCount) return;
+        var previous = Shown;
         visibleCount = count;
+        if (previous == Shown) return;
+        visibleActions = null;
+        moreActions = null;
         Raise(nameof(VisibleActions));
         Raise(nameof(MoreActions));
         Raise(nameof(HasMoreActions));
