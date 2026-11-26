@@ -365,6 +365,7 @@ public sealed class ShellViewModel : Observable
             RemoteWaiting = false;
             Raise(nameof(HasPage));
             Raise(nameof(IsStartPage));
+            Raise(nameof(IsHomePage));
             Raise(nameof(ShowWorkspaceTab));
             Raise(nameof(StartNavigation));
             Raise(nameof(SidebarShown));
@@ -385,6 +386,7 @@ public sealed class ShellViewModel : Observable
     }
     public bool HasPage => current is not null;
     public bool IsStartPage => current is StartPage;
+    public bool IsHomePage => current is HomePage;
     public bool ShowWorkspaceTab => HasPage && !IsStartPage;
     public StartPage? StartNavigation => current as StartPage;
 
