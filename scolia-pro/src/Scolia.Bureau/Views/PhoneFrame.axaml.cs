@@ -163,7 +163,9 @@ public partial class PhoneFrame : UserControl
         if (Shell is not { } shell || TabGrid.Bounds.Width <= 0) return;
         var count = shell.PhoneTabs.Count + 1; // dernier onglet = Menu
         if (count <= 1) return;
-        MenuTab.Width = TabGrid.Bounds.Width / count;
+        var width = TabGrid.Bounds.Width / count;
+        if (double.IsNaN(MenuTab.Width) || Math.Abs(MenuTab.Width - width) > 0.5)
+            MenuTab.Width = width;
     }
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;

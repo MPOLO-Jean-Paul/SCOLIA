@@ -265,9 +265,12 @@ public partial class MainView : UserControl
         var width = Math.Min(Math.Max(HeaderFinderBar.Bounds.Width, 500), 580);
         width = Math.Min(width, space);
         var left = Math.Max(12, Math.Min(corner.X, DesktopArea.Bounds.Width - width - 12));
-        HeaderFinderDrop.Width = width;
-        HeaderFinderDrop.MaxHeight = Math.Max(100, Math.Min(490, DesktopArea.Bounds.Height - corner.Y - 16));
-        HeaderFinderDrop.Margin = new Thickness(left, corner.Y + 8, 0, 0);
+        var top = Math.Max(0, corner.Y + 8);
+        var height = Adaptive.PopupHeight(DesktopArea.Bounds.Height, top, 490);
+        var margin = new Thickness(left, top, 0, 0);
+        if (HeaderFinderDrop.Width != width) HeaderFinderDrop.Width = width;
+        if (HeaderFinderDrop.MaxHeight != height) HeaderFinderDrop.MaxHeight = height;
+        if (HeaderFinderDrop.Margin != margin) HeaderFinderDrop.Margin = margin;
     }
 
     private void OnHeaderFinderOutside(object? sender, PointerPressedEventArgs e)
@@ -457,7 +460,10 @@ public partial class MainView : UserControl
             if (shell.CompactWindow && !Preferences.MobileLayout) shell.Prefs.Fit(1280, 720);
             else shell.Prefs.Fit(size.Width, size.Height);
             var k = shell.Prefs.LayoutScale;
-            if (Math.Abs(k - 1) < 0.001) Scaler.LayoutTransform = null;
+            if (Math.Abs(k - 1) < 0.001)
+            {
+                if (Scaler.LayoutTransform is not null) Scaler.LayoutTransform = null;
+            }
             else if (Scaler.LayoutTransform is not ScaleTransform currentScale || Math.Abs(currentScale.ScaleX - k) >= 0.001)
                 Scaler.LayoutTransform = new ScaleTransform(k, k);
             shell.Narrow = size.Width / k < NarrowBelow;

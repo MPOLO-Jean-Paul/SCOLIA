@@ -107,17 +107,27 @@ public static class Adaptive
         {
             state.Pending = false;
             if (grid.Bounds.Width > 0 && GetStackBelow(grid) > 0)
-                Apply(grid, state, grid.Bounds.Width < GetStackBelow(grid));
+                Apply(grid, state, ShouldStack(grid.Bounds.Width, GetStackBelow(grid), state.Stacked));
         });
     }
+
+    // Une petite zone de stabilité évite les bascules répétées à la frontière
+    // d'une mise en page (barre de défilement, arrondi DPI, zoom).
+    public static bool ShouldStack(double width, double threshold, bool stacked) =>
+        threshold > 0 && width < threshold + (stacked ? 8 : 0);
+
+    public static double PopupHeight(double viewportHeight, double top, double maximum) =>
+        Math.Clamp(viewportHeight - top - 8, 0, maximum);
 
     private static void Apply(Grid grid, GridState state, bool stack)
     {
         if (stack == state.Stacked) return;
         if (stack)
         {
-            state.Columns = [.. grid.ColumnDefinitions.Select(c => new ColumnDefinition(c.Width))];
-            state.Rows = [.. grid.RowDefinitions.Select(r => new RowDefinition(r.Height))];
+            // Garder les définitions d'origine et leurs contraintes, y compris les
+            // minimums, maximums, groupes partagés et éventuelles liaisons.
+            state.Columns = grid.ColumnDefinitions;
+            state.Rows = grid.RowDefinitions;
             state.RowSpacing = grid.RowSpacing;
             state.Children.Clear();
             var children = grid.Children.OfType<Control>().ToList();
@@ -140,8 +150,8 @@ public static class Adaptive
         }
         else
         {
-            grid.ColumnDefinitions = [.. state.Columns.Select(c => new ColumnDefinition(c.Width))];
-            grid.RowDefinitions = [.. state.Rows.Select(r => new RowDefinition(r.Height))];
+            grid.ColumnDefinitions = state.Columns;
+            grid.RowDefinitions = state.Rows;
             grid.RowSpacing = state.RowSpacing;
             foreach (var (child, row, column, rowSpan, columnSpan) in state.Children)
             {
@@ -232,16 +242,24 @@ public static class Adaptive
             verticalMargin += ancestor.Margin.Top + ancestor.Margin.Bottom;
         }
         var room = Math.Max(0, host.Width - Math.Max(24, horizontalMargin));
-        if (!double.IsNaN(state.Width)) dialog.Width = Math.Min(state.Width, room);
-        dialog.MinWidth = Math.Min(state.MinWidth, room);
-        dialog.MaxWidth = Math.Min(state.MaxWidth, room);
+        if (!double.IsNaN(state.Width))
+        {
+            var width = Math.Min(state.Width, room);
+            if (dialog.Width != width) dialog.Width = width;
+        }
+        var minWidth = Math.Min(state.MinWidth, room);
+        var maxWidth = Math.Min(state.MaxWidth, room);
+        if (dialog.MinWidth != minWidth) dialog.MinWidth = minWidth;
+        if (dialog.MaxWidth != maxWidth) dialog.MaxWidth = maxWidth;
         // En hauteur aussi : une fiche plus haute que la fenêtre défile au lieu d'être coupée.
         // Une fiche posée dans une page (Paramètres) suit le défilement de la page : pas de seconde barre.
         if (host.Height > 0 && !dialog.Classes.Contains("embedded"))
         {
             var height = Math.Max(0, host.Height - Math.Max(48, verticalMargin));
-            dialog.MinHeight = Math.Min(state.MinHeight, height);
-            dialog.MaxHeight = Math.Min(state.MaxHeight, height);
+            var minHeight = Math.Min(state.MinHeight, height);
+            var maxHeight = Math.Min(state.MaxHeight, height);
+            if (dialog.MinHeight != minHeight) dialog.MinHeight = minHeight;
+            if (dialog.MaxHeight != maxHeight) dialog.MaxHeight = maxHeight;
         }
     }
 }
