@@ -182,12 +182,13 @@
 
             <StackPanel Spacing="6" IsVisible="{Binding RequireCode}">
               <TextBlock Classes="authlabel" Text="Mot de passe ou code PIN" />
-              <Grid>
-                <TextBox x:Name="IosLockCode" Classes="authfield witheye" Text="{Binding Code}"
+              <Grid Classes="authinput">
+                <TextBox x:Name="IosLockCode" Classes="authfield witheye withicon" Text="{Binding Code}"
                          PasswordChar="•" RevealPassword="{Binding ShowCode}" MaxLength="128"
                          TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                          PlaceholderText="Mot de passe ou code PIN"
                          IsEnabled="{Binding NotBusy}" AutomationProperties.Name="Code de déverrouillage" />
+                <mi:MaterialIcon Classes="authinputicon" Kind="LockOutline" />
                 <Button Classes="autheye" Command="{Binding ToggleCode}" IsEnabled="{Binding NotBusy}"
                         ToolTip.Tip="Afficher ou masquer le code">
                   <mi:MaterialIcon Kind="{Binding EyeIcon}" />
@@ -197,7 +198,7 @@
                 <Panel>
                   <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding Busy}" HorizontalAlignment="Center">
                     <mi:MaterialIcon Kind="Loading" Classes="spin" Width="18" Height="18" VerticalAlignment="Center" />
-                    <TextBlock Text="Déverrouillage en cours…" VerticalAlignment="Center" />
+                    <TextBlock Text="Déverrouillage en cours…" VerticalAlignment="Center" TextWrapping="Wrap" />
                   </StackPanel>
                   <TextBlock Text="Déverrouiller" IsVisible="{Binding NotBusy}" VerticalAlignment="Center" />
                 </Panel>
@@ -218,7 +219,7 @@
             <Border Classes="authmessage error" IsVisible="{Binding HasError}">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
                 <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" VerticalAlignment="Top" />
-                <TextBlock Grid.Column="1" Text="{Binding Error}" />
+                <TextBlock Grid.Column="1" Text="{Binding Error}" TextWrapping="Wrap" />
               </Grid>
             </Border>
 

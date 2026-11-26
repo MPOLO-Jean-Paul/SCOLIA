@@ -402,4 +402,46 @@
   <Style Selector="Button.phonerow:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.sheetitem:not(.danger):pressed /template/ ContentPresenter#PART_ContentPresenter, Button.phonetab:pressed /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
   </Style>
+  <!-- Champs métier Android : densité tactile cohérente, texte centré verticalement.
+       Les contrôles d'accès et la recherche intégrée ont leurs propres dimensions. -->
+  <Style Selector="LayoutTransformControl.phone TextBox:not(.authfield):not(.onbrand):not(.iosauthfield):not(.ioslockfield):not(.searchfield):not(.search):not(.code)">
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="FontSize" Value="{DynamicResource FsBase}" />
+    <Setter Property="PlaceholderForeground" Value="{DynamicResource MutedBrush}" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBox.multiline">
+    <Setter Property="VerticalContentAlignment" Value="Top" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone ComboBox, LayoutTransformControl.phone CalendarDatePicker, LayoutTransformControl.phone DatePicker, LayoutTransformControl.phone NumericUpDown, LayoutTransformControl.phone AutoCompleteBox">
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="FontSize" Value="{DynamicResource FsBase}" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone ComboBox">
+    <Setter Property="Padding" Value="12,8" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBox.w11:not(.onbrand):not(.code) /template/ Border#PART_BorderElement, LayoutTransformControl.phone ComboBox /template/ Border#Background">
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBox.w11:not(.onbrand):not(.code):focus:not(.invalid) /template/ Border#PART_BorderElement, LayoutTransformControl.phone ComboBox:focus-within:not(.invalid) /template/ Border#Background">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+  </Style>
+  <!-- La zone de saisie conserve sa place entre retour, effacement et micro. -->
+  <Style Selector="LayoutTransformControl.phone TextBox.searchfield">
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="FontSize" Value="{DynamicResource FsBase}" />
+    <Setter Property="PlaceholderForeground" Value="{DynamicResource MutedBrush}" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBox.search">
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock.fieldlabel, LayoutTransformControl.phone TextBlock.phoneblocktitle">
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="TextAlignment" Value="Left" />
+  </Style>
 </Styles>

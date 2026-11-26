@@ -436,7 +436,7 @@
 
                 <StackPanel Spacing="6" IsVisible="{Binding ShowAccountEntry}">
                   <TextBlock Classes="authlabel" Text="Identifiant" />
-                  <Grid>
+                  <Grid Classes="authinput">
                     <TextBox x:Name="IosUserNameBox" Classes="authfield withicon" Text="{Binding UserName}"
                              PlaceholderText="Votre identifiant" MaxLength="40" IsEnabled="{Binding CanType}"
                              AutomationProperties.Name="Identifiant de connexion" />
@@ -445,7 +445,7 @@
                 </StackPanel>
                 <StackPanel Spacing="6" IsVisible="{Binding ShowSignInPassword}">
                   <TextBlock Classes="authlabel" Text="Mot de passe" />
-                  <Grid>
+                  <Grid Classes="authinput">
                     <TextBox x:Name="IosPasswordBox" Classes="authfield witheye withicon" Text="{Binding Password}"
                              PasswordChar="•" RevealPassword="{Binding ShowPassword}" MaxLength="128"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
@@ -464,7 +464,7 @@
                   <Panel>
                     <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding Busy}" HorizontalAlignment="Center">
                       <mi:MaterialIcon Kind="Loading" Classes="spin" Width="18" Height="18" VerticalAlignment="Center" />
-                      <TextBlock Text="Connexion en cours…" VerticalAlignment="Center" />
+                      <TextBlock Text="Connexion en cours…" VerticalAlignment="Center" TextWrapping="Wrap" />
                     </StackPanel>
                     <TextBlock Text="Se connecter" IsVisible="{Binding NotBusy}" VerticalAlignment="Center" />
                   </Panel>
@@ -475,7 +475,7 @@
                           Command="{Binding ToggleRecoveryHelp}" IsEnabled="{Binding NotBusy}"
                           ToolTip.Tip="Mot de passe oublié ?" AutomationProperties.Name="Récupérer mon mot de passe"
                           HorizontalAlignment="Left" Padding="0,0,8,0">
-                    <TextBlock Text="Mot de passe oublié ?" TextWrapping="Wrap" />
+                    <TextBlock Text="Mot de passe oublié ?" TextWrapping="Wrap" TextAlignment="Left" />
                   </Button>
                   <Button x:Name="IosFingerprintSignIn" Grid.Column="1" Classes="authsecondary"
                           Command="{Binding SignInWithBiometrics}"
@@ -496,7 +496,7 @@
                 <TextBlock Classes="authhint" Text="{Binding RecoveryInstructions}" TextAlignment="Center" />
                 <StackPanel Spacing="6">
                   <TextBlock Classes="authlabel" Text="Nouveau mot de passe" />
-                  <Grid>
+                  <Grid Classes="authinput">
                     <TextBox x:Name="IosNewPasswordBox" Classes="authfield witheye withicon" Text="{Binding NewPassword}"
                              PasswordChar="•" RevealPassword="{Binding ShowNewPassword}" MaxLength="128"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
@@ -512,7 +512,7 @@
                 </StackPanel>
                 <StackPanel Spacing="6">
                   <TextBlock Classes="authlabel" Text="Confirmer le nouveau mot de passe" />
-                  <Grid>
+                  <Grid Classes="authinput">
                     <TextBox x:Name="IosConfirmPasswordBox" Classes="authfield witheye withicon" Text="{Binding ConfirmPassword}"
                              PasswordChar="•" RevealPassword="{Binding ShowConfirmPassword}" MaxLength="128"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
@@ -528,7 +528,7 @@
                 </StackPanel>
                 <StackPanel Spacing="6">
                   <TextBlock Classes="authlabel" Text="Code de secours du serveur" />
-                  <Grid>
+                  <Grid Classes="authinput">
                     <TextBox x:Name="IosRecoveryCodeBox" Classes="authfield witheye withicon" Text="{Binding RecoveryCode}"
                              PasswordChar="•" RevealPassword="{Binding ShowRecoveryCode}" MaxLength="100"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"

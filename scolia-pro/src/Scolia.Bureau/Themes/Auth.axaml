@@ -70,6 +70,27 @@
   </Style>
   <Style Selector="TextBox.authfield.withicon"><Setter Property="Padding" Value="40,0,14,0" /></Style>
   <Style Selector="TextBox.authfield.withicon.witheye"><Setter Property="Padding" Value="40,0,48,0" /></Style>
+  <!-- Connexion compacte : pictogramme ancré à gauche, zone de texte réservée,
+       œil tactile à droite ; aucune icône ne reçoit la saisie. -->
+  <Style Selector="ScrollViewer.authpage:not(.wide) Grid.authinput mi|MaterialIcon.authinputicon">
+    <Setter Property="Width" Value="20" /><Setter Property="Height" Value="20" />
+    <Setter Property="Margin" Value="14,0,0,0" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="ScrollViewer.authpage:not(.wide) Grid.authinput TextBox.authfield.withicon">
+    <Setter Property="Padding" Value="46,0,14,0" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+  </Style>
+  <Style Selector="ScrollViewer.authpage:not(.wide) Grid.authinput TextBox.authfield.withicon.witheye">
+    <Setter Property="Padding" Value="46,0,52,0" />
+  </Style>
+  <Style Selector="Grid.authinput:focus-within mi|MaterialIcon.authinputicon">
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="ScrollViewer.authpage:not(.wide) Grid.authinput Button.autheye">
+    <Setter Property="Margin" Value="0,0,4,0" />
+  </Style>
   <Style Selector="ScrollViewer.wide TextBlock.authtitle"><Setter Property="FontSize" Value="28" /></Style>
 
   <!-- En-tête : petit logo, nom de l'application, établissement -->

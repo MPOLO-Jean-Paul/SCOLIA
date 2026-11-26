@@ -68,6 +68,7 @@
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
+  <Thickness x:Key="TableHeaderPadding">6,4,4,4</Thickness>
   <CornerRadius x:Key="RadiusCard">12</CornerRadius>
   <CornerRadius x:Key="RadiusField">8</CornerRadius>
   <CornerRadius x:Key="RadiusPill">20</CornerRadius>
