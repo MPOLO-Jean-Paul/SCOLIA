@@ -142,7 +142,7 @@ public static class PhoneCards
         if (title is not null)
         {
             var main = Value(grid, title, emphasis: true);
-            main.MinWidth = 0;
+            if (main is TextBlock) main.MinWidth = 0;
             head.Children.Add(main);
         }
         if (amount is not null)
