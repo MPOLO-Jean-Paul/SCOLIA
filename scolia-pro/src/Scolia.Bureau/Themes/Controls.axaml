@@ -14,7 +14,7 @@
           <Border Grid.Column="1" Classes="kpiicon" Background="{Binding Soft}" VerticalAlignment="Top">
             <mi:MaterialIcon Kind="{Binding Icon}" Foreground="{Binding Accent}" />
           </Border>
-          <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Value}" Classes="kpi" Margin="0,4,0,0" TextTrimming="CharacterEllipsis" />
+          <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Value}" Classes="kpi" Margin="0,4,0,0" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Value}" />
           <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" Margin="0,2,0,0" />
         </Grid>
       </Border>
@@ -53,6 +53,7 @@
     <Setter Property="LetterSpacing" Value="-0.2" />
   </Style>
   <Style Selector="TextBlock.heading">
+    <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="FontSize" Value="{DynamicResource FsHeading}" />
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
@@ -1115,7 +1116,7 @@
   </Style>
   <!-- Tableaux denses : le chiffre et le nom restent en Regular, l'en-tête porte la graisse -->
   <!-- Cellule trop étroite : points de suspension, jamais un mot coupé net -->
-  <Style Selector="DataGridCell TextBlock"><Setter Property="FontWeight" Value="Normal" /><Setter Property="TextTrimming" Value="CharacterEllipsis" /></Style>
+  <Style Selector="DataGridCell TextBlock"><Setter Property="FontWeight" Value="Normal" /><Setter Property="TextTrimming" Value="CharacterEllipsis" /><Setter Property="ToolTip.Tip" Value="{Binding $self.Text}" /></Style>
   <Style Selector="DataGridColumnHeader TextBlock">
     <Setter Property="TextWrapping" Value="NoWrap" />
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
@@ -1332,6 +1333,14 @@
   </Style>
   <Style Selector="Button.toolicon:pointerover">
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+  <!-- État clavier : filet visible, sans modifier la taille de la commande. -->
+  <Style Selector="Button.toolicon:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="Button.toolicon:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
   </Style>
   <!-- Flèches retour et suivant groupées dans une capsule, comme la barre d'outils des Réglages -->
   <Style Selector="Border.navcapsule">

@@ -34,7 +34,7 @@
       <SolidColorBrush x:Key="ButtonLineBrush" Color="#7D8798" />
       <SolidColorBrush x:Key="ButtonHoverBrush" Color="#DEE6F1" />
       <SolidColorBrush x:Key="ButtonFillBrush" Color="#EAEFF6" />
-      <SolidColorBrush x:Key="ButtonPressedBrush" Color="#7D8798" />
+      <SolidColorBrush x:Key="ButtonPressedBrush" Color="#D3DEED" />
       <SolidColorBrush x:Key="ButtonStrokeBrush" Color="Transparent" />
       <SolidColorBrush x:Key="NavSelectedBrush" Color="#E7EEFA" />
       <SolidColorBrush x:Key="TextBrush" Color="#152C4D" />
@@ -112,7 +112,7 @@
       <SolidColorBrush x:Key="ButtonLineBrush" Color="#808088" />
       <SolidColorBrush x:Key="ButtonHoverBrush" Color="#3A3A41" />
       <SolidColorBrush x:Key="ButtonFillBrush" Color="#2E2E34" />
-      <SolidColorBrush x:Key="ButtonPressedBrush" Color="#808088" />
+      <SolidColorBrush x:Key="ButtonPressedBrush" Color="#44444C" />
       <SolidColorBrush x:Key="NavSelectedBrush" Color="#2B3446" />
       <SolidColorBrush x:Key="ButtonStrokeBrush" Color="Transparent" />
       <SolidColorBrush x:Key="TextBrush" Color="#E6E6EB" />
