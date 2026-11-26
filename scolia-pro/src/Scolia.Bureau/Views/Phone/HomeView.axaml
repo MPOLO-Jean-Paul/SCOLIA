@@ -95,7 +95,10 @@
         <ItemsControl.ItemTemplate><DataTemplate><Button Classes="workaction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding ShortTitle}">
               <StackPanel Spacing="7">
                 <Border Classes="workspaceglyph" HorizontalAlignment="Left">
-                  <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Foreground="{Binding Brush}" />
+                  <Grid>
+                    <Border CornerRadius="7" Background="{Binding Brush}" Opacity="0.14" IsHitTestVisible="False" />
+                    <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Foreground="{Binding Brush}" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+                  </Grid>
                 </Border>
                 <TextBlock Text="{Binding ShortTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
