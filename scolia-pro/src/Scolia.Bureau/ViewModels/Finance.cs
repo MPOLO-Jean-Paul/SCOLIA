@@ -446,6 +446,7 @@ public sealed class ReEnrollmentPage : PageViewModel
     private ChoiceItem? year;
     private string subtitle = string.Empty;
     private bool ready;
+    private string? loadedYear;
     private IReadOnlyList<ChoiceItem> promotions = [];
 
     public ReEnrollmentPage(ShellViewModel shell) : base(shell)
@@ -471,11 +472,30 @@ public sealed class ReEnrollmentPage : PageViewModel
 
     public ObservableCollection<ReEnrollRowVm> Items { get; } = [];
     public IReadOnlyList<ChoiceItem> Years { get; private set; } = [];
+    public string SelectionSummary => $"{Items.Count(i => i.Selected)} sélectionné(s) sur {Items.Count}";
+
+    private void SelectionChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ReEnrollRowVm.Selected)) Raise(nameof(SelectionSummary));
+    }
+
+    private void ClearPlan()
+    {
+        foreach (var row in Items) row.PropertyChanged -= SelectionChanged;
+        Items.Clear();
+        Raise(nameof(SelectionSummary));
+    }
 
     public ChoiceItem? Year
     {
         get => year;
-        set { if (Set(ref year, value) && ready) _ = Shell.Run(RefreshAsync); }
+        set
+        {
+            if (!Set(ref year, value) || !ready) return;
+            loadedYear = null;
+            ClearPlan();
+            _ = Shell.Run(RefreshAsync);
+        }
     }
 
     public override async Task LoadAsync()
@@ -494,7 +514,8 @@ public sealed class ReEnrollmentPage : PageViewModel
         }
         if (Year is null)
         {
-            Items.Clear();
+            loadedYear = null;
+            ClearPlan();
             EmptyHint = "Créez ou choisissez une année scolaire cible pour préparer les réinscriptions.";
             subtitle = "Aucune année scolaire cible";
             Raise(nameof(Subtitle));
@@ -504,7 +525,8 @@ public sealed class ReEnrollmentPage : PageViewModel
         // Première année de l'établissement : rien à reconduire tant que l'année suivante n'existe pas.
         if (Years.Count < 2)
         {
-            Items.Clear();
+            loadedYear = null;
+            ClearPlan();
             EmptyHint = $"Une seule année scolaire existe. Créez l'année suivante avec « Nouvelle année », puis revenez ici pour reconduire les {Shell.StudentTerms.Plural}.";
             subtitle = "Aucune année suivante pour le moment";
             Raise(nameof(Subtitle));
@@ -512,8 +534,13 @@ public sealed class ReEnrollmentPage : PageViewModel
         }
         EmptyHint = "Les dossiers à reconduire apparaissent ici une fois l'année précédente clôturée.";
 
-        promotions = await PromotionChoicesFor(Guid.Parse(Year.Value));
-        var plan = await Shell.Api.GetAsync<List<ReEnrollmentItemDto>>("api/reinscriptions/plan" + ScoliaClient.Query(("anneeId", Year.Value)));
+        var requestedYear = Year.Value;
+        var promotionTask = PromotionChoicesFor(Guid.Parse(requestedYear));
+        var planTask = Shell.Api.GetAsync<List<ReEnrollmentItemDto>>("api/reinscriptions/plan" + ScoliaClient.Query(("anneeId", requestedYear)));
+        await Task.WhenAll(promotionTask, planTask);
+        if (Year?.Value != requestedYear) return;
+        promotions = await promotionTask;
+        var plan = await planTask;
         // Une proposition virtuelle apparaît lorsque la promotion cible n'existe pas.
         // La création réelle intervient seulement lorsque l'utilisateur confirme le lot.
         var choices = promotions.ToList();
@@ -524,16 +551,28 @@ public sealed class ReEnrollmentPage : PageViewModel
                 choices.Add(new ChoiceItem("auto:" + code, code + " · Créer automatiquement"));
         }
         promotions = choices;
-        Items.Clear();
+        // Une actualisation de la même année conserve les choix explicites du lecteur.
+        var previous = loadedYear == requestedYear ? Items.ToDictionary(r => r.StudentId) : new Dictionary<Guid, ReEnrollRowVm>();
+        ClearPlan();
         foreach (var p in plan)
         {
             var target = promotions.FirstOrDefault(c => p.ToPromotion is not null
                 && c.Label.StartsWith(p.ToPromotion + " ·", StringComparison.OrdinalIgnoreCase));
             // La décision du jury annuel clôturé guide la proposition : admis, promotion suivante ; ajourné, redoublement.
-            Items.Add(new ReEnrollRowVm(p.StudentId, p.Matricule, p.FullName, p.JuryDecision is { } jury ? $"{p.FromPromotion} · {jury}" : p.FromPromotion,
-                Money(p.PreviousBalance), p.Selected, target, promotions));
+            var selected = p.Selected;
+            if (previous.TryGetValue(p.StudentId, out var old))
+            {
+                selected = old.Selected;
+                target = old.Target is null ? null : promotions.FirstOrDefault(c => c.Value == old.Target.Value) ?? target;
+            }
+            var row = new ReEnrollRowVm(p.StudentId, p.Matricule, p.FullName, p.JuryDecision is { } jury ? $"{p.FromPromotion} · {jury}" : p.FromPromotion,
+                Money(p.PreviousBalance), selected, target, promotions);
+            row.PropertyChanged += SelectionChanged;
+            Items.Add(row);
         }
-        subtitle = $"{Format.Count(plan.Count, $"{Shell.StudentTerms.Singular} à reconduire", $"{Shell.StudentTerms.Plural} à reconduire")} · {Items.Count(i => i.Selected)} sélectionné(s)";
+        loadedYear = requestedYear;
+        Raise(nameof(SelectionSummary));
+        subtitle = Format.Count(plan.Count, $"{Shell.StudentTerms.Singular} à reconduire", $"{Shell.StudentTerms.Plural} à reconduire");
         Raise(nameof(Subtitle));
     }
 
@@ -545,7 +584,12 @@ public sealed class ReEnrollmentPage : PageViewModel
 
     private async Task ApplyAsync()
     {
-        if (Year is null) return;
+        var targetYear = Year;
+        if (targetYear is null || loadedYear != targetYear.Value || Busy)
+        {
+            Shell.Notify("Attendez le chargement du plan de réinscription de l’année choisie.");
+            return;
+        }
         var selected = Items.Where(i => i.Selected).ToList();
         if (selected.Count == 0)
         {
@@ -570,10 +614,16 @@ public sealed class ReEnrollmentPage : PageViewModel
         var automatic = newPromotions.Count == 0 ? string.Empty
             : $" {newPromotions.Count} promotion(s) absente(s) seront créées automatiquement ({string.Join(", ", newPromotions)}). Leurs frais seront repris comme paramètres initiaux et pourront être vérifiés dans Configuration.";
         var confirmed = await Shell.Confirm("Lancer les réinscriptions",
-            $"{Format.Count(choices.Count, $"{Shell.StudentTerms.Singular} sera inscrit", $"{Shell.StudentTerms.Plural} seront inscrits")} dans l'année {Year.Label}. Les soldes restent attachés aux dossiers.{automatic}",
+            $"{Format.Count(choices.Count, $"{Shell.StudentTerms.Singular} sera inscrit", $"{Shell.StudentTerms.Plural} seront inscrits")} dans l'année {targetYear.Label}. Les soldes restent attachés aux dossiers.{automatic}",
             "Réinscrire");
         if (!confirmed) return;
-        var created = await Shell.Api.SendAsync<int>(HttpMethod.Post, "api/reinscriptions", new { targetYearId = Guid.Parse(Year.Value), choices });
+        if (Year?.Value != targetYear.Value || loadedYear != targetYear.Value)
+        {
+            Shell.Notify("L’année cible a changé. Vérifiez le nouveau plan avant de confirmer.");
+            return;
+        }
+        var created = await Shell.Api.SendAsync<int>(HttpMethod.Post, "api/reinscriptions", new { targetYearId = Guid.Parse(targetYear.Value), choices });
+        loadedYear = null;
         Shell.Notify($"{created} réinscription(s) enregistrée(s).");
         await RefreshAsync();
     }
