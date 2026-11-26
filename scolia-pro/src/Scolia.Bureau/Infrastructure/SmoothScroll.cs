@@ -68,7 +68,7 @@ public static class SmoothScroll
         ScrollViewer? nearest = null;
         foreach (var visual in source.GetSelfAndVisualAncestors())
         {
-            if (visual is DataGrid or TextBox or ComboBox) return;
+            if (visual is DataGrid or TextBox or ComboBox) { Stop(viewer); return; }
             if (visual is ScrollViewer candidate && CanScroll(candidate, e.Delta.Y)) { nearest = candidate; break; }
             if (visual == viewer) break;
         }
@@ -77,8 +77,7 @@ public static class SmoothScroll
         var state = States.GetOrCreateValue(viewer);
         var max = Math.Max(0, viewer.Extent.Height - viewer.Viewport.Height);
         // Une nouvelle direction annule la destination précédente, sans inertie opposée au doigt.
-        if (state.Running && (Math.Abs(viewer.Offset.Y - state.LastApplied) > 0.5 ||
-            (state.Target - viewer.Offset.Y) * e.Delta.Y > 0))
+        if (state.Running && ShouldInterrupt(viewer.Offset.Y, state.LastApplied, state.Target, e.Delta.Y))
             Stop(viewer);
         var from = state.Running ? state.Target : viewer.Offset.Y;
         state.Target = Math.Clamp(from - e.Delta.Y * Step, 0, max);
@@ -92,6 +91,14 @@ public static class SmoothScroll
         if (top is null) { Jump(viewer, state); return; }
         top.RequestAnimationFrame(_ => Tick(viewer, state, top, generation));
     }
+
+    /// <summary>Interrompt un mouvement devenu obsolète ou dont la direction est inversée.</summary>
+    public static bool ShouldInterrupt(double offset, double lastApplied, double target, double deltaY) =>
+        Math.Abs(offset - lastApplied) > 0.5 || (target - offset) * deltaY > 0;
+
+    /// <summary>Décélération monotone, indépendante du taux de rafraîchissement.</summary>
+    public static double AdvanceOffset(double offset, double target, double seconds) =>
+        target - (target - offset) * Math.Exp(-Math.Max(0, seconds) / Tau);
 
     private static bool CanScroll(ScrollViewer viewer, double deltaY)
     {
@@ -130,7 +137,7 @@ public static class SmoothScroll
         var max = Math.Max(0, viewer.Extent.Height - viewer.Viewport.Height);
         state.Target = Math.Clamp(state.Target, 0, max);
         var y = viewer.Offset.Y;
-        var next = state.Target - (state.Target - y) * Math.Exp(-dt / Tau);
+        var next = AdvanceOffset(y, state.Target, dt);
         if (Math.Abs(state.Target - next) < 0.5)
         {
             Jump(viewer, state);
