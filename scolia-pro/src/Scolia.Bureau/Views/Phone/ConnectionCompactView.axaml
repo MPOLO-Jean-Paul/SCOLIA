@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.Phone.ConnectionCompactView">
   <!-- Parcours pré-connexion Android : plusieurs pages courtes, jamais une page verticale à faire défiler. -->
@@ -147,7 +148,7 @@
           ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10" Margin="14,12,14,6">
       <Button Classes="connectnav" Command="{Binding Back}" IsVisible="{Binding CanGoBack}"
               Width="40" Height="40" Padding="0" ToolTip.Tip="Retour à la connexion">
-        <mi:MaterialIcon Kind="ChevronLeft" Width="21" Height="21" />
+        <PathIcon Data="{x:Static infra:AuthGlyphs.Back}" Width="21" Height="21" />
       </Button>
       <Border Grid.Column="1" Width="42" Height="42" CornerRadius="6" Background="{DynamicResource SurfaceBrush}"
               BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
@@ -294,7 +295,7 @@
     <Border Grid.Row="1" Classes="connectcard" Margin="13" IsVisible="{Binding PairingInProgress}"
             VerticalAlignment="Center" HorizontalAlignment="Stretch">
       <StackPanel Classes="connectfields" Spacing="12">
-        <mi:MaterialIcon Kind="ShieldCheckOutline" Width="44" Height="44"
+        <PathIcon Data="{x:Static infra:AuthGlyphs.Shield}" Width="44" Height="44"
                          Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" />
         <TextBlock Classes="connecttitle" Text="Vérification sécurisée"
                    TextAlignment="Center" />
