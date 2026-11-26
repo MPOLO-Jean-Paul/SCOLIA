@@ -87,6 +87,26 @@ public sealed class InstallerAndHomePolishTests
     }
 
     [Fact]
+    public void Accueil_Windows_Settings_conserve_les_actions_dans_deux_panneaux_adaptatifs()
+    {
+        var home = XDocument.Load(Source("src/Scolia.Bureau/Views/HomeView.axaml"));
+        var panels = Assert.Single(home.Descendants(), e => e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "HomeSettingsPanels"));
+        Assert.Equal("*,*", (string?)panels.Attribute("ColumnDefinitions"));
+        Assert.Contains(panels.Attributes(), a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "820");
+        Assert.Equal(2, panels.Elements().Count(e => e.Name.LocalName == "Border" && (string?)e.Attribute("Classes") == "pbiPanel"));
+        foreach (var binding in new[] { "QuickActions", "MoreTools" })
+        {
+            var items = Assert.Single(panels.Descendants(), e => e.Name.LocalName == "ItemsControl" &&
+                (string?)e.Attribute("ItemsSource") == "{Binding " + binding + "}");
+            Assert.Contains(items.Descendants(), e => e.Name.LocalName == "Button" && (string?)e.Attribute("Command") == "{Binding Open}");
+            Assert.Contains(items.Descendants(), e => e.Name.LocalName == "PathIcon" &&
+                e.Attributes().Any(a => a.Value.Contains("HomeGlyphs.Converter")));
+        }
+        var shell = XDocument.Load(Source("src/Scolia.Bureau/Views/MainView.axaml"));
+        Assert.Contains(shell.Descendants(), e => e.Attributes().Any(a => a.Name.LocalName == "Classes.homepane" && a.Value == "{Binding IsHomePage}"));
+    }
+
+    [Fact]
     public void Accueil_desktop_PowerBI_adopte_des_panneaux_Fluent_responsives()
     {
         var doc = XDocument.Load(Source("src/Scolia.Bureau/Views/HomeView.axaml"));
