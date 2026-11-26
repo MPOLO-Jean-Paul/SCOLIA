@@ -42,7 +42,7 @@
       <Border Grid.Row="1" Classes="googlebar pill" Margin="16,4,16,10">
         <Grid ColumnDefinitions="Auto,*,Auto,Auto">
           <mi:MaterialIcon Kind="Magnify" Width="22" Height="22" Margin="12,0,6,0" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
-          <TextBox x:Name="CatalogQuery" Grid.Column="1" Classes="searchfield" Text="{Binding Query}" PlaceholderText="{Binding Placeholder}" />
+          <TextBox x:Name="CatalogQuery" Grid.Column="1" Classes="searchfield" MinWidth="0" AutomationProperties.Name="{Binding Placeholder}" Text="{Binding Query}" PlaceholderText="{Binding Placeholder}" />
           <Button Grid.Column="2" Classes="baricon" Command="{Binding ClearQuery}" IsVisible="{Binding HasQuery}" ToolTip.Tip="Effacer" Width="40" Height="40">
             <mi:MaterialIcon Kind="Close" />
           </Button>
@@ -58,8 +58,8 @@
 
       <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled" MaxHeight="620" x:Name="CatalogScroll">
         <StackPanel Margin="16,0,16,18" Spacing="10">
-          <TextBlock Text="{Binding Totals}" Classes="muted" FontSize="{DynamicResource FsSmall}" Margin="4,0,0,0" />
-          <TextBlock Text="Aucune fonction ne correspond à cette recherche." Classes="muted" IsVisible="{Binding IsEmpty}" Margin="4,10" />
+          <TextBlock Text="{Binding Totals}" TextWrapping="Wrap" Classes="muted" FontSize="{DynamicResource FsSmall}" Margin="4,0,0,0" />
+          <TextBlock Text="Aucune fonction ne correspond à cette recherche." TextWrapping="Wrap" Classes="muted" IsVisible="{Binding IsEmpty}" Margin="4,10" />
           <ItemsControl ItemsSource="{Binding Modules}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>

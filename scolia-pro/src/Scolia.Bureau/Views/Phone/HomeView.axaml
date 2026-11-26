@@ -99,7 +99,7 @@
                   <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24" Foreground="{Binding Brush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <TextBlock Text="{Binding ShortTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
               </StackPanel>
             </Button></DataTemplate></ItemsControl.ItemTemplate>
       </ItemsControl>
