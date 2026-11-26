@@ -138,10 +138,11 @@ public static class PhoneCards
         var fields = others.Where(c => c != title && c != amount && c != subtitle).ToList();
 
         var body = new StackPanel { Spacing = 3 };
-        var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), MinWidth = 0 };
         if (title is not null)
         {
             var main = Value(grid, title, emphasis: true);
+            if (main is TextBlock) main.MinWidth = 0;
             head.Children.Add(main);
         }
         if (amount is not null)
@@ -162,7 +163,7 @@ public static class PhoneCards
         foreach (var column in fields)
         {
             var line = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), RowDefinitions = new RowDefinitions("Auto,Auto"), Margin = new Thickness(0, 2, 0, 0) };
-            var label = new TextBlock { Text = HeaderText(column), TextWrapping = TextWrapping.Wrap, MaxWidth = 150, VerticalAlignment = VerticalAlignment.Top };
+            var label = new TextBlock { Text = HeaderText(column), TextWrapping = TextWrapping.Wrap, MinWidth = 0, MaxWidth = 150, VerticalAlignment = VerticalAlignment.Top };
             label.Classes.Add("phonelabel");
             var value = Value(grid, column, emphasis: false);
             value.HorizontalAlignment = HorizontalAlignment.Right;
@@ -205,7 +206,8 @@ public static class PhoneCards
         var page = PageOf(grid);
         if (page is { RowActions.Count: > 0 })
         {
-            var more = new Button { Content = new MaterialIcon { Kind = MaterialIconKind.DotsHorizontal, Width = 20, Height = 20 }, VerticalAlignment = VerticalAlignment.Top };
+            var more = new Button { Content = new MaterialIcon { Kind = MaterialIconKind.DotsHorizontal, Width = 20, Height = 20, IsHitTestVisible = false }, VerticalAlignment = VerticalAlignment.Top };
+            ToolTip.SetTip(more, "Actions de la ligne");
             more.Classes.Add("phonemore");
             more.Click += (_, e) =>
             {
@@ -256,11 +258,18 @@ public static class PhoneCards
     private static void FitLine(Grid line, Control value, TextBlock text)
     {
         const int LongText = 28;
+        bool? previousStacked = null;
         void Apply()
         {
             var content = text.Text ?? string.Empty;
-            line.IsVisible = !string.IsNullOrWhiteSpace(content);
-            var stacked = content.Length > LongText;
+            var visible = !string.IsNullOrWhiteSpace(content);
+            if (line.IsVisible != visible) line.IsVisible = visible;
+            // Sur un petit écran ou avec le texte agrandi, même une valeur
+            // courte peut manquer de place. Utiliser la largeur logique réelle.
+            var width = line.Bounds.Width;
+            var stacked = content.Length > LongText || (width > 0 && width < 260);
+            if (previousStacked == stacked) return;
+            previousStacked = stacked;
             Grid.SetRow(value, stacked ? 1 : 0);
             Grid.SetColumn(value, stacked ? 0 : 1);
             Grid.SetColumnSpan(value, stacked ? 2 : 1);
@@ -269,6 +278,10 @@ public static class PhoneCards
             text.TextAlignment = stacked ? TextAlignment.Left : TextAlignment.Right;
         }
         text.PropertyChanged += (_, e) => { if (e.Property == TextBlock.TextProperty) Apply(); };
+        line.SizeChanged += (_, e) =>
+        {
+            if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 0.5) Apply();
+        };
         Apply();
     }
 
@@ -284,7 +297,7 @@ public static class PhoneCards
             }
             case DataGridTextColumn text:
             {
-                var block = new TextBlock { TextWrapping = TextWrapping.Wrap };
+                var block = new TextBlock { TextWrapping = TextWrapping.Wrap, MinWidth = 0 };
                 if (emphasis) block.Classes.Add("phonetitle");
                 if (text.Binding is { } b) block.Bind(TextBlock.TextProperty, b);
                 return block;

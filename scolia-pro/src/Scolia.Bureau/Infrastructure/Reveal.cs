@@ -10,7 +10,7 @@ namespace Scolia.Bureau.Infrastructure;
 
 /// <summary>
 /// Apparition en cascade, façon Flutter : quand une page s'affiche, ses cartes montent de quelques pixels en
-/// fondu, l'une après l'autre (25 ms d'écart, 150 ms au plus, 200 ms chacune : la page reste prête à l'emploi en moins de 0,4 s). Seulement si l'utilisateur garde les animations
+/// fondu, l'une après l'autre (12 ms d'écart, 48 ms au plus, 150 ms chacune). Seulement si l'utilisateur garde les animations
 /// (classe « anim » posée par la fenêtre) ; jamais pendant le défilement d'une liste déjà affichée.
 /// </summary>
 public static class Reveal
@@ -28,7 +28,8 @@ public static class Reveal
 
     // Cartes arrivées dans la même « vague » (même affichage de page) : leur rang fixe le décalage.
     private static int wave;
-    private static DateTime lastArrival;
+    private static long lastArrival = -350;
+    private static readonly int MaxWave = (int)(MaxDelay.Ticks / Step.Ticks);
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Control, CancellationTokenSource> Active = new();
 
     static Reveal()
@@ -64,10 +65,12 @@ public static class Reveal
             control.GetVisualAncestors().Any(a => a is DataGrid or ListBox || a is Control parent && GetEnabled(parent))) return;
         Reset(control);
 
-        var now = DateTime.UtcNow;
-        wave = now - lastArrival < TimeSpan.FromMilliseconds(350) ? wave + 1 : 0;
+        // Horloge monotone : un ajustement de l'heure système ne prolonge pas la vague.
+        // Le rang est borné, même si des centaines de contrôles apparaissent ensemble.
+        var now = Environment.TickCount64;
+        wave = now - lastArrival < 350 ? Math.Min(wave + 1, MaxWave) : 0;
         lastArrival = now;
-        var delay = TimeSpan.FromTicks(Math.Min(Step.Ticks * wave, MaxDelay.Ticks));
+        var delay = TimeSpan.FromTicks(Step.Ticks * wave);
 
         var run = new CancellationTokenSource();
         Active.Add(control, run);

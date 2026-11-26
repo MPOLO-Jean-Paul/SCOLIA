@@ -1,0 +1,3 @@
+# Stabilité du rendu — deuxième passe
+
+Mesurer les titres avec la famille embarquée réellement sélectionnée et réutiliser les familles immuables. Regrouper les recalculs de largeur des onglets mobiles après la mesure, y compris pour un rôle sans raccourcis. Réserver 20 unités aux chevrons des accordéons, centrage des pictogrammes des commandes desktop et contenu étiré dans les onglets mobiles. Les liaisons et commandes demeurent identiques. Test de réutilisation des familles typographiques ajouté. La compilation et les captures de cette révision restent à valider ; aucun gain chiffré sans essai réel.

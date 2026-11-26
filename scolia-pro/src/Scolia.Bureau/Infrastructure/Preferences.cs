@@ -73,7 +73,13 @@ public sealed class Preferences : Observable
         .Select(f => new ChoiceItem(f.Key, mobile ? f.Mobile : f.Desktop)).ToList();
 
     /// <summary>Famille de caractères d'une police, pour l'appliquer ou la montrer dans un aperçu.</summary>
-    public static FontFamily FamilyOf(string key) => new(FontTable.FirstOrDefault(f => f.Key == key).Family ?? $"{Bundled}Inter");
+    public static FontFamily FamilyOf(string key) =>
+        FontFamilies.GetOrAdd(FontTable.FirstOrDefault(f => f.Key == key).Family ?? $"{Bundled}Inter",
+            static family => new FontFamily(family));
+
+    // Les familles embarquées sont immuables : les mêmes références servent
+    // à la mesure des titres, aux contrôles et à l'aperçu des réglages.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, FontFamily> FontFamilies = new(StringComparer.Ordinal);
 
     /// <summary>Police par défaut embarquée dans SCOLIA, sans dépendance au système.</summary>
     private static string DefaultFont => Platform.IsMobile ? "android" : "systeme";

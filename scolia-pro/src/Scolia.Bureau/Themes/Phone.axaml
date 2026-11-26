@@ -79,7 +79,8 @@
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
-      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="MinWidth" Value="0" />
       <Setter Property="Padding" Value="0,3" />
       <Setter Property="MinHeight" Value="58" />
       <Setter Property="CornerRadius" Value="12" />
@@ -101,15 +102,16 @@
     </Style>
     <Style Selector="Button.phonetab TextBlock">
       <Setter Property="FontSize" Value="11" />
-      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="MinWidth" Value="0" />
       <Setter Property="TextAlignment" Value="Center" />
       <Setter Property="TextWrapping" Value="NoWrap" />
       <Setter Property="MaxLines" Value="1" />
       <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
-    <Style Selector="Button.phonetab.selected TextBlock">
-      <Setter Property="FontWeight" Value="SemiBold" />
-    </Style>
+    <!-- La graisse reste stable : seule la couleur indique la sélection,
+         sans déplacer les lettres ni recalculer la largeur de l'onglet. -->
     <!-- Les pictogrammes suivent le même état que leur libellé, plutôt que
          de garder la couleur de leur rubrique une fois l'onglet inactif. -->
     <Style Selector="Button.phonetab mi|MaterialIcon">

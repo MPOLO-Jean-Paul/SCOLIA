@@ -75,7 +75,7 @@ public partial class MainView : UserControl
         PageBar.SizeChanged += (_, _) => QueueFitPageActions();
         HeaderFinderBar.SizeChanged += (_, _) =>
         {
-            if (Shell?.HeaderFinderOpen == true) PlaceHeaderFinder();
+            if (Shell?.HeaderFinderOpen == true) QueuePlaceHeaderFinder();
         };
         PageHost.AddHandler(PointerReleasedEvent, OnPagePointerReleased, Avalonia.Interactivity.RoutingStrategies.Bubble);
         DataContextChanged += (_, _) => AttachShell();
@@ -155,8 +155,7 @@ public partial class MainView : UserControl
         // L'ouverture du volet décale le champ sans nécessairement changer sa largeur.
         // Repositionner la liste de suggestions après la nouvelle mise en page.
         if (args.PropertyName == nameof(Preferences.Sidebar) && shell.HeaderFinderOpen)
-            Avalonia.Threading.Dispatcher.UIThread.Post(PlaceHeaderFinder,
-                Avalonia.Threading.DispatcherPriority.Loaded);
+            QueuePlaceHeaderFinder();
     }
 
     /// <summary>Place le curseur dans le filtre de la page sans ouvrir la recherche globale.</summary>
@@ -165,10 +164,12 @@ public partial class MainView : UserControl
         // Filtre ouvert ou fermé : la place laissée aux boutons de la page change.
         if (args.PropertyName == nameof(PhoneHeaderSearchVm.IsOpen)) QueueFitPageActions();
         if (args.PropertyName != nameof(PhoneHeaderSearchVm.IsOpen) ||
-            subscribedShell is not { } shell || !shell.HeaderSearch.IsOpen || shell.Phone) return;
+            subscribedShell is not { } shell || !ReferenceEquals(sender, shell.HeaderSearch)
+            || !shell.HeaderSearch.IsOpen || shell.Phone) return;
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            if (subscribedShell is { } current && current.HeaderSearch.IsOpen && !current.Phone)
+            if (ReferenceEquals(subscribedShell, shell) && ReferenceEquals(Shell, shell)
+                && shell.HeaderSearch.IsOpen && !shell.Phone)
                 DesktopContextSearchBox.Focus();
         }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
@@ -179,8 +180,7 @@ public partial class MainView : UserControl
         if (args.PropertyName == nameof(ShellViewModel.CompactWindow)) FitWindow(Bounds.Size);
         if (args.PropertyName is nameof(ShellViewModel.SidebarShown) or nameof(ShellViewModel.Narrow)
             && shell.HeaderFinderOpen)
-            Avalonia.Threading.Dispatcher.UIThread.Post(PlaceHeaderFinder,
-                Avalonia.Threading.DispatcherPriority.Loaded);
+            QueuePlaceHeaderFinder();
         // Un résultat ouvert (page, fiche, fenêtre, menu Fichier) ou la veille : la liste de la barre se referme et se vide.
         if (shell.HeaderFinderOpen && args.PropertyName is nameof(ShellViewModel.Current) or nameof(ShellViewModel.Dialog)
                 or nameof(ShellViewModel.BackstageOpen) or nameof(ShellViewModel.IsLocked) or nameof(ShellViewModel.IsLoggedIn))
@@ -188,8 +188,11 @@ public partial class MainView : UserControl
         // Lancement et ouverture de session : le logo s'assemble, puis le nom, le message et les trois points suivent.
         if (args.PropertyName == nameof(ShellViewModel.ShowStartup) && shell.ShowStartup) PlayIntro(StartupLogo, StartupContent, shell);
         if (args.PropertyName == nameof(ShellViewModel.ShowLockScreen) && shell.ShowLockScreen)
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => LockHost.GetVisualDescendants().OfType<LockScreenView>().FirstOrDefault()?.FocusCode(),
-                Avalonia.Threading.DispatcherPriority.Loaded);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (ReferenceEquals(subscribedShell, shell) && ReferenceEquals(Shell, shell) && shell.ShowLockScreen)
+                    LockHost.GetVisualDescendants().OfType<LockScreenView>().FirstOrDefault()?.FocusCode();
+            }, Avalonia.Threading.DispatcherPriority.Loaded);
         // Accueil après la connexion : le logo, déjà assemblé au lancement, se pose seulement ; le message suit aussitôt.
         if (args.PropertyName == nameof(ShellViewModel.Opening) && shell.Opening) PlayIntro(OpeningLogo, WelcomeContent, shell, assemble: false);
         if (args.PropertyName != nameof(ShellViewModel.Current)) return;
@@ -234,9 +237,11 @@ public partial class MainView : UserControl
     /// <summary>Ctrl+K ou « Rechercher » : le curseur dans la barre, la liste ouverte dessous. Aucune autre fenêtre.</summary>
     private void FocusHeaderFinder()
     {
+        if (subscribedShell is not { } shell) return;
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            if (Shell is not { } shell || !HeaderFinderBar.IsEffectivelyVisible) return;
+            if (!ReferenceEquals(subscribedShell, shell) || !ReferenceEquals(Shell, shell)
+                || !HeaderFinderBar.IsEffectivelyVisible) return;
             HeaderFinderBox.Focus();
             HeaderFinderBox.SelectAll();
             OpenHeaderFinder(shell);
@@ -359,7 +364,22 @@ public partial class MainView : UserControl
             resizeQueued = false;
             if (subscribedShell is null) return;
             FitWindow(Bounds.Size);
-            if (Shell?.HeaderFinderOpen == true) PlaceHeaderFinder();
+            if (Shell?.HeaderFinderOpen == true) QueuePlaceHeaderFinder();
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
+    // La barre peut changer de largeur plusieurs fois pendant le même redimensionnement.
+    private bool finderPlacementQueued;
+
+    private void QueuePlaceHeaderFinder()
+    {
+        if (finderPlacementQueued) return;
+        finderPlacementQueued = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            finderPlacementQueued = false;
+            if (subscribedShell is { } shell && ReferenceEquals(Shell, shell) && shell.HeaderFinderOpen)
+                PlaceHeaderFinder();
         }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
@@ -531,9 +551,29 @@ public partial class MainView : UserControl
         return 0;
     }
 
-    private double TextWidth(string text, double size, FontWeight weight) =>
-        new FormattedText(text, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-            new Typeface(FontFamily, FontStyle.Normal, weight), size, null).Width;
+    private readonly Dictionary<(string Text, double Size, FontWeight Weight), double> textWidths = new();
+    private FontFamily? measuredFont;
+    private string? measuredCulture;
+
+    private double TextWidth(string text, double size, FontWeight weight)
+    {
+        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        var family = Shell is { } shell ? Preferences.FamilyOf(shell.Prefs.Font) : FontFamily;
+        if (!Equals(measuredFont, family) || measuredCulture != culture.Name)
+        {
+            textWidths.Clear();
+            measuredFont = family;
+            measuredCulture = culture.Name;
+        }
+        var key = (text, size, weight);
+        if (textWidths.TryGetValue(key, out var width)) return width;
+        // Cache borné : des libellés dynamiques ne doivent pas croître toute la session.
+        if (textWidths.Count >= 128) textWidths.Clear();
+        width = new FormattedText(text, culture, FlowDirection.LeftToRight,
+            new Typeface(family, FontStyle.Normal, weight), size, null).Width;
+        textWidths[key] = width;
+        return width;
+    }
 
     /// <summary>Fondu entre les pages, désactivé par la préférence « Animations ».</summary>
     private void ApplyPageTransition(Preferences prefs) =>

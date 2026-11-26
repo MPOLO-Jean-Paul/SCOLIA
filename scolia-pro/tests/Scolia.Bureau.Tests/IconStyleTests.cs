@@ -18,6 +18,22 @@ public sealed class IconStyleTests
         Assert.Equal(expected, Icons.Line(kind));
 
     [Fact]
+    public void Les_boutons_reutilisent_le_modele_de_la_meme_icone()
+    {
+        Assert.Same(Icons.LeadTemplate(MaterialIconKind.Pencil), Icons.LeadTemplate(MaterialIconKind.PencilOutline));
+        Assert.NotSame(Icons.LeadTemplate(MaterialIconKind.Pencil), Icons.LeadTemplate(MaterialIconKind.Close));
+    }
+
+    [Fact]
+    public void Les_polices_embarquees_reutilisent_la_meme_famille()
+    {
+        Assert.Same(Preferences.FamilyOf("systeme"), Preferences.FamilyOf("inter"));
+        Assert.Same(Preferences.FamilyOf("android"), Preferences.FamilyOf("roboto"));
+        Assert.NotSame(Preferences.FamilyOf("inter"), Preferences.FamilyOf("roboto"));
+        Assert.Same(Preferences.FamilyOf("inter"), Preferences.FamilyOf("inconnue"));
+    }
+
+    [Fact]
     public void Une_icone_sans_variante_au_trait_reste_inchangee() =>
         Assert.Equal(MaterialIconKind.Whatsapp, Icons.Line(MaterialIconKind.Whatsapp));
 

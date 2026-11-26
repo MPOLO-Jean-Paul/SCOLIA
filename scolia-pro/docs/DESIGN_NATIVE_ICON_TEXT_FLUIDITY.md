@@ -1,0 +1,3 @@
+# Rendu des icônes et des textes — après 1.3.6
+
+Réutiliser les modèles des boutons iconographiques sans partager les contrôles ; grille à colonne de pictogramme fixe et libellé adaptable au lieu d'une pile horizontale. Préserver les pinceaux des pictogrammes lorsque leur couleur et opacité sont inchangées, sans réduire le seuil de contraste. Mettre en cache au plus 128 mesures de titres et commandes, invalidées si la police ou la culture change. Graisse constante des libellés des onglets mobiles pour éviter un saut lors de la sélection ; couleurs et durées conservées. Un test de réutilisation des modèles. Aucun changement des cartes d'accès ni des commandes métier. Les gains restent à mesurer sur les appareils physiques ; validation CI nécessaire.
