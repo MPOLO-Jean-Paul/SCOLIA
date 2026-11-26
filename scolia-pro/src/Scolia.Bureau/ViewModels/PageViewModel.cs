@@ -166,11 +166,13 @@ public abstract class PageViewModel : Observable
     /// </summary>
     public async Task RefreshQuietlyAsync()
     {
+        // Une actualisation déjà couverte ne doit pas relancer la restauration de sélection.
+        if (refreshCompletion is not null) return;
         var selected = GetType().GetProperty("Selected");
         var before = selected?.GetValue(this);
         var key = Identity(before);
         await RefreshCoreAsync(quiet: true);
-        if (selected is not { CanWrite: true } || before is null || key is null) return;
+        if (!lastLoadSucceeded || selected is not { CanWrite: true } || before is null || key is null) return;
         // Une autre ligne a été choisie pendant la requête : la décision du lecteur prime.
         if (selected.GetValue(this) is { } now && !ReferenceEquals(now, before)) return;
         foreach (var property in GetType().GetProperties())
@@ -210,14 +212,9 @@ public abstract class PageViewModel : Observable
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         refreshCompletion = completion;
         if (!quiet) Busy = true;
-        if (!quiet && !loadedOnce)
-            _ = Task.Delay(SkeletonDelay).ContinueWith(_ => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            {
-                // Une ancienne temporisation ne doit pas afficher un squelette
-                // sur une requête plus récente ou une page déjà quittée.
-                if (ReferenceEquals(refreshCompletion, completion) && Busy && !loadedOnce &&
-                    ReferenceEquals(Shell.Current, this)) ShowSkeleton = true;
-            }), TaskScheduler.Default);
+        using var skeletonCancellation = !quiet && !loadedOnce ? new CancellationTokenSource() : null;
+        if (skeletonCancellation is not null)
+            _ = ShowSkeletonAfterDelayAsync(completion, skeletonCancellation.Token);
         lastLoadSucceeded = false;
         try
         {
@@ -229,12 +226,28 @@ public abstract class PageViewModel : Observable
         catch (Exception ex) when (ex is not OperationCanceledException) { if (!quiet) Shell.Notify($"Erreur inattendue : {ex.Message}"); }
         finally
         {
+            skeletonCancellation?.Cancel();
             if (!quiet) Busy = false;
             loadedOnce = true;
             ShowSkeleton = false;
             refreshCompletion = null;
             completion.TrySetResult();
         }
+    }
+
+    private async Task ShowSkeletonAfterDelayAsync(TaskCompletionSource completion, CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(SkeletonDelay, token);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (!token.IsCancellationRequested && ReferenceEquals(refreshCompletion, completion) &&
+                    Busy && !loadedOnce && ReferenceEquals(Shell.Current, this))
+                    ShowSkeleton = true;
+            });
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
     }
 
     /// <summary>Imprime le document affiché, quand l'écran en a un.</summary>

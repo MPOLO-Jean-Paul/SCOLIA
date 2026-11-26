@@ -116,14 +116,25 @@ public sealed class FormViewModel : Observable
         this.onSubmit = onSubmit;
         Submit = new AsyncCommand(SubmitAsync);
         Cancel = new RelayCommand(() => { if (!Busy) Close(false); });
-        Fields.CollectionChanged += (_, e) =>
-        {
-            foreach (FormField field in e.NewItems ?? Array.Empty<FormField>())
-                field.PropertyChanged += OnFieldChanged;
-        };
+        Fields.CollectionChanged += (_, _) => SyncFieldSubscriptions();
     }
 
     private bool reacting;
+    private readonly HashSet<FormField> subscribedFields = [];
+
+    private void SyncFieldSubscriptions()
+    {
+        // Remplacement, suppression et Clear : un champ retiré ne réveille plus
+        // le formulaire ; un champ réinséré ne reçoit jamais deux gestionnaires.
+        foreach (var field in subscribedFields.ToArray())
+        {
+            if (Fields.Contains(field)) continue;
+            field.PropertyChanged -= OnFieldChanged;
+            subscribedFields.Remove(field);
+        }
+        foreach (var field in Fields)
+            if (subscribedFields.Add(field)) field.PropertyChanged += OnFieldChanged;
+    }
 
     /// <summary>
     /// Une valeur change : les champs liés réagissent (<see cref="Changed"/>), puis chaque champ prédictif recalcule

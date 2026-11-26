@@ -23,8 +23,14 @@ public static class ThemeBrush
             return Avalonia.Media.Brushes.Gray;
         if (source is not ISolidColorBrush solid) return source;
         if (!Brushes.TryGetValue(key, out var brush)) Brushes[key] = brush = new SolidColorBrush(solid.Color, solid.Opacity);
-        else { brush.Color = solid.Color; brush.Opacity = solid.Opacity; }
+        else Update(brush, solid);
         return brush;
+    }
+
+    private static void Update(SolidColorBrush brush, ISolidColorBrush source)
+    {
+        if (brush.Color != source.Color) brush.Color = source.Color;
+        if (brush.Opacity != source.Opacity) brush.Opacity = source.Opacity;
     }
 
     private static void OnThemeChanged(object? sender, EventArgs e) => Refresh();
@@ -34,7 +40,7 @@ public static class ThemeBrush
         if (Avalonia.Application.Current is not { } app) return;
         foreach (var (key, brush) in Brushes.ToArray())
             if (app.TryGetResource(key, app.ActualThemeVariant, out var value) && value is ISolidColorBrush source)
-            { brush.Color = source.Color; brush.Opacity = source.Opacity; }
+                Update(brush, source);
     }
 }
 
