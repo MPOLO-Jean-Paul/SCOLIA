@@ -348,7 +348,7 @@
 
               <Grid Classes="author" ColumnDefinitions="*,Auto,*">
                 <Border Grid.Column="0" />
-                <TextBlock Grid.Column="1" Text="ou sur le Wi-Fi de l'établissement" />
+                <TextBlock Grid.Column="1" Text="ou via le Wi-Fi" />
                 <Border Grid.Column="2" />
               </Grid>
 
@@ -372,8 +372,8 @@
                                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                           </Border>
                           <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding School}" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Text="{Binding Detail}" Classes="authhint" MaxLines="2" />
+                            <TextBlock Text="{Binding School}" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding Detail}" Classes="authhint" MaxLines="2" ToolTip.Tip="{Binding Detail}" />
                           </StackPanel>
                           <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
                                            Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
@@ -386,15 +386,16 @@
 
               <Expander x:Name="IosWifiOptions" Header="Saisir une adresse réseau" IsExpanded="False" HorizontalAlignment="Stretch">
                 <StackPanel Spacing="9">
+                  <TextBlock Classes="authlabel" Text="Adresse du serveur" />
                   <TextBlock Classes="authhint" Text="{Binding AddressHint}" />
-                  <TextBox Classes="authfield" Text="{Binding Address}" PlaceholderText="192.168.1.10" />
+                  <TextBox Classes="authfield" Text="{Binding Address}" PlaceholderText="192.168.1.10" AutomationProperties.Name="Adresse réseau du serveur" />
                   <Button Classes="authsecondary" Command="{Binding ConnectAddress}"
                           IsEnabled="{Binding NotSearching}" Content="Rejoindre cette adresse" />
                 </StackPanel>
               </Expander>
 
               <StackPanel Spacing="8" IsVisible="{Binding Searching}">
-                <ProgressBar IsIndeterminate="True" Height="4" MinHeight="4" />
+                <ProgressBar IsIndeterminate="True" Height="4" MinHeight="4" AutomationProperties.Name="Recherche ou connexion en cours" />
                 <TextBlock Classes="authhint" Text="{Binding Message}" TextAlignment="Center" />
               </StackPanel>
               <TextBlock Classes="authhint" Text="{Binding Message}" IsVisible="{Binding !Searching}" TextAlignment="Center" />

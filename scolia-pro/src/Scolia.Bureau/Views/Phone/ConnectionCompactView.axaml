@@ -195,10 +195,9 @@
                   Content="Configurer ce téléphone comme serveur" />
           <TextBlock Classes="connecthint connectverbose" Text="{Binding ScanHint}"
                      MaxLines="3" TextAlignment="Center" />
-          <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="4" MinHeight="4" />
+          <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="4" MinHeight="4" AutomationProperties.Name="Recherche ou connexion en cours" />
           <TextBlock Text="{Binding Message}" Classes="connecthint"
-                     TextWrapping="Wrap" MaxLines="2" TextAlignment="Center"
-                     IsVisible="{Binding !Searching}" />
+                     TextWrapping="Wrap" MaxLines="2" TextAlignment="Center" ToolTip.Tip="{Binding Message}" />
           <Button x:Name="QrDetails" Classes="connectnav incard" Content="Voir le message complet" MinHeight="36" />
         </StackPanel>
       </Border>
@@ -252,11 +251,11 @@
         <StackPanel Classes="connectfields" Spacing="12">
           <TextBlock Classes="connecttitle" Text="Serveurs disponibles" />
           <TextBlock Classes="connecthint connectoptional" Text="Choisissez votre établissement sur ce réseau." />
-          <ComboBox Classes="connectselect" ItemsSource="{Binding Servers}"
+          <ComboBox Classes="connectselect" AutomationProperties.Name="Choisir votre établissement" ItemsSource="{Binding Servers}"
                     SelectedItem="{Binding SelectedServer, Mode=TwoWay}">
             <ComboBox.ItemTemplate>
               <DataTemplate>
-                <TextBlock Text="{Binding School}" TextWrapping="Wrap" MaxLines="2" />
+                <TextBlock Text="{Binding School}" TextWrapping="Wrap" MaxLines="2" ToolTip.Tip="{Binding School}" />
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>
@@ -284,7 +283,7 @@
               HorizontalAlignment="Stretch" VerticalAlignment="Center">
         <StackPanel Classes="connectfields" Spacing="12">
           <TextBlock Classes="connecttitle" Text="État de la connexion" />
-          <TextBlock Text="{Binding Message}" Classes="connecthint connectdetailtext" FontSize="14" MaxLines="7"
+          <TextBlock Text="{Binding Message}" Classes="connecthint connectdetailtext" FontSize="14" MaxLines="7" ToolTip.Tip="{Binding Message}"
                      TextWrapping="Wrap" />
           <Button x:Name="ReturnFromDetails" Classes="connectsecondary" Content="Retour" />
         </StackPanel>
@@ -310,9 +309,9 @@
     <Grid x:Name="CompactFooter" Grid.Row="2" RowDefinitions="Auto,Auto"
           Margin="14,4,14,10" RowSpacing="8" IsVisible="{Binding !PairingInProgress}">
       <Grid x:Name="CompactNavbar" Classes="connectnavbar" Grid.Row="0" ColumnDefinitions="*,*,*" ColumnSpacing="4" Background="{DynamicResource GroupBrush}">
-        <Button x:Name="TabQr" Classes="connectnav selected" Content="QR" />
-        <Button x:Name="TabCode" Classes="connectnav" Grid.Column="1" Content="Code" />
-        <Button x:Name="TabWifi" Classes="connectnav" Grid.Column="2" Content="Wi-Fi" />
+        <Button x:Name="TabQr" AutomationProperties.Name="Jumelage par QR code" Classes="connectnav selected" Content="QR" />
+        <Button x:Name="TabCode" AutomationProperties.Name="Jumelage par code d’invitation" Classes="connectnav" Grid.Column="1" Content="Code" />
+        <Button x:Name="TabWifi" AutomationProperties.Name="Connexion par Wi-Fi" Classes="connectnav" Grid.Column="2" Content="Wi-Fi" />
       </Grid>
       <Button x:Name="HostServer" Classes="connectsecondary connecthost" Grid.Row="1"
               Content="Ce téléphone comme serveur" ToolTip.Tip="Configurer ce téléphone comme serveur de l’établissement" Command="{Binding UseThisComputer}"
