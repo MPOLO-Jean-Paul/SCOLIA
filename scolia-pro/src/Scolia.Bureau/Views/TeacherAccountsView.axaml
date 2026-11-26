@@ -30,8 +30,8 @@
     <Border Grid.Row="2" Classes="band" Margin="0,0,0,10">
       <WrapPanel>
         <StackPanel Classes="field">
-          <TextBlock Text="Rechercher" Classes="fieldlabel" />
-          <TextBox Classes="w11" Width="280" Text="{Binding Search}" PlaceholderText="Nom, identifiant ou numéro" />
+          <TextBlock Text="Rechercher" Classes="fieldlabel" TextWrapping="Wrap" />
+          <TextBox Classes="w11" Width="280" Text="{Binding Search}" PlaceholderText="Nom, identifiant ou numéro" AutomationProperties.Name="Rechercher un compte enseignant" />
         </StackPanel>
         <CheckBox Content="Sans compte actif seulement" IsChecked="{Binding WithoutAccount}" VerticalAlignment="Bottom" Margin="0,0,12,12" />
         <CheckBox Content="Tout le personnel" IsChecked="{Binding AllStaff}" VerticalAlignment="Bottom" Margin="0,0,12,12"
@@ -39,7 +39,7 @@
       </WrapPanel>
     </Border>
 
-    <DataGrid x:Name="Accounts" Grid.Row="3" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" HorizontalAlignment="Stretch">
+    <DataGrid x:Name="Accounts" Grid.Row="3" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" HorizontalAlignment="Stretch" AutomationProperties.Name="Comptes des enseignants">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Enseignant" Binding="{Binding FullName}" Width="*" MinWidth="180" infra:GridPriority.Level="1" />
         <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="104" infra:GridPriority.Level="3" />
