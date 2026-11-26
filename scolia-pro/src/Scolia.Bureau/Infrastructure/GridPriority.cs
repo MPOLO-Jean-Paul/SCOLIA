@@ -33,13 +33,18 @@ public static class GridPriority
     {
         AdaptiveProperty.Changed.AddClassHandler<DataGrid>((grid, e) =>
         {
+            grid.SizeChanged -= OnGridSizeChanged;
             if (e.NewValue is not true) return;
-            grid.PropertyChanged += (_, args) =>
-            {
-                if (args.Property == Visual.BoundsProperty) Apply(grid);
-            };
+            grid.SizeChanged += OnGridSizeChanged;
             Apply(grid);
         });
+    }
+
+    private static void OnGridSizeChanged(object? sender, SizeChangedEventArgs args)
+    {
+        // Les lignes qui arrivent ou changent de hauteur ne modifient pas les colonnes.
+        if (sender is DataGrid grid && Math.Abs(args.NewSize.Width - args.PreviousSize.Width) > 0.01)
+            Apply(grid);
     }
 
     public static int GetLevel(DataGridColumn column) => column.GetValue(LevelProperty);

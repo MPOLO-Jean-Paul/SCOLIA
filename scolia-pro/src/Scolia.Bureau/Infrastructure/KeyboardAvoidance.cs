@@ -53,6 +53,10 @@ public sealed class KeyboardAvoidance
     private readonly Dictionary<IInputPane, SystemKeyboard> adapters = [];
     private double closedHeight;
     private double applied;
+    private bool updateQueued;
+    private bool revealQueued;
+    private int paneGeneration;
+    private int animationGeneration;
 
     /// <param name="root">L'écran entier : sa marge intérieure appartient au système (encoche, barres d'Android).</param>
     /// <param name="content">Le contenu, qui s'arrête au-dessus du clavier par sa marge du bas.</param>
@@ -103,6 +107,10 @@ public sealed class KeyboardAvoidance
     private void Detach()
     {
         if (pane is not null) pane.Changed -= OnPaneChanged;
+        paneGeneration++;
+        animationGeneration++;
+        updateQueued = false;
+        revealQueued = false;
         pane = null;
         top = null;
     }
@@ -115,10 +123,24 @@ public sealed class KeyboardAvoidance
 
     private void OnPaneChanged(TimeSpan animation)
     {
-        Dispatcher.UIThread.Post(Update);
-        // Android anime l'ouverture : une seconde mesure à la fin de l'animation donne la hauteur définitive.
+        var paneTicket = paneGeneration;
+        if (!updateQueued)
+        {
+            updateQueued = true;
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (paneTicket != paneGeneration) return;
+                updateQueued = false;
+                Update();
+            });
+        }
+        // Seule la dernière animation de clavier peut déclencher la mesure finale.
+        var animationTicket = ++animationGeneration;
         if (animation > TimeSpan.Zero)
-            DispatcherTimer.RunOnce(Update, animation + TimeSpan.FromMilliseconds(30));
+            DispatcherTimer.RunOnce(() =>
+            {
+                if (paneTicket == paneGeneration && animationTicket == animationGeneration) Update();
+            }, animation + TimeSpan.FromMilliseconds(30));
     }
 
     /// <summary>Recalcule la réserve ; appelé aussi par les vérifications sans écran.</summary>
@@ -146,7 +168,18 @@ public sealed class KeyboardAvoidance
         if (reserve > 0) RevealSoon();
     }
 
-    private void RevealSoon() => Dispatcher.UIThread.Post(Reveal, DispatcherPriority.Background);
+    private void RevealSoon()
+    {
+        if (revealQueued) return;
+        revealQueued = true;
+        var ticket = paneGeneration;
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (ticket != paneGeneration) return;
+            revealQueued = false;
+            if (applied > 0) Reveal();
+        }, DispatcherPriority.Background);
+    }
 
     /// <summary>Fait défiler le champ actif juste au-dessus du clavier, avec son libellé au-dessus de lui.</summary>
     public void Reveal()

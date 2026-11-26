@@ -7,3 +7,5 @@
 - Chargement et actualisation : les notifications du relais sont regroupées, les vues masquées ne sont plus rafraîchies par ce mécanisme et les indicateurs respectent le réglage Animations.
 - Aucun changement du moteur de paiement, de SQLite, de la signature historique ni des modèles d'export ou de cartes d'accès.
 - Le gain perceptible doit être confirmé sur des appareils physiques ; aucune mesure de FPS n'est annoncée.
+
+- Ergonomie des formulaires : regroupement des demandes de repositionnement clavier, répartition sûre des sélecteurs mobiles et recalcul des colonnes uniquement lors d'un changement réel de largeur. Une recherche fermée ou modifiée ne peut plus ouvrir tardivement un résultat via Entrée.

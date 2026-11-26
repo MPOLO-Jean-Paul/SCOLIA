@@ -303,8 +303,12 @@ public partial class MainView : UserControl
                 e.Handled = true;
                 if (!finder.HasQuery) break;
                 // Saisie à peine tapée : la recherche part tout de suite, puis le premier résultat s'ouvre.
+                var query = finder.Query;
                 if (finder.Selected is null) await finder.SearchAsync();
-                if (finder.Open.CanExecute(null)) finder.Open.Execute(null);
+                // Une nouvelle frappe, une déconnexion ou la fermeture du volet
+                // ne doit jamais ouvrir un résultat provenant de l'ancienne recherche.
+                if (Shell == shell && shell.HeaderFinderOpen && finder.Query == query &&
+                    finder.Open.CanExecute(null)) finder.Open.Execute(null);
                 break;
         }
     }
