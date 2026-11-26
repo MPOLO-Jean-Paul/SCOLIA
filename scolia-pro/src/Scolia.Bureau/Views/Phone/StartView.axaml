@@ -50,5 +50,25 @@
         </ItemsControl>
       </StackPanel>
     </Border>
+    <Border Classes="card" Padding="14" IsVisible="{Binding !HasRecentTools}">
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+        <Border Classes="workspaceglyph" Background="{DynamicResource AccentSoftBrush}">
+          <PathIcon Data="{x:Static infra:HomeGlyphs.Calendar}" Foreground="{DynamicResource AccentBrush}" />
+        </Border>
+        <StackPanel Grid.Column="1" Spacing="4">
+          <TextBlock Text="Une session prête à démarrer" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <TextBlock Text="Choisissez une action pour commencer." Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+      </Grid>
+    </Border>
+    <Border Padding="12,10" CornerRadius="8" Background="{DynamicResource GroupBrush}">
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
+        <Image Source="{DynamicResource ScoliaMark}" Width="24" Height="24" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="1" Spacing="2">
+          <TextBlock Text="SCOLIA Pro" FontWeight="SemiBold" />
+          <TextBlock Text="Votre espace de travail" Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+      </Grid>
+    </Border>
   </StackPanel>
 </UserControl>
