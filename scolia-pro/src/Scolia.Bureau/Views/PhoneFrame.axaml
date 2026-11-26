@@ -28,7 +28,7 @@
                                   <mi:MaterialIcon Kind="{Binding Icon}" />
                                 </Border>
                                 <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
-                                <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />
+                                <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{DynamicResource MutedBrush}" />
                               </Grid>
                             </Button>
                           </DataTemplate>
@@ -44,7 +44,7 @@
                                   <mi:MaterialIcon Kind="{Binding Icon}" />
                                 </Border>
                                 <TextBlock Grid.Column="1" Text="{Binding Label}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                                <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="20" Height="20"
+                                <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="20" Height="20" VerticalAlignment="Center" IsHitTestVisible="False"
                                                  Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsOn}" />
                               </Grid>
                             </Button>
@@ -83,7 +83,7 @@
                         <mi:MaterialIcon Kind="{Binding Icon}" />
                       </Border>
                       <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
-                      <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="20" Height="20"
+                      <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="20" Height="20" VerticalAlignment="Center" IsHitTestVisible="False"
                                        Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsOn}" />
                     </Grid>
                   </Button>
@@ -317,7 +317,7 @@
                     <TextBlock Text="{Binding AccountName}" ToolTip.Tip="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2" />
                     <TextBlock Text="Mon compte, sécurité et réseau" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                   </StackPanel>
-                  <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />
+                  <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{DynamicResource MutedBrush}" />
                 </Grid>
               </Button>
             </StackPanel>
@@ -422,12 +422,12 @@
                 <DataTemplate>
                   <Button Classes="sheetitem" Classes.danger="{Binding Danger}" Classes.emphasis="{Binding Emphasis}" Command="{Binding Command}" AutomationProperties.Name="{Binding Label}" HorizontalContentAlignment="Stretch">
                     <Grid ColumnDefinitions="Auto,*,Auto">
-                      <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" Foreground="{Binding Brush}" Margin="0,0,14,0" />
+                      <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{Binding Brush}" Margin="0,0,14,0" />
                       <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1" Margin="0,6">
-                        <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
-                        <TextBlock Text="{Binding Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" IsVisible="{Binding HasDetail}" />
+                        <TextBlock Text="{Binding Label}" MinWidth="0" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Detail}" Classes="muted" MinWidth="0" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" IsVisible="{Binding HasDetail}" />
                       </StackPanel>
-                      <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" Margin="10,0,0,0" IsVisible="{Binding IsChecked}" />
+                      <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="22" Height="22" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{DynamicResource AccentBrush}" Margin="10,0,0,0" IsVisible="{Binding IsChecked}" />
                     </Grid>
                   </Button>
                 </DataTemplate>
