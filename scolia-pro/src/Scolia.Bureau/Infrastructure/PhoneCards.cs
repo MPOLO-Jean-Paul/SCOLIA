@@ -258,11 +258,18 @@ public static class PhoneCards
     private static void FitLine(Grid line, Control value, TextBlock text)
     {
         const int LongText = 28;
+        bool? previousStacked = null;
         void Apply()
         {
             var content = text.Text ?? string.Empty;
-            line.IsVisible = !string.IsNullOrWhiteSpace(content);
-            var stacked = content.Length > LongText;
+            var visible = !string.IsNullOrWhiteSpace(content);
+            if (line.IsVisible != visible) line.IsVisible = visible;
+            // Sur un petit écran ou avec le texte agrandi, même une valeur
+            // courte peut manquer de place. Utiliser la largeur logique réelle.
+            var width = line.Bounds.Width;
+            var stacked = content.Length > LongText || (width > 0 && width < 260);
+            if (previousStacked == stacked) return;
+            previousStacked = stacked;
             Grid.SetRow(value, stacked ? 1 : 0);
             Grid.SetColumn(value, stacked ? 0 : 1);
             Grid.SetColumnSpan(value, stacked ? 2 : 1);
@@ -271,6 +278,10 @@ public static class PhoneCards
             text.TextAlignment = stacked ? TextAlignment.Left : TextAlignment.Right;
         }
         text.PropertyChanged += (_, e) => { if (e.Property == TextBlock.TextProperty) Apply(); };
+        line.SizeChanged += (_, e) =>
+        {
+            if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 0.5) Apply();
+        };
         Apply();
     }
 
