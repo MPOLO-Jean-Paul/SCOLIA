@@ -86,7 +86,7 @@
       <!-- Indicateurs de l'année -->
       <ItemsControl ItemsSource="{Binding Kpis}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,-12">
         <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><UniformGrid Columns="3" infra:Adaptive.MinItemWidth="175" /></ItemsPanelTemplate>
+          <ItemsPanelTemplate><infra:AdaptiveTiles MinItemWidth="175" MaxColumns="3" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
       </ItemsControl>
 
