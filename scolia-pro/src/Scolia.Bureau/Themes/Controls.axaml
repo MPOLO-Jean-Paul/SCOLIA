@@ -164,13 +164,22 @@
     <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
   </Style>
   <!-- Bouton plein : le libellé et l'icône composés restent blancs sur la couleur -->
-  <Style Selector="Button.primary TextBlock, Button.primary mi|MaterialIcon">
+  <Style Selector="Button.primary TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
   </Style>
-  <Style Selector="Button.danger TextBlock, Button.danger mi|MaterialIcon">
+  <Style Selector="Button.primary mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+  </Style>
+  <Style Selector="Button.danger TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource OnDangerBrush}" />
   </Style>
-  <Style Selector="Button.destructive TextBlock, Button.destructive mi|MaterialIcon">
+  <Style Selector="Button.danger mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource OnDangerBrush}" />
+  </Style>
+  <Style Selector="Button.destructive TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
+  </Style>
+  <Style Selector="Button.destructive mi|MaterialIcon">
     <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
   </Style>
   <Style Selector="Button.danger">
