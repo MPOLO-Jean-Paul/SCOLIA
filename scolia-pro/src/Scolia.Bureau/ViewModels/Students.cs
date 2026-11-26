@@ -483,34 +483,42 @@ public sealed class StudentDetailPage : PageViewModel
     {
         student = await Shell.Api.GetAsync<StudentDto>($"api/apprenants/{studentId}");
         enrollment = student.Enrollments.FirstOrDefault(e => e.Status == "Actif") ?? (student.Enrollments.Count > 0 ? student.Enrollments[0] : null);
-        title = Format.FullName(student.LastName, student.MiddleName, student.FirstName);
-        subtitle = Format.Line(Format.CodeLabel(student.Matricule), enrollment?.PromotionCode ?? "sans promotion", Labels.Status(enrollment?.Status ?? ""));
-        Raise(nameof(Title));
-        Raise(nameof(Heading));
-        Raise(nameof(Subtitle));
+        var nextTitle = Format.FullName(student.LastName, student.MiddleName, student.FirstName);
+        var nextSubtitle = Format.Line(Format.CodeLabel(student.Matricule), enrollment?.PromotionCode ?? "sans promotion", Labels.Status(enrollment?.Status ?? ""));
+        if (title != nextTitle)
+        {
+            title = nextTitle;
+            Raise(nameof(Title));
+            Raise(nameof(Heading));
+        }
+        if (subtitle != nextSubtitle)
+        {
+            subtitle = nextSubtitle;
+            Raise(nameof(Subtitle));
+        }
 
-        Details.Clear();
-        Details.Add(new InfoLine("Matricule", student.Matricule));
-        Details.Add(new InfoLine("Sexe", Labels.Gender(student.Gender)));
-        Details.Add(new InfoLine("Date de naissance", student.BirthDate is { } b ? $"{Format.Date(b)}{(student.BirthPlace is { } p ? $" à {p}" : string.Empty)}" : "—"));
-        if (student.PermanentNumber is { Length: > 0 } permanent) Details.Add(new InfoLine("N° permanent", permanent));
-        Details.Add(new InfoLine("Adresse", student.Address ?? "—"));
-        Details.Add(new InfoLine("Parent ou tuteur", string.IsNullOrWhiteSpace(student.GuardianName) ? "—" : student.GuardianName));
-        Details.Add(new InfoLine("Contact parent", student.GuardianPhone ?? student.GuardianPhone2 ?? "—"));
+        var details = new List<InfoLine>
+        {
+            new("Matricule", student.Matricule),
+            new("Sexe", Labels.Gender(student.Gender)),
+            new("Date de naissance", student.BirthDate is { } b ? $"{Format.Date(b)}{(student.BirthPlace is { } p ? $" à {p}" : string.Empty)}" : "—"),
+        };
+        if (student.PermanentNumber is { Length: > 0 } permanent) details.Add(new InfoLine("N° permanent", permanent));
+        details.Add(new InfoLine("Adresse", student.Address ?? "—"));
+        details.Add(new InfoLine("Parent ou tuteur", string.IsNullOrWhiteSpace(student.GuardianName) ? "—" : student.GuardianName));
+        details.Add(new InfoLine("Contact parent", student.GuardianPhone ?? student.GuardianPhone2 ?? "—"));
+        CollectionSync.Apply(Details, details);
+        CollectionSync.Apply(Enrollments, student.Enrollments.Select(e => new EnrollmentRow(e.AcademicYear,
+            $"{e.PromotionCode} · {e.PromotionName}", Format.Date(e.EnrolledOn), Labels.Status(e.Status),
+            Tone(e.Status), e.ExitDate is { } x ? $"{Format.Date(x)}{(e.ExitReason is null ? string.Empty : $" · {e.ExitReason}")}" : "—")));
 
-        Enrollments.Clear();
-        foreach (var e in student.Enrollments)
-            Enrollments.Add(new EnrollmentRow(e.AcademicYear, $"{e.PromotionCode} · {e.PromotionName}", Format.Date(e.EnrolledOn), Labels.Status(e.Status),
-                Tone(e.Status), e.ExitDate is { } x ? $"{Format.Date(x)}{(e.ExitReason is null ? string.Empty : $" · {e.ExitReason}")}" : "—"));
-
-        Lines.Clear();
-        Receipts.Clear();
-        Sponsorships.Clear();
-        Totals.Clear();
-        whatsAppLink = null;
         if (enrollment is null)
         {
-            Totals.Add(new KpiVm("Compte", "Sans inscription", "Inscrivez " + Shell.StudentTerms.Elided + " pour ouvrir son compte.", ThemeBrush.Get("ToneNeutral"), MaterialIconKind.AccountOffOutline));
+            whatsAppLink = null;
+            Lines.Clear();
+            Receipts.Clear();
+            Sponsorships.Clear();
+            CollectionSync.Apply(Totals, new[] { new KpiVm("Compte", "Sans inscription", "Inscrivez " + Shell.StudentTerms.Elided + " pour ouvrir son compte.", ThemeBrush.Get("ToneNeutral"), MaterialIconKind.AccountOffOutline) });
             return;
         }
 
@@ -518,23 +526,20 @@ public sealed class StudentDetailPage : PageViewModel
         var sponsorshipsTask = Shell.Api.GetAsync<List<SponsorshipDto>>($"api/inscriptions/{enrollment.Id}/prises-en-charge");
         await Task.WhenAll(accountTask, sponsorshipsTask);
         var account = await accountTask;
-        whatsAppLink = account.WhatsAppLink;
-        Totals.Add(new KpiVm("Solde à payer", Money(account.Balance), $"Total net de l'année {Money(account.TotalNet)}", ThemeBrush.Get(account.Balance > 0 ? "ToneOrange" : "ToneGreen"), MaterialIconKind.WalletOutline));
-        Totals.Add(new KpiVm("Reste exigible", Money(account.Overdue), $"{account.OverdueCount} échéance(s) en retard", ThemeBrush.Get(account.Overdue > 0 ? "ToneRed" : "ToneGreen"), MaterialIconKind.AlertCircleOutline));
-        Totals.Add(new KpiVm("Déjà payé", Money(account.TotalPaid), $"Pris en charge : {Money(account.TotalCovered)}", ThemeBrush.Get("ToneGreen"), MaterialIconKind.CheckCircleOutline));
-        Totals.Add(new KpiVm("Ancienneté", account.AgingBucket, $"Année {account.AcademicYear}", ThemeBrush.Get("ToneBlue"), MaterialIconKind.ProgressClock));
-
-        foreach (var l in account.Lines)
-            Lines.Add(new AccountRow(l.Label, Format.Date(l.DueDate), Money(l.Amount), Money(l.Covered), Money(l.Paid), Money(l.Remaining),
-                Labels.Status(l.Status), Tone(l.Status)));
-
-        foreach (var r in account.Receipts)
-            Receipts.Add(new ReceiptLineVm(r.Id, r.Number, Format.Date(r.Date), Money(r.Amount), Labels.Method(r.Method)));
-
         var sponsorships = await sponsorshipsTask;
-        foreach (var s in sponsorships)
-            Sponsorships.Add(new SponsorshipRow(s.Id, s.SponsorName, s.Reason, Format.Date(s.EffectiveFrom), Money(s.CoveredTotal),
-                s.IsActive ? "Active" : "Terminée", s.IsActive, s.Type));
+        whatsAppLink = account.WhatsAppLink;
+        CollectionSync.Apply(Totals, new KpiVm[]
+        {
+            new("Solde à payer", Money(account.Balance), $"Total net de l'année {Money(account.TotalNet)}", ThemeBrush.Get(account.Balance > 0 ? "ToneOrange" : "ToneGreen"), MaterialIconKind.WalletOutline),
+            new("Reste exigible", Money(account.Overdue), $"{account.OverdueCount} échéance(s) en retard", ThemeBrush.Get(account.Overdue > 0 ? "ToneRed" : "ToneGreen"), MaterialIconKind.AlertCircleOutline),
+            new("Déjà payé", Money(account.TotalPaid), $"Pris en charge : {Money(account.TotalCovered)}", ThemeBrush.Get("ToneGreen"), MaterialIconKind.CheckCircleOutline),
+            new("Ancienneté", account.AgingBucket, $"Année {account.AcademicYear}", ThemeBrush.Get("ToneBlue"), MaterialIconKind.ProgressClock),
+        });
+        CollectionSync.Apply(Lines, account.Lines.Select(l => new AccountRow(l.Label, Format.Date(l.DueDate), Money(l.Amount),
+            Money(l.Covered), Money(l.Paid), Money(l.Remaining), Labels.Status(l.Status), Tone(l.Status))));
+        CollectionSync.Apply(Receipts, account.Receipts.Select(r => new ReceiptLineVm(r.Id, r.Number, Format.Date(r.Date), Money(r.Amount), Labels.Method(r.Method))));
+        CollectionSync.Apply(Sponsorships, sponsorships.Select(s => new SponsorshipRow(s.Id, s.SponsorName, s.Reason,
+            Format.Date(s.EffectiveFrom), Money(s.CoveredTotal), s.IsActive ? "Active" : "Terminée", s.IsActive, s.Type)));
     }
 
     public override async Task PrintAsync() => await StatementAsync();
