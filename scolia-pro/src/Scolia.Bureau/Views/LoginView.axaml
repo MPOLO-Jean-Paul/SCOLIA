@@ -504,7 +504,8 @@
                              AutomationProperties.Name="Nouveau mot de passe" Padding="46,0,54,0" />
                     <PathIcon Classes="authinputicon" Data="{x:Static infra:AuthGlyphs.Lock}"  />
                     <Button Classes="autheye" Command="{Binding ToggleNewPasswordEye}"
-                            IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer le nouveau mot de passe">
+                            IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer le nouveau mot de passe"
+                            AutomationProperties.Name="Afficher ou masquer le nouveau mot de passe">
                       <PathIcon Data="{Binding NewPasswordEyeIcon, Converter={x:Static infra:AuthGlyphs.EyeConverter}}"  />
                     </Button>
                   </Grid>
@@ -520,7 +521,8 @@
                              AutomationProperties.Name="Confirmation du nouveau mot de passe" Padding="46,0,54,0" />
                     <PathIcon Classes="authinputicon" Data="{x:Static infra:AuthGlyphs.Lock}"  />
                     <Button Classes="autheye" Command="{Binding ToggleConfirmPasswordEye}"
-                            IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer la confirmation">
+                            IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer la confirmation"
+                            AutomationProperties.Name="Afficher ou masquer la confirmation">
                       <PathIcon Data="{Binding ConfirmPasswordEyeIcon, Converter={x:Static infra:AuthGlyphs.EyeConverter}}"  />
                     </Button>
                   </Grid>
@@ -536,7 +538,8 @@
                              AutomationProperties.Name="Code de récupération confidentiel" Padding="46,0,54,0" />
                     <PathIcon Classes="authinputicon" Data="{x:Static infra:AuthGlyphs.Shield}"  />
                     <Button Classes="autheye" Command="{Binding ToggleRecoveryCodeEye}"
-                            IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer le code de secours">
+                            IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer le code de secours"
+                            AutomationProperties.Name="Afficher ou masquer le code de secours">
                       <PathIcon Data="{Binding RecoveryCodeEyeIcon, Converter={x:Static infra:AuthGlyphs.EyeConverter}}"  />
                     </Button>
                   </Grid>
@@ -553,15 +556,18 @@
                   </Grid>
                   <Button Classes="authsecondary" Command="{Binding RecoverWithBiometrics}"
                           IsEnabled="{Binding CanRecoverWithBiometrics}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
                       <PathIcon Data="{x:Static infra:AuthGlyphs.Fingerprint}" Width="20" Height="20" VerticalAlignment="Center"  />
-                      <TextBlock Text="Valider avec mon empreinte" VerticalAlignment="Center" TextWrapping="Wrap" />
-                    </StackPanel>
+                      <TextBlock Grid.Column="1" Text="Valider avec mon empreinte" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    </Grid>
                   </Button>
                 </StackPanel>
                 <Button Classes="authlink" Command="{Binding ToggleRecoveryHelp}" HorizontalAlignment="Center"
                         ToolTip.Tip="Revenir à la connexion" AutomationProperties.Name="Revenir à la connexion">
-                  <TextBlock Text="Revenir à la connexion" />
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                    <PathIcon Data="{x:Static infra:AuthGlyphs.Back}" Width="16" Height="16" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="Revenir à la connexion" VerticalAlignment="Center" />
+                  </Grid>
                 </Button>
               </StackPanel>
             </StackPanel>
@@ -611,7 +617,7 @@
                               AutomationProperties.Name="Afficher ou masquer les options de connexion">
                   <StackPanel Orientation="Horizontal" Spacing="4">
                     <TextBlock Text="Autres options" VerticalAlignment="Center" />
-                    <PathIcon Data="{x:Static infra:AuthGlyphs.Expand}" Width="16" Height="16" VerticalAlignment="Center"  />
+                    <PathIcon Classes="authchevron" Data="{x:Static infra:AuthGlyphs.Expand}" Width="16" Height="16" VerticalAlignment="Center" />
                   </StackPanel>
                 </ToggleButton>
               </WrapPanel>

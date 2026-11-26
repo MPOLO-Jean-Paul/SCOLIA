@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:infra="using:Scolia.Bureau.Infrastructure"
         xmlns:mi="using:Material.Icons.Avalonia">
 
   <!-- Pages d'accès (connexion, session protégée, récupération, premier serveur) : le modèle sobre des
@@ -158,7 +159,7 @@
     <Setter Property="SelectionBrush" Value="{DynamicResource AccentBrush}" />
     <Setter Property="SelectionForegroundBrush" Value="{DynamicResource OnAccentBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderThickness" Value="1,1,1,2" />
     <Setter Property="CornerRadius" Value="{DynamicResource RadiusField}" />
     <Setter Property="FontSize" Value="15" />
     <Setter Property="Padding" Value="14,0,14,0" />
@@ -183,7 +184,6 @@
   <Style Selector="TextBox.authfield:focus /template/ Border#PART_BorderElement">
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-    <Setter Property="BorderThickness" Value="1,1,1,2" />
   </Style>
   <Style Selector="TextBox.authfield:disabled /template/ Border#PART_BorderElement">
     <Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" />
@@ -211,7 +211,20 @@
   </Style>
   <Style Selector="Button.autheye /template/ ContentPresenter"><Setter Property="Background" Value="Transparent" /></Style>
   <Style Selector="Button.autheye:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
+  <Style Selector="Button.autheye:focus-visible /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
   <Style Selector="Button.autheye:pressed /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" /><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /></Style>
+  <Style Selector="LayoutTransformControl.anim Button.autheye /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.12" Easing="{x:Static infra:Motion.Smooth}" />
+      </Transitions>
+    </Setter>
+  </Style>
   <Style Selector="Button.autheye mi|MaterialIcon"><Setter Property="Width" Value="20" /><Setter Property="Height" Value="20" /></Style>
   <Style Selector="Button.autheye PathIcon">
     <Setter Property="Width" Value="20" />
@@ -302,6 +315,20 @@
   <Style Selector="ToggleButton.authmore /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent" /><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /></Style>
   <Style Selector="ToggleButton.authmore:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
   <Style Selector="ToggleButton.authmore:checked /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
+  <Style Selector="ToggleButton.authmore PathIcon.authchevron">
+    <Setter Property="RenderTransform" Value="rotate(0deg)" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="ToggleButton.authmore:checked PathIcon.authchevron">
+    <Setter Property="RenderTransform" Value="rotate(180deg)" />
+  </Style>
+  <Style Selector="LayoutTransformControl.anim ToggleButton.authmore PathIcon.authchevron">
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.16" Easing="{x:Static infra:Motion.Smooth}" />
+      </Transitions>
+    </Setter>
+  </Style>
 
   <!-- Séparateur « ou » -->
   <Style Selector="Grid.author > Border"><Setter Property="Height" Value="1" /><Setter Property="Background" Value="{DynamicResource LineBrush}" /><Setter Property="VerticalAlignment" Value="Center" /></Style>
@@ -319,6 +346,8 @@
   <Style Selector="Border.authmessage.error mi|MaterialIcon"><Setter Property="Foreground" Value="{DynamicResource ToneRed}" /></Style>
   <Style Selector="Border.authmessage.warning mi|MaterialIcon"><Setter Property="Foreground" Value="{DynamicResource ToneOrange}" /></Style>
   <Style Selector="Border.authmessage.success mi|MaterialIcon"><Setter Property="Foreground" Value="{DynamicResource ToneGreen}" /></Style>
+  <Style Selector="Border.authmessage.error PathIcon"><Setter Property="Foreground" Value="{DynamicResource ToneRed}" /></Style>
+  <Style Selector="Border.authmessage.success PathIcon"><Setter Property="Foreground" Value="{DynamicResource ToneGreen}" /></Style>
 
   <!-- Signature visuelle de connexion : le logo et le profil se croisent dans un même bloc.
        Les deux silhouettes restent circulaires, le halo du profil ménage la séparation. -->

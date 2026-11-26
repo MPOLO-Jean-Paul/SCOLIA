@@ -19,6 +19,7 @@ var dark = (args.Length > 3 && args[3] == "sombre") || Environment.GetEnvironmen
 Directory.CreateDirectory(output);
 
 Scolia.Bureau.Program.BuildAvaloniaApp()
+    .WithInterFont()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
     .SetupWithoutStarting();
 
@@ -228,11 +229,34 @@ if (args.Length > 3 && args[3] == "identite-connexion")
     VerifyAuthFieldGeometry("nouveau compte");
     if (combined.IsEffectivelyVisible || !standalone.IsEffectivelyVisible)
         throw new InvalidOperationException("Le nouveau compte doit afficher le logo seul.");
+
+    using var fixture = new LayoutServer();
+    api.Retarget(fixture.Address);
+    ShellViewModel.MinimumOpening = TimeSpan.Zero;
+    Wait(shell.OpenSessionAsync(new SessionDto(Guid.NewGuid(), "secretariat", "Amina Kabeya",
+        "Secretaire", "Secrétariat", [], false,
+        "Institut technique médical de démonstration", "ITM Demo", "2026-2027", "FC", "+243")));
+    shell.Sync.Stop();
+    shell.LockNow();
+    Save(window, "04-session-verrouillee.png");
+    VerifyAuthFieldGeometry("verrouillage");
+    var lockCode = (TextBox)NamedIdentity("IosLockCode");
+    if (!shell.ShowLockScreen || !lockCode.IsEffectivelyVisible || lockCode.RevealPassword)
+        throw new InvalidOperationException("La session verrouillée doit afficher le champ masqué.");
+    shell.LockScreen.ToggleCode.Execute(null);
+    Dispatcher.UIThread.RunJobs();
+    if (!lockCode.RevealPassword)
+        throw new InvalidOperationException("La commande de visibilité du code doit mettre à jour le champ.");
+    shell.LockScreen.ToggleCode.Execute(null);
+    Dispatcher.UIThread.RunJobs();
+    if (lockCode.RevealPassword)
+        throw new InvalidOperationException("Le code doit pouvoir être masqué de nouveau.");
+
     void VerifyAuthFieldGeometry(string stage)
     {
         var fields = window.GetVisualDescendants().OfType<Grid>()
             .Where(g => g.IsEffectivelyVisible && g.Classes.Contains("authinput")).ToArray();
-        if (fields.Length == 0) throw new InvalidOperationException($"Aucun champ de connexion visible : {stage}.");
+        if (fields.Length == 0) throw new InvalidOperationException($"Aucun champ d'accès visible : {stage}.");
         foreach (var grid in fields)
         {
             var field = grid.Children.OfType<TextBox>().Single();
