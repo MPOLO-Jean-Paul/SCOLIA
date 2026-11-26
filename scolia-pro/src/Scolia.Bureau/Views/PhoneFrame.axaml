@@ -246,9 +246,9 @@
           <TextBlock Text="{Binding PhonePage.Sticky.Detail}" ToolTip.Tip="{Binding PhonePage.Sticky.Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2"
                      IsVisible="{Binding PhonePage.Sticky.HasDetail, FallbackValue=False}" />
         </StackPanel>
-        <Button x:Name="StickyAction" Grid.Column="1" Classes="primary stickyaction" Command="{Binding PhonePage.Sticky.Command}"
+        <Button x:Name="StickyAction" Grid.Column="1" Classes="primary stickyaction" MinWidth="0" MaxWidth="152" Padding="12,8" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding PhonePage.Sticky.Label}" Command="{Binding PhonePage.Sticky.Command}"
                 IsEnabled="{Binding PhonePage.Sticky.CanRun, FallbackValue=False}" VerticalAlignment="Center">
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" MaxWidth="152">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
             <mi:MaterialIcon Kind="CheckCircleOutline" Width="20" Height="20" VerticalAlignment="Center" />
             <TextBlock Grid.Column="1" Text="{Binding PhonePage.Sticky.Label}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
           </Grid>
