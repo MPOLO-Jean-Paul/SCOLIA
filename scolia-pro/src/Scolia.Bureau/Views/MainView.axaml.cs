@@ -502,8 +502,10 @@ public partial class MainView : UserControl
     /// </summary>
     private void FitPageActions()
     {
-        if (Shell?.Current is not { } page || PageBar.Bounds.Width <= 0) return;
-        var font = Shell.Prefs.Factor * 13.5;
+        if (Shell is not { } shell || shell.Phone || shell.Current is not { } page || PageBar.Bounds.Width <= 0) return;
+        var actions = page.HeaderActions;
+        if (actions.Count == 0) { page.FitActions(0); return; }
+        var font = shell.Prefs.Factor * 13.5;
         // Le bloc du titre prend la largeur du titre ou du sous-titre, le plus long des deux, dans sa limite.
         var heading = TextWidth(page.Heading, 17 * Shell.Prefs.Factor, FontWeight.Bold);
         var sub = TextWidth(page.Subtitle, 12 * Shell.Prefs.Factor, FontWeight.Normal);
@@ -513,17 +515,19 @@ public partial class MainView : UserControl
         // Le filtre d'une liste garde sa largeur de saisie ; le bouton de recherche générale peut se resserrer.
         var search = Shell.HeaderSearch.IsOpen ? SearchMin : 220;
         var room = PageBar.Bounds.Width - PageBarFixed - title - extras - search;
-        var widths = page.HeaderActions.Select(a => TextWidth(a.Label, font, FontWeight.Normal) + 58).ToList();
+        // Au maximum trois commandes sont affichées.
+        var widths = actions.Take(3).Select(a => TextWidth(a.Label, font, FontWeight.Normal) + 58).ToArray();
+        page.FitActions(FitHeaderActionCount(actions.Count, widths, room));
+    }
+
+    public static int FitHeaderActionCount(int total, IReadOnlyList<double> widths, double room)
+    {
         const double more = 46;
-        int count;
-        if (widths.Count <= 3 && widths.Sum() <= room) count = widths.Count;
-        else
-        {
-            count = 0;
-            for (var k = Math.Min(2, widths.Count - 1); k > 0; k--)
-                if (widths.Take(k).Sum() + more <= room) { count = k; break; }
-        }
-        page.FitActions(count);
+        if (total <= 0) return 0;
+        if (total <= 3 && widths.Count >= total && widths.Take(total).Sum() <= room) return total;
+        for (var k = Math.Min(Math.Min(2, total - 1), widths.Count); k > 0; k--)
+            if (widths.Take(k).Sum() + more <= room) return k;
+        return 0;
     }
 
     private double TextWidth(string text, double size, FontWeight weight) =>
