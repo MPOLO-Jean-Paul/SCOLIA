@@ -166,10 +166,19 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     {
         var r = await db.Receipts.AsNoTracking().Include(x => x.Allocations).FirstOrDefaultAsync(x => x.Id == id, ct) ?? throw new NotFoundException("Reçu introuvable.");
         if (Snapshot(r) is { } issued)
+        {
+            // Le détail de gestion conserve le libellé courant de la rubrique.
+            // Le PDF réutilise exclusivement la répartition figée à l'émission.
+            var ids = r.Allocations.Select(a => a.FeeItemId).ToList();
+            var currentLabels = await db.FeeItems.AsNoTracking().Where(f => ids.Contains(f.Id))
+                .ToDictionaryAsync(f => f.Id, f => f.Label, ct);
+            var currentAllocations = issued.Allocations.Select(a =>
+                currentLabels.TryGetValue(a.FeeItemId, out var label) ? a with { Label = label } : a).ToList();
             return new ReceiptDto(r.Id, r.Number, r.VerificationCode, r.Date, r.StudentId, issued.Matricule, issued.StudentName,
                 issued.PromotionCode, issued.AcademicYear, r.Amount, Labels.Of(r.Method), r.Reference, r.PayerName, r.PayerPhone,
                 r.Note, r.CashierName, r.Status == OperationStatus.Valide ? "Valide" : "Annulé", r.CancelledAtUtc,
-                r.CancelledBy, r.CancellationReason, issued.Allocations, r.CreatedAtUtc);
+                r.CancelledBy, r.CancellationReason, currentAllocations, r.CreatedAtUtc);
+        }
         var student = await db.Students.AsNoTracking().FirstAsync(s => s.Id == r.StudentId, ct);
         var info = await (from e in db.Enrollments.AsNoTracking()
                           join p in db.Promotions.AsNoTracking() on e.PromotionId equals p.Id
@@ -251,7 +260,7 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var header = Header(school) with { CurrencySymbol = issued?.CurrencySymbol ?? school.CurrencySymbol };
         return documents.Receipt(new ReceiptDocument(header, receipt.Number, receipt.Date, receipt.StudentName, AnonymousDisplay.Printed(receipt.Matricule), receipt.PromotionCode,
             receipt.AcademicYear, receipt.Amount, FrenchNumbers.Amount(receipt.Amount, FrenchNumbers.CurrencyName(issued?.CurrencyCode ?? school.CurrencyCode)), receipt.Method,
-            receipt.Reference, receipt.PayerName, receipt.Cashier, receipt.Allocations.Select(a => (a.Label, a.Amount)).ToList(), balance,
+            receipt.Reference, receipt.PayerName, receipt.Cashier, (issued?.Allocations ?? receipt.Allocations).Select(a => (a.Label, a.Amount)).ToList(), balance,
             $"{verificationBaseUrl.TrimEnd('/')}/verifier/{receipt.VerificationCode}", receipt.Status != "Valide", receipt.CancellationReason, issued is not null));
     }
 
