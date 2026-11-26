@@ -181,9 +181,11 @@ public partial class MainWindow : Window
     {
         if (placementApplied || !OperatingSystem.IsWindows() || Preferences.MobileLayout) return;
         placementApplied = true;
-        var screen = Screens.Primary;
-        var area = screen is null ? (Size?)null : screen.WorkingArea.Size.ToSize(screen.Scaling);
         var saved = prefs.Window;
+        // Restaure la taille logique dans la zone de travail du moniteur enregistré, pas systématiquement le principal.
+        var screen = saved is null ? Screens.Primary
+            : Screens.All.FirstOrDefault(s => s.WorkingArea.Intersects(new PixelRect(saved.X + 40, saved.Y, 200, 30))) ?? Screens.Primary;
+        var area = screen is null ? (Size?)null : screen.WorkingArea.Size.ToSize(screen.Scaling);
         if (saved is not null && area is { } a && screen is not null && IsVisibleOnSomeScreen(saved))
         {
             Width = Math.Min(saved.Width, a.Width);
@@ -242,8 +244,8 @@ public partial class MainWindow : Window
         if ((Screens.ScreenFromWindow(this) ?? Screens.Primary) is not { } screen) return;
         var area = screen.WorkingArea.Size.ToSize(screen.Scaling);
         var outside = !Screens.All.Any(s => s.WorkingArea.Intersects(new PixelRect(Position.X + 40, Position.Y, 200, 30)));
-        var fillsScreen = Width >= area.Width * 0.97 && Height >= area.Height * 0.97;
-        if (!outside && !fillsScreen && Width <= area.Width + 1 && Height <= area.Height + 1) return;
+        // Une fenêtre restaurée presque pleine taille reste valide : ne pas la recentrer ni modifier sa taille.
+        if (!outside && Width <= area.Width + 1 && Height <= area.Height + 1) return;
         var fit = Fit(area);
         Width = fit.Width;
         Height = fit.Height;
