@@ -45,7 +45,7 @@
     <TextBlock Text="Mensualité sélectionnée : seuls les versements affectés à ce mois sont comptés ci-dessous." Classes="muted" TextWrapping="Wrap" />
     <ItemsControl ItemsSource="{Binding Totals}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
       <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
+        <ItemsPanelTemplate><infra:AdaptiveTiles MinItemWidth="170" /></ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>
     </ItemsControl>
     <Border Background="{DynamicResource GroupBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
