@@ -50,14 +50,14 @@
                 </Grid>
                 <StackPanel Spacing="8" IsVisible="{Binding Included}">
                   <StackPanel Classes="field" Margin="0">
-                    <TextBlock Text="Nom du cycle" Classes="fieldlabel" />
+                    <TextBlock Text="Nom du cycle" Classes="fieldlabel" TextWrapping="Wrap" />
                     <TextBox Classes="w11" Text="{Binding Name}" HorizontalAlignment="Stretch"
-                             PlaceholderText="Dénomination du cycle" />
+                             PlaceholderText="Dénomination du cycle" AutomationProperties.Name="Nom du cycle" />
                   </StackPanel>
                   <StackPanel Classes="field" Margin="0">
-                    <TextBlock Text="Référence d'agrément (facultative)" Classes="fieldlabel" />
+                    <TextBlock Text="Référence d'agrément (facultative)" Classes="fieldlabel" TextWrapping="Wrap" />
                     <TextBox Classes="w11" Text="{Binding AuthorizationNumber}"
-                             HorizontalAlignment="Stretch" PlaceholderText="Numéro de l'agrément" />
+                             HorizontalAlignment="Stretch" PlaceholderText="Numéro de l'agrément" AutomationProperties.Name="Référence d’agrément" />
                   </StackPanel>
                   <Border Height="1" Background="{DynamicResource LineBrush}" />
                   <CheckBox Content="Percevoir une mensualité de scolarité pour ce cycle"
@@ -66,7 +66,7 @@
                               IsEnabled="{Binding ChargeMonthlyTuition}">
                     <TextBlock Text="Mensualité de référence (CDF)" Classes="fieldlabel" />
                     <TextBox Classes="w11" Text="{Binding MonthlyAmount}"
-                             HorizontalAlignment="Stretch" PlaceholderText="Exemple : 90000" />
+                             HorizontalAlignment="Stretch" PlaceholderText="Exemple : 90000" AutomationProperties.Name="Mensualité de référence" />
                     <TextBlock Text="Tarif de référence uniquement : aucune facture ni aucun reçu n'est créé automatiquement."
                                Classes="muted" TextWrapping="Wrap" />
                   </StackPanel>
@@ -96,7 +96,7 @@
         <StackPanel Spacing="6">
           <TextBlock Text="Cycle" Classes="fieldlabel" />
           <ComboBox ItemsSource="{Binding CycleChoices}" SelectedItem="{Binding SelectedCycle}"
-                    HorizontalAlignment="Stretch" />
+                    HorizontalAlignment="Stretch" AutomationProperties.Name="Cycle pédagogique" />
         </StackPanel>
       </Border>
       <ItemsControl ItemsSource="{Binding Periods}">
@@ -104,7 +104,7 @@
           <DataTemplate>
             <Border Classes="phonegroup" Padding="12,10" Margin="0,0,0,6">
               <StackPanel Spacing="3">
-                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Code}" Classes="muted" />
                 <TextBlock Text="{Binding TermCode}" Classes="muted" />
                 <TextBlock Text="{Binding Kind}" Classes="muted" />
@@ -120,7 +120,7 @@
         <StackPanel Spacing="6">
           <TextBlock Text="Classe" Classes="fieldlabel" />
           <ComboBox ItemsSource="{Binding PromotionChoices}" SelectedItem="{Binding SelectedPromotion}"
-                    HorizontalAlignment="Stretch" />
+                    HorizontalAlignment="Stretch" AutomationProperties.Name="Classe" />
         </StackPanel>
       </Border>
       <ItemsControl ItemsSource="{Binding Subjects}">
@@ -128,7 +128,7 @@
           <DataTemplate>
             <Border Classes="phonegroup" Padding="12,10" Margin="0,0,0,6">
               <StackPanel Spacing="3">
-                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Code}" Classes="muted" />
                 <TextBlock Text="{Binding MaxLabel}" Classes="muted" />
               </StackPanel>

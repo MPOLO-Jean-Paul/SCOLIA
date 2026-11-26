@@ -7,8 +7,8 @@
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,8" Padding="12,10">
       <StackPanel Spacing="6">
         <StackPanel Classes="field">
-          <TextBlock Text="Année et promotion" Classes="fieldlabel" />
-          <ComboBox MinWidth="280" HorizontalAlignment="Stretch" MaxWidth="480" ItemsSource="{Binding Years}" SelectedItem="{Binding Year}" />
+          <TextBlock Text="Année et promotion" Classes="fieldlabel" TextWrapping="Wrap" />
+          <ComboBox MinWidth="280" HorizontalAlignment="Stretch" MaxWidth="480" ItemsSource="{Binding Years}" SelectedItem="{Binding Year}" AutomationProperties.Name="Année et promotion" />
         </StackPanel>
         <TextBlock Text="{Binding Summary}" FontWeight="SemiBold" TextWrapping="Wrap" />
         <TextBlock Text="{Binding Decision}" FontWeight="Bold" FontSize="{DynamicResource FsHeading}" TextWrapping="Wrap" IsVisible="{Binding HasDecision}" />
@@ -17,7 +17,7 @@
     <Border Grid.Row="1" Classes="band" Margin="0,0,0,8" Padding="12,8" IsVisible="{Binding HasNotice}">
       <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" Classes="muted" />
     </Border>
-    <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" AutomationProperties.Name="Résultats individuels">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Sem." Binding="{Binding Semester}" Width="Auto" MinWidth="60" />
         <DataGridTextColumn Header="UE" Binding="{Binding Name}" Width="2*" MinWidth="200" />

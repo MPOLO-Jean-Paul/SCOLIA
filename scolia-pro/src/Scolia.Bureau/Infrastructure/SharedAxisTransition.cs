@@ -46,8 +46,9 @@ public sealed class SharedAxisTransition : IPageTransition
             if (to is null) return;
             to.IsVisible = true;
             await Task.WhenAll(
-                Fade(to, [(0, 0), (1, 1)], cancellationToken),
-                Slide(to, shift, 0, cancellationToken));
+                // Le contenu est lisible dès la première image ; aucun flash de page vide.
+                Fade(to, [(0, 0.88), (1, 1)], cancellationToken),
+                Slide(to, shift * 0.5, 0, cancellationToken));
             return;
         }
         var tasks = new List<Task>(4);

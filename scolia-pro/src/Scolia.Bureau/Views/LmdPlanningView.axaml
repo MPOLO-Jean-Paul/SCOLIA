@@ -55,9 +55,9 @@
       <TextBlock Text="MAQUETTE DES ENSEIGNEMENTS" Classes="groupcaps" />
       <Border Classes="phonegroup" Padding="12,10">
         <StackPanel Spacing="5">
-          <TextBlock Text="Promotion / année d'étude" Classes="fieldlabel" />
+          <TextBlock Text="Promotion / année d'étude" Classes="fieldlabel" TextWrapping="Wrap" />
           <ComboBox ItemsSource="{Binding PromotionChoices}"
-                    SelectedItem="{Binding SelectedPromotion}" HorizontalAlignment="Stretch" />
+                    SelectedItem="{Binding SelectedPromotion}" HorizontalAlignment="Stretch" AutomationProperties.Name="Promotion ou année d’étude" />
         </StackPanel>
       </Border>
       <ItemsControl ItemsSource="{Binding Program}">

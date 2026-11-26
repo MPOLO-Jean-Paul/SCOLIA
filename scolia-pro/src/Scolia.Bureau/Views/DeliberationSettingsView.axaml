@@ -65,7 +65,7 @@
           <Grid Classes="prefrow" ColumnDefinitions="*,Auto">
             <StackPanel><TextBlock Text="Seuil de réussite (%)" Classes="rowtitle" />
               <TextBlock Text="Pourcentage du total des maxima à atteindre, sans cote manquante (60 dans ITMCD)." Classes="muted" TextWrapping="Wrap" /></StackPanel>
-            <TextBox Grid.Column="1" Width="110" VerticalAlignment="Center" Text="{Binding PassPercent}" />
+            <TextBox Grid.Column="1" Width="110" VerticalAlignment="Center" Text="{Binding PassPercent}" AutomationProperties.Name="Pourcentage de réussite" />
           </Grid>
           <TextBlock Text="{Binding Rules}" Classes="muted" TextWrapping="Wrap" Margin="0,6,0,0" />
           <TextBlock Classes="muted" TextWrapping="Wrap" Margin="0,8,0,0"
@@ -82,8 +82,8 @@
           </StackPanel>
           <TextBlock Classes="muted" TextWrapping="Wrap" Margin="0,4,0,10" Text="Préfet et proviseur de l'établissement : ils signent le bulletin de délibération." />
           <WrapPanel>
-            <StackPanel><TextBlock Text="Préfet" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding Prefect}" /></StackPanel>
-            <StackPanel><TextBlock Text="Proviseur" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding Principal}" /></StackPanel>
+            <StackPanel><TextBlock Text="Préfet" Classes="fieldlabel" TextWrapping="Wrap" /><TextBox Classes="authority" Text="{Binding Prefect}" AutomationProperties.Name="Préfet" /></StackPanel>
+            <StackPanel><TextBlock Text="Proviseur" Classes="fieldlabel" TextWrapping="Wrap" /><TextBox Classes="authority" Text="{Binding Principal}" AutomationProperties.Name="Proviseur" /></StackPanel>
           </WrapPanel>
         </StackPanel>
       </Border>
@@ -98,14 +98,14 @@
           <TextBlock Classes="muted" TextWrapping="Wrap" Margin="0,4,0,10"
                      Text="Président, secrétaire et jusqu'à quatre membres : ils signent la grille et le procès-verbal ; la clôture reprend ce jury. Les enseignants qui encodent les épreuves reçoivent le privilège « Membre du jury » dans Utilisateurs." />
           <WrapPanel>
-            <StackPanel><TextBlock Text="Président du jury" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding JuryPresident}" /></StackPanel>
-            <StackPanel><TextBlock Text="Secrétaire du jury" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding JurySecretary}" /></StackPanel>
+            <StackPanel><TextBlock Text="Président du jury" Classes="fieldlabel" TextWrapping="Wrap" /><TextBox Classes="authority" Text="{Binding JuryPresident}" AutomationProperties.Name="Président du jury" /></StackPanel>
+            <StackPanel><TextBlock Text="Secrétaire du jury" Classes="fieldlabel" TextWrapping="Wrap" /><TextBox Classes="authority" Text="{Binding JurySecretary}" AutomationProperties.Name="Secrétaire du jury" /></StackPanel>
           </WrapPanel>
           <WrapPanel>
-            <StackPanel><TextBlock Text="Membre 1" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding Member1}" /></StackPanel>
-            <StackPanel><TextBlock Text="Membre 2" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding Member2}" /></StackPanel>
-            <StackPanel><TextBlock Text="Membre 3" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding Member3}" /></StackPanel>
-            <StackPanel><TextBlock Text="Membre 4" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding Member4}" /></StackPanel>
+            <StackPanel><TextBlock Text="Membre 1" Classes="fieldlabel" TextWrapping="Wrap" /><TextBox Classes="authority" Text="{Binding Member1}" AutomationProperties.Name="Membre 1 du jury" /></StackPanel>
+            <StackPanel><TextBlock Text="Membre 2" Classes="fieldlabel" TextWrapping="Wrap" /><TextBox Classes="authority" Text="{Binding Member2}" AutomationProperties.Name="Membre 2 du jury" /></StackPanel>
+            <StackPanel><TextBlock Text="Membre 3" Classes="fieldlabel" TextWrapping="Wrap" /><TextBox Classes="authority" Text="{Binding Member3}" AutomationProperties.Name="Membre 3 du jury" /></StackPanel>
+            <StackPanel><TextBlock Text="Membre 4" Classes="fieldlabel" TextWrapping="Wrap" /><TextBox Classes="authority" Text="{Binding Member4}" AutomationProperties.Name="Membre 4 du jury" /></StackPanel>
           </WrapPanel>
           <TextBlock Classes="muted" TextWrapping="Wrap" Text="« Enregistrer les autorités » (en haut) enregistre les blocs Administration et Jury." />
         </StackPanel>
@@ -121,7 +121,7 @@
           <TextBlock Classes="muted" TextWrapping="Wrap" Margin="0,4,0,10"
                      Text="TOTAL 1 : stage, situation d'intégration, dossier d'évaluation, épreuve d'intégration. SOUS-TOTAL 2 : blocs prévention, diagnostic et gestion. Elles ne comptent qu'au jury annuel et sont cotées par le jury." />
           <WrapPanel>
-            <ComboBox Width="260" Margin="0,0,12,0" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+            <ComboBox Width="260" Margin="0,0,12,0" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" AutomationProperties.Name="Promotion" />
             <Button Content="Créer les épreuves du jury" Command="{Binding CreateJuryCommand}" />
           </WrapPanel>
         </StackPanel>

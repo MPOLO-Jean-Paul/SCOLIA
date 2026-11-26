@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.ReceiptDetailView">
-  <ScrollViewer>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="16">
       <Border Classes="card" IsVisible="{Binding IsCancelled}" Background="{DynamicResource RedSoftBrush}" BorderThickness="0">
         <TextBlock Text="{Binding CancellationText}" TextWrapping="Wrap" />
@@ -14,8 +14,8 @@
             <ItemsControl ItemsSource="{Binding Details}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Grid ColumnDefinitions="160,*" Margin="0,3">
-                    <TextBlock Text="{Binding Label}" Classes="muted" />
+                  <Grid ColumnDefinitions="2*,3*" ColumnSpacing="10" Margin="0,3" infra:Adaptive.StackBelow="240">
+                    <TextBlock Text="{Binding Label}" Classes="muted" TextWrapping="Wrap" />
                     <TextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
                   </Grid>
                 </DataTemplate>
@@ -26,7 +26,7 @@
         <Border Classes="card" Grid.Column="1">
           <StackPanel Spacing="8">
             <TextBlock Text="Répartition sur les échéances" Classes="heading" />
-            <DataGrid ItemsSource="{Binding Allocations}" AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid AutomationProperties.Name="Échéances réglées par ce versement" ItemsSource="{Binding Allocations}" AutoGenerateColumns="False" IsReadOnly="True">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" MinWidth="140" />
                 <DataGridTextColumn Header="Imputé" Binding="{Binding Amount}" Width="Auto" MinWidth="110" />

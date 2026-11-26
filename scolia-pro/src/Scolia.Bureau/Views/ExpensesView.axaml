@@ -8,23 +8,23 @@
       <WrapPanel>
         <StackPanel Classes="field pagesearch">
           <TextBlock Text="Rechercher" Classes="fieldlabel" />
-          <TextBox Classes="search clearButton" Width="240" Text="{Binding Search}" PlaceholderText="Bénéficiaire, description, numéro" />
+          <TextBox Classes="search clearButton" Width="240" Text="{Binding Search}" PlaceholderText="Bénéficiaire, description, numéro" AutomationProperties.Name="Recherche" />
         </StackPanel>
         <StackPanel Classes="field">
           <TextBlock Text="Du" Classes="fieldlabel" />
-          <CalendarDatePicker PlaceholderText="Début" SelectedDateFormat="Short" Width="160" SelectedDate="{Binding From}" />
+          <CalendarDatePicker PlaceholderText="Début" SelectedDateFormat="Short" Width="160" SelectedDate="{Binding From}" AutomationProperties.Name="Date de début" />
         </StackPanel>
         <StackPanel Classes="field">
           <TextBlock Text="Au" Classes="fieldlabel" />
-          <CalendarDatePicker PlaceholderText="Fin" SelectedDateFormat="Short" Width="160" SelectedDate="{Binding To}" />
+          <CalendarDatePicker PlaceholderText="Fin" SelectedDateFormat="Short" Width="160" SelectedDate="{Binding To}" AutomationProperties.Name="Date de fin" />
         </StackPanel>
         <StackPanel Classes="field">
           <TextBlock Text="Catégorie" Classes="fieldlabel" />
-          <ComboBox Width="260" ItemsSource="{Binding Categories}" SelectedItem="{Binding Category}" />
+          <ComboBox Width="260" ItemsSource="{Binding Categories}" SelectedItem="{Binding Category}" AutomationProperties.Name="Catégorie de dépense" />
         </StackPanel>
       </WrapPanel>
     </Border>
-    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid Grid.Row="1" AutomationProperties.Name="Journal des dépenses" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
         <DataGridTextColumn infra:GridPriority.Level="2" Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="170" />
         <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="120" />

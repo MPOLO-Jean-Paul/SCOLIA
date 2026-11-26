@@ -34,6 +34,9 @@
     <Style Selector="Button.launchrecent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
     </Style>
+    <Style Selector="Button.launchrecent:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
   </UserControl.Styles>
   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="28" Margin="18,22,12,26">
@@ -42,11 +45,11 @@
         <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
         <StackPanel Spacing="6">
           <TextBlock Text="{Binding Greeting}" FontSize="28" FontWeight="SemiBold" TextWrapping="Wrap" />
-          <StackPanel Orientation="Horizontal" Spacing="9">
-            <TextBlock Text="{Binding School}" Classes="muted" />
-            <TextBlock Text="·" Classes="muted" />
-            <TextBlock Text="{Binding Year}" Classes="muted" />
-          </StackPanel>
+          <WrapPanel Orientation="Horizontal">
+            <TextBlock Text="{Binding School}" Classes="muted" TextWrapping="Wrap" Margin="0,0,9,0" />
+            <TextBlock Text="·" Classes="muted" Margin="0,0,9,0" />
+            <TextBlock Text="{Binding Year}" Classes="muted" TextWrapping="Wrap" />
+          </WrapPanel>
           <TextBlock Text="Choisissez une opération dans le volet de gauche." Classes="muted" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
@@ -81,7 +84,7 @@
                         <mi:MaterialIcon Kind="{Binding Icon}" Width="36" Height="36" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                       </Grid>
                       <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="4">
-                        <TextBlock Text="{Binding Label}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <TextBlock Text="{Binding Label}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" />
                         <mi:MaterialIcon Grid.Column="1" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" />
                       </Grid>
                     </Grid>
@@ -110,11 +113,11 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate>
               <StackPanel>
-                <Button Classes="launchrecent" Command="{Binding Open}" AutomationProperties.Name="{Binding Label}">
+                <Button Classes="launchrecent" Command="{Binding Open}" AutomationProperties.Name="{Binding Label}" ToolTip.Tip="{Binding Label}">
                   <Grid ColumnDefinitions="34,*,130" ColumnSpacing="8">
                     <mi:MaterialIcon Kind="{Binding Icon}" Foreground="{Binding Brush}" Width="21" Height="21" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Grid.Column="2" Text="Espace de travail" Classes="muted" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="Espace de travail" Classes="muted" VerticalAlignment="Center" TextWrapping="Wrap" />
                   </Grid>
                 </Button>
                 <Border Background="{DynamicResource LineBrush}" Height="1" />

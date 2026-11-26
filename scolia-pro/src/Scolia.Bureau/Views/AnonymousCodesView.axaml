@@ -7,14 +7,14 @@
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
       <WrapPanel>
         <StackPanel Classes="field">
-          <TextBlock Text="Promotion" Classes="fieldlabel" />
-          <ComboBox Width="280" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+          <TextBlock Text="Promotion" Classes="fieldlabel" TextWrapping="Wrap" />
+          <ComboBox Width="280" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" AutomationProperties.Name="Promotion" />
         </StackPanel>
         <TextBlock Text="Les apprenants déjà inscrits sont repris tels quels. Chaque code est unique dans l'année et n'est jamais réattribué. La liste des codes est confidentielle : elle reste au jury."
                    TextWrapping="Wrap" MaxWidth="560" VerticalAlignment="Center" Classes="muted" Margin="8,0,0,8" />
       </WrapPanel>
     </Border>
-    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" AutomationProperties.Name="Codes anonymes">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Code anonyme" Binding="{Binding Code}" Width="Auto" MinWidth="150" infra:GridPriority.Level="1" />
         <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="122" infra:GridPriority.Level="2" />

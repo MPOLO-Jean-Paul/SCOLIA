@@ -16,7 +16,7 @@
             </StackPanel>
           </Button>
           <TextBlock Text="{Binding School}" Classes="heading" Margin="8,16,0,0" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding UserName}" Classes="muted" Margin="8,0,0,8" />
+          <TextBlock Text="{Binding UserName}" Classes="muted" Margin="8,0,0,8" TextWrapping="Wrap" />
         </StackPanel>
         <ListBox Grid.Row="1" Classes="side" ItemsSource="{Binding Items}" SelectedItem="{Binding Section}" Background="Transparent" BorderThickness="0" Margin="0,12,0,0">
           <ListBox.ItemTemplate>
@@ -38,18 +38,18 @@
     </Border>
 
     <!-- Colonne de droite : contenu de la rubrique -->
-    <ScrollViewer Grid.Column="1" Padding="40,32">
+    <ScrollViewer Grid.Column="1" Padding="40,32" HorizontalScrollBarVisibility="Disabled">
       <StackPanel Spacing="16" MaxWidth="640" HorizontalAlignment="Left">
         <StackPanel IsVisible="{Binding IsInfos}" Spacing="10">
           <TextBlock Text="Informations" Classes="title" />
           <Border Classes="card">
             <StackPanel Spacing="8">
-              <Grid ColumnDefinitions="180,*"><TextBlock Text="Établissement" Classes="muted" /><TextBlock Grid.Column="1" Text="{Binding School}" /></Grid>
-              <Grid ColumnDefinitions="180,*"><TextBlock Text="Utilisateur" Classes="muted" /><TextBlock Grid.Column="1" Text="{Binding UserName}" /></Grid>
-              <Grid ColumnDefinitions="180,*"><TextBlock Text="Rôle" Classes="muted" /><TextBlock Grid.Column="1" Text="{Binding Role}" /></Grid>
-              <Grid ColumnDefinitions="180,*"><TextBlock Text="Année courante" Classes="muted" /><TextBlock Grid.Column="1" Text="{Binding Year}" /></Grid>
-              <Grid ColumnDefinitions="180,*"><TextBlock Text="Serveur" Classes="muted" /><TextBlock Grid.Column="1" Text="{Binding Server}" /></Grid>
-              <Grid ColumnDefinitions="180,*"><TextBlock Text="Application" Classes="muted" /><TextBlock Grid.Column="1" Text="{Binding Version}" /></Grid>
+              <Grid ColumnDefinitions="2*,3*" ColumnSpacing="12" infra:Adaptive.StackBelow="260"><TextBlock Text="Établissement" Classes="muted" TextWrapping="Wrap" /><TextBlock Grid.Column="1" Text="{Binding School}" TextWrapping="Wrap" ToolTip.Tip="{Binding School}" /></Grid>
+              <Grid ColumnDefinitions="2*,3*" ColumnSpacing="12" infra:Adaptive.StackBelow="260"><TextBlock Text="Utilisateur" Classes="muted" TextWrapping="Wrap" /><TextBlock Grid.Column="1" Text="{Binding UserName}" TextWrapping="Wrap" ToolTip.Tip="{Binding UserName}" /></Grid>
+              <Grid ColumnDefinitions="2*,3*" ColumnSpacing="12" infra:Adaptive.StackBelow="260"><TextBlock Text="Rôle" Classes="muted" TextWrapping="Wrap" /><TextBlock Grid.Column="1" Text="{Binding Role}" TextWrapping="Wrap" ToolTip.Tip="{Binding Role}" /></Grid>
+              <Grid ColumnDefinitions="2*,3*" ColumnSpacing="12" infra:Adaptive.StackBelow="260"><TextBlock Text="Année courante" Classes="muted" TextWrapping="Wrap" /><TextBlock Grid.Column="1" Text="{Binding Year}" TextWrapping="Wrap" ToolTip.Tip="{Binding Year}" /></Grid>
+              <Grid ColumnDefinitions="2*,3*" ColumnSpacing="12" infra:Adaptive.StackBelow="260"><TextBlock Text="Serveur" Classes="muted" TextWrapping="Wrap" /><TextBlock Grid.Column="1" Text="{Binding Server}" TextWrapping="Wrap" ToolTip.Tip="{Binding Server}" /></Grid>
+              <Grid ColumnDefinitions="2*,3*" ColumnSpacing="12" infra:Adaptive.StackBelow="260"><TextBlock Text="Application" Classes="muted" TextWrapping="Wrap" /><TextBlock Grid.Column="1" Text="{Binding Version}" TextWrapping="Wrap" ToolTip.Tip="{Binding Version}" /></Grid>
             </StackPanel>
           </Border>
           <Border Classes="card" IsVisible="{Binding CanCheckWindowsUpdates}">

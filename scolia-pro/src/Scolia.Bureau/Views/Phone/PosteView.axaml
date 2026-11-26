@@ -106,7 +106,7 @@
 
     <Button infra:Icons.Lead="Magnify" Content="Rechercher SCOLIA sur le réseau" Command="{Binding Search}" IsEnabled="{Binding NotSearching}"
             HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" />
-    <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" />
+    <ProgressBar AutomationProperties.Name="Recherche des serveurs" IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" />
     <TextBlock Text="{Binding SearchLine}" IsVisible="{Binding HasSearchLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
 
     <Border Classes="phonegroup">
@@ -130,13 +130,13 @@
     <Button x:Name="ShowCodeButton" Classes="primary" Command="{Binding ShowCode}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" IsVisible="{Binding IsPhoneServer}">
       <StackPanel Orientation="Horizontal" Spacing="8">
         <mi:MaterialIcon Kind="QrcodeScan" Width="18" Height="18" />
-        <TextBlock Text="Relier un autre appareil : code QR" />
+        <TextBlock Text="Relier un autre appareil : code QR" TextWrapping="Wrap" />
       </StackPanel>
     </Button>
     <Button Classes="primary" Command="{Binding ScanCode}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" IsVisible="{Binding IsPhoneClient}">
       <StackPanel Orientation="Horizontal" Spacing="8">
         <mi:MaterialIcon Kind="QrcodeScan" Width="18" Height="18" />
-        <TextBlock Text="{Binding ScanLabel}" />
+        <TextBlock Text="{Binding ScanLabel}" TextWrapping="Wrap" />
       </StackPanel>
     </Button>
     <Button infra:Icons.Lead="ImageSearchOutline" Classes="ghost" Command="{Binding ImportQrImage}" Content="Lire un QR depuis une photo" Height="46"
@@ -150,7 +150,7 @@
     <Button Classes="ghost" Command="{Binding UseThisComputer}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" IsVisible="{Binding CanBecomeServer}">
       <StackPanel Orientation="Horizontal" Spacing="8">
         <mi:MaterialIcon Kind="CellphoneLink" Width="18" Height="18" />
-        <TextBlock Text="Faire de ce téléphone le serveur" />
+        <TextBlock Text="Faire de ce téléphone le serveur" TextWrapping="Wrap" />
       </StackPanel>
     </Button>
     <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding IsPhoneClient}"

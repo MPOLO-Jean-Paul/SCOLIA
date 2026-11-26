@@ -29,6 +29,8 @@ public static class SmoothScroll
         public double Target;
         public bool Running;
         public long Last;
+        public double LastApplied;
+        public int Generation;
     }
 
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ScrollViewer, State> States = new();
@@ -40,6 +42,9 @@ public static class SmoothScroll
         if (installed) return;
         installed = true;
         InputElement.PointerWheelChangedEvent.AddClassHandler<ScrollViewer>(OnWheel, RoutingStrategies.Tunnel);
+        // Le clavier, la barre de défilement et le pavé tactile restent prioritaires.
+        InputElement.PointerPressedEvent.AddClassHandler<ScrollViewer>((viewer, _) => Stop(viewer), RoutingStrategies.Tunnel);
+        InputElement.KeyDownEvent.AddClassHandler<ScrollViewer>((viewer, _) => Stop(viewer), RoutingStrategies.Tunnel);
     }
 
     /// <summary>Un cran de souris (pas entier) plutôt qu'un pavé tactile (pas fractionnaires).</summary>
@@ -48,31 +53,52 @@ public static class SmoothScroll
 
     private static void OnWheel(ScrollViewer viewer, PointerWheelEventArgs e)
     {
-        if (e.Handled || Platform.IsMobile || PhoneLayout.Active || e.KeyModifiers != KeyModifiers.None) return;
-        if (!IsWheelNotch(e.Delta) || !Reveal.MotionAllowed(viewer)) return;
+        if (e.Handled || Platform.IsMobile || PhoneLayout.Active || e.KeyModifiers != KeyModifiers.None)
+        {
+            Stop(viewer);
+            return;
+        }
+        if (!IsWheelNotch(e.Delta) || !Reveal.MotionAllowed(viewer))
+        {
+            Stop(viewer);
+            return;
+        }
         // Seule la zone défilante la plus proche du pointeur réagit ; un tableau garde son propre défilement.
         if (e.Source is not Visual source) return;
         ScrollViewer? nearest = null;
         foreach (var visual in source.GetSelfAndVisualAncestors())
         {
-            if (visual is DataGrid or TextBox or ComboBox) return;
+            if (visual is DataGrid or TextBox or ComboBox) { Stop(viewer); return; }
             if (visual is ScrollViewer candidate && CanScroll(candidate, e.Delta.Y)) { nearest = candidate; break; }
             if (visual == viewer) break;
         }
-        if (nearest != viewer) return;
+        if (nearest != viewer) { Stop(viewer); return; }
 
         var state = States.GetOrCreateValue(viewer);
         var max = Math.Max(0, viewer.Extent.Height - viewer.Viewport.Height);
+        // Une nouvelle direction annule la destination précédente, sans inertie opposée au doigt.
+        if (state.Running && ShouldInterrupt(viewer.Offset.Y, state.LastApplied, state.Target, e.Delta.Y))
+            Stop(viewer);
         var from = state.Running ? state.Target : viewer.Offset.Y;
         state.Target = Math.Clamp(from - e.Delta.Y * Step, 0, max);
         e.Handled = true;
         if (state.Running) return;
         state.Running = true;
+        state.LastApplied = viewer.Offset.Y;
+        var generation = ++state.Generation;
         state.Last = System.Diagnostics.Stopwatch.GetTimestamp();
         var top = TopLevel.GetTopLevel(viewer);
         if (top is null) { Jump(viewer, state); return; }
-        top.RequestAnimationFrame(_ => Tick(viewer, state, top));
+        top.RequestAnimationFrame(_ => Tick(viewer, state, top, generation));
     }
+
+    /// <summary>Interrompt un mouvement devenu obsolète ou dont la direction est inversée.</summary>
+    public static bool ShouldInterrupt(double offset, double lastApplied, double target, double deltaY) =>
+        Math.Abs(offset - lastApplied) > 0.5 || (target - offset) * deltaY > 0;
+
+    /// <summary>Décélération monotone, indépendante du taux de rafraîchissement.</summary>
+    public static double AdvanceOffset(double offset, double target, double seconds) =>
+        target - (target - offset) * Math.Exp(-Math.Max(0, seconds) / Tau);
 
     private static bool CanScroll(ScrollViewer viewer, double deltaY)
     {
@@ -87,21 +113,38 @@ public static class SmoothScroll
         state.Running = false;
     }
 
-    private static void Tick(ScrollViewer viewer, State state, TopLevel top)
+    private static void Stop(ScrollViewer viewer)
     {
+        if (!States.TryGetValue(viewer, out var state) || !state.Running) return;
+        state.Running = false;
+        state.Generation++;
+    }
+
+    private static void Tick(ScrollViewer viewer, State state, TopLevel top, int generation)
+    {
+        // Un ancien callback ne peut plus déplacer une page masquée ou une liste
+        // repositionnée par une recherche, une actualisation ou une navigation.
+        if (!state.Running || state.Generation != generation) return;
+        if (!viewer.IsEffectivelyVisible || TopLevel.GetTopLevel(viewer) != top ||
+            !Reveal.MotionAllowed(viewer) || Math.Abs(viewer.Offset.Y - state.LastApplied) > 0.5)
+        {
+            Stop(viewer);
+            return;
+        }
         var now = System.Diagnostics.Stopwatch.GetTimestamp();
         var dt = Math.Clamp((now - state.Last) / (double)System.Diagnostics.Stopwatch.Frequency, 0, 0.05);
         state.Last = now;
         var max = Math.Max(0, viewer.Extent.Height - viewer.Viewport.Height);
         state.Target = Math.Clamp(state.Target, 0, max);
         var y = viewer.Offset.Y;
-        var next = state.Target - (state.Target - y) * Math.Exp(-dt / Tau);
-        if (Math.Abs(state.Target - next) < 0.5 || !viewer.IsEffectivelyVisible)
+        var next = AdvanceOffset(y, state.Target, dt);
+        if (Math.Abs(state.Target - next) < 0.5)
         {
             Jump(viewer, state);
             return;
         }
         viewer.Offset = new Vector(viewer.Offset.X, next);
-        top.RequestAnimationFrame(_ => Tick(viewer, state, top));
+        state.LastApplied = viewer.Offset.Y;
+        top.RequestAnimationFrame(_ => Tick(viewer, state, top, generation));
     }
 }

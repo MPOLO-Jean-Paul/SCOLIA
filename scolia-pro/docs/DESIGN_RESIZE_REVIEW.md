@@ -1,0 +1,3 @@
+# Deuxième passe — redimensionnement et zoom
+
+Stabiliser la bascule des grilles à proximité de leur seuil de largeur (8 unités logiques), restaurer les définitions originales des lignes et colonnes lors du retour en mode large, limiter la hauteur du volet de recherche à l'espace disponible, éviter les réaffectations identiques des dimensions de dialogue, de transformation et de l'onglet Menu. Préserver les seuils, échelles et préférences existants. Tests unitaires des calculs ajoutés mais non exécutés. Validation ultérieure : redimensionnement continu, DPI Windows, clavier Android, zoom et dialogue. Aucun lancement de compilation.

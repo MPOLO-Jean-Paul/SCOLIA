@@ -11,16 +11,16 @@
         <Grid ColumnDefinitions="*,*" ColumnSpacing="8" infra:Adaptive.StackBelow="340">
           <StackPanel Spacing="4">
             <TextBlock Text="Du" Classes="fieldlabel" />
-            <CalendarDatePicker Classes="w11" PlaceholderText="Début" SelectedDateFormat="Short" HorizontalAlignment="Stretch" SelectedDate="{Binding From}" />
+            <CalendarDatePicker Classes="w11" PlaceholderText="Début" SelectedDateFormat="Short" HorizontalAlignment="Stretch" SelectedDate="{Binding From}" AutomationProperties.Name="Date de début du rapport" />
           </StackPanel>
           <StackPanel Grid.Column="1" Spacing="4">
             <TextBlock Text="Au" Classes="fieldlabel" />
-            <CalendarDatePicker Classes="w11" PlaceholderText="Fin" SelectedDateFormat="Short" HorizontalAlignment="Stretch" SelectedDate="{Binding To}" />
+            <CalendarDatePicker Classes="w11" PlaceholderText="Fin" SelectedDateFormat="Short" HorizontalAlignment="Stretch" SelectedDate="{Binding To}" AutomationProperties.Name="Date de fin du rapport" />
           </StackPanel>
         </Grid>
         <StackPanel Spacing="4">
           <TextBlock Text="Promotion" Classes="fieldlabel" />
-          <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+          <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" AutomationProperties.Name="Promotion du rapport" />
         </StackPanel>
       </StackPanel>
     </Border>
@@ -29,7 +29,7 @@
       <ItemsControl.ItemTemplate>
         <DataTemplate>
           <StackPanel>
-            <TextBlock Text="{Binding Title}" Classes="phonegrouptitle" />
+            <TextBlock Text="{Binding Title}" TextWrapping="Wrap" Classes="phonegrouptitle" />
             <Border Classes="phonegroup">
               <ItemsControl ItemsSource="{Binding Reports}">
                 <ItemsControl.ItemTemplate>
@@ -50,7 +50,7 @@
                           <ItemsControl.ItemTemplate>
                             <DataTemplate>
                               <!-- Icône au-dessus du libellé : trois actions tiennent sur un téléphone sans couper « Planifier ». -->
-                              <Button Command="{Binding Run}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="52" Margin="0,0,8,0" Padding="4,6">
+                              <Button Command="{Binding Run}" AutomationProperties.Name="{Binding Label}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="52" Margin="0,0,8,0" Padding="4,6">
                                 <StackPanel Spacing="2" HorizontalAlignment="Center">
                                   <mi:MaterialIcon Kind="{Binding Icon}" Width="18" Height="18" HorizontalAlignment="Center" />
                                   <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FsSmall}" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />

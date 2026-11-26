@@ -6,14 +6,14 @@
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
       <WrapPanel>
         <StackPanel Classes="field">
-          <TextBlock Text="Promotion" Classes="fieldlabel" />
-          <ComboBox Width="240" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+          <TextBlock Text="Promotion" Classes="fieldlabel" TextWrapping="Wrap" />
+          <ComboBox Width="240" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" AutomationProperties.Name="Promotion" />
         </StackPanel>
         <CheckBox Content="Afficher les cours archivés" IsChecked="{Binding ShowArchived}" VerticalAlignment="Bottom" Margin="0,0,12,12" />
       </WrapPanel>
     </Border>
 
-    <DataGrid Grid.Row="1" ItemsSource="{Binding Courses}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Courses}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" AutomationProperties.Name="Cours de la promotion">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="122" infra:GridPriority.Level="2" />
         <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="69" infra:GridPriority.Level="1" />
@@ -25,8 +25,8 @@
       </DataGrid.Columns>
     </DataGrid>
 
-    <TextBlock Grid.Row="2" Text="Charges des enseignants (charge pédagogique annuelle prévue)" Classes="section" Margin="0,14,0,6" />
-    <DataGrid Grid.Row="3" ItemsSource="{Binding Charges}" AutoGenerateColumns="False" IsReadOnly="True">
+    <TextBlock Grid.Row="2" Text="Charges des enseignants (charge pédagogique annuelle prévue)" Classes="section" Margin="0,14,0,6" TextWrapping="Wrap" />
+    <DataGrid Grid.Row="3" ItemsSource="{Binding Charges}" AutoGenerateColumns="False" IsReadOnly="True" AutomationProperties.Name="Charges pédagogiques">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Enseignant" Binding="{Binding Name}" Width="*" MinWidth="220" infra:GridPriority.Level="1" />
         <DataGridTextColumn Header="Cours" Binding="{Binding Courses}" Width="Auto" MinWidth="92" infra:GridPriority.Level="1" />

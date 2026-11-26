@@ -207,32 +207,25 @@ public partial class MainView : UserControl
         var followers = content.Children.Where(c => !c.GetVisualDescendants().Contains(logo)).ToList();
         foreach (var follower in followers)
         {
-            // Chaque ligne apparaît en remontant de quelques points, comme les écrans d'Android 16.
+            // Le titre et les trois points restent lisibles dès la première image.
             follower.Transitions = animate
                 ?
                 [
-                    new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(320), Easing = Infrastructure.Motion.Spring },
-                    new Avalonia.Animation.TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(360), Easing = Infrastructure.Motion.Spring },
+                    new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(150), Easing = Infrastructure.Motion.Spring },
+                    new Avalonia.Animation.TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(160), Easing = Infrastructure.Motion.Spring },
                 ]
                 : null;
-            follower.Opacity = animate ? 0 : 1;
-            follower.RenderTransform = animate ? Avalonia.Media.Transformation.TransformOperations.Parse("translateY(8px)") : null;
+            follower.Opacity = animate ? 0.85 : 1;
+            follower.RenderTransform = animate ? Avalonia.Media.Transformation.TransformOperations.Parse("translateY(3px)") : null;
         }
-        void Reveal(object? sender, EventArgs e)
-        {
-            logo.Assembled -= Reveal;
-            for (var i = 0; i < followers.Count; i++)
-            {
-                var follower = followers[i];
-                Avalonia.Threading.DispatcherTimer.RunOnce(() =>
-                {
-                    follower.Opacity = 1;
-                    follower.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("translateY(0px)");
-                }, TimeSpan.FromMilliseconds(140 + i * 90));
-            }
-        }
-        logo.Assembled += Reveal;
         logo.Play(animate, assemble);
+        // Ne pas attendre la fin de l'assemblage ni créer une temporisation par ligne.
+        foreach (var follower in followers)
+        {
+            follower.Opacity = 1;
+            follower.RenderTransform = animate
+                ? Avalonia.Media.Transformation.TransformOperations.Parse("translateY(0px)") : null;
+        }
     }
 
     // ---------- Recherche générale dans la barre du haut ----------
@@ -272,9 +265,12 @@ public partial class MainView : UserControl
         var width = Math.Min(Math.Max(HeaderFinderBar.Bounds.Width, 500), 580);
         width = Math.Min(width, space);
         var left = Math.Max(12, Math.Min(corner.X, DesktopArea.Bounds.Width - width - 12));
-        HeaderFinderDrop.Width = width;
-        HeaderFinderDrop.MaxHeight = Math.Max(100, Math.Min(490, DesktopArea.Bounds.Height - corner.Y - 16));
-        HeaderFinderDrop.Margin = new Thickness(left, corner.Y + 8, 0, 0);
+        var top = Math.Max(0, corner.Y + 8);
+        var height = Adaptive.PopupHeight(DesktopArea.Bounds.Height, top, 490);
+        var margin = new Thickness(left, top, 0, 0);
+        if (HeaderFinderDrop.Width != width) HeaderFinderDrop.Width = width;
+        if (HeaderFinderDrop.MaxHeight != height) HeaderFinderDrop.MaxHeight = height;
+        if (HeaderFinderDrop.Margin != margin) HeaderFinderDrop.Margin = margin;
     }
 
     private void OnHeaderFinderOutside(object? sender, PointerPressedEventArgs e)
@@ -303,8 +299,12 @@ public partial class MainView : UserControl
                 e.Handled = true;
                 if (!finder.HasQuery) break;
                 // Saisie à peine tapée : la recherche part tout de suite, puis le premier résultat s'ouvre.
+                var query = finder.Query;
                 if (finder.Selected is null) await finder.SearchAsync();
-                if (finder.Open.CanExecute(null)) finder.Open.Execute(null);
+                // Une nouvelle frappe, une déconnexion ou la fermeture du volet
+                // ne doit jamais ouvrir un résultat provenant de l'ancienne recherche.
+                if (Shell == shell && shell.HeaderFinderOpen && finder.Query == query &&
+                    finder.Open.CanExecute(null)) finder.Open.Execute(null);
                 break;
         }
     }
@@ -460,7 +460,10 @@ public partial class MainView : UserControl
             if (shell.CompactWindow && !Preferences.MobileLayout) shell.Prefs.Fit(1280, 720);
             else shell.Prefs.Fit(size.Width, size.Height);
             var k = shell.Prefs.LayoutScale;
-            if (Math.Abs(k - 1) < 0.001) Scaler.LayoutTransform = null;
+            if (Math.Abs(k - 1) < 0.001)
+            {
+                if (Scaler.LayoutTransform is not null) Scaler.LayoutTransform = null;
+            }
             else if (Scaler.LayoutTransform is not ScaleTransform currentScale || Math.Abs(currentScale.ScaleX - k) >= 0.001)
                 Scaler.LayoutTransform = new ScaleTransform(k, k);
             shell.Narrow = size.Width / k < NarrowBelow;
@@ -499,8 +502,10 @@ public partial class MainView : UserControl
     /// </summary>
     private void FitPageActions()
     {
-        if (Shell?.Current is not { } page || PageBar.Bounds.Width <= 0) return;
-        var font = Shell.Prefs.Factor * 13.5;
+        if (Shell is not { } shell || shell.Phone || shell.Current is not { } page || PageBar.Bounds.Width <= 0) return;
+        var actions = page.HeaderActions;
+        if (actions.Count == 0) { page.FitActions(0); return; }
+        var font = shell.Prefs.Factor * 13.5;
         // Le bloc du titre prend la largeur du titre ou du sous-titre, le plus long des deux, dans sa limite.
         var heading = TextWidth(page.Heading, 17 * Shell.Prefs.Factor, FontWeight.Bold);
         var sub = TextWidth(page.Subtitle, 12 * Shell.Prefs.Factor, FontWeight.Normal);
@@ -510,17 +515,19 @@ public partial class MainView : UserControl
         // Le filtre d'une liste garde sa largeur de saisie ; le bouton de recherche générale peut se resserrer.
         var search = Shell.HeaderSearch.IsOpen ? SearchMin : 220;
         var room = PageBar.Bounds.Width - PageBarFixed - title - extras - search;
-        var widths = page.HeaderActions.Select(a => TextWidth(a.Label, font, FontWeight.Normal) + 58).ToList();
+        // Au maximum trois commandes sont affichées.
+        var widths = actions.Take(3).Select(a => TextWidth(a.Label, font, FontWeight.Normal) + 58).ToArray();
+        page.FitActions(FitHeaderActionCount(actions.Count, widths, room));
+    }
+
+    public static int FitHeaderActionCount(int total, IReadOnlyList<double> widths, double room)
+    {
         const double more = 46;
-        int count;
-        if (widths.Count <= 3 && widths.Sum() <= room) count = widths.Count;
-        else
-        {
-            count = 0;
-            for (var k = Math.Min(2, widths.Count - 1); k > 0; k--)
-                if (widths.Take(k).Sum() + more <= room) { count = k; break; }
-        }
-        page.FitActions(count);
+        if (total <= 0) return 0;
+        if (total <= 3 && widths.Count >= total && widths.Take(total).Sum() <= room) return total;
+        for (var k = Math.Min(Math.Min(2, total - 1), widths.Count); k > 0; k--)
+            if (widths.Take(k).Sum() + more <= room) return k;
+        return 0;
     }
 
     private double TextWidth(string text, double size, FontWeight weight) =>

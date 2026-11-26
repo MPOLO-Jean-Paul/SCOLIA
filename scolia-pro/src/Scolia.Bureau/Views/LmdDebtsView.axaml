@@ -4,7 +4,7 @@
              xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.LmdDebtsView">
   <Grid RowDefinitions="Auto,*">
-    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" AutomationProperties.Name="Soldes académiques">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Matricule" Binding="{Binding Dto.Matricule}" Width="Auto" MinWidth="110" />
         <DataGridTextColumn Header="Étudiant" Binding="{Binding Dto.FullName}" Width="2*" MinWidth="220" />

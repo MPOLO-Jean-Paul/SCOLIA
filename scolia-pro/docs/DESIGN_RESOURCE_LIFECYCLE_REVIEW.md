@@ -1,0 +1,3 @@
+# Deuxième passe — ressources graphiques et formulaires
+
+Éviter les réaffectations identiques des ressources de texte et de densité ainsi que des pinceaux de thème. La bascule Windows et Android reste immédiate, sans capture bitmap. Annuler le délai du squelette après le chargement ; ne pas restaurer une sélection lors d'une actualisation silencieuse ignorée ou échouée. Désabonner les champs retirés d'un formulaire et empêcher les abonnements doubles. Tests de cycle de vie ajoutés, non exécutés. Pas de modification des règles de validation, des calculs ou des modèles de cartes. Aucun lancement de compilation. Les gains de performances restent à mesurer.

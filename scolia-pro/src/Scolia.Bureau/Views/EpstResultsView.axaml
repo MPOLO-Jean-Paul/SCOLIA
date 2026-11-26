@@ -7,12 +7,12 @@
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
       <WrapPanel>
         <StackPanel Classes="field">
-          <TextBlock Text="Classe" Classes="fieldlabel" />
-          <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+          <TextBlock Text="Classe" Classes="fieldlabel" TextWrapping="Wrap" />
+          <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" AutomationProperties.Name="Classe" />
         </StackPanel>
       </WrapPanel>
     </Border>
-    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" AutomationProperties.Name="Résultats de la classe">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Place" Binding="{Binding Rank}" Width="Auto" MinWidth="70" />
         <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="110" />

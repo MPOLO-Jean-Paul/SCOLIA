@@ -326,13 +326,13 @@
       <!-- Après connexion : un seul titre et trois points ; les étapes techniques restent internes. -->
       <StackPanel x:Name="WelcomeContent" MaxWidth="340" Margin="20"
                   HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
-        <Border Width="82" Height="82" CornerRadius="8" Background="{DynamicResource SurfaceBrush}"
+        <Border Width="76" Height="76" CornerRadius="20" Background="{DynamicResource Surface2Brush}"
                 HorizontalAlignment="Center" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
-          <ctl:LogoAssembly x:Name="OpeningLogo" Width="66" Height="66"
+          <ctl:LogoAssembly x:Name="OpeningLogo" Width="54" Height="54"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
-                            Primary="#0B2A6F" Secondary="#16A34A" />
+                            Primary="{DynamicResource LogoPrimaryBrush}" Secondary="{DynamicResource LogoSecondaryBrush}" />
         </Border>
-        <TextBlock Text="SCOLIA Pro" Foreground="{DynamicResource TextBrush}" FontSize="25" FontWeight="SemiBold"
+        <TextBlock Text="SCOLIA Pro" Foreground="{DynamicResource TextBrush}" FontSize="22" FontWeight="SemiBold"
                    HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8"
                     Margin="0,6,0,0" AutomationProperties.Name="Ouverture de la session en cours">
@@ -373,7 +373,7 @@
               <mi:MaterialIcon Kind="{Binding CurrentIcon}" />
             </Border>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-              <TextBlock Text="{Binding Current.Heading}" FontSize="17" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding Current.Heading}" ToolTip.Tip="{Binding Current.Heading}" FontSize="17" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
               <!-- Le sous-titre porte l'état de la page : il passe sur deux lignes plutôt que d'être coupé. -->
               <TextBlock Text="{Binding Current.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}"
                          TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
@@ -388,7 +388,7 @@
                                Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
               <TextBox x:Name="HeaderFinderBox" Grid.Column="1" Classes="searchfield" MinHeight="{DynamicResource FieldHeight}"
                        Text="{Binding HeaderFinder.Query, Mode=TwoWay}" PlaceholderText="{Binding HeaderFinder.Placeholder}"
-                       GotFocus="OnHeaderFinderFocus" KeyDown="OnHeaderFinderKeyDown" ToolTip.Tip="{Binding GlobalSearchTip}" />
+                       GotFocus="OnHeaderFinderFocus" KeyDown="OnHeaderFinderKeyDown" ToolTip.Tip="{Binding GlobalSearchTip}" AutomationProperties.Name="Recherche générale" />
               <Button Grid.Column="3" Classes="baricon" Command="{Binding HeaderFinder.ClearQuery}" IsVisible="{Binding HeaderFinder.HasQuery}"
                       ToolTip.Tip="Effacer" Width="40" Height="40">
                 <mi:MaterialIcon Kind="Close" />
@@ -412,7 +412,7 @@
                                Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
               <TextBox x:Name="DesktopContextSearchBox" Grid.Column="1" Classes="searchfield"
                        Text="{Binding HeaderSearch.Query, Mode=TwoWay}" PlaceholderText="{Binding HeaderSearch.Placeholder}"
-                       KeyDown="OnDesktopContextSearchKeyDown" MinHeight="{DynamicResource FieldHeight}" />
+                       KeyDown="OnDesktopContextSearchKeyDown" MinHeight="{DynamicResource FieldHeight}" AutomationProperties.Name="{Binding HeaderSearch.Placeholder}" />
               <Button Grid.Column="2" Classes="baricon" Command="{Binding HeaderSearch.Clear}" IsVisible="{Binding HeaderSearch.HasQuery}"
                       ToolTip.Tip="Effacer" Width="40" Height="40">
                 <mi:MaterialIcon Kind="Close" />
@@ -433,7 +433,7 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Button Classes="hdr" Command="{Binding Command}" Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding Danger}" ToolTip.Tip="{Binding Hint}">
+                  <Button Classes="hdr" Command="{Binding Command}" Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding Danger}" ToolTip.Tip="{Binding Hint}" AutomationProperties.Name="{Binding Label}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <mi:MaterialIcon Kind="{Binding Icon, Converter={x:Static infra:Icons.LineConverter}}" Width="16" Height="16" />
                       <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
@@ -471,7 +471,7 @@
                 <Border Width="26" Height="26" CornerRadius="13" Background="{DynamicResource AccentBrush}">
                   <TextBlock Text="{Binding UserInitials}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource OnAccentBrush}" />
                 </Border>
-                <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" VerticalAlignment="Center" MaxWidth="140" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding AccountName}" ToolTip.Tip="{Binding AccountName}" FontWeight="SemiBold" VerticalAlignment="Center" MaxWidth="140" TextTrimming="CharacterEllipsis" />
               </StackPanel>
             </Button>
           </StackPanel>
@@ -498,7 +498,7 @@
             <StackPanel Orientation="Horizontal" Spacing="9">
               <mi:MaterialIcon Kind="{Binding CurrentIcon}" Width="18" Height="18"
                                Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
-              <TextBlock Text="{Binding Current.Title}" FontWeight="SemiBold" VerticalAlignment="Center"
+              <TextBlock Text="{Binding Current.Title}" ToolTip.Tip="{Binding Current.Title}" FontWeight="SemiBold" VerticalAlignment="Center"
                          MaxWidth="250" TextTrimming="CharacterEllipsis" />
             </StackPanel>
           </Border>
@@ -544,7 +544,7 @@
                       <Button Classes="startentry" Command="{Binding Open}" AutomationProperties.Name="{Binding Title}" ToolTip.Tip="{Binding Description}">
                         <StackPanel Spacing="7" HorizontalAlignment="Center" VerticalAlignment="Center">
                           <mi:MaterialIcon Kind="{Binding Icon}" Width="28" Height="28" Foreground="{DynamicResource TextBrush}" />
-                          <TextBlock Text="{Binding Title}" FontSize="14" HorizontalAlignment="Center" />
+                          <TextBlock Text="{Binding Title}" FontSize="14" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
                         </StackPanel>
                       </Button>
                     </DataTemplate>
@@ -580,7 +580,7 @@
                               <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding IsExpanded}" Margin="0,0,0,5">
                                 <ItemsControl.ItemTemplate>
                                   <DataTemplate>
-                                    <Button Classes="navitem" Classes.selected="{Binding IsSelected}" Command="{Binding Open}"
+                                    <Button Classes="navitem" Classes.selected="{Binding IsSelected}" Command="{Binding Open}" AutomationProperties.Name="{Binding Label}"
                                             Margin="0" HorizontalContentAlignment="Stretch">
                                       <Grid ColumnDefinitions="Auto,Auto,*">
                                         <Border Classes="navmark" Margin="-4,0,7,0" />
@@ -616,7 +616,7 @@
                                        Classes.withsticky="{Binding Current.Sticky.IsVisible, FallbackValue=False}" />
         </ScrollViewer>
         <!-- Premier chargement un peu long : silhouettes à la place d'une page vide -->
-        <views:SkeletonView Background="{DynamicResource BgBrush}" Margin="8,0" MaxWidth="900" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        <views:SkeletonView Classes.anim="{Binding Prefs.Animations}" Background="{DynamicResource BgBrush}" Margin="8,0" MaxWidth="900" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                             IsVisible="{Binding Current.ShowSkeleton, FallbackValue=False}" />
         <!-- Barre d'action fixe de la page : le total et le bouton qui valide, toujours visibles en bas -->
         <Border Classes="stickybar" VerticalAlignment="Bottom" IsVisible="{Binding Current.Sticky.IsVisible, FallbackValue=False}">
@@ -713,21 +713,21 @@
       <!-- Bannière : encaissement ou sauvegarde faits sur un autre poste. Elle apparaît, se lit, s'en va seule. -->
       <Border x:Name="AlertBanner" Classes="alertbanner" IsVisible="{Binding HasBanner}" MaxWidth="560">
         <Grid ColumnDefinitions="*,Auto">
-          <Button Classes="bannerbody" Command="{Binding OpenBanner}" ToolTip.Tip="Ouvrir">
+          <Button Classes="bannerbody" Command="{Binding OpenBanner}" AutomationProperties.Name="{Binding Banner.Title}" ToolTip.Tip="{Binding Banner.Text}">
             <Grid ColumnDefinitions="Auto,*">
               <Border Width="40" Height="40" CornerRadius="20" Background="{Binding BannerBrush}" Margin="0,0,12,0" VerticalAlignment="Top">
                 <mi:MaterialIcon Kind="{Binding Banner.Icon}" Width="22" Height="22" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
               <StackPanel Grid.Column="1" Spacing="2">
                 <TextBlock Text="{Binding Banner.Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding Banner.Text}" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding Banner.Text}" ToolTip.Tip="{Binding Banner.Text}" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
                 <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap">
                   <Run Text="{Binding Banner.Origin, Mode=OneWay}" /><Run Text=" · à l'instant" />
                 </TextBlock>
               </StackPanel>
             </Grid>
           </Button>
-          <Button Grid.Column="1" Classes="closex" Command="{Binding DismissBanner}" ToolTip.Tip="Masquer" VerticalAlignment="Top" Margin="0,8,8,0">
+          <Button Grid.Column="1" Classes="closex" Command="{Binding DismissBanner}" AutomationProperties.Name="Masquer la notification" ToolTip.Tip="Masquer" VerticalAlignment="Top" Margin="0,8,8,0">
             <mi:MaterialIcon Kind="Close" />
           </Button>
         </Grid>
@@ -758,7 +758,7 @@
         <Border Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="22,16" BoxShadow="0 8 28 0 #33000000">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <mi:MaterialIcon Kind="Loading" Classes="spin" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" />
-            <TextBlock Text="Traitement en cours…" VerticalAlignment="Center" FontWeight="SemiBold" />
+            <TextBlock Text="Traitement en cours…" VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap" />
           </StackPanel>
         </Border>
       </Border>

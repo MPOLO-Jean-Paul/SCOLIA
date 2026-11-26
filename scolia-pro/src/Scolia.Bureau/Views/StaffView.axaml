@@ -13,14 +13,14 @@
           </StackPanel>
         </Border>
         <StackPanel Classes="field" IsVisible="{Binding ShowPayroll}">
-          <TextBlock Text="Mois" Classes="fieldlabel" />
-          <ComboBox Width="200" ItemsSource="{Binding Periods}" SelectedItem="{Binding PeriodChoice}" />
+          <TextBlock Text="Mois" Classes="fieldlabel" TextWrapping="Wrap" />
+          <ComboBox Width="200" ItemsSource="{Binding Periods}" SelectedItem="{Binding PeriodChoice}" AutomationProperties.Name="Mois de paie" />
         </StackPanel>
       </WrapPanel>
     </Border>
 
     <DataGrid Grid.Row="1" ItemsSource="{Binding Staff}" SelectedItem="{Binding SelectedStaff}"
-              AutoGenerateColumns="False" IsReadOnly="True" IsVisible="{Binding !ShowPayroll}">
+              AutoGenerateColumns="False" IsReadOnly="True" IsVisible="{Binding !ShowPayroll}" AutomationProperties.Name="Personnel">
       <DataGrid.Columns>
         <DataGridTextColumn Header="N° de dossier" Binding="{Binding Number}" Width="Auto" MinWidth="152" />
         <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" MinWidth="140" />
@@ -42,7 +42,7 @@
     </DataGrid>
 
     <DataGrid Grid.Row="1" ItemsSource="{Binding Payroll}" SelectedItem="{Binding SelectedPayroll}"
-              AutoGenerateColumns="False" IsReadOnly="True" IsVisible="{Binding ShowPayroll}">
+              AutoGenerateColumns="False" IsReadOnly="True" IsVisible="{Binding ShowPayroll}" AutomationProperties.Name="Préparation de la paie">
       <DataGrid.Columns>
         <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="110" />
         <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" MinWidth="140" />

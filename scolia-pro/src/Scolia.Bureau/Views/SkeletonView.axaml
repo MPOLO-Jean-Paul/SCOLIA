@@ -16,7 +16,7 @@
       <Setter Property="CornerRadius" Value="16" />
       <Setter Property="Padding" Value="16,14" />
     </Style>
-    <Style Selector="views|SkeletonView[IsVisible=True] StackPanel#Bones">
+    <Style Selector="views|SkeletonView.anim[IsVisible=True] StackPanel#Bones">
       <Style.Animations>
         <Animation Duration="0:0:0.9" IterationCount="INFINITE" PlaybackDirection="Alternate" Easing="SineEaseInOut">
           <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1" /></KeyFrame>

@@ -26,6 +26,12 @@ public static class RowMenu
     {
         EnabledProperty.Changed.AddClassHandler<DataGrid>((grid, e) =>
         {
+            // Un changement de style ne doit jamais doubler les gestes ni les raccourcis.
+            grid.RemoveHandler(InputElement.PointerPressedEvent, OnPressed);
+            grid.RemoveHandler(InputElement.PointerReleasedEvent, OnReleased);
+            grid.DoubleTapped -= OnDoubleTapped;
+            grid.RemoveHandler(InputElement.HoldingEvent, OnHolding);
+            grid.RemoveHandler(InputElement.KeyDownEvent, OnKeyDown);
             if (e.NewValue is not true) return;
             grid.AddHandler(InputElement.PointerPressedEvent, OnPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
             grid.AddHandler(InputElement.PointerReleasedEvent, OnReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
@@ -59,7 +65,9 @@ public static class RowMenu
     private static void OnReleased(object? sender, PointerReleasedEventArgs e)
     {
         if (sender is not DataGrid grid || e.InitialPressMouseButton != MouseButton.Right) return;
-        if (Find<DataGridRow>(e.Source) is not { } row) return;
+        if (Find<DataGridRow>(e.Source) is not { DataContext: { } item } row) return;
+        if (Find<TextBox>(e.Source) is not null || Find<ComboBox>(e.Source) is not null) return;
+        grid.SelectedItem = item;
         Show(grid, row, Find<DataGridCell>(e.Source));
         e.Handled = true;
     }
@@ -94,8 +102,9 @@ public static class RowMenu
     /// <summary>Double-clic sur une ligne : l'action principale, sauf dans une case à cocher ou une liste de choix.</summary>
     private static void OnDoubleTapped(object? sender, TappedEventArgs e)
     {
-        if (sender is not DataGrid grid || Find<DataGridRow>(e.Source) is null) return;
-        if (Find<CheckBox>(e.Source) is not null || Find<ComboBox>(e.Source) is not null || Find<TextBox>(e.Source) is not null) return;
+        if (sender is not DataGrid grid || Find<DataGridRow>(e.Source) is not { DataContext: { } item }) return;
+        if (Find<CheckBox>(e.Source) is not null || Find<ComboBox>(e.Source) is not null || Find<TextBox>(e.Source) is not null || Find<Button>(e.Source) is not null) return;
+        grid.SelectedItem = item;
         if (PageOf(grid)?.DefaultRowAction is { } action && action.Command.CanExecute(null)) action.Command.Execute(null);
     }
 

@@ -175,12 +175,13 @@
                   <mi:MaterialIcon Kind="Lock" Width="11" Height="11" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
               </Grid>
-              <TextBlock Classes="authtitle" Text="{Binding DisplayName}" MaxLines="2" />
-              <TextBlock Classes="authsubtitle" Text="{Binding AccountLine}" />
+              <TextBlock Classes="authtitle" Text="{Binding DisplayName}" ToolTip.Tip="{Binding DisplayName}" MaxLines="2" />
+              <TextBlock Classes="authsubtitle" Text="{Binding AccountLine}" ToolTip.Tip="{Binding AccountLine}" />
               <TextBlock Classes="authsubtitle" Text="{Binding LockedSince}" FontSize="12" />
             </StackPanel>
 
-            <StackPanel Spacing="12" IsVisible="{Binding RequireCode}">
+            <StackPanel Spacing="6" IsVisible="{Binding RequireCode}">
+              <TextBlock Classes="authlabel" Text="Mot de passe ou code PIN" />
               <Grid>
                 <TextBox x:Name="IosLockCode" Classes="authfield witheye" Text="{Binding Code}"
                          PasswordChar="•" RevealPassword="{Binding ShowCode}" MaxLength="128"
@@ -194,7 +195,10 @@
               </Grid>
               <Button Classes="authprimary" Command="{Binding Unlock}" IsEnabled="{Binding CanUnlockCode}">
                 <Panel>
-                  <mi:MaterialIcon Kind="Loading" Classes="spin" Width="20" Height="20" IsVisible="{Binding Busy}" />
+                  <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding Busy}" HorizontalAlignment="Center">
+                    <mi:MaterialIcon Kind="Loading" Classes="spin" Width="18" Height="18" VerticalAlignment="Center" />
+                    <TextBlock Text="Déverrouillage en cours…" VerticalAlignment="Center" />
+                  </StackPanel>
                   <TextBlock Text="Déverrouiller" IsVisible="{Binding NotBusy}" VerticalAlignment="Center" />
                 </Panel>
               </Button>
@@ -236,7 +240,7 @@
           <Image Source="{DynamicResource ScoliaMark}" />
           <TextBlock Text="SCOLIA Pro" FontWeight="SemiBold" />
           <TextBlock Text="·" />
-          <TextBlock Text="{Binding School}" TextTrimming="CharacterEllipsis" MaxWidth="260" />
+          <TextBlock Text="{Binding School}" ToolTip.Tip="{Binding School}" TextTrimming="CharacterEllipsis" MaxWidth="260" />
         </StackPanel>
         <TextBlock Text="{Binding Footer}" Classes="authhint" FontSize="11" IsVisible="False"
                    HorizontalAlignment="Stretch" TextAlignment="Center" />

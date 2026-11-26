@@ -1,0 +1,3 @@
+# Revue visuelle — administration et paramètres
+
+Huit vues Windows et Android : rubriques de configuration, compte, sécurité, réseau, cycles et utilisateurs. Navigation desktop contrainte à la largeur du volet, textes longs adaptatifs, retour visuel des lignes, noms accessibles des réglages, tableaux et commandes. Les commandes, liaisons de sélection et états d'autorisation contrôlés textuellement restent identiques. Aucun changement des mécanismes de licence, de mise à jour, de sécurité et des données. Vérifier rendu, clavier, zoom et thèmes après la phase de conception. Aucun lancement de compilation.

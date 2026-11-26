@@ -1,5 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
+using System.Runtime.CompilerServices;
 
 namespace Scolia.Bureau.Infrastructure;
 
@@ -14,6 +17,8 @@ public static class GridPriority
     private const double Chrome = 18;
 
     private static double factor = 1;
+    private sealed class GridState { public bool Pending; }
+    private static readonly ConditionalWeakTable<DataGrid, GridState> ActiveGrids = new();
 
     public static readonly AttachedProperty<int> LevelProperty =
         AvaloniaProperty.RegisterAttached<DataGridColumn, int>("Level", typeof(GridPriority), 1);
@@ -33,13 +38,48 @@ public static class GridPriority
     {
         AdaptiveProperty.Changed.AddClassHandler<DataGrid>((grid, e) =>
         {
+            grid.SizeChanged -= OnGridSizeChanged;
+            grid.AttachedToVisualTree -= OnAttached;
+            grid.DetachedFromVisualTree -= OnDetached;
+            ActiveGrids.Remove(grid);
             if (e.NewValue is not true) return;
-            grid.PropertyChanged += (_, args) =>
-            {
-                if (args.Property == Visual.BoundsProperty) Apply(grid);
-            };
-            Apply(grid);
+            grid.SizeChanged += OnGridSizeChanged;
+            grid.AttachedToVisualTree += OnAttached;
+            grid.DetachedFromVisualTree += OnDetached;
+            if (grid.IsAttachedToVisualTree()) Queue(grid);
         });
+    }
+
+    private static void OnGridSizeChanged(object? sender, SizeChangedEventArgs args)
+    {
+        // Les lignes qui arrivent ou changent de hauteur ne modifient pas les colonnes.
+        if (sender is DataGrid grid && Math.Abs(args.NewSize.Width - args.PreviousSize.Width) > 0.01)
+            Queue(grid);
+    }
+
+    private static void OnAttached(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (sender is DataGrid grid) Queue(grid);
+    }
+
+    private static void OnDetached(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (sender is DataGrid grid) ActiveGrids.Remove(grid);
+    }
+
+    private static void Queue(DataGrid grid)
+    {
+        if (!GetAdaptive(grid) || !grid.IsAttachedToVisualTree()) return;
+        var state = ActiveGrids.GetValue(grid, _ => new GridState());
+        if (state.Pending) return;
+        state.Pending = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            state.Pending = false;
+            if (ActiveGrids.TryGetValue(grid, out var current) && ReferenceEquals(current, state)
+                && GetAdaptive(grid) && grid.IsAttachedToVisualTree())
+                Apply(grid);
+        }, DispatcherPriority.Loaded);
     }
 
     public static int GetLevel(DataGridColumn column) => column.GetValue(LevelProperty);
@@ -53,7 +93,11 @@ public static class GridPriority
     /// <summary>Facteur de texte courant : les préférences le transmettent à chaque application.</summary>
     public static void SetTextFactor(double value)
     {
+        if (!double.IsFinite(value) || value <= 0 || Math.Abs(factor - value) < 0.001) return;
         factor = value;
+        // Le zoom du texte ne modifie pas forcément la largeur du tableau.
+        foreach (var pair in ActiveGrids)
+            Queue(pair.Key);
     }
 
     /// <summary>Affiche ou masque chaque colonne selon la largeur courante de la grille.</summary>

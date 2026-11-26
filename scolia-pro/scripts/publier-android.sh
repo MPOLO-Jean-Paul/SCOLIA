@@ -28,12 +28,17 @@ if [ -z "$code" ] && horodatage="$(git -C "$racine" log -1 --format=%ct 2>/dev/n
   code=$(( (horodatage - 1577836800) / 60 ))
 fi
 # Le retour au design natif reste une mise à jour, y compris depuis le candidat 1.3.0.
-if [[ "$version" == "1.3.1" ]]; then
-  if [[ -n "${SCOLIA_VERSION_CODE:-}" && ( ! "$code" =~ ^[0-9]+$ || "$code" -lt 3630120 ) ]]; then
-    echo "::error::versionCode inférieur au minimum de migration 3630120." >&2
+minimum=0
+case "$version" in
+  1.3.1) minimum=3630120 ;;
+  1.3.2) minimum=3630477 ;;
+esac
+if (( minimum > 0 )); then
+  if [[ -n "${SCOLIA_VERSION_CODE:-}" && ( ! "$code" =~ ^[0-9]+$ || "$code" -lt "$minimum" ) ]]; then
+    echo "::error::versionCode inférieur au minimum de mise à jour $minimum." >&2
     exit 1
   fi
-  if [[ -z "$code" || "$code" -lt 3630120 ]]; then code=3630120; fi
+  if [[ -z "$code" || "$code" -lt "$minimum" ]]; then code="$minimum"; fi
 fi
 options=()
 if [ -n "$code" ]; then options+=("-p:ApplicationVersion=$code"); fi

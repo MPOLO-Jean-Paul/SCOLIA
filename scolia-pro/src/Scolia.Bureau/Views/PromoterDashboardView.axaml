@@ -10,7 +10,7 @@
     <DataTemplate x:Key="PeriodRow" x:DataType="vm:PromoterPeriodRowVm">
       <Border Padding="10,8" CornerRadius="10" Margin="0,0,0,4" Background="{DynamicResource GroupBrush}">
         <StackPanel Spacing="5">
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" infra:Adaptive.StackBelow="300">
             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
               <TextBlock Text="{Binding Period}" FontWeight="SemiBold" />
               <Border IsVisible="{Binding IsCurrent}" Background="{DynamicResource AccentSoftBrush}" CornerRadius="8" Padding="6,1">
@@ -21,10 +21,10 @@
               <mi:MaterialIcon Kind="CheckCircleOutline" Width="16" Height="16" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding IsSettled}" />
               <TextBlock Text="Réglé" FontWeight="SemiBold" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding IsSettled}" />
               <TextBlock Text="Reste" Classes="muted" IsVisible="{Binding !IsSettled}" />
-              <TextBlock Text="{Binding Remaining}" FontWeight="SemiBold" IsVisible="{Binding !IsSettled}" />
+              <TextBlock Text="{Binding Remaining}" FontWeight="SemiBold" TextWrapping="Wrap" ToolTip.Tip="{Binding Remaining}" IsVisible="{Binding !IsSettled}" />
             </StackPanel>
           </Grid>
-          <ProgressBar Minimum="0" Maximum="1" Value="{Binding PaidShare, Mode=OneWay}" Height="5" MinHeight="5" CornerRadius="3" />
+          <ProgressBar AutomationProperties.Name="Part réglée" Minimum="0" Maximum="1" Value="{Binding PaidShare, Mode=OneWay}" Height="5" MinHeight="5" CornerRadius="3" />
           <WrapPanel>
             <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" Margin="0,0,12,0">
               <Run Text="Réglé" /> <Run Text="{Binding Paid, Mode=OneWay}" /> <Run Text="sur" /> <Run Text="{Binding Due, Mode=OneWay}" />
@@ -48,7 +48,7 @@
           </Border>
           <StackPanel Grid.Column="1" Spacing="4">
             <WrapPanel>
-              <TextBlock Text="Pilotage de l'établissement" FontWeight="SemiBold" FontSize="18" Margin="0,0,10,0" VerticalAlignment="Center" />
+              <TextBlock Text="Pilotage de l'établissement" TextWrapping="Wrap" FontWeight="SemiBold" FontSize="18" Margin="0,0,10,0" VerticalAlignment="Center" />
               <Border Background="{DynamicResource GroupBrush}" CornerRadius="9" Padding="8,2" VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <mi:MaterialIcon Kind="EyeOutline" Width="14" Height="14" />

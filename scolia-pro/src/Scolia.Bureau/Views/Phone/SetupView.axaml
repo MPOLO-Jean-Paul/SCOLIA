@@ -105,7 +105,7 @@
         <StackPanel Grid.Column="1" Margin="13,0,0,0" Spacing="3">
           <TextBlock Text="{Binding StepLabel}" Foreground="{DynamicResource AccentBrush}" FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" TextWrapping="Wrap" />
           <TextBlock Classes="iossetuptitle" Text="{Binding StepTitle}" Foreground="{DynamicResource TextBrush}" FontWeight="Bold" TextWrapping="Wrap" />
-          <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Height="5" MinHeight="5" Margin="0,7,0,0" Foreground="{DynamicResource AccentBrush}" CornerRadius="3" />
+          <ProgressBar AutomationProperties.Name="{Binding StepLabel}" Value="{Binding Progress, Mode=OneWay}" Maximum="100" Height="5" MinHeight="5" Margin="0,7,0,0" Foreground="{DynamicResource AccentBrush}" CornerRadius="3" />
         </StackPanel>
       </Grid>
     </Border>
@@ -233,13 +233,13 @@
                   <TextBlock Text="{Binding LogoLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                 </StackPanel>
               </Grid>
-              <StackPanel Classes="field"><TextBlock Text="Nom de l'établissement" /><TextBox Classes="w11" Text="{Binding SchoolName}" PlaceholderText="Nom officiel" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Nom de l'établissement" /><TextBox Classes="w11" Text="{Binding SchoolName}" PlaceholderText="Nom officiel" AutomationProperties.Name="Nom officiel de l’établissement" /></StackPanel>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="10" infra:Adaptive.StackBelow="300">
-                <StackPanel Classes="field"><TextBlock Text="Sigle" /><TextBox Classes="w11" Text="{Binding ShortName}" PlaceholderText="Sigle" /></StackPanel>
-                <StackPanel Classes="field" Grid.Column="1"><TextBlock Text="Ville" /><TextBox Classes="w11" Text="{Binding City}" PlaceholderText="Kinshasa" /></StackPanel>
+                <StackPanel Classes="field"><TextBlock Text="Sigle" /><TextBox Classes="w11" Text="{Binding ShortName}" PlaceholderText="Sigle" AutomationProperties.Name="Sigle de l’établissement" /></StackPanel>
+                <StackPanel Classes="field" Grid.Column="1"><TextBlock Text="Ville" /><TextBox Classes="w11" Text="{Binding City}" PlaceholderText="Kinshasa" AutomationProperties.Name="Ville" /></StackPanel>
               </Grid>
-              <StackPanel Classes="field"><TextBlock Text="Téléphone" /><TextBox Classes="w11" Text="{Binding Phone}" infra:PhoneInput.Digits="True" PlaceholderText="0812345678" /></StackPanel>
-              <StackPanel Classes="field"><TextBlock Text="Devise (facultatif)" /><TextBox Classes="w11" Text="{Binding Motto}" PlaceholderText="Savoir, discipline, service" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Téléphone" /><TextBox Classes="w11" Text="{Binding Phone}" infra:PhoneInput.Digits="True" PlaceholderText="0812345678" AutomationProperties.Name="Téléphone de l’établissement" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Devise (facultatif)" /><TextBox Classes="w11" Text="{Binding Motto}" PlaceholderText="Savoir, discipline, service" AutomationProperties.Name="Devise facultative" /></StackPanel>
             </StackPanel>
           </Border>
 
@@ -248,7 +248,7 @@
               <TextBlock Text="Année scolaire et paiements" FontWeight="SemiBold" />
               <StackPanel Classes="field"><TextBlock Text="Dernier jour sans retard" TextWrapping="Wrap" /><ComboBox ItemsSource="{Binding PaymentDeadlineDays}" SelectedItem="{Binding LastOnTimeDay}" HorizontalAlignment="Stretch" /></StackPanel>
               <TextBlock Text="{Binding MonthRangeSummary}" Classes="muted" TextWrapping="Wrap" />
-              <StackPanel Classes="field"><TextBlock Text="Année" /><TextBox Classes="w11" Text="{Binding YearLabel}" PlaceholderText="2026-2027" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Année" /><TextBox Classes="w11" Text="{Binding YearLabel}" PlaceholderText="2026-2027" AutomationProperties.Name="Année scolaire" /></StackPanel>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="10" infra:Adaptive.StackBelow="300">
                 <StackPanel Classes="field"><TextBlock Text="Premier mois" /><ComboBox ItemsSource="{Binding StartMonths}" SelectedItem="{Binding StartMonth}" HorizontalAlignment="Stretch" /></StackPanel>
                 <StackPanel Classes="field" Grid.Column="1"><TextBlock Text="Dernier mois" /><ComboBox ItemsSource="{Binding EndMonths}" SelectedItem="{Binding EndMonth}" HorizontalAlignment="Stretch" /></StackPanel>
@@ -272,14 +272,14 @@
                   <DataTemplate>
                     <Border Background="{DynamicResource Surface2Brush}" CornerRadius="6" Padding="10" Margin="0,0,0,8">
                       <Grid ColumnDefinitions="90,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
-                        <TextBox Classes="w11" Text="{Binding Code}" PlaceholderText="INF1" MaxLength="4" />
-                        <TextBox Classes="w11" Grid.Column="1" Text="{Binding Fee}" PlaceholderText="Montant" />
+                        <TextBox Classes="w11" Text="{Binding Code}" PlaceholderText="INF1" MaxLength="4" AutomationProperties.Name="Code de la promotion" />
+                        <TextBox Classes="w11" Grid.Column="1" Text="{Binding Fee}" PlaceholderText="Montant" AutomationProperties.Name="Montant des frais" />
                         <Button Grid.Column="2" Classes="toolicon" Command="{Binding Remove}" VerticalAlignment="Center"><mi:MaterialIcon Kind="Close" Width="16" Height="16" /></Button>
-                        <TextBox Classes="w11" Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Name}" PlaceholderText="Désignation" />
+                        <TextBox Classes="w11" Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Name}" PlaceholderText="Désignation" AutomationProperties.Name="Désignation de la promotion" />
                         <StackPanel Grid.Row="2" Grid.ColumnSpan="3" IsVisible="{Binding IsLmd}" Spacing="5">
                           <Grid ColumnDefinitions="*,70" ColumnSpacing="8">
                             <TextBlock Text="Nombre de tranches (1 à 6)" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" />
-                            <TextBox Grid.Column="1" Classes="w11" Text="{Binding TrancheCount}" MaxLength="1" />
+                            <TextBox Grid.Column="1" Classes="w11" Text="{Binding TrancheCount}" MaxLength="1" AutomationProperties.Name="Nombre de tranches" />
                           </Grid>
                           <TextBlock Text="{Binding InstallmentPreview}" Classes="muted" TextWrapping="Wrap" />
                         </StackPanel>
@@ -319,10 +319,10 @@
                 <TextBlock Text="Secrétariat" FontWeight="SemiBold" VerticalAlignment="Center" />
               </StackPanel>
               <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" Text="Compte administrateur : tout le travail, le paramétrage, les utilisateurs et les sauvegardes." />
-              <StackPanel Classes="field"><TextBlock Text="Identifiant" /><TextBox Classes="w11" Text="{Binding AdminUserName}" /></StackPanel>
-              <StackPanel Classes="field"><TextBlock Text="Nom de la personne" /><TextBox Classes="w11" Text="{Binding AdminDisplayName}" /></StackPanel>
-              <StackPanel Classes="field"><TextBlock Text="Mot de passe" /><TextBox Classes="w11" Text="{Binding AdminPassword}" PasswordChar="•" /></StackPanel>
-              <StackPanel Classes="field"><TextBlock Text="Confirmer le mot de passe" /><TextBox Classes="w11" Text="{Binding AdminConfirm}" PasswordChar="•" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Identifiant" /><TextBox Classes="w11" Text="{Binding AdminUserName}" AutomationProperties.Name="Identifiant du secrétariat" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Nom de la personne" /><TextBox Classes="w11" Text="{Binding AdminDisplayName}" AutomationProperties.Name="Nom du responsable du secrétariat" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Mot de passe" /><TextBox Classes="w11" Text="{Binding AdminPassword}" PasswordChar="•" AutomationProperties.Name="Mot de passe du secrétariat" TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Confirmer le mot de passe" /><TextBox Classes="w11" Text="{Binding AdminConfirm}" PasswordChar="•" AutomationProperties.Name="Confirmer le mot de passe du secrétariat" TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" /></StackPanel>
             </StackPanel>
           </Border>
           <Border Classes="card">
@@ -333,16 +333,21 @@
                 <ToggleSwitch Grid.Column="2" IsChecked="{Binding UseComptabilite}" OnContent="" OffContent="" />
               </Grid>
               <StackPanel Spacing="10" IsVisible="{Binding UseComptabilite}">
-                <StackPanel Classes="field"><TextBlock Text="Identifiant" /><TextBox Classes="w11" Text="{Binding ComptabiliteUserName}" /></StackPanel>
-                <StackPanel Classes="field"><TextBlock Text="Nom de la personne" /><TextBox Classes="w11" Text="{Binding ComptabiliteDisplayName}" /></StackPanel>
-                <StackPanel Classes="field"><TextBlock Text="Mot de passe" /><TextBox Classes="w11" Text="{Binding ComptabilitePassword}" PasswordChar="•" /></StackPanel>
-                <StackPanel Classes="field"><TextBlock Text="Confirmer le mot de passe" /><TextBox Classes="w11" Text="{Binding ComptabiliteConfirm}" PasswordChar="•" /></StackPanel>
+                <StackPanel Classes="field"><TextBlock Text="Identifiant" /><TextBox Classes="w11" Text="{Binding ComptabiliteUserName}" AutomationProperties.Name="Identifiant de la comptabilité" /></StackPanel>
+                <StackPanel Classes="field"><TextBlock Text="Nom de la personne" /><TextBox Classes="w11" Text="{Binding ComptabiliteDisplayName}" AutomationProperties.Name="Nom du responsable de la comptabilité" /></StackPanel>
+                <StackPanel Classes="field"><TextBlock Text="Mot de passe" /><TextBox Classes="w11" Text="{Binding ComptabilitePassword}" PasswordChar="•" AutomationProperties.Name="Mot de passe de la comptabilité" TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" /></StackPanel>
+                <StackPanel Classes="field"><TextBlock Text="Confirmer le mot de passe" /><TextBox Classes="w11" Text="{Binding ComptabiliteConfirm}" PasswordChar="•" AutomationProperties.Name="Confirmer le mot de passe de la comptabilité" TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" /></StackPanel>
               </StackPanel>
             </StackPanel>
           </Border>
         </StackPanel>
 
-        <TextBlock Text="{Binding Error}" IsVisible="{Binding HasError}" Foreground="{DynamicResource ToneRed}" TextWrapping="Wrap" />
+        <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="10,8" IsVisible="{Binding HasError}">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Top" />
+            <TextBlock Grid.Column="1" Text="{Binding Error}" Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" />
+          </Grid>
+        </Border>
       </StackPanel>
     </ScrollViewer>
 
@@ -367,10 +372,13 @@
             <TextBlock Text="Suivant" VerticalAlignment="Center" />
           </DockPanel>
         </Button>
-        <Button x:Name="SetupFinishButton" Grid.Column="1" Classes="iossetupprimary" Command="{Binding Finish}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}">
+        <Button x:Name="SetupFinishButton" AutomationProperties.Name="Terminer la configuration" Grid.Column="1" Classes="iossetupprimary" Command="{Binding Finish}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}">
           <DockPanel>
             <mi:MaterialIcon DockPanel.Dock="Left" Kind="CheckCircleOutline" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center" />
-            <TextBlock Text="Terminer" VerticalAlignment="Center" />
+            <Panel>
+              <TextBlock Text="Terminer" VerticalAlignment="Center" IsVisible="{Binding !Busy}" />
+              <TextBlock Text="En cours…" VerticalAlignment="Center" IsVisible="{Binding Busy}" />
+            </Panel>
           </DockPanel>
         </Button>
       </Grid>

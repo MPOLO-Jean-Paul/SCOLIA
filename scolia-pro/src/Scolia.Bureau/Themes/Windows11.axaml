@@ -27,7 +27,7 @@
       <!-- Bouton standard WinUI : remplissage ControlFillColorDefault, filet d'élévation plus sombre en bas -->
       <SolidColorBrush x:Key="ButtonHoverBrush" Color="#F6F6F6" />
       <SolidColorBrush x:Key="ButtonFillBrush" Color="#FBFBFB" />
-      <SolidColorBrush x:Key="ButtonPressedBrush" Color="#F5F5F5" />
+      <SolidColorBrush x:Key="ButtonPressedBrush" Color="#E9E9E9" />
       <LinearGradientBrush x:Key="ButtonStrokeBrush" StartPoint="0%,0%" EndPoint="0%,100%">
         <GradientStop Offset="0" Color="#E5E5E5" />
         <GradientStop Offset="0.9" Color="#E5E5E5" />
@@ -75,7 +75,7 @@
       <SolidColorBrush x:Key="ButtonLineBrush" Color="#8A8A8A" />
       <SolidColorBrush x:Key="ButtonHoverBrush" Color="#323232" />
       <SolidColorBrush x:Key="ButtonFillBrush" Color="#2D2D2D" />
-      <SolidColorBrush x:Key="ButtonPressedBrush" Color="#272727" />
+      <SolidColorBrush x:Key="ButtonPressedBrush" Color="#3B3B3B" />
       <LinearGradientBrush x:Key="ButtonStrokeBrush" StartPoint="0%,0%" EndPoint="0%,100%">
         <GradientStop Offset="0" Color="#3A3A3A" />
         <GradientStop Offset="0.1" Color="#353535" />

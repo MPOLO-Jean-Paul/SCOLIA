@@ -80,4 +80,15 @@ public class ThemeContrastTests
     {
         Assert.Equal(Colors.White, ThemeContrast.OnAccent(Color.Parse("#0842A0"), Color.Parse("#063480")));
     }
+    [Theory]
+    [InlineData("#152C4D", "#D3DEED")]
+    [InlineData("#E6E6EB", "#44444C")]
+    [InlineData("#1A1C1E", "#D1DCE9")]
+    [InlineData("#E2E2E6", "#41454C")]
+    [InlineData("#1B1B1B", "#E9E9E9")]
+    [InlineData("#FFFFFF", "#3B3B3B")]
+    public void Le_texte_reste_lisible_sur_le_fond_appuye(string text, string pressed)
+    {
+        Assert.True(ThemeContrast.Ratio(Color.Parse(text), Color.Parse(pressed)) >= 4.5);
+    }
 }

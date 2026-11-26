@@ -318,13 +318,20 @@ public sealed class Preferences : Observable
     {
         var app = Avalonia.Application.Current;
         if (app is null) return;
-        app.RequestedThemeVariant = theme switch
+        var requested = theme switch
         {
             "dark" => ThemeVariant.Dark,
             "light" => ThemeVariant.Light,
             _ => ThemeVariant.Default,
         };
+        if (app.RequestedThemeVariant != requested) app.RequestedThemeVariant = requested;
         var r = app.Resources;
+        // Ne pas notifier les ressources dynamiques quand leur valeur est identique.
+        void Resource(string key, object value)
+        {
+            if (!r.TryGetValue(key, out var current) || !Equals(current, value))
+                r[key] = value;
+        }
         // Les deux palettes sont déjà installées : ne pas les recréer pour un
         // changement de police, de zoom ou de densité. Cela évite les
         // invalidations visuelles sur l'ensemble des pages et des tableaux.
@@ -334,34 +341,34 @@ public sealed class Preferences : Observable
             resourcesOwner = app;
             resourcesAccent = accent;
         }
-        r["UiFont"] = FamilyOf(font);
+        Resource("UiFont", FamilyOf(font));
         var k = Factor;
         GridPriority.SetTextFactor(k);
         if (MobileLayout)
         {
             // Téléphone : un demi-point de plus, la lecture à bout de bras reste confortable.
-            r["FsBase"] = 14.5 * k;
-            r["FsSmall"] = 12.5 * k;
-            r["FsCaption"] = 11.5 * k;
-            r["FsHeading"] = 15.0 * k;
-            r["FsTitle"] = 22.0 * k;
-            r["FsDisplay"] = 28.0 * k;
+            Resource("FsBase", 14.5 * k);
+            Resource("FsSmall", 12.5 * k);
+            Resource("FsCaption", 11.5 * k);
+            Resource("FsHeading", 15.0 * k);
+            Resource("FsTitle", 22.0 * k);
+            Resource("FsDisplay", 28.0 * k);
         }
         else
         {
             // Ordinateur : échelle typographique de Windows 11 (Caption 12, Body 14, Body Large 18,
             // Subtitle 20, Title 28). Les titres de bloc prennent 16 : entre Body et Body Large.
-            r["FsBase"] = 14.0 * k;
-            r["FsSmall"] = 12.0 * k;
-            r["FsCaption"] = 12.0 * k;
-            r["FsHeading"] = 16.0 * k;
-            r["FsTitle"] = 24.0 * k;
-            r["FsDisplay"] = 28.0 * k;
+            Resource("FsBase", 14.0 * k);
+            Resource("FsSmall", 12.0 * k);
+            Resource("FsCaption", 12.0 * k);
+            Resource("FsHeading", 16.0 * k);
+            Resource("FsTitle", 24.0 * k);
+            Resource("FsDisplay", 28.0 * k);
         }
-        r["RowHeight"] = (compact ? 28.0 : 36.0) * k;
-        r["CtlHeight"] = (compact ? 26.0 : 30.0) * k;
-        r["GridLines"] = grid ? Avalonia.Controls.DataGridGridLinesVisibility.Horizontal : Avalonia.Controls.DataGridGridLinesVisibility.None;
-        r["TextControlPlaceholderOpacity"] = 1d;
+        Resource("RowHeight", (compact ? 28.0 : 36.0) * k);
+        Resource("CtlHeight", (compact ? 26.0 : 30.0) * k);
+        Resource("GridLines", grid ? Avalonia.Controls.DataGridGridLinesVisibility.Horizontal : Avalonia.Controls.DataGridGridLinesVisibility.None);
+        Resource("TextControlPlaceholderOpacity", 1d);
         ThemeBrush.Refresh();
     }
 

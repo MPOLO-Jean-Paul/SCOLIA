@@ -4,7 +4,7 @@
              xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.CurriculumAssignmentView">
   <Grid>
-    <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" AutomationProperties.Name="Attributions pédagogiques">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Classe ou promotion" Binding="{Binding Dto.PromotionName}" Width="*" MinWidth="180" />
         <DataGridTextColumn Header="Élément" Binding="{Binding Element}" Width="2*" MinWidth="260" />
