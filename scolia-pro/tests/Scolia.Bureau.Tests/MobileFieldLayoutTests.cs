@@ -26,7 +26,7 @@ public sealed class MobileFieldLayoutTests
         Assert.All(fields, grid =>
         {
             Assert.Contains(grid.Elements(), n => n.Name.LocalName == "TextBox" && ((string?)n.Attribute("Classes"))?.Contains("withicon") == true);
-            Assert.Contains(grid.Elements(), n => n.Name.LocalName == "MaterialIcon" && (string?)n.Attribute("Classes") == "authinputicon");
+            Assert.Contains(grid.Elements(), n => n.Name.LocalName == "PathIcon" && (string?)n.Attribute("Classes") == "authinputicon" && ((string?)n.Attribute("Data"))?.Contains("AuthGlyphs.") == true);
             var field = Assert.Single(grid.Elements(), n => n.Name.LocalName == "TextBox");
             Assert.Equal(((string?)field.Attribute("Classes"))?.Contains("witheye") == true ? "46,0,54,0" : "46,0,14,0",
                 (string?)field.Attribute("Padding"));
