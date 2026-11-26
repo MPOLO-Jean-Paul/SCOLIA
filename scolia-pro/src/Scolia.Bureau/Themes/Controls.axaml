@@ -48,6 +48,7 @@
   <!-- Typographie -->
   <!-- Le texte hérite de son contrôle : un bouton clair conserve son texte foncé en thème sombre. -->
   <Style Selector="TextBlock.title">
+    <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="FontSize" Value="{DynamicResource FsTitle}" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="LetterSpacing" Value="-0.2" />
@@ -163,13 +164,13 @@
     <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
   </Style>
   <!-- Bouton plein : le libellé et l'icône composés restent blancs sur la couleur -->
-  <Style Selector="Button.primary TextBlock">
+  <Style Selector="Button.primary TextBlock, Button.primary mi|MaterialIcon">
     <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
   </Style>
-  <Style Selector="Button.danger TextBlock">
+  <Style Selector="Button.danger TextBlock, Button.danger mi|MaterialIcon">
     <Setter Property="Foreground" Value="{DynamicResource OnDangerBrush}" />
   </Style>
-  <Style Selector="Button.destructive TextBlock">
+  <Style Selector="Button.destructive TextBlock, Button.destructive mi|MaterialIcon">
     <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
   </Style>
   <Style Selector="Button.danger">
@@ -921,6 +922,7 @@
   </Style>
   <!-- Titre de rubrique : texte gras ordinaire, comme les en-têtes des Paramètres de Windows -->
   <Style Selector="TextBlock.section">
+    <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="Margin" Value="0,4,0,0" />
   </Style>
@@ -1374,6 +1376,7 @@
   </Style>
   <!-- Blocs métier continus inspirés des réglages natifs, sans séparateur au-dessus du premier outil. -->
   <Style Selector="TextBlock.navblocktitle">
+    <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
