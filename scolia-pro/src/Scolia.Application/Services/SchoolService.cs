@@ -430,10 +430,10 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
                 if (await db.Promotions.AnyAsync(p => p.AcademicYearId == year.Id && p.Code == code && p.Id != promotion.Id, ct)) throw new ConflictException("Ce code existe déjà.");
             }
         }
+        if (year.Status == AcademicYearStatus.Closed)
+            throw new DomainException("annee", "Cette année scolaire est clôturée : les promotions et leurs frais sont archivés.");
         if (input.LmdAnnualFee is { } plan)
         {
-            if (year.Status == AcademicYearStatus.Closed)
-                throw new DomainException("tranches", "Cette année académique est clôturée.");
             IReadOnlyList<decimal> amounts;
             IReadOnlyList<DateOnly> dates;
             try
@@ -612,6 +612,9 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
     public Task DeletePromotionAsync(Guid id, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
         var promotion = await db.Promotions.Include(p => p.Fees).FirstOrDefaultAsync(p => p.Id == id, ct) ?? throw new NotFoundException("Promotion introuvable.");
+        var year = await YearContext.GetAsync(db, promotion.AcademicYearId, ct);
+        if (year.Status == AcademicYearStatus.Closed)
+            throw new DomainException("annee", "Cette promotion appartient à une année clôturée.");
         if (await db.Enrollments.AnyAsync(e => e.PromotionId == id, ct)) throw new DomainException("promotion", "Cette promotion a des inscrits : désactivez-la au lieu de la supprimer.");
         // Une délibération tenue (procès-verbal, décisions) ou des cours enregistrés font partie de l'historique officiel.
         if (await db.DeliberationSessions.AnyAsync(x => x.PromotionId == id, ct))
