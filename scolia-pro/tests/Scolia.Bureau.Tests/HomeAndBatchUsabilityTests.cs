@@ -18,6 +18,29 @@ public sealed class HomeAndBatchUsabilityTests
             "src", "Scolia.Bureau", relative);
     }
 
+    [Theory]
+    [InlineData(1280, 820, 72)]
+    [InlineData(760, 520, 110)]
+    [InlineData(608, 416, 110)]
+    [InlineData(507, 347, 290)]
+    [InlineData(320, 200, 190)]
+    [InlineData(10, 5, 50)]
+    public void Le_menu_desktop_reste_dans_la_fenetre(double width, double height, double anchorBottom)
+    {
+        var rect = Scolia.Bureau.Views.MainView.CommandMenuBounds(new Avalonia.Size(width, height), anchorBottom);
+        Assert.InRange(rect.X, 0, width);
+        Assert.InRange(rect.Y, 0, height);
+        Assert.InRange(rect.Width, 0, Math.Min(420, width));
+        Assert.InRange(rect.Height, 0, height);
+        Assert.True(rect.Right <= width);
+        Assert.True(rect.Bottom <= height);
+        var source = File.ReadAllText(ViewFile("Views/MainView.axaml.cs"));
+        Assert.Contains("DesktopArea.Children.Add(overlay)", source);
+        Assert.Contains("DesktopArea.SizeChanged += (_, _) => PlaceCommandMenu()", source);
+        Assert.Contains("VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto", source);
+        Assert.DoesNotContain("var menu = new MenuFlyout", source);
+    }
+
     [Fact]
     public void L_accueil_PowerBI_garde_indicateurs_et_actions_adaptatifs()
     {
