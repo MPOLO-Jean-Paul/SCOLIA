@@ -531,9 +531,28 @@ public partial class MainView : UserControl
         return 0;
     }
 
-    private double TextWidth(string text, double size, FontWeight weight) =>
-        new FormattedText(text, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+    private readonly Dictionary<(string Text, double Size, FontWeight Weight), double> textWidths = new();
+    private FontFamily? measuredFont;
+    private string? measuredCulture;
+
+    private double TextWidth(string text, double size, FontWeight weight)
+    {
+        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        if (!Equals(measuredFont, FontFamily) || measuredCulture != culture.Name)
+        {
+            textWidths.Clear();
+            measuredFont = FontFamily;
+            measuredCulture = culture.Name;
+        }
+        var key = (text, size, weight);
+        if (textWidths.TryGetValue(key, out var width)) return width;
+        // Cache borné : des libellés dynamiques ne doivent pas croître toute la session.
+        if (textWidths.Count >= 128) textWidths.Clear();
+        width = new FormattedText(text, culture, FlowDirection.LeftToRight,
             new Typeface(FontFamily, FontStyle.Normal, weight), size, null).Width;
+        textWidths[key] = width;
+        return width;
+    }
 
     /// <summary>Fondu entre les pages, désactivé par la préférence « Animations ».</summary>
     private void ApplyPageTransition(Preferences prefs) =>

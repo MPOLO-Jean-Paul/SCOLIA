@@ -54,30 +54,43 @@ public static class Icons
     public static MaterialIconKind? GetLead(Button button) => button.GetValue(LeadProperty);
     public static void SetLead(Button button, MaterialIconKind? value) => button.SetValue(LeadProperty, value);
 
+    private static readonly ConcurrentDictionary<MaterialIconKind, FuncDataTemplate<object?>> LeadTemplates = new();
+
+    // Seul le modèle est partagé : chaque bouton reçoit ses propres contrôles.
+    public static FuncDataTemplate<object?> LeadTemplate(MaterialIconKind kind) =>
+        LeadTemplates.GetOrAdd(Line(kind), static glyph => new FuncDataTemplate<object?>((content, _) =>
+        {
+            var text = new TextBlock
+            {
+                Text = content?.ToString(), VerticalAlignment = VerticalAlignment.Center,
+                TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center,
+                MinWidth = 0,
+            };
+            var icon = new MaterialIcon
+            {
+                Kind = glyph, Width = ButtonSize, Height = ButtonSize,
+                VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false,
+            };
+            // Une colonne fixe pour le pictogramme et le reste pour le texte :
+            // contrairement à une pile horizontale, le libellé reçoit une largeur finie.
+            var grid = new Grid
+            {
+                ColumnDefinitions = new ColumnDefinitions("Auto,*"),
+                ColumnSpacing = 7, HorizontalAlignment = HorizontalAlignment.Center,
+            };
+            Grid.SetColumn(text, 1);
+            grid.Children.Add(icon);
+            grid.Children.Add(text);
+            return grid;
+        }, supportsRecycling: false));
+
     static Icons()
     {
         LeadProperty.Changed.AddClassHandler<Button>((button, e) =>
         {
             if (e.NewValue is not MaterialIconKind kind) { button.ContentTemplate = null; return; }
-            var glyph = Line(kind);
-            // Le texte du bouton (fixe ou lié) reste le contenu : seul son rendu reçoit l'icône.
-            button.ContentTemplate = new FuncDataTemplate<object?>((content, _) =>
-            {
-                var text = new TextBlock
-                {
-                    Text = content?.ToString(), VerticalAlignment = VerticalAlignment.Center,
-                    TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center,
-                };
-                return new StackPanel
-                {
-                    Orientation = Orientation.Horizontal, Spacing = 7, HorizontalAlignment = HorizontalAlignment.Center,
-                    Children =
-                    {
-                        new MaterialIcon { Kind = glyph, Width = ButtonSize, Height = ButtonSize, VerticalAlignment = VerticalAlignment.Center },
-                        text,
-                    },
-                };
-            }, supportsRecycling: false);
+            var template = LeadTemplate(kind);
+            if (!ReferenceEquals(button.ContentTemplate, template)) button.ContentTemplate = template;
         });
     }
 

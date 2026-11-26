@@ -106,7 +106,12 @@ public static class TileGlyph
                 border.Background = new SolidColorBrush(original);
                 return; // L'observateur rappellera Apply() avec le nouveau fond.
             }
-            icon.Foreground = new SolidColorBrush(GlyphFor(solid.Color));
+            var desired = GlyphFor(solid.Color);
+            // Le thème ou la réapparition de la page peut rappeler Apply sans
+            // changer le contraste. Ne pas recréer le pinceau et invalider l'icône.
+            if (icon.Foreground is not ISolidColorBrush current ||
+                current.Color != desired || current.Opacity != 1)
+                icon.Foreground = new SolidColorBrush(desired);
         }
 
         public void Dispose()
