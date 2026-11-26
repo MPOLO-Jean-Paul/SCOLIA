@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Scolia.Application.Abstractions;
 using Scolia.Application.Common;
@@ -13,6 +14,13 @@ namespace Scolia.Application.Services;
 /// <summary>Encaissement, reçus, annulations et vérification d'authenticité.</summary>
 public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, ICurrentUser user, AccountService accounts, IDocumentService documents)
 {
+    // Seules les informations connues lors de l'émission sont figées ; les anciens reçus restent lisibles sans inventer un historique.
+    private sealed record PrintSnapshot(string StudentName, string Matricule, string PromotionCode, string AcademicYear,
+        string MaskedName, string CurrencyCode, string CurrencySymbol, decimal BalanceAfter, IReadOnlyList<AllocationPreview> Allocations);
+
+    private static PrintSnapshot? Snapshot(Receipt receipt) => receipt.PrintSnapshotJson is { Length: > 0 } json
+        ? JsonSerializer.Deserialize<PrintSnapshot>(json) : null;
+
     private static readonly (PaymentMethod, string)[] MethodLabels =
         [(PaymentMethod.Especes, "Espèces"), (PaymentMethod.Especes, "Cash"), (PaymentMethod.MobileMoney, "Mobile Money"), (PaymentMethod.Cheque, "Chèque")];
 
@@ -122,6 +130,12 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             IdempotencyKey = Clean(input.IdempotencyKey),
         };
         foreach (var (feeItemId, amount) in plan) receipt.Allocations.Add(new ReceiptAllocation { ReceiptId = receipt.Id, FeeItemId = feeItemId, Amount = amount });
+        var student = data.Enrollment.Student!;
+        var code = AnonymousDisplay.Of(await AnonymousDisplay.CodesAsync(db, [receipt.EnrollmentId], ct), receipt.EnrollmentId);
+        var preview = BuildPreview(data.Account, plan);
+        var masked = $"{student.LastName} {(student.FirstName.Length > 0 ? student.FirstName[0] + "." : string.Empty)}";
+        receipt.PrintSnapshotJson = JsonSerializer.Serialize(new PrintSnapshot(student.FullName, code, data.Promotion.Code, year.Label,
+            masked, school.CurrencyCode, school.CurrencySymbol, data.Account.Balance - total, preview.Allocations));
         db.Receipts.Add(receipt);
         audit.Record("paiement.encaisse", "Recu", receipt.Id.ToString(),
             $"Reçu {receipt.Number} : {Money.Display(receipt.Amount, school.CurrencySymbol)} pour {data.Enrollment.Student!.Matricule} ({Labels.Of(method)}).",
@@ -151,6 +165,11 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     public async Task<ReceiptDto> GetAsync(Guid id, CancellationToken ct = default)
     {
         var r = await db.Receipts.AsNoTracking().Include(x => x.Allocations).FirstOrDefaultAsync(x => x.Id == id, ct) ?? throw new NotFoundException("Reçu introuvable.");
+        if (Snapshot(r) is { } issued)
+            return new ReceiptDto(r.Id, r.Number, r.VerificationCode, r.Date, r.StudentId, issued.Matricule, issued.StudentName,
+                issued.PromotionCode, issued.AcademicYear, r.Amount, Labels.Of(r.Method), r.Reference, r.PayerName, r.PayerPhone,
+                r.Note, r.CashierName, r.Status == OperationStatus.Valide ? "Valide" : "Annulé", r.CancelledAtUtc,
+                r.CancelledBy, r.CancellationReason, issued.Allocations, r.CreatedAtUtc);
         var student = await db.Students.AsNoTracking().FirstAsync(s => s.Id == r.StudentId, ct);
         var info = await (from e in db.Enrollments.AsNoTracking()
                           join p in db.Promotions.AsNoTracking() on e.PromotionId equals p.Id
@@ -213,8 +232,11 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         if (normalized.Length is < 8 or > 16) return new ReceiptVerification(false, null, null, null, null, null, null, null);
         var r = await db.Receipts.AsNoTracking().FirstOrDefaultAsync(x => x.VerificationCode == normalized, ct);
         if (r is null) return new ReceiptVerification(false, null, null, null, null, null, null, null);
-        var s = await db.Students.AsNoTracking().FirstAsync(x => x.Id == r.StudentId, ct);
         var school = await YearContext.SchoolAsync(db, ct);
+        if (Snapshot(r) is { } issued)
+            return new ReceiptVerification(true, r.Number, r.Date, r.Amount, issued.MaskedName, school.Name,
+                r.Status == OperationStatus.Valide ? "Valide" : "Annulé", issued.CurrencySymbol);
+        var s = await db.Students.AsNoTracking().FirstAsync(x => x.Id == r.StudentId, ct);
         var masked = $"{s.LastName} {(s.FirstName.Length > 0 ? s.FirstName[0] + "." : string.Empty)}";
         return new ReceiptVerification(true, r.Number, r.Date, r.Amount, masked, school.Name, r.Status == OperationStatus.Valide ? "Valide" : "Annulé", school.CurrencySymbol);
     }
@@ -224,11 +246,13 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var receipt = await GetAsync(id, ct);
         var school = await YearContext.SchoolAsync(db, ct);
         var full = await db.Receipts.AsNoTracking().FirstAsync(r => r.Id == id, ct);
-        var account = await accounts.ForEnrollmentAsync(full.EnrollmentId, null, ct);
-        return documents.Receipt(new ReceiptDocument(Header(school), receipt.Number, receipt.Date, receipt.StudentName, AnonymousDisplay.Printed(receipt.Matricule), receipt.PromotionCode,
-            receipt.AcademicYear, receipt.Amount, FrenchNumbers.Amount(receipt.Amount, FrenchNumbers.CurrencyName(school.CurrencyCode)), receipt.Method,
-            receipt.Reference, receipt.PayerName, receipt.Cashier, receipt.Allocations.Select(a => (a.Label, a.Amount)).ToList(), account.Account.Balance,
-            $"{verificationBaseUrl.TrimEnd('/')}/verifier/{receipt.VerificationCode}", receipt.Status != "Valide", receipt.CancellationReason));
+        var issued = Snapshot(full);
+        var balance = issued?.BalanceAfter ?? (await accounts.ForEnrollmentAsync(full.EnrollmentId, null, ct)).Account.Balance;
+        var header = Header(school) with { CurrencySymbol = issued?.CurrencySymbol ?? school.CurrencySymbol };
+        return documents.Receipt(new ReceiptDocument(header, receipt.Number, receipt.Date, receipt.StudentName, AnonymousDisplay.Printed(receipt.Matricule), receipt.PromotionCode,
+            receipt.AcademicYear, receipt.Amount, FrenchNumbers.Amount(receipt.Amount, FrenchNumbers.CurrencyName(issued?.CurrencyCode ?? school.CurrencyCode)), receipt.Method,
+            receipt.Reference, receipt.PayerName, receipt.Cashier, receipt.Allocations.Select(a => (a.Label, a.Amount)).ToList(), balance,
+            $"{verificationBaseUrl.TrimEnd('/')}/verifier/{receipt.VerificationCode}", receipt.Status != "Valide", receipt.CancellationReason, issued is not null));
     }
 
     public async Task<byte[]> StatementPdfAsync(Guid enrollmentId, CancellationToken ct = default)
