@@ -49,8 +49,17 @@
           <StackPanel Spacing="3">
             <TextBlock Text="Consultés récemment" Classes="workspaceheading" />
             <Border Height="1" Background="{DynamicResource LineBrush}" />
-            <TextBlock Text="Aucun outil consulté pendant cette session." Classes="muted"
-                       Margin="12,13,12,15" TextWrapping="Wrap" IsVisible="{Binding !HasRecentTools}" />
+            <Border Margin="8,4,8,8" Padding="12" CornerRadius="8" Background="{DynamicResource GroupBrush}" IsVisible="{Binding !HasRecentTools}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Border Classes="workspaceglyph" Background="{DynamicResource AccentSoftBrush}">
+                  <PathIcon Data="{x:Static infra:HomeGlyphs.Calendar}" Foreground="{DynamicResource AccentBrush}" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                  <TextBlock Text="Une session prête à démarrer" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="Aucun outil consulté pendant cette session. Vos outils récents apparaîtront ici." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+            </Border>
             <ItemsControl ItemsSource="{Binding RecentTools}" IsVisible="{Binding HasRecentTools}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
@@ -70,6 +79,19 @@
           </StackPanel>
         </Border>
       </Grid>
+      <Border Classes="card" Padding="18" CornerRadius="{DynamicResource RadiusCard}">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+          <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource AccentSoftBrush}" VerticalAlignment="Top">
+            <PathIcon Data="{x:Static infra:HomeGlyphs.Apps}" Width="26" Height="26" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
+            <TextBlock Text="Votre espace SCOLIA" FontWeight="SemiBold" FontSize="17" TextWrapping="Wrap" />
+            <TextBlock Text="Retrouvez vos outils de travail, vos inscriptions et vos encaissements selon les accès de votre compte." Classes="muted" TextWrapping="Wrap" />
+            <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,5,0,1" />
+            <TextBlock Text="Choisissez une action dans le volet pour commencer." Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
+      </Border>
     </StackPanel>
   </ScrollViewer>
 </UserControl>
