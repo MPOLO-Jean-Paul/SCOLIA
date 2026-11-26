@@ -235,7 +235,7 @@
                                    Classes.withsticky="{Binding PhonePage.Sticky.IsVisible, FallbackValue=False}" />
     </ScrollViewer>
     <!-- Premier chargement un peu long : silhouettes à la place d'une page vide -->
-    <views:SkeletonView Grid.Row="1" Background="{DynamicResource BgBrush}" VerticalAlignment="Stretch"
+    <views:SkeletonView Classes.anim="{Binding Prefs.Animations}" Grid.Row="1" Background="{DynamicResource BgBrush}" VerticalAlignment="Stretch"
                         IsVisible="{Binding PhonePage.ShowSkeleton, FallbackValue=False}" />
     <!-- Barre d'action fixe de la page : le total et le bouton qui valide, toujours visibles en bas -->
     <Border Grid.Row="1" Classes="stickybar" VerticalAlignment="Bottom" IsVisible="{Binding PhonePage.Sticky.IsVisible, FallbackValue=False}">

@@ -39,6 +39,8 @@ public static class LiveRefresh
     {
         private readonly Control control;
         private readonly DispatcherTimer timer;
+        private bool attached;
+        private int posted;
 
         public Watcher(Control control)
         {
@@ -51,19 +53,35 @@ public static class LiveRefresh
 
         private void OnAttached(object? sender, VisualTreeAttachmentEventArgs e)
         {
+            if (attached) return;
+            attached = true;
             RemoteConnection.HostStateChanged += OnHostChanged;
             timer.Start();
         }
 
         private void OnDetached(object? sender, VisualTreeAttachmentEventArgs e)
         {
+            attached = false;
             RemoteConnection.HostStateChanged -= OnHostChanged;
             timer.Stop();
         }
 
-        private void OnHostChanged() => Dispatcher.UIThread.Post(Refresh);
+        private void OnHostChanged()
+        {
+            // Coalescer les rafales du relais sur le dispatcher au lieu d'empiler des mises en page.
+            if (Interlocked.Exchange(ref posted, 1) != 0) return;
+            Dispatcher.UIThread.Post(() =>
+            {
+                Interlocked.Exchange(ref posted, 0);
+                Refresh();
+            }, DispatcherPriority.Background);
+        }
 
-        private void Refresh() => (control.DataContext as ILiveRefresh)?.RefreshLive();
+        private void Refresh()
+        {
+            if (attached && control.IsEffectivelyVisible)
+                (control.DataContext as ILiveRefresh)?.RefreshLive();
+        }
 
         public void Dispose()
         {

@@ -213,7 +213,10 @@ public abstract class PageViewModel : Observable
         if (!quiet && !loadedOnce)
             _ = Task.Delay(SkeletonDelay).ContinueWith(_ => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                if (Busy && !loadedOnce) ShowSkeleton = true;
+                // Une ancienne temporisation ne doit pas afficher un squelette
+                // sur une requête plus récente ou une page déjà quittée.
+                if (ReferenceEquals(refreshCompletion, completion) && Busy && !loadedOnce &&
+                    ReferenceEquals(Shell.Current, this)) ShowSkeleton = true;
             }), TaskScheduler.Default);
         lastLoadSucceeded = false;
         try

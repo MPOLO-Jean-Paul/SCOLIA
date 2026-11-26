@@ -616,7 +616,7 @@
                                        Classes.withsticky="{Binding Current.Sticky.IsVisible, FallbackValue=False}" />
         </ScrollViewer>
         <!-- Premier chargement un peu long : silhouettes à la place d'une page vide -->
-        <views:SkeletonView Background="{DynamicResource BgBrush}" Margin="8,0" MaxWidth="900" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        <views:SkeletonView Classes.anim="{Binding Prefs.Animations}" Background="{DynamicResource BgBrush}" Margin="8,0" MaxWidth="900" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                             IsVisible="{Binding Current.ShowSkeleton, FallbackValue=False}" />
         <!-- Barre d'action fixe de la page : le total et le bouton qui valide, toujours visibles en bas -->
         <Border Classes="stickybar" VerticalAlignment="Bottom" IsVisible="{Binding Current.Sticky.IsVisible, FallbackValue=False}">
