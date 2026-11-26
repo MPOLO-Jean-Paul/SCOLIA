@@ -92,7 +92,7 @@
     <StackPanel Spacing="7" IsVisible="{Binding !!Tools.Count}">
       <TextBlock Text="Démarrer" Classes="worksection" />
       <ItemsControl x:Name="WelcomeQuickActions" ItemsSource="{Binding QuickActions}">
-        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" infra:Adaptive.MinItemWidth="140" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><infra:AdaptiveTiles MaxColumns="2" MinItemWidth="150" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate><DataTemplate><Button Classes="workaction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding ShortTitle}">
               <StackPanel Spacing="7">
                 <Border Width="36" Height="36" CornerRadius="7" Background="{DynamicResource GroupBrush}" HorizontalAlignment="Left">
@@ -107,7 +107,7 @@
     <StackPanel Spacing="8" IsVisible="{Binding HasKpis}">
       <TextBlock Text="Indicateurs de l'établissement" Classes="worksection" />
       <ItemsControl ItemsSource="{Binding Kpis}">
-        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" infra:Adaptive.MinItemWidth="144" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><infra:AdaptiveTiles MaxColumns="2" MinItemWidth="170" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate><DataTemplate>
           <Button Classes="workaction" Command="{Binding Open}" AutomationProperties.Name="{Binding Label}" ToolTip.Tip="{Binding Hint}">
             <StackPanel Spacing="6">
