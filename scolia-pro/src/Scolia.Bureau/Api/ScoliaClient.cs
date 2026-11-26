@@ -364,10 +364,13 @@ public sealed partial class ScoliaClient : IDisposable
             }
             if (canCache && sourceStore is not null)
             {
-                if (sameSnapshot)
-                    sourceStore.TouchPageFor(sourceUser, path, text);
-                else
-                    await Task.Run(() => sourceStore.SavePageFor(sourceUser, path, text), ct);
+                // Le chiffrement SQLite, même pour une réponse 304, ne doit
+                // pas monopoliser le thread graphique pendant un changement de page.
+                await Task.Run(() =>
+                {
+                    if (sameSnapshot) sourceStore.TouchPageFor(sourceUser, path, text);
+                    else sourceStore.SavePageFor(sourceUser, path, text);
+                }, ct);
             }
         }
         catch (Exception ex) when (IsDisconnected(ex, ct))
