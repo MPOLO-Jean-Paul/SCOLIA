@@ -28,7 +28,10 @@ public static class OfflineReplica
             path.EndsWith("/compte", StringComparison.Ordinal) && snapshot is not null)
         {
             if (JsonSerializer.Deserialize<AccountDto>(snapshot, Json.Options) is { } account)
-                return JsonSerializer.Serialize(OfflineFinance.ProjectAccount(account, store), Json.Options);
+            {
+                var projected = OfflineFinance.ProjectAccount(account, store);
+                return ReferenceEquals(projected, account) ? snapshot : JsonSerializer.Serialize(projected, Json.Options);
+            }
         }
 
         // Accusés locaux : ne créent ni numéro de reçu officiel ni code QR valide.

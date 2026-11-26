@@ -91,6 +91,18 @@ public sealed class FeeCategoryTests : IDisposable
         var renamed = await admin.GetAsync($"/api/paiements/{receipt.GetProperty("id").GetString()}").Ok();
         Assert.Equal("Tenue", renamed.GetProperty("allocations")[0].GetProperty("label").GetString());
 
+        // Le libellé courant change, mais le justificatif émis ne doit jamais être réécrit.
+        await using (var scope = app.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ScoliaDbContext>();
+            var stored = await db.Receipts.FindAsync(receipt.GetProperty("id").GetGuid());
+            Assert.NotNull(stored);
+            using var snapshot = JsonDocument.Parse(Assert.IsType<string>(stored!.PrintSnapshotJson));
+            Assert.Equal("Tenue scolaire", snapshot.RootElement.GetProperty("Allocations")[0].GetProperty("Label").GetString());
+        }
+        using var pdf = await admin.GetAsync($"/api/paiements/{receipt.GetProperty("id").GetString()}/recu.pdf");
+        pdf.EnsureSuccessStatusCode();
+
         // L'encaissement par lot reste limité aux mensualités.
         var batch = await admin.Post("/api/paiements/lot/apercu", new
         {

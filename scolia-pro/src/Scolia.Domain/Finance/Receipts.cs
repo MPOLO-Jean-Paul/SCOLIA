@@ -31,6 +31,8 @@ public sealed class Receipt : Entity
     public string? CancellationReason { get; set; }
     /// <summary>Clé fournie par le poste de saisie pour empêcher un double enregistrement.</summary>
     public string? IdempotencyKey { get; set; }
+    /// <summary>Données d'émission immuables ; null pour les reçus historiques sans photographie.</summary>
+    public string? PrintSnapshotJson { get; set; }
     public List<ReceiptAllocation> Allocations { get; set; } = [];
 }
 

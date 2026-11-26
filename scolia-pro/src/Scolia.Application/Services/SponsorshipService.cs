@@ -120,6 +120,9 @@ public sealed class SponsorshipService(IAppDbContext db, IWriteGate gate, IAudit
         v.ThrowIfInvalid();
 
         var data = await accounts.ForEnrollmentAsync(enrollmentId, null, ct);
+        var year = await YearContext.GetAsync(db, data.Enrollment.AcademicYearId, ct);
+        if (year.Status == AcademicYearStatus.Closed)
+            throw new DomainException("annee", "Les prises en charge d’une année clôturée sont archivées.");
         var school = await YearContext.SchoolAsync(db, ct);
         var fees = data.Promotion.Fees.ToDictionary(f => f.Id);
         var monthly = fees.Values.Where(f => f.Kind == FeeKind.Mensualite && f.Amount > 0).ToList();
@@ -221,6 +224,11 @@ public sealed class SponsorshipService(IAppDbContext db, IWriteGate gate, IAudit
         if (string.IsNullOrWhiteSpace(reason)) throw new DomainException("reason", "Précisez le motif de fin de prise en charge.");
         var s = await db.Sponsorships.FirstOrDefaultAsync(x => x.Id == id && x.EnrollmentId == enrollmentId, ct)
             ?? throw new NotFoundException("Prise en charge introuvable.");
+        var enrollment = await db.Enrollments.AsNoTracking().FirstAsync(e => e.Id == enrollmentId, ct);
+        var year = await YearContext.GetAsync(db, enrollment.AcademicYearId, ct);
+        if (year.Status == AcademicYearStatus.Closed)
+            throw new DomainException("annee", "Les prises en charge d’une année clôturée sont archivées.");
+        if (!s.IsActive) throw new ConflictException("Cette prise en charge est déjà terminée.");
         s.IsActive = false;
         audit.Record("priseencharge.terminee", "PriseEnCharge", id.ToString(),
             $"Prise en charge par {s.SponsorName} terminée le {clock.Today:dd/MM/yyyy}.", new { motif = reason });

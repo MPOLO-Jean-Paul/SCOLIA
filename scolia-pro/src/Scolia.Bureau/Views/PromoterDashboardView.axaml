@@ -75,7 +75,7 @@
       <ItemsControl ItemsSource="{Binding Kpis}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
-            <UniformGrid Columns="3" infra:Adaptive.MinItemWidth="150" />
+            <infra:AdaptiveTiles MinItemWidth="170" MaxColumns="3" />
           </ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>

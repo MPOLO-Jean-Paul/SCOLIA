@@ -72,6 +72,21 @@ public sealed class InstallerAndHomePolishTests
     }
 
     [Fact]
+    public void Accueil_desktop_limite_la_largeur_du_message_de_bienvenue()
+    {
+        var nodes = XDocument.Load(Source("src/Scolia.Bureau/Views/HomeView.axaml")).Descendants().ToArray();
+        var greeting = Assert.Single(nodes, e => e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "WelcomeGreeting"));
+        var avatar = Assert.Single(nodes, e => e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "WelcomeAvatar"));
+        var grid = greeting.Parent!.Parent!;
+        Assert.Equal("Grid", grid.Name.LocalName);
+        Assert.Equal("*,Auto", (string?)grid.Attribute("ColumnDefinitions"));
+        Assert.Equal("320", (string?)grid.Attribute("MaxWidth"));
+        Assert.Equal("CharacterEllipsis", (string?)greeting.Attribute("TextTrimming"));
+        Assert.Same(grid, avatar.Parent);
+        Assert.Equal("1", (string?)avatar.Attribute("Grid.Column"));
+    }
+
+    [Fact]
     public void Accueil_desktop_PowerBI_adopte_des_panneaux_Fluent_responsives()
     {
         var doc = XDocument.Load(Source("src/Scolia.Bureau/Views/HomeView.axaml"));
@@ -87,7 +102,7 @@ public sealed class InstallerAndHomePolishTests
             e.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "820")) >= 2);
         Assert.Contains(elements, e => e.Name.LocalName == "ItemsControl" &&
             (string?)e.Attribute("ItemsSource") == "{Binding QuickActions}");
-        Assert.Contains(elements, e => e.Name.LocalName == "UniformGrid" &&
+        Assert.Contains(elements, e => e.Name.LocalName == "AdaptiveTiles" &&
             e.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "190"));
         Assert.Contains(elements, e => e.Name.LocalName == "Button" &&
             (string?)e.Attribute("Command") == "{Binding Network}");

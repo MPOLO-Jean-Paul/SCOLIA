@@ -419,6 +419,35 @@ public sealed class BusinessApiTests : IDisposable
     }
 
     [Fact]
+    public async Task New_receipt_preserves_issue_identity_and_balance_after_later_changes()
+    {
+        var admin = await app.InstalledAdmin();
+        var (_, enrollmentId, studentId) = await NewStudent(admin);
+        var receipt = await admin.PayMonths(enrollmentId, 1);
+        var id = receipt.GetProperty("id").GetGuid();
+        var atIssue = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
+        await admin.PayMonths(enrollmentId, 1);
+        var student = await admin.GetAsync($"/api/apprenants/{studentId}").Ok();
+        await admin.Put($"/api/apprenants/{studentId}", new
+        {
+            lastName = "CHANGEMENT", middleName = "NOUVEAU", firstName = "Test", gender = "F",
+            version = student.GetProperty("version").GetInt64(), birthDate = new DateOnly(2007, 3, 14),
+            birthPlace = "Lubumbashi", guardianPhone = "0812345678", guardianName = "Nouveau tuteur",
+        }).Ok();
+        var after = await admin.GetAsync($"/api/paiements/{id}").Ok();
+        Assert.Equal(receipt.GetProperty("studentName").GetString(), after.GetProperty("studentName").GetString());
+        Assert.Equal(receipt.GetProperty("payerName").GetString(), after.GetProperty("payerName").GetString());
+        Assert.Equal(receipt.GetProperty("allocations").GetRawText(), after.GetProperty("allocations").GetRawText());
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<Scolia.Infrastructure.Persistence.ScoliaDbContext>();
+        var stored = await db.Receipts.AsNoTracking().SingleAsync(x => x.Id == id);
+        using var snapshot = JsonDocument.Parse(Assert.IsType<string>(stored.PrintSnapshotJson));
+        Assert.Equal(atIssue.GetProperty("balance").GetDecimal(), snapshot.RootElement.GetProperty("BalanceAfter").GetDecimal());
+        using var pdf = await admin.GetAsync($"/api/paiements/{id}/recu.pdf");
+        pdf.EnsureSuccessStatusCode();
+    }
+
+    [Fact]
     public async Task Payment_is_allocated_numbered_idempotent_and_cancellable()
     {
         var admin = await app.InstalledAdmin();

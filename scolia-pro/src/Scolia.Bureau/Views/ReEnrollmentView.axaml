@@ -5,13 +5,16 @@
              x:Class="Scolia.Bureau.Views.ReEnrollmentView">
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
-      <WrapPanel>
-        <StackPanel Classes="field">
+      <Grid ColumnDefinitions="260,*" ColumnSpacing="12" infra:Adaptive.StackBelow="540">
+        <StackPanel Spacing="4">
           <TextBlock Text="Année cible" Classes="fieldlabel" />
-          <ComboBox Width="260" AutomationProperties.Name="Année cible de réinscription" ItemsSource="{Binding Years}" SelectedItem="{Binding Year}" />
+          <ComboBox HorizontalAlignment="Stretch" AutomationProperties.Name="Année cible de réinscription" ItemsSource="{Binding Years}" SelectedItem="{Binding Year}" />
         </StackPanel>
-        <TextBlock Text="{infra:Terms 'Cochez les apprenants : si leur promotion cible manque, elle sera créée automatiquement à la validation.'}" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Bottom" Margin="0,0,12,20" />
-      </WrapPanel>
+        <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
+          <TextBlock Text="{Binding SelectionSummary}" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <TextBlock Text="{infra:Terms 'Cochez les apprenants : si leur promotion cible manque, elle sera créée automatiquement à la validation.'}" Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+      </Grid>
     </Border>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" CanUserSortColumns="False">
       <DataGrid.Columns>

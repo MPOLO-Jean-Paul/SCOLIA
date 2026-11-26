@@ -84,10 +84,14 @@ public static class OfflineFinance
     /// </summary>
     public static AccountDto ProjectAccount(AccountDto account, OfflineStore store)
     {
+        // Le cas habituel ne comporte aucun paiement local pour ce compte.
+        // Préserver alors le cliché serveur exact et éviter les copies de listes.
+        var payments = Pending(store).Where(x => x.EnrollmentId == account.EnrollmentId).ToList();
+        if (payments.Count == 0) return account;
         var lines = account.Lines.ToList();
         var receipts = account.Receipts.ToList();
         decimal total = 0;
-        foreach (var payment in Pending(store).Where(x => x.EnrollmentId == account.EnrollmentId))
+        foreach (var payment in payments)
         {
             var current = account with { Lines = lines, Balance = Math.Max(0, account.Balance - total) };
             PaymentPreviewDto preview;

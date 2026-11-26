@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Media;
-using Avalonia.Controls.Primitives.PopupPositioning;
 using Material.Icons;
 using Material.Icons.Avalonia;
 using Avalonia.Controls;
@@ -57,6 +56,7 @@ public partial class MainView : UserControl
         AddHandler(KeyDownEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(TextInputEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
         SizeChanged += (_, _) => QueueResize();
+        DesktopArea.SizeChanged += (_, _) => PlaceCommandMenu();
         AttachedToVisualTree += (_, _) =>
         {
             ShowThemeIcon();
@@ -111,6 +111,7 @@ public partial class MainView : UserControl
 
     private void ReleaseShell()
     {
+        CloseCommandMenu();
         WatchPage(null);
         if (subscribedShell is { } shell)
         {
@@ -177,6 +178,9 @@ public partial class MainView : UserControl
     private void OnShellChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
     {
         if (subscribedShell is not { } shell) return;
+        if (args.PropertyName is nameof(ShellViewModel.Current) or nameof(ShellViewModel.Dialog)
+            or nameof(ShellViewModel.BackstageOpen) or nameof(ShellViewModel.IsLocked) or nameof(ShellViewModel.IsLoggedIn))
+            CloseCommandMenu();
         if (args.PropertyName == nameof(ShellViewModel.CompactWindow)) FitWindow(Bounds.Size);
         if (args.PropertyName is nameof(ShellViewModel.SidebarShown) or nameof(ShellViewModel.Narrow)
             && shell.HeaderFinderOpen)
@@ -642,35 +646,160 @@ public partial class MainView : UserControl
         if (Shell is { } shell) shell.Prefs.Scale -= 0.1;
     }
 
-    /// <summary>
-    /// Menu de toutes les commandes : chaque métier en sous-menu avec ses commandes et leurs raccourcis,
-    /// puis le compte et la déconnexion. Il est construit à l'ouverture, d'après les droits et l'écran affiché.
-    /// </summary>
+    // Le menu natif ouvre des fenêtres Popup indépendantes, contraintes à l'écran et non à SCOLIA.
+    // Ce panneau reste dans le DesktopArea, y compris lors d'un redimensionnement ou d'un changement de zoom.
+    private Grid? commandMenuOverlay;
+    private Border? commandMenuPanel;
+    private Control? commandMenuAnchor;
+
+    private void PlaceCommandMenu()
+    {
+        if (commandMenuPanel is not { } panel || commandMenuAnchor is not { } anchor) return;
+        var width = DesktopArea.Bounds.Width;
+        var height = DesktopArea.Bounds.Height;
+        if (width <= 0 || height <= 0) return;
+        var corner = anchor.TranslatePoint(new Point(0, anchor.Bounds.Height), DesktopArea);
+        var bounds = CommandMenuBounds(new Size(width, height), corner?.Y ?? 0);
+        if (panel.Width != bounds.Width) panel.Width = bounds.Width;
+        if (panel.MaxHeight != bounds.Height) panel.MaxHeight = bounds.Height;
+        var margin = new Thickness(0, bounds.Y, 8, 8);
+        if (panel.Margin != margin) panel.Margin = margin;
+    }
+
+    /// <summary>Dimensions logiques du panneau, limitées au viewport client (indépendantes du DPI de l'écran).</summary>
+    public static Rect CommandMenuBounds(Size viewport, double anchorBottom)
+    {
+        var width = Math.Max(0, viewport.Width);
+        var height = Math.Max(0, viewport.Height);
+        var top = Math.Clamp(anchorBottom + 6, 0, Math.Max(0, height - 160));
+        var panelWidth = Math.Min(420, Math.Max(0, width - 16));
+        return new Rect(Math.Max(0, width - 8 - panelWidth), top, panelWidth,
+            Math.Max(0, height - top - 8));
+    }
+
+    private void CloseCommandMenu(bool restoreFocus = false)
+    {
+        if (commandMenuOverlay is not { } overlay) return;
+        var anchor = commandMenuAnchor;
+        DesktopArea.Children.Remove(overlay);
+        commandMenuOverlay = null;
+        commandMenuPanel = null;
+        commandMenuAnchor = null;
+        if (restoreFocus) anchor?.Focus();
+    }
+
+    /// <summary>Commandes autorisées, présentées dans un panneau interne défilant, avec navigation par catégorie.</summary>
     private void OnMenuClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (Shell is not { } shell || sender is not Control anchor) return;
-        var menu = new MenuFlyout { Placement = PlacementMode.BottomEdgeAlignedRight };
-        foreach (var tab in shell.Tabs.Where(t => t.Id != "fichier"))
+        if (commandMenuOverlay is not null) { CloseCommandMenu(true); return; }
+        shell.HeaderFinderOpen = false;
+        var overlay = new Grid { ClipToBounds = true, ZIndex = 20 };
+        Grid.SetRowSpan(overlay, 4);
+        Grid.SetColumnSpan(overlay, 2);
+        var catcher = new Border { Background = Brushes.Transparent };
+        catcher.PointerPressed += (_, args) => { CloseCommandMenu(true); args.Handled = true; };
+        overlay.Children.Add(catcher);
+
+        var panel = new Border
         {
-            var sub = new MenuItem { Header = tab.Title, Icon = Glyph(TabIcon(tab.Id)) };
-            var first = true;
-            foreach (var group in tab.Groups.Where(g => g.Title != "Récents"))
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top,
+            ClipToBounds = true,
+        };
+        panel.Classes.Add("finderdrop");
+        overlay.Children.Add(panel);
+        var layout = new DockPanel { LastChildFill = true };
+        panel.Child = layout;
+        var heading = new TextBlock { Text = "Toutes les commandes", FontWeight = FontWeight.SemiBold,
+            Margin = new Thickness(10, 8, 10, 6), TextWrapping = TextWrapping.Wrap };
+        DockPanel.SetDock(heading, Dock.Top);
+        layout.Children.Add(heading);
+        var rows = new StackPanel { Spacing = 2, Margin = new Thickness(4) };
+        var scroll = new ScrollViewer
+        {
+            Content = rows,
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+        };
+        layout.Children.Add(scroll);
+
+        Button AddRow(string label, MaterialIconKind icon, System.Windows.Input.ICommand? command = null,
+            KeyGesture? gesture = null, Action? navigate = null)
+        {
+            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), ColumnSpacing = 10 };
+            var glyph = Glyph(icon);
+            glyph.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center;
+            row.Children.Add(glyph);
+            var title = new TextBlock { Text = label, TextWrapping = TextWrapping.Wrap,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center };
+            Grid.SetColumn(title, 1);
+            row.Children.Add(title);
+            if (gesture is not null || navigate is not null)
             {
-                if (!first) sub.Items.Add(new Separator());
-                first = false;
-                foreach (var command in group.Commands)
-                    sub.Items.Add(new MenuItem { Header = command.Label, Icon = Glyph(command.Icon), Command = command.Command, InputGesture = command.Gesture });
+                var hint = new TextBlock { Text = gesture?.ToString() ?? "›", FontSize = 12,
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap, MaxWidth = 100 };
+                hint.Classes.Add("muted");
+                Grid.SetColumn(hint, 2);
+                row.Children.Add(hint);
             }
-            menu.Items.Add(sub);
+            var button = new Button { Content = row, Command = command, MinHeight = 38,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+            button.Classes.Add("searchrow");
+            button.Click += (_, _) =>
+            {
+                if (navigate is not null) navigate();
+                else CloseCommandMenu();
+            };
+            rows.Children.Add(button);
+            return button;
         }
-        menu.Items.Add(new Separator());
-        menu.Items.Add(new MenuItem { Header = "Rechercher…", Icon = Glyph(MaterialIconKind.Magnify), Command = shell.SearchCommand, InputGesture = new KeyGesture(Key.K, KeyModifiers.Control) });
-        menu.Items.Add(new MenuItem { Header = "Précédent", Icon = Glyph(MaterialIconKind.ChevronLeft), Command = shell.BackCommand, InputGesture = new KeyGesture(Key.Left, KeyModifiers.Alt) });
-        menu.Items.Add(new MenuItem { Header = "Suivant", Icon = Glyph(MaterialIconKind.ChevronRight), Command = shell.ForwardCommand, InputGesture = new KeyGesture(Key.Right, KeyModifiers.Alt) });
-        menu.Items.Add(new Separator());
-        menu.Items.Add(new MenuItem { Header = "Compte et poste…", Icon = Glyph(MaterialIconKind.AccountCircleOutline), Command = new RelayCommand(shell.OpenBackstage) });
-        menu.Items.Add(new MenuItem { Header = "Se déconnecter", Icon = Glyph(MaterialIconKind.Logout), Command = new AsyncCommand(shell.LogoutAsync) });
-        menu.ShowAt(anchor);
+
+        void ShowRoot()
+        {
+            rows.Children.Clear();
+            heading.Text = "Toutes les commandes";
+            scroll.Offset = default;
+            foreach (var tab in shell.Tabs.Where(t => t.Id != "fichier"))
+            {
+                AddRow(tab.Title, TabIcon(tab.Id), navigate: () =>
+                {
+                    rows.Children.Clear();
+                    heading.Text = tab.Title;
+                    scroll.Offset = default;
+                    var back = AddRow("Revenir aux commandes", MaterialIconKind.ChevronLeft, navigate: ShowRoot);
+                    foreach (var group in tab.Groups.Where(g => g.Title != "Récents"))
+                    {
+                        if (!string.IsNullOrWhiteSpace(group.Title))
+                        {
+                            var section = new TextBlock { Text = group.Title, FontWeight = FontWeight.SemiBold,
+                                TextWrapping = TextWrapping.Wrap, Margin = new Thickness(10, 8, 10, 2) };
+                            section.Classes.Add("muted");
+                            rows.Children.Add(section);
+                        }
+                        foreach (var command in group.Commands)
+                            AddRow(command.Label, command.Icon, command.Command, command.Gesture);
+                    }
+                    back.Focus();
+                });
+            }
+            rows.Children.Add(new Separator());
+            AddRow("Rechercher…", MaterialIconKind.Magnify, shell.SearchCommand, new KeyGesture(Key.K, KeyModifiers.Control));
+            AddRow("Précédent", MaterialIconKind.ChevronLeft, shell.BackCommand, new KeyGesture(Key.Left, KeyModifiers.Alt));
+            AddRow("Suivant", MaterialIconKind.ChevronRight, shell.ForwardCommand, new KeyGesture(Key.Right, KeyModifiers.Alt));
+            rows.Children.Add(new Separator());
+            AddRow("Compte et poste…", MaterialIconKind.AccountCircleOutline, new RelayCommand(shell.OpenBackstage));
+            AddRow("Se déconnecter", MaterialIconKind.Logout, new AsyncCommand(shell.LogoutAsync));
+            if (rows.Children.FirstOrDefault() is Button first) first.Focus();
+        }
+
+        commandMenuAnchor = anchor;
+        commandMenuOverlay = overlay;
+        commandMenuPanel = panel;
+        DesktopArea.Children.Add(overlay);
+        PlaceCommandMenu();
+        ShowRoot();
     }
 
     private static MaterialIcon Glyph(MaterialIconKind kind) => new() { Kind = Infrastructure.Icons.Line(kind), Width = Infrastructure.Icons.ButtonSize, Height = Infrastructure.Icons.ButtonSize };
@@ -721,7 +850,8 @@ public partial class MainView : UserControl
             return;
         }
         if (e.Key != Key.Escape) return;
-        if (shell.HeaderFinderOpen) shell.HeaderFinderOpen = false;
+        if (commandMenuOverlay is not null) CloseCommandMenu(true);
+        else if (shell.HeaderFinderOpen) shell.HeaderFinderOpen = false;
         else if (shell.HasSheet) shell.CloseSheet();
         else if (shell.Dialog is FormViewModel form) { if (!form.Busy) form.Cancel.Execute(null); }
         else if (shell.HasDialog) shell.CloseDialog();

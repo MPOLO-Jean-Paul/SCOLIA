@@ -78,7 +78,7 @@
       <!-- Où j'en suis : quatre chiffres -->
       <ItemsControl ItemsSource="{Binding Stats}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,-12" IsVisible="{Binding !IsBlocked}">
         <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="170" /></ItemsPanelTemplate>
+          <ItemsPanelTemplate><infra:AdaptiveTiles MinItemWidth="170" MaxColumns="4" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
       </ItemsControl>
 

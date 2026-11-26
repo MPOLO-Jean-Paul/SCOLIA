@@ -202,6 +202,8 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var student = new Student();
         Apply(student, input.Identity);
         var year = await YearContext.CurrentAsync(db, ct);
+        if (year.Status == AcademicYearStatus.Closed)
+            throw new DomainException("annee", "Cette année scolaire est clôturée : aucune inscription n’est possible.");
         var promotion = await db.Promotions.FirstOrDefaultAsync(p => p.Id == input.PromotionId && p.AcademicYearId == year.Id, ct)
             ?? throw new DomainException("promotionId", "Choisissez une promotion de l'année scolaire courante.");
         if (!promotion.IsActive) throw new DomainException("promotionId", "Cette promotion est désactivée.");
@@ -277,6 +279,9 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     {
         var student = await db.Students.FirstOrDefaultAsync(s => s.Id == studentId, ct) ?? throw new NotFoundException("Apprenant introuvable.");
         var promotion = await db.Promotions.FirstOrDefaultAsync(p => p.Id == input.PromotionId, ct) ?? throw new NotFoundException("Promotion introuvable.");
+        var year = await YearContext.GetAsync(db, promotion.AcademicYearId, ct);
+        if (year.Status == AcademicYearStatus.Closed)
+            throw new DomainException("annee", "Cette année scolaire est clôturée : aucune réinscription n’est possible.");
         if (await db.Enrollments.AnyAsync(e => e.StudentId == studentId && e.AcademicYearId == promotion.AcademicYearId, ct))
             throw new ConflictException("Cet apprenant est déjà inscrit pour cette année scolaire.");
         if (!promotion.IsActive)
@@ -298,6 +303,9 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     public Task ChangeStatusAsync(Guid enrollmentId, StatusChange input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
         var enrollment = await db.Enrollments.Include(e => e.Student).FirstOrDefaultAsync(e => e.Id == enrollmentId, ct) ?? throw new NotFoundException("Inscription introuvable.");
+        var year = await YearContext.GetAsync(db, enrollment.AcademicYearId, ct);
+        if (year.Status == AcademicYearStatus.Closed)
+            throw new DomainException("annee", "Cette inscription appartient à une année clôturée : son statut est archivé.");
         var status = EnumText.Parse(input.Status, "status", StatusLabels);
         if (status != EnrollmentStatus.Actif && string.IsNullOrWhiteSpace(input.Reason))
             throw new DomainException("reason", "Précisez le motif du changement de statut.");
@@ -319,6 +327,9 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     {
         var enrollment = await db.Enrollments.Include(e => e.Student).FirstOrDefaultAsync(e => e.Id == enrollmentId, ct) ?? throw new NotFoundException("Inscription introuvable.");
         if (enrollment.PromotionId == promotionId) return true;
+        var year = await YearContext.GetAsync(db, enrollment.AcademicYearId, ct);
+        if (year.Status == AcademicYearStatus.Closed)
+            throw new DomainException("annee", "Cette inscription appartient à une année clôturée : sa promotion est archivée.");
         var target = await db.Promotions.Include(p => p.Fees).FirstOrDefaultAsync(p => p.Id == promotionId, ct) ?? throw new NotFoundException("Promotion introuvable.");
         if (target.AcademicYearId != enrollment.AcademicYearId) throw new DomainException("promotionId", "La nouvelle promotion doit appartenir à la même année scolaire.");
         if (!target.IsActive) throw new DomainException("promotionId", "La promotion de destination est désactivée.");
@@ -365,11 +376,23 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             throw new DomainException("apprenant", "Ce dossier a des reçus : il ne peut pas être supprimé. Changez son statut en « Sorti ».");
         var enrollments = await db.Enrollments.Where(e => e.StudentId == id).ToListAsync(ct);
         var enrollmentIds = enrollments.Select(e => e.Id).ToList();
+        var years = enrollments.Select(e => e.AcademicYearId).Distinct().ToList();
+        if (await db.AcademicYears.AnyAsync(y => years.Contains(y.Id) && y.Status == AcademicYearStatus.Closed, ct))
+            throw new DomainException("apprenant", "Ce dossier appartient à une année clôturée : son historique doit être conservé.");
         if (await db.Grades.AnyAsync(g => enrollmentIds.Contains(g.EnrollmentId), ct) || await db.Attendance.AnyAsync(a => enrollmentIds.Contains(a.EnrollmentId), ct)
             || await db.CourseMarks.AnyAsync(m => enrollmentIds.Contains(m.EnrollmentId), ct)
             || await db.JuryDecisions.AnyAsync(d => enrollmentIds.Contains(d.EnrollmentId), ct)
-            || await db.DeliberationResults.AnyAsync(d => enrollmentIds.Contains(d.EnrollmentId), ct))
-            throw new DomainException("apprenant", "Ce dossier possède des notes, des présences ou des résultats officiels de délibération : changez son statut au lieu de le supprimer.");
+            || await db.DeliberationResults.AnyAsync(d => enrollmentIds.Contains(d.EnrollmentId), ct)
+            || await db.SchoolCycleAssessments.AnyAsync(a => enrollmentIds.Contains(a.EnrollmentId), ct)
+            || await db.EpstConductMarks.AnyAsync(a => enrollmentIds.Contains(a.EnrollmentId), ct)
+            || await db.EpstDecisions.AnyAsync(a => enrollmentIds.Contains(a.EnrollmentId), ct)
+            || await db.EpstRepechageMarks.AnyAsync(a => enrollmentIds.Contains(a.EnrollmentId), ct)
+            || await db.NationalExamResults.AnyAsync(a => enrollmentIds.Contains(a.EnrollmentId), ct)
+            || await db.LmdMarks.AnyAsync(a => enrollmentIds.Contains(a.EnrollmentId), ct)
+            || await db.LmdDecisions.AnyAsync(a => enrollmentIds.Contains(a.EnrollmentId), ct)
+            || await db.LmdDebts.AnyAsync(a => a.StudentId == id, ct)
+            || await db.DisciplineDecisions.AnyAsync(a => enrollmentIds.Contains(a.EnrollmentId), ct))
+            throw new DomainException("apprenant", "Ce dossier possède un historique pédagogique ou disciplinaire : changez son statut au lieu de le supprimer.");
         // Un code anonyme sans cote ne retient pas le dossier : il part avec lui.
         db.AnonymousCodes.RemoveRange(await db.AnonymousCodes.Where(c => enrollmentIds.Contains(c.EnrollmentId)).ToListAsync(ct));
         var sponsorships = await db.Sponsorships.Include(s => s.Lines).Where(s => enrollmentIds.Contains(s.EnrollmentId)).ToListAsync(ct);

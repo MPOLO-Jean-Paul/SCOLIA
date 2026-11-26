@@ -43,6 +43,8 @@ public sealed class LmdFeesService(IAppDbContext db, SchoolService schools, FeeC
         var promotion = await db.Promotions.AsNoTracking().Include(p => p.Fees)
             .FirstOrDefaultAsync(p => p.Id == promotionId, ct) ?? throw new NotFoundException("Promotion introuvable.");
         var year = await db.AcademicYears.AsNoTracking().FirstAsync(y => y.Id == promotion.AcademicYearId, ct);
+        if (year.Status == AcademicYearStatus.Closed)
+            throw new DomainException("annee", "Les frais d’une année académique clôturée sont archivés.");
         if (tranches.Any(t => t.DueDate < year.StartDate || t.DueDate > year.EndDate))
             throw new DomainException("tranches", $"Les échéances doivent se situer dans l'année {year.Label}.");
 

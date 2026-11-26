@@ -94,4 +94,32 @@ public sealed class StudentBusinessRulesTests : IDisposable
         var after = await admin.GetAsync($"/api/apprenants/{secondId}").Ok();
         Assert.Equal("NGOY", after.GetProperty("lastName").GetString());
     }
+
+    [Fact]
+    public async Task Closed_year_preserves_enrollments_and_financial_configuration()
+    {
+        var admin = await app.InstalledAdmin();
+        var year = Assert.Single((await admin.GetAsync("/api/etablissement/annees").Ok()).EnumerateArray())
+            .GetProperty("id").GetString()!;
+        var first = new { code = "INF1", name = "Première année", level = 1, isActive = true, monthlyFee = 55000m, oneTimeFees = Array.Empty<object>() };
+        var promotion = await admin.Post("/api/etablissement/promotions", first).Ok();
+        var target = await admin.Post("/api/etablissement/promotions", first with { code = "INF2", level = 2 }).Ok();
+        var promotionId = promotion.GetProperty("id").GetString()!;
+        var student = await admin.Post("/api/apprenants", new { identity = Identity("MUKENDI"), promotionId }).Ok();
+        var studentId = student.GetProperty("id").GetString()!;
+        var enrollmentId = student.GetProperty("enrollments")[0].GetProperty("id").GetString()!;
+        await admin.Post($"/api/etablissement/annees/{year}/cloture", new { }).Ok();
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.Post("/api/apprenants",
+            new { identity = Identity("NGOY"), promotionId }).Fail()).Status);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.Put($"/api/inscriptions/{enrollmentId}/statut",
+            new { status = "Sorti", reason = "Transfert" }).Fail()).Status);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.Put($"/api/inscriptions/{enrollmentId}/promotion",
+            new { promotionId = target.GetProperty("id").GetString() }).Fail()).Status);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.Put($"/api/etablissement/promotions/{promotionId}",
+            first with { monthlyFee = 60000m }).Fail()).Status);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.DeleteAsync($"/api/apprenants/{studentId}").Fail()).Status);
+        var after = await admin.GetAsync($"/api/apprenants/{studentId}").Ok();
+        Assert.Equal("Actif", after.GetProperty("enrollments")[0].GetProperty("status").GetString());
+    }
+
 }

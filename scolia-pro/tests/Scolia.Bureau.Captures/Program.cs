@@ -371,6 +371,19 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
         {
             prefs.Scale = textScale;
             fixture.PaymentAccount = account;
+            // Une fiche réellement alimentée après ouverture : les quatre indicateurs
+            // doivent se mesurer sur la largeur utile, pas rester sur une seule rangée.
+            Wait(shell.Open(() => new StudentDetailPage(shell, studentId)));
+            Render();
+            var tiles = window.GetVisualDescendants().OfType<AdaptiveTiles>().FirstOrDefault(v => v.IsEffectivelyVisible);
+            var expectedColumns = tiles is null ? 0 : AdaptiveTiles.ColumnsFor(tiles.Bounds.Width, 4, tiles.MinItemWidth, tiles.MaxColumns, PhoneLayout.Active);
+            var cells = tiles?.Children.Select(Bounds).ToList() ?? [];
+            var columns = cells.Select(b => Math.Round(b.Left, 1)).Distinct().Count();
+            Check($"Fiche apprenant {width}×{height} texte {textScale:P0} : quatre indicateurs, {expectedColumns} colonne(s)",
+                cells.Count == 4 && columns == expectedColumns && cells.All(b => b.Width > 0 && b.Left >= -1 && b.Right <= window.Bounds.Width + 1));
+            if (mobile && width <= 412)
+                Check("Fiche apprenant : jamais quatre montants comprimés en une seule rangée", columns is 1 or 2);
+            Save(window, $"fiche-apprenant-{(mobile ? "mobile" : "bureau")}-{width}x{height}-{textScale:0.0}.png");
             Wait(shell.Open(() => new CashierPage(shell, studentId)));
             Render();
             var page = (CashierPage)shell.Current!;
@@ -3484,6 +3497,7 @@ sealed class LayoutServer : IDisposable
             if (PaymentAccount is { } account)
             {
                 if (path == $"/api/inscriptions/{account.EnrollmentId}/compte") result = account;
+                else if (path == $"/api/inscriptions/{account.EnrollmentId}/prises-en-charge") result = Array.Empty<SponsorshipDto>();
                 else if (path == $"/api/apprenants/{account.StudentId}")
                     result = new StudentDto(account.StudentId, account.Matricule, "Kabeya", "Mbuyi", "Amina", "F", null, null,
                         null, null, null, null, null, null, account.GuardianPhone, null, null, false,

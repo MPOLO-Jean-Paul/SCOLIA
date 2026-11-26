@@ -160,7 +160,7 @@ public sealed class DocumentService : IDocumentService
                     row.RelativeItem().Column(c =>
                     {
                         c.Item().Text($"Mode de paiement : {d.Method}" + (string.IsNullOrWhiteSpace(d.Reference) ? string.Empty : $" · Réf. {d.Reference}")).FontSize(8.5f);
-                        c.Item().Text($"Reste à payer pour l'année : {M(d.BalanceAfter, d.School.CurrencySymbol)}").FontSize(8.5f).Bold().FontColor(d.BalanceAfter > 0 ? "#B45309" : "#15803D");
+                        c.Item().Text($"{(d.BalanceAtIssue ? "Reste à payer à l’émission" : "Solde actuel (ancien reçu, recalculé)")} : {M(d.BalanceAfter, d.School.CurrencySymbol)}").FontSize(8.5f).Bold().FontColor(d.BalanceAfter > 0 ? "#B45309" : "#15803D");
                         c.Item().PaddingTop(14).Text($"Le caissier : {d.Cashier}").FontSize(8.5f);
                         c.Item().PaddingTop(18).Width(150).BorderBottom(0.5f).BorderColor(Muted);
                         c.Item().Text("Signature et cachet").FontSize(7).FontColor(Muted);

@@ -2,13 +2,22 @@
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Scolia.Bureau.Views.StudentDetailView">
-  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+  <UserControl.Styles>
+    <Style Selector="ScrollViewer#DetailScroll">
+      <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+    </Style>
+    <!-- Le cadre du téléphone possède déjà le défilement de la page. -->
+    <Style Selector="LayoutTransformControl.phone ScrollViewer#DetailScroll">
+      <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
+    </Style>
+  </UserControl.Styles>
+  <ScrollViewer x:Name="DetailScroll" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Spacing="16">
 
       <!-- Indicateurs du compte -->
       <ItemsControl ItemsSource="{Binding Totals}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
         <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
+          <ItemsPanelTemplate><infra:AdaptiveTiles MinItemWidth="170" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
       </ItemsControl>
 
@@ -111,7 +120,7 @@
       <!-- Prises en charge -->
       <Border Classes="card">
         <StackPanel Spacing="8">
-          <Grid ColumnDefinitions="*,Auto">
+          <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="340">
             <TextBlock Text="Prises en charge" Classes="heading" VerticalAlignment="Center" />
             <Button infra:Icons.Lead="CheckAll" Grid.Column="1" Classes="ghost" Content="Terminer la sélection" Command="{Binding EndSponsorship}" />
           </Grid>
