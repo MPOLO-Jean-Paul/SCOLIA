@@ -326,13 +326,13 @@
       <!-- Après connexion : un seul titre et trois points ; les étapes techniques restent internes. -->
       <StackPanel x:Name="WelcomeContent" MaxWidth="340" Margin="20"
                   HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
-        <Border Width="82" Height="82" CornerRadius="8" Background="{DynamicResource SurfaceBrush}"
+        <Border Width="76" Height="76" CornerRadius="20" Background="{DynamicResource Surface2Brush}"
                 HorizontalAlignment="Center" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
-          <ctl:LogoAssembly x:Name="OpeningLogo" Width="66" Height="66"
+          <ctl:LogoAssembly x:Name="OpeningLogo" Width="54" Height="54"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
-                            Primary="#0B2A6F" Secondary="#16A34A" />
+                            Primary="{DynamicResource LogoPrimaryBrush}" Secondary="{DynamicResource LogoSecondaryBrush}" />
         </Border>
-        <TextBlock Text="SCOLIA Pro" Foreground="{DynamicResource TextBrush}" FontSize="25" FontWeight="SemiBold"
+        <TextBlock Text="SCOLIA Pro" Foreground="{DynamicResource TextBrush}" FontSize="22" FontWeight="SemiBold"
                    HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8"
                     Margin="0,6,0,0" AutomationProperties.Name="Ouverture de la session en cours">

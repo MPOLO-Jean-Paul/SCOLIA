@@ -207,32 +207,25 @@ public partial class MainView : UserControl
         var followers = content.Children.Where(c => !c.GetVisualDescendants().Contains(logo)).ToList();
         foreach (var follower in followers)
         {
-            // Chaque ligne apparaît en remontant de quelques points, comme les écrans d'Android 16.
+            // Le titre et les trois points restent lisibles dès la première image.
             follower.Transitions = animate
                 ?
                 [
-                    new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(320), Easing = Infrastructure.Motion.Spring },
-                    new Avalonia.Animation.TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(360), Easing = Infrastructure.Motion.Spring },
+                    new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(150), Easing = Infrastructure.Motion.Spring },
+                    new Avalonia.Animation.TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(160), Easing = Infrastructure.Motion.Spring },
                 ]
                 : null;
-            follower.Opacity = animate ? 0 : 1;
-            follower.RenderTransform = animate ? Avalonia.Media.Transformation.TransformOperations.Parse("translateY(8px)") : null;
+            follower.Opacity = animate ? 0.85 : 1;
+            follower.RenderTransform = animate ? Avalonia.Media.Transformation.TransformOperations.Parse("translateY(3px)") : null;
         }
-        void Reveal(object? sender, EventArgs e)
-        {
-            logo.Assembled -= Reveal;
-            for (var i = 0; i < followers.Count; i++)
-            {
-                var follower = followers[i];
-                Avalonia.Threading.DispatcherTimer.RunOnce(() =>
-                {
-                    follower.Opacity = 1;
-                    follower.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("translateY(0px)");
-                }, TimeSpan.FromMilliseconds(140 + i * 90));
-            }
-        }
-        logo.Assembled += Reveal;
         logo.Play(animate, assemble);
+        // Ne pas attendre la fin de l'assemblage ni créer une temporisation par ligne.
+        foreach (var follower in followers)
+        {
+            follower.Opacity = 1;
+            follower.RenderTransform = animate
+                ? Avalonia.Media.Transformation.TransformOperations.Parse("translateY(0px)") : null;
+        }
     }
 
     // ---------- Recherche générale dans la barre du haut ----------
