@@ -16,7 +16,7 @@
       <Setter Property="MinHeight" Value="88" />
       <Setter Property="Margin" Value="0,0,0,9" />
     </Style>
-    <Style Selector="Button.studentcard:pointerover, Button.studentcard:pressed">
+    <Style Selector="Button.studentcard:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.studentcard:pressed /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
   </UserControl.Styles>
@@ -28,39 +28,39 @@
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
           <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
             <mi:MaterialIcon Kind="AccountGroupOutline" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" />
-            <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
           </StackPanel>
           <TextBlock Grid.Column="1" Text="{Binding PageText}" Classes="muted" VerticalAlignment="Center" />
         </Grid>
         <WrapPanel IsVisible="{Binding NotPhone}">
           <StackPanel Classes="field pagesearch">
             <TextBlock Text="Rechercher" Classes="fieldlabel" />
-            <TextBox Classes="search clearButton" Width="300" Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un code anonyme" />
+            <TextBox Classes="search clearButton" Width="300" Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un code anonyme" AutomationProperties.Name="Rechercher par nom ou code anonyme" />
           </StackPanel>
           <StackPanel Classes="field">
             <TextBlock Text="Promotion" Classes="fieldlabel" />
-            <ComboBox Width="230" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+            <ComboBox Width="230" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" AutomationProperties.Name="Filtrer par promotion" />
           </StackPanel>
           <StackPanel Classes="field" IsVisible="{Binding HasSections}">
             <TextBlock Text="Section" Classes="fieldlabel" />
-            <ComboBox Width="220" ItemsSource="{Binding Sections}" SelectedItem="{Binding SectionChoice}" />
+            <ComboBox Width="220" ItemsSource="{Binding Sections}" SelectedItem="{Binding SectionChoice}" AutomationProperties.Name="Filtrer par section" />
           </StackPanel>
           <StackPanel Classes="field">
             <TextBlock Text="Statut" Classes="fieldlabel" />
-            <ComboBox Width="190" ItemsSource="{Binding StatusChoices}" SelectedItem="{Binding Status}" />
+            <ComboBox Width="190" ItemsSource="{Binding StatusChoices}" SelectedItem="{Binding Status}" AutomationProperties.Name="Filtrer par statut" />
           </StackPanel>
           <StackPanel Classes="field">
             <TextBlock Text="Sexe" Classes="fieldlabel" />
-            <ComboBox Width="160" ItemsSource="{Binding GenderChoices}" SelectedItem="{Binding Gender}" />
+            <ComboBox Width="160" ItemsSource="{Binding GenderChoices}" SelectedItem="{Binding Gender}" AutomationProperties.Name="Filtrer par sexe" />
           </StackPanel>
           <!-- Paiement : en ordre, en retard, jamais payé ou pris en charge ; puis un mois précis si besoin -->
           <StackPanel Classes="field">
             <TextBlock Text="Paiement" Classes="fieldlabel" />
-            <ComboBox Width="190" ItemsSource="{Binding PaymentChoices}" SelectedItem="{Binding Payment}" />
+            <ComboBox Width="190" ItemsSource="{Binding PaymentChoices}" SelectedItem="{Binding Payment}" AutomationProperties.Name="Filtrer par paiement" />
           </StackPanel>
           <StackPanel Classes="field" IsVisible="{Binding HasMonthFilter}">
             <TextBlock Text="Mois" Classes="fieldlabel" />
-            <ComboBox Width="170" ItemsSource="{Binding Months}" SelectedItem="{Binding Month}" />
+            <ComboBox Width="170" ItemsSource="{Binding Months}" SelectedItem="{Binding Month}" AutomationProperties.Name="Filtrer par mois" />
           </StackPanel>
           <Button Classes="ghost" Command="{Binding ClearFilters}" VerticalAlignment="Bottom" Margin="0,0,12,12"
                   ToolTip.Tip="{Binding ResetFiltersTooltip}">
@@ -74,27 +74,27 @@
           <StackPanel Spacing="10" Margin="0,8,0,0">
               <StackPanel Spacing="4">
                 <TextBlock Text="Promotion" Classes="fieldlabel" />
-                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" AutomationProperties.Name="Filtrer par promotion" />
               </StackPanel>
               <StackPanel Spacing="4" IsVisible="{Binding HasSections}">
                 <TextBlock Text="Section" Classes="fieldlabel" />
-                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding Sections}" SelectedItem="{Binding SectionChoice}" />
+                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding Sections}" SelectedItem="{Binding SectionChoice}" AutomationProperties.Name="Filtrer par section" />
               </StackPanel>
               <StackPanel Spacing="4">
                 <TextBlock Text="Statut" Classes="fieldlabel" />
-                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding StatusChoices}" SelectedItem="{Binding Status}" />
+                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding StatusChoices}" SelectedItem="{Binding Status}" AutomationProperties.Name="Filtrer par statut" />
               </StackPanel>
               <StackPanel Spacing="4">
                 <TextBlock Text="Sexe" Classes="fieldlabel" />
-                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding GenderChoices}" SelectedItem="{Binding Gender}" />
+                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding GenderChoices}" SelectedItem="{Binding Gender}" AutomationProperties.Name="Filtrer par sexe" />
               </StackPanel>
               <StackPanel Spacing="4">
                 <TextBlock Text="Paiement" Classes="fieldlabel" />
-                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding PaymentChoices}" SelectedItem="{Binding Payment}" />
+                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding PaymentChoices}" SelectedItem="{Binding Payment}" AutomationProperties.Name="Filtrer par paiement" />
               </StackPanel>
               <StackPanel Spacing="4" IsVisible="{Binding HasMonthFilter}">
                 <TextBlock Text="Mois" Classes="fieldlabel" />
-                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding Months}" SelectedItem="{Binding Month}" />
+                <ComboBox Classes="w11" HorizontalAlignment="Stretch" ItemsSource="{Binding Months}" SelectedItem="{Binding Month}" AutomationProperties.Name="Filtrer par mois" />
               </StackPanel>
               <Button Classes="ghost" Command="{Binding ClearFilters}" HorizontalAlignment="Stretch" Content="Effacer les filtres" />
           </StackPanel>
@@ -114,7 +114,7 @@
     <ItemsControl Grid.Row="1" ItemsSource="{Binding Items}" IsVisible="{Binding Phone}" Margin="0,0,4,16">
       <ItemsControl.ItemTemplate>
         <DataTemplate>
-          <Button Classes="studentcard"
+          <Button Classes="studentcard" AutomationProperties.Name="{Binding Name}"
                   Command="{Binding $parent[ItemsControl].DataContext.OpenStudentOnPhone}"
                   CommandParameter="{Binding}">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
@@ -126,7 +126,7 @@
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="7">
                   <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
-                  <TextBlock Text="{Binding Status}" Classes="muted" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Status}" Classes="muted" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" TextWrapping="Wrap" />
                 </StackPanel>
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10" infra:Adaptive.StackBelow="230">
                   <StackPanel Spacing="2">
@@ -147,7 +147,7 @@
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>
-    <DataGrid Grid.Row="1" x:Name="StudentGrid" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
+    <DataGrid Grid.Row="1" x:Name="StudentGrid" AutomationProperties.Name="{Binding Title}" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
               AutoGenerateColumns="False" IsReadOnly="True" infra:GridPriority.Adaptive="True" IsVisible="{Binding NotPhone}">
       <DataGrid.Columns>
         <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="120" />

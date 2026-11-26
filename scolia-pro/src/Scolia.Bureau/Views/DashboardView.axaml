@@ -3,7 +3,7 @@
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.DashboardView">
-  <ScrollViewer>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="16" Margin="0,0,6,8">
 
       <!-- Rappel de sauvegarde : barre d'information de Windows, seulement s'il y a lieu -->
@@ -31,8 +31,8 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate>
                 <StackPanel Spacing="1" Margin="0,0,16,0">
-                  <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" />
-                  <TextBlock Classes="wrap2" Text="{Binding Value}" FontSize="{DynamicResource FsHeading}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" TextWrapping="Wrap" />
+                  <TextBlock Classes="wrap2" Text="{Binding Value}" FontSize="{DynamicResource FsHeading}" FontWeight="SemiBold" TextWrapping="Wrap" ToolTip.Tip="{Binding Value}" TextTrimming="CharacterEllipsis" />
                   <TextBlock Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
               </DataTemplate>
@@ -47,13 +47,13 @@
               <ItemsControl ItemsSource="{Binding Appointments}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Button Classes="listrow" Command="{Binding Open}">
+                    <Button Classes="listrow" Command="{Binding Open}" AutomationProperties.Name="{Binding Name}" ToolTip.Tip="{Binding Name}">
                       <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Classes="wrap2" TextTrimming="CharacterEllipsis">
                           <Run Text="{Binding Name, Mode=OneWay}" />
                           <Run Text="{Binding Promotion, StringFormat=' · {0}', Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" />
                         </TextBlock>
-                        <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="muted" Margin="10,0,0,0" />
+                        <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="muted" Margin="10,0,0,0" ToolTip.Tip="{Binding Detail}" />
                       </Grid>
                     </Button>
                   </DataTemplate>
@@ -66,13 +66,13 @@
               <ItemsControl ItemsSource="{Binding Birthdays}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Button Classes="listrow" Command="{Binding Open}">
+                    <Button Classes="listrow" Command="{Binding Open}" AutomationProperties.Name="{Binding Name}" ToolTip.Tip="{Binding Name}">
                       <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Classes="wrap2" TextTrimming="CharacterEllipsis">
                           <Run Text="{Binding Name, Mode=OneWay}" />
                           <Run Text="{Binding Promotion, StringFormat=' · {0}', Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" />
                         </TextBlock>
-                        <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="muted" Margin="10,0,0,0" />
+                        <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="muted" Margin="10,0,0,0" ToolTip.Tip="{Binding Detail}" />
                       </Grid>
                     </Button>
                   </DataTemplate>
@@ -94,8 +94,8 @@
         <!-- Encaissements par mois : l'attendu en gris, l'encaissé dans l'accent -->
         <Border Classes="card" Grid.Column="0" Margin="0,0,12,0">
           <StackPanel Spacing="12">
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Text="Encaissements par mois" Classes="heading" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" infra:Adaptive.StackBelow="430">
+              <TextBlock Text="Encaissements par mois" Classes="heading" TextWrapping="Wrap" />
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <Border Width="10" Height="10" CornerRadius="2" Background="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
@@ -122,7 +122,7 @@
                       <Panel VerticalAlignment="Bottom" MaxWidth="34">
                         <Border Background="{DynamicResource AccentBrush}" Opacity="0.16" CornerRadius="4,4,0,0" Height="{Binding Track}" VerticalAlignment="Bottom" />
                         <StackPanel VerticalAlignment="Bottom" Spacing="3">
-                          <TextBlock Text="{Binding Value}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center" />
+                          <TextBlock Text="{Binding Value}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Value}" />
                           <Border Background="{DynamicResource AccentBrush}" CornerRadius="4,4,0,0" Height="{Binding Height}" />
                         </StackPanel>
                       </Panel>
@@ -225,7 +225,7 @@
                         <TextBlock Text="{Binding Date}" Classes="muted" />
                       </StackPanel>
                       <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Amount}" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                        <TextBlock Text="{Binding Amount}" FontWeight="SemiBold" HorizontalAlignment="Right" TextWrapping="Wrap" TextAlignment="Right" />
                         <TextBlock Text="{Binding Method}" Classes="muted" HorizontalAlignment="Right" />
                       </StackPanel>
                     </Grid>

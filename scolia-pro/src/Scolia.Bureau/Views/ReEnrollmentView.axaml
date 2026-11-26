@@ -8,9 +8,9 @@
       <WrapPanel>
         <StackPanel Classes="field">
           <TextBlock Text="Année cible" Classes="fieldlabel" />
-          <ComboBox Width="260" ItemsSource="{Binding Years}" SelectedItem="{Binding Year}" />
+          <ComboBox Width="260" AutomationProperties.Name="Année cible de réinscription" ItemsSource="{Binding Years}" SelectedItem="{Binding Year}" />
         </StackPanel>
-        <TextBlock Text="{infra:Terms 'Cochez les apprenants : si leur promotion cible manque, elle sera créée automatiquement à la validation.'}" Classes="muted" VerticalAlignment="Bottom" Margin="0,0,12,20" />
+        <TextBlock Text="{infra:Terms 'Cochez les apprenants : si leur promotion cible manque, elle sera créée automatiquement à la validation.'}" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Bottom" Margin="0,0,12,20" />
       </WrapPanel>
     </Border>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" CanUserSortColumns="False">
@@ -23,7 +23,7 @@
         <DataGridTemplateColumn Header="Promotion cible" Width="Auto" MinWidth="260">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding Target}" HorizontalAlignment="Stretch" />
+              <ComboBox AutomationProperties.Name="Promotion cible" ItemsSource="{Binding Choices}" SelectedItem="{Binding Target}" HorizontalAlignment="Stretch" />
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
