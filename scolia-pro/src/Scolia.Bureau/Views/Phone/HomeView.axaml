@@ -79,11 +79,11 @@
               <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold" TextWrapping="Wrap" />
               <TextBlock Text="{Binding Sync.StatusHint}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
             </StackPanel>
-            <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+            <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
           </Grid>
         </Button>
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" IsVisible="{Binding HasCashLine}">
-          <mi:MaterialIcon Kind="CashRegister" Width="20" Height="20" Foreground="{Binding CashBrush}" VerticalAlignment="Center" />
+          <PathIcon Data="{x:Static infra:HomeGlyphs.Payment}" Width="20" Height="20" Foreground="{Binding CashBrush}" VerticalAlignment="Center" />
           <TextBlock Grid.Column="1" Text="{Binding CashLine}" TextWrapping="Wrap" />
         </Grid>
       </StackPanel>
@@ -146,9 +146,9 @@
           </ItemsControl>
           <Button Classes="workrow" Command="{Binding ShowAllTools}" AutomationProperties.Name="Afficher ou réduire les fonctionnalités">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-              <mi:MaterialIcon Kind="ViewDashboard" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" />
+              <PathIcon Data="{x:Static infra:HomeGlyphs.Dashboard}" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding AllToolsLabel}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center" />
-              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+              <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
             </Grid>
           </Button>
         </StackPanel>
@@ -167,7 +167,7 @@
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                       <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
                       <TextBlock Grid.Column="1" Text="{Binding Label}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                      <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                      <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
                     </Grid>
                   </Button>
                 </DataTemplate></ItemsControl.ItemTemplate>
@@ -190,7 +190,7 @@
                     <TextBlock Text="{Binding Text}" FontWeight="SemiBold" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                   </StackPanel>
-                  <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                  <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
                 </Grid>
               </Button>
             </DataTemplate></ItemsControl.ItemTemplate>
@@ -214,7 +214,7 @@
                     <TextBlock Text="{Binding Date}" Classes="muted" FontSize="{DynamicResource FsCaption}" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Amount}" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" TextWrapping="Wrap" ToolTip.Tip="{Binding Amount}" />
                   </StackPanel>
-                  <mi:MaterialIcon Grid.Column="1" Kind="ChevronRight" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                  <PathIcon Grid.Column="1" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
                 </Grid>
               </Button>
             </DataTemplate></ItemsControl.ItemTemplate>
