@@ -119,23 +119,30 @@ public partial class PhoneFrame : UserControl
     {
         if (e.PropertyName is nameof(PhoneSettingsSearchVm.IsOpen) or nameof(PhoneSettingsSearchVm.Query))
         {
-            if (Shell?.SettingsSearch.IsOpen != true) return;
+            if (subscribedShell is not { } shell || !ReferenceEquals(sender, shell.SettingsSearch)
+                || !shell.SettingsSearch.IsOpen) return;
+            var focus = e.PropertyName == nameof(PhoneSettingsSearchVm.IsOpen);
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                if (Shell?.SettingsSearch.IsOpen != true) return;
+                // Une demande différée d'un ancien compte ne doit jamais déplacer
+                // le défilement ni ouvrir le clavier dans le compte suivant.
+                if (!ReferenceEquals(subscribedShell, shell) || !ReferenceEquals(Shell, shell)
+                    || !shell.SettingsSearch.IsOpen) return;
                 MenuScroll.Offset = default;
-                if (e.PropertyName == nameof(PhoneSettingsSearchVm.IsOpen))
-                    MenuSearchBox.Focus();
+                if (focus) MenuSearchBox.Focus();
             }, Avalonia.Threading.DispatcherPriority.Loaded);
         }
     }
 
     private void OnHeaderSearchChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(PhoneHeaderSearchVm.IsOpen) || Shell?.HeaderSearch.IsOpen != true) return;
+        if (e.PropertyName != nameof(PhoneHeaderSearchVm.IsOpen)
+            || subscribedShell is not { } shell || !ReferenceEquals(sender, shell.HeaderSearch)
+            || !shell.HeaderSearch.IsOpen) return;
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            if (Shell?.HeaderSearch.IsOpen == true) ContextSearchBox.Focus();
+            if (ReferenceEquals(subscribedShell, shell) && ReferenceEquals(Shell, shell)
+                && shell.HeaderSearch.IsOpen) ContextSearchBox.Focus();
         }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
