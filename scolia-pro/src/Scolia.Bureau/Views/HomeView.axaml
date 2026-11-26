@@ -41,7 +41,7 @@
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Padding" Value="10,9" />
-      <Setter Property="MinHeight" Value="78" />
+      <Setter Property="MinHeight" Value="120" />
       <Setter Property="Margin" Value="3,3" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -99,7 +99,7 @@
 
   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="12" Margin="8,6,12,20">
-      <!-- Bandeau de contexte, comme l'accueil récent de Power BI Desktop : sobre, dense et utile. -->
+      <!-- Contexte de l'établissement, comme les paramètres Windows. -->
       <Grid x:Name="WelcomeLayout" ColumnDefinitions="*,Auto" ColumnSpacing="12"
             infra:Adaptive.StackBelow="610">
         <StackPanel Spacing="5">
@@ -184,7 +184,7 @@
                         <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Width="22" Height="22" Foreground="{Binding Brush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                       </Border>
                       <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding ShortTitle}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" ToolTip.Tip="{Binding ShortTitle}" />
+                        <TextBlock Text="{Binding ShortTitle}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ShortTitle}" />
                         <TextBlock Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
                       </StackPanel>
                       <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="14" Height="14" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
@@ -216,7 +216,7 @@
                         <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Width="22" Height="22" Foreground="{Binding Brush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                       </Border>
                       <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" ToolTip.Tip="{Binding Title}" />
+                        <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
                         <TextBlock Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
                       </StackPanel>
                       <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="14" Height="14" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
