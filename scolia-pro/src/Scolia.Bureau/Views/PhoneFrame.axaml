@@ -134,7 +134,7 @@
                 <TextBlock Text="{Binding UserInitials}" FontWeight="SemiBold" Foreground="{DynamicResource OnAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
               <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding AccountName}" ToolTip.Tip="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                 <TextBlock Text="Mon compte, sécurité et réseau" Classes="muted" FontSize="{DynamicResource FsSmall}" />
               </StackPanel>
             </Grid>
@@ -166,8 +166,8 @@
         </Panel>
         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0" IsVisible="{Binding !HeaderSearch.IsOpen}">
           <!-- Petit téléphone : un titre long passe sur deux lignes plutôt que d'être coupé -->
-          <TextBlock Text="{Binding PhonePage.Heading}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2" LineHeight="20" />
-          <TextBlock Text="{Binding PhonePage.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2"
+          <TextBlock Text="{Binding PhonePage.Heading}" ToolTip.Tip="{Binding PhonePage.Heading}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2" LineHeight="20" />
+          <TextBlock Text="{Binding PhonePage.Subtitle}" ToolTip.Tip="{Binding PhonePage.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2"
                      IsVisible="{Binding PhonePage.Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
         <!-- Présence : les autres postes connectés ; le point vert bat quand l'un d'eux enregistre quelque chose -->
@@ -243,7 +243,7 @@
         <StackPanel VerticalAlignment="Center" Spacing="1">
           <TextBlock Text="{Binding PhonePage.Sticky.Title}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
           <TextBlock Text="{Binding PhonePage.Sticky.Value}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding PhonePage.Sticky.Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2"
+          <TextBlock Text="{Binding PhonePage.Sticky.Detail}" ToolTip.Tip="{Binding PhonePage.Sticky.Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2"
                      IsVisible="{Binding PhonePage.Sticky.HasDetail, FallbackValue=False}" />
         </StackPanel>
         <Button x:Name="StickyAction" Grid.Column="1" Classes="primary stickyaction" Command="{Binding PhonePage.Sticky.Command}"
@@ -278,7 +278,7 @@
               <Image Source="{DynamicResource ScoliaMark}" Width="34" Height="34" />
             </Panel>
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-              <TextBlock Text="{Binding SchoolHeaderTitle}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+              <TextBlock Text="{Binding SchoolHeaderTitle}" ToolTip.Tip="{Binding SchoolHeaderTitle}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
               <TextBlock Text="{Binding SchoolYearLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
             </StackPanel>
             <Button Grid.Column="2" Classes="baricon settingssearchcontrol" Command="{Binding SettingsSearch.Toggle}"
@@ -314,7 +314,7 @@
                     <TextBlock Text="{Binding UserInitials}" FontWeight="SemiBold" Foreground="{DynamicResource OnAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding AccountName}" ToolTip.Tip="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="Mon compte, sécurité et réseau" Classes="muted" FontSize="{DynamicResource FsSmall}" />
                   </StackPanel>
                   <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />

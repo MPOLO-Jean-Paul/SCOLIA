@@ -45,6 +45,30 @@
     <Style Selector="LayoutTransformControl.phone Border.sheet StackPanel.formgrouphead">
       <Setter Property="Margin" Value="0,14,0,8" />
     </Style>
+    <!-- Formulaires métier : le libellé et l'aide gardent toute leur largeur. -->
+    <Style Selector="TextBlock.formintro, ItemsControl.formfields">
+      <Setter Property="Margin" Value="0,0,14,0" />
+    </Style>
+    <Style Selector="TextBlock.formintro">
+      <Setter Property="Margin" Value="0,0,14,12" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone TextBlock.formintro">
+      <Setter Property="Margin" Value="0,0,0,12" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone ItemsControl.formfields">
+      <Setter Property="Margin" Value="0" />
+    </Style>
+    <!-- L'erreur change la couleur du contour et non la géométrie du champ.
+         Le texte d'erreur reste visible : la couleur n'est jamais l'unique indication. -->
+    <Style Selector="TextBox.w11.invalid, ComboBox.w11.invalid, CalendarDatePicker.w11.invalid">
+      <Setter Property="BorderBrush" Value="{DynamicResource ToneRed}" />
+    </Style>
+    <Style Selector="TextBox.w11.invalid /template/ Border#PART_BorderElement, TextBox.w11.invalid:focus /template/ Border#PART_BorderElement, TextBox.w11.invalid:pointerover /template/ Border#PART_BorderElement, ComboBox.w11.invalid /template/ Border#Background, ComboBox.w11.invalid:pointerover /template/ Border#Background">
+      <Setter Property="BorderBrush" Value="{DynamicResource ToneRed}" />
+    </Style>
+    <Style Selector="TextBlock.fieldlabel.invalid">
+      <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
+    </Style>
   </UserControl.Styles>
   <!-- Feuille de dialogue macOS : titre gras, champs, boutons en capsule alignés à droite -->
   <Border Classes="card sheet" infra:Adaptive.FitDialog="True" Classes.embedded="{Binding Embedded}" MaxWidth="620" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
@@ -58,26 +82,26 @@
           <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasSubtitle}" />
         </StackPanel>
-        <Button Grid.Column="2" Classes="closex" Command="{Binding Cancel}" IsEnabled="{Binding !Busy}" Margin="12,0,0,0"><mi:MaterialIcon Kind="Close" /></Button>
+        <Button Grid.Column="2" Classes="closex" AutomationProperties.Name="Fermer le formulaire" Command="{Binding Cancel}" IsEnabled="{Binding !Busy}" Margin="12,0,0,0"><mi:MaterialIcon Kind="Close" /></Button>
       </Grid>
 
       <!-- Le message et les champs defilent ensemble, le bouton Importer reste fixe sur mobile. -->
       <ScrollViewer Classes="formscroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="24,12,10,8">
         <StackPanel>
-        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" IsVisible="{Binding HasMessage}" Margin="0,0,14,12" />
-      <ItemsControl ItemsSource="{Binding Fields}" Margin="0,0,14,0">
+        <TextBlock Classes="formintro" Text="{Binding Message}" TextWrapping="Wrap" IsVisible="{Binding HasMessage}" />
+      <ItemsControl Classes="formfields" ItemsSource="{Binding Fields}">
         <ItemsControl.ItemTemplate>
           <DataTemplate>
             <StackPanel Classes="formentry" Spacing="4" Margin="0,0,0,8">
               <StackPanel Classes="formgrouphead" IsVisible="{Binding IsHeader}" Spacing="2" Margin="0,10,0,2">
-                <TextBlock Text="{Binding Label}" Classes="heading" />
+                <TextBlock Text="{Binding Label}" Classes="heading" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding Hint, Converter={x:Static ObjectConverters.IsNotNull}}" />
               </StackPanel>
               <CheckBox IsVisible="{Binding IsFlag}" IsChecked="{Binding Flag}" Content="{Binding Label}" />
               <StackPanel IsVisible="{Binding IsInput}" Spacing="4">
-                <TextBlock Text="{Binding Caption}" Classes="fieldlabel" />
+                <TextBlock Text="{Binding Caption}" Classes="fieldlabel" Classes.invalid="{Binding HasError}" TextWrapping="Wrap" />
                 <!-- L'aide s'écrit une seule fois, sous le champ : elle reste lisible pendant la saisie. -->
-                <TextBox Classes="w11" IsVisible="{Binding IsText}" Text="{Binding Text}" />
+                <TextBox Classes="w11" Classes.invalid="{Binding HasError}" AutomationProperties.Name="{Binding Caption}" IsVisible="{Binding IsText}" Text="{Binding Text}" />
                 <!-- Propositions de saisie, comme la barre de suggestions du clavier : un toucher remplit le champ. -->
                 <ItemsControl ItemsSource="{Binding Suggestions}" IsVisible="{Binding HasSuggestions}" Margin="0,2,0,0">
                   <ItemsControl.ItemsPanel>
@@ -94,9 +118,9 @@
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <TextBox Classes="w11" IsVisible="{Binding IsPhone}" Text="{Binding Text}" infra:PhoneInput.Digits="{Binding IsPhone}" />
+                <TextBox Classes="w11" Classes.invalid="{Binding HasError}" AutomationProperties.Name="{Binding Caption}" IsVisible="{Binding IsPhone}" Text="{Binding Text}" infra:PhoneInput.Digits="{Binding IsPhone}" />
                 <Panel IsVisible="{Binding IsSecret}">
-                  <TextBox Classes="w11" Text="{Binding Text}" PasswordChar="•" RevealPassword="{Binding ShowSecret}"
+                  <TextBox Classes="w11" Classes.invalid="{Binding HasError}" AutomationProperties.Name="{Binding Caption}" Text="{Binding Text}" PasswordChar="•" RevealPassword="{Binding ShowSecret}"
                            MinHeight="52" Padding="14,8,52,8"
                            TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" />
                   <Button Classes="quiet" Command="{Binding ToggleSecret}" Width="46" MinHeight="44"
@@ -106,9 +130,9 @@
                                      Foreground="{DynamicResource TextBrush}" />
                   </Button>
                 </Panel>
-                <TextBox Classes="w11" IsVisible="{Binding IsMultiline}" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84" />
-                <CalendarDatePicker Classes="w11" PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" IsVisible="{Binding IsDay}" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" />
-                <ComboBox Classes="w11" IsVisible="{Binding IsChoice}" ItemsSource="{Binding Options}" SelectedItem="{Binding Choice}" HorizontalAlignment="Stretch" />
+                <TextBox Classes="w11" Classes.invalid="{Binding HasError}" AutomationProperties.Name="{Binding Caption}" IsVisible="{Binding IsMultiline}" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84" />
+                <CalendarDatePicker Classes="w11" Classes.invalid="{Binding HasError}" AutomationProperties.Name="{Binding Caption}" PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" IsVisible="{Binding IsDay}" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" />
+                <ComboBox Classes="w11" Classes.invalid="{Binding HasError}" AutomationProperties.Name="{Binding Caption}" IsVisible="{Binding IsChoice}" ItemsSource="{Binding Options}" SelectedItem="{Binding Choice}" HorizontalAlignment="Stretch" />
                 <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding HasHint}" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Error}" Classes="error" IsVisible="{Binding HasError}" TextWrapping="Wrap" />
               </StackPanel>
@@ -127,7 +151,7 @@
       <Panel Classes="formfooter" Grid.Row="3" Margin="20,12,20,16">
         <Grid ColumnDefinitions="*,*" ColumnSpacing="8" infra:Adaptive.StackBelow="290" IsVisible="{Binding CanSubmit}">
           <Button Classes="formaction" Content="{Binding CancelText}" Command="{Binding Cancel}" IsVisible="{Binding ShowCancel}" IsEnabled="{Binding !Busy}" HorizontalAlignment="Stretch" />
-          <Button Grid.Column="1" Classes="formaction" Command="{Binding Submit}" IsEnabled="{Binding !Busy}" HorizontalAlignment="Stretch"
+          <Button Grid.Column="1" Classes="formaction" AutomationProperties.Name="{Binding SubmitText}" Command="{Binding Submit}" IsEnabled="{Binding !Busy}" HorizontalAlignment="Stretch"
                   Classes.primary="{Binding !Danger}" Classes.danger="{Binding Danger}"><TextBlock Text="{Binding SubmitText}" TextWrapping="Wrap" TextAlignment="Center" /></Button>
         </Grid>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" IsVisible="{Binding !CanSubmit}">

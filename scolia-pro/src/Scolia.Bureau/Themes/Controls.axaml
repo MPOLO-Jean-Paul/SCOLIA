@@ -915,6 +915,8 @@
   <Style Selector="TextBlock.fieldlabel">
     <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
     <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
   <!-- Titre de rubrique : texte gras ordinaire, comme les en-têtes des Paramètres de Windows -->
   <Style Selector="TextBlock.section">
@@ -1116,7 +1118,8 @@
   <Style Selector="DataGridCell TextBlock"><Setter Property="FontWeight" Value="Normal" /><Setter Property="TextTrimming" Value="CharacterEllipsis" /></Style>
   <Style Selector="DataGridColumnHeader TextBlock">
     <Setter Property="TextWrapping" Value="NoWrap" />
-    <Setter Property="TextTrimming" Value="None" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="ToolTip.Tip" Value="{Binding $self.Text}" />
   </Style>
   <Style Selector="DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
     <Setter Property="Fill" Value="{DynamicResource AccentSoftBrush}" />
@@ -1191,6 +1194,10 @@
   </Style>
   <Style Selector="Button.listrow:pointerover">
     <Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" />
+  </Style>
+  <!-- Réponse à l'appui stable : ni déplacement, ni redimensionnement des lignes. -->
+  <Style Selector="Button.listrow:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.searchrow:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.searchtile:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
   </Style>
 
   <!-- Listes de choix : la sélection prend le bleu tonal de la charte -->
