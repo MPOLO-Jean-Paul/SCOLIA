@@ -435,7 +435,7 @@
                 <DataTemplate>
                   <Button Classes="hdr" Command="{Binding Command}" Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding Danger}" ToolTip.Tip="{Binding Hint}" AutomationProperties.Name="{Binding Label}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                      <mi:MaterialIcon Kind="{Binding Icon, Converter={x:Static infra:Icons.LineConverter}}" Width="16" Height="16" />
+                      <mi:MaterialIcon Kind="{Binding Icon, Converter={x:Static infra:Icons.LineConverter}}" Width="16" Height="16" VerticalAlignment="Center" IsHitTestVisible="False" />
                       <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>

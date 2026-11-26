@@ -538,10 +538,11 @@ public partial class MainView : UserControl
     private double TextWidth(string text, double size, FontWeight weight)
     {
         var culture = System.Globalization.CultureInfo.CurrentCulture;
-        if (!Equals(measuredFont, FontFamily) || measuredCulture != culture.Name)
+        var family = Shell is { } shell ? Preferences.FamilyOf(shell.Prefs.Font) : FontFamily;
+        if (!Equals(measuredFont, family) || measuredCulture != culture.Name)
         {
             textWidths.Clear();
-            measuredFont = FontFamily;
+            measuredFont = family;
             measuredCulture = culture.Name;
         }
         var key = (text, size, weight);
@@ -549,7 +550,7 @@ public partial class MainView : UserControl
         // Cache borné : des libellés dynamiques ne doivent pas croître toute la session.
         if (textWidths.Count >= 128) textWidths.Clear();
         width = new FormattedText(text, culture, FlowDirection.LeftToRight,
-            new Typeface(FontFamily, FontStyle.Normal, weight), size, null).Width;
+            new Typeface(family, FontStyle.Normal, weight), size, null).Width;
         textWidths[key] = width;
         return width;
     }

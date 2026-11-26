@@ -33,7 +33,10 @@ public partial class PhoneFrame : UserControl
         SizeChanged += (_, e) => ActionSheet.MaxHeight = Math.Max(0, e.NewSize.Height - 24);
         // Le bouton Menu occupe la même largeur qu'un onglet ordinaire, quel que
         // soit le nombre d'outils visibles pour le rôle (enseignant/secrétariat).
-        TabGrid.SizeChanged += (_, _) => AlignBottomTabs();
+        TabGrid.SizeChanged += (_, e) =>
+        {
+            if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 0.5) QueueAlignBottomTabs();
+        };
     }
 
     private ShellViewModel? subscribedShell;
@@ -45,7 +48,7 @@ public partial class PhoneFrame : UserControl
         if (Shell is not { } shell) return;
         subscribedShell = shell;
         ApplyTransition();
-        AlignBottomTabs();
+        QueueAlignBottomTabs();
         shell.Prefs.PropertyChanged += OnPreferencesChanged;
         shell.PropertyChanged += OnShellChanged;
         shell.SettingsSearch.PropertyChanged += OnSettingsSearchChanged;
@@ -109,7 +112,7 @@ public partial class PhoneFrame : UserControl
     {
         // Une nouvelle page s'ouvre en haut, sans toucher la position d'une page simplement actualisée.
         if (args.PropertyName == nameof(ShellViewModel.PhonePage)) PhoneScroll.Offset = default;
-        if (args.PropertyName == nameof(ShellViewModel.PhoneTabs)) AlignBottomTabs();
+        if (args.PropertyName == nameof(ShellViewModel.PhoneTabs)) QueueAlignBottomTabs();
     }
 
     private void OnSettingsSearchChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -159,12 +162,26 @@ public partial class PhoneFrame : UserControl
         }
     }
 
+    private bool tabAlignmentQueued;
+
+    private void QueueAlignBottomTabs()
+    {
+        if (tabAlignmentQueued) return;
+        tabAlignmentQueued = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            tabAlignmentQueued = false;
+            if (subscribedShell == Shell && Shell is not null) AlignBottomTabs();
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
     private void AlignBottomTabs()
     {
         if (Shell is not { } shell || TabGrid.Bounds.Width <= 0) return;
         var count = shell.PhoneTabs.Count + 1; // dernier onglet = Menu
-        if (count <= 1) return;
-        var width = TabGrid.Bounds.Width / count;
+        // Un rôle sans raccourci conserve un bouton Menu centré, sans
+        // réutiliser la largeur d'un autre compte.
+        var width = count <= 1 ? TabGrid.Bounds.Width : TabGrid.Bounds.Width / count;
         if (double.IsNaN(MenuTab.Width) || Math.Abs(MenuTab.Width - width) > 0.5)
             MenuTab.Width = width;
     }
