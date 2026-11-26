@@ -1,11 +1,5 @@
-# SCOLIA Pro 1.3.2 — fluidité native
+# SCOLIA Pro 1.3.2 — candidat natif
 
-- Interface Avalonia et design de la 1.2.99 conservés. Flutter reste suspendu en production.
-- Défilement à la molette : interruption immédiate par une nouvelle direction, le clavier, le pointeur ou le repositionnement d'une liste ; aucun mouvement résiduel sur une page masquée.
-- Effets tactiles : une seule onde par cible, synchronisée avec les images du moteur de rendu, plus courte et sans allocation de tableau à chaque image.
-- Apparition des cartes : plus courte et discrète, sans animations empilées sur les cartes imbriquées ou les tableaux ; annulation lorsque la vue est retirée.
-- Chargement et actualisation : les notifications du relais sont regroupées, les vues masquées ne sont plus rafraîchies par ce mécanisme et les indicateurs respectent le réglage Animations.
-- Aucun changement du moteur de paiement, de SQLite, de la signature historique ni des modèles d'export ou de cartes d'accès.
-- Le gain perceptible doit être confirmé sur des appareils physiques ; aucune mesure de FPS n'est annoncée.
+Windows et Android, interface Avalonia issue de 1.2.99 et 1.3.1. Finitions des écrans, contrastes, navigation, formulaires, tableaux, animations et adaptation aux dimensions. Modèles des cartes d'accès inchangés. Flutter reste désactivé pour la publication.
 
-- Ergonomie des formulaires : regroupement des demandes de repositionnement clavier, répartition sûre des sélecteurs mobiles et recalcul des colonnes uniquement lors d'un changement réel de largeur. Une recherche fermée ou modifiée ne peut plus ouvrir tardivement un résultat via Entrée.
+Validation requise : compilation et tests natifs, contrôles de compatibilité de mise à jour Android avec la dernière version stable, signature officielle historique et génération de l'installateur Windows. Ne publier que par le pipeline officiel, sans modifier la signature ni contourner les contrôles.
