@@ -10,11 +10,11 @@
         <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
           <!-- L'icône partage la ligne du libellé : le montant garde toute la largeur de la tuile. -->
           <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" VerticalAlignment="Center"
-                     TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
+                     TextWrapping="Wrap" ToolTip.Tip="{Binding Label}" Margin="0,0,8,0" />
           <Border Grid.Column="1" Classes="kpiicon" Background="{Binding Soft}" VerticalAlignment="Top">
             <mi:MaterialIcon Kind="{Binding Icon}" Foreground="{Binding Accent}" />
           </Border>
-          <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Value}" Classes="kpi" Margin="0,4,0,0" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Value}" />
+          <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Value}" Classes="kpi" Margin="0,4,0,0" TextWrapping="Wrap" ToolTip.Tip="{Binding Value}" />
           <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" Margin="0,2,0,0" />
         </Grid>
       </Border>
