@@ -1056,6 +1056,9 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<string>("PayerPhone")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("PrintSnapshotJson")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Reference")
                         .HasColumnType("TEXT");
 
