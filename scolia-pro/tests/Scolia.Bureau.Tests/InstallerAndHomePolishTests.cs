@@ -87,7 +87,7 @@ public sealed class InstallerAndHomePolishTests
             e.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "820")) >= 2);
         Assert.Contains(elements, e => e.Name.LocalName == "ItemsControl" &&
             (string?)e.Attribute("ItemsSource") == "{Binding QuickActions}");
-        Assert.Contains(elements, e => e.Name.LocalName == "UniformGrid" &&
+        Assert.Contains(elements, e => e.Name.LocalName == "AdaptiveTiles" &&
             e.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "190"));
         Assert.Contains(elements, e => e.Name.LocalName == "Button" &&
             (string?)e.Attribute("Command") == "{Binding Network}");
