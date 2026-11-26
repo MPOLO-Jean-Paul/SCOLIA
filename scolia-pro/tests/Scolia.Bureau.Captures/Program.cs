@@ -512,7 +512,7 @@ if (args.Length > 3 && args[3] == "contraste")
         }
         if (!Preferences.MobileLayout)
         {
-            foreach (var label in new[] { "Reliez cet appareil au serveur de votre établissement.", "ou sur le Wi-Fi de l'établissement", "Rechercher le serveur" })
+            foreach (var label in new[] { "Reliez cet appareil au serveur de votre établissement.", "ou via le Wi-Fi", "Rechercher le serveur" })
             {
                 var item = visible.FirstOrDefault(t => t.Text == label);
                 if (item is null) { failures++; Console.WriteLine($"ECHEC : libellé absent : {label}"); }
