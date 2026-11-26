@@ -41,6 +41,7 @@ public static class LiveRefresh
         private readonly DispatcherTimer timer;
         private bool attached;
         private int posted;
+        private int generation;
 
         public Watcher(Control control)
         {
@@ -55,6 +56,7 @@ public static class LiveRefresh
         {
             if (attached) return;
             attached = true;
+            Interlocked.Increment(ref generation);
             RemoteConnection.HostStateChanged += OnHostChanged;
             timer.Start();
         }
@@ -62,6 +64,7 @@ public static class LiveRefresh
         private void OnDetached(object? sender, VisualTreeAttachmentEventArgs e)
         {
             attached = false;
+            Interlocked.Increment(ref generation);
             RemoteConnection.HostStateChanged -= OnHostChanged;
             timer.Stop();
         }
@@ -70,10 +73,11 @@ public static class LiveRefresh
         {
             // Coalescer les rafales du relais sur le dispatcher au lieu d'empiler des mises en page.
             if (Interlocked.Exchange(ref posted, 1) != 0) return;
+            var captured = Volatile.Read(ref generation);
             Dispatcher.UIThread.Post(() =>
             {
                 Interlocked.Exchange(ref posted, 0);
-                Refresh();
+                if (captured == Volatile.Read(ref generation)) Refresh();
             }, DispatcherPriority.Background);
         }
 

@@ -93,6 +93,8 @@ public sealed class PhoneHeaderSearchVm : Observable
         set
         {
             var query = value ?? string.Empty;
+            if (string.Equals(Query, query, StringComparison.Ordinal)) return;
+            var hadQuery = HasQuery;
             switch (shell.Current)
             {
                 case StudentsPage p: p.Search = query; break;
@@ -107,7 +109,7 @@ public sealed class PhoneHeaderSearchVm : Observable
                 default: return;
             }
             Raise(nameof(Query));
-            Raise(nameof(HasQuery));
+            if (hadQuery != HasQuery) Raise(nameof(HasQuery));
         }
     }
     public void ActivateOrClose()
