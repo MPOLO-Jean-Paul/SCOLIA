@@ -14,7 +14,7 @@
           <mi:MaterialIcon Kind="ChevronLeft" />
         </Button>
         <TextBlock Grid.Column="1" Text="Mon compte" IsVisible="{Binding ShowList}" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" Margin="4,0,0,0" />
-        <TextBlock Grid.Column="1" Text="{Binding DetailTitle}" IsVisible="{Binding ShowDetail}" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" Margin="4,0,0,0" />
+        <TextBlock Grid.Column="1" Text="{Binding DetailTitle}" TextWrapping="Wrap" IsVisible="{Binding ShowDetail}" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" Margin="4,0,0,0" />
       </Grid>
     </Border>
 
@@ -40,10 +40,10 @@
             <ItemsControl ItemsSource="{Binding Items}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Button Classes="phonerow" Command="{Binding $parent[ItemsControl].DataContext.OpenItem}" CommandParameter="{Binding}" IsVisible="{Binding Value, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter=infos}">
+                  <Button Classes="phonerow" AutomationProperties.Name="{Binding Label}" Command="{Binding $parent[ItemsControl].DataContext.OpenItem}" CommandParameter="{Binding}" IsVisible="{Binding Value, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter=infos}">
                     <Grid ColumnDefinitions="Auto,*,Auto">
                       <Border Classes="appicon medium" Background="{Binding Brush}" Margin="0,0,12,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                      <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
                       <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />
                     </Grid>
                   </Button>

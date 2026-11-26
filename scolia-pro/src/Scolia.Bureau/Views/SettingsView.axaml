@@ -38,10 +38,10 @@
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     </Style>
-    <Style Selector="Button.settingsentry:pointerover">
+    <Style Selector="Button.settingsentry:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
-    <Style Selector="Button.settingsentry:pressed">
+    <Style Selector="Button.settingsentry:pressed /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
     <!-- Fiches tactiles : codes, statut et édition sont lisibles sans tableau horizontal. -->
@@ -56,7 +56,7 @@
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Margin" Value="0,0,0,8" />
     </Style>
-    <Style Selector="Button.sectionrow:pointerover, Button.sectionrow:pressed">
+    <Style Selector="Button.sectionrow:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.sectionrow:pressed /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
   </UserControl.Styles>
@@ -65,24 +65,24 @@
     <Border Classes="card" Grid.Column="0" Padding="6,10" VerticalAlignment="Top" IsVisible="{Binding NotPhone}">
       <StackPanel Spacing="4">
         <TextBlock Text="ÉTABLISSEMENT" Classes="caption" Margin="10,0,0,2" IsVisible="{Binding HasSchoolSections}" />
-        <ListBox Classes="side" ItemsSource="{Binding SchoolSections}" SelectedItem="{Binding SchoolSection}" Background="Transparent" BorderThickness="0" IsVisible="{Binding HasSchoolSections}">
+        <ListBox Classes="side" ItemsSource="{Binding SchoolSections}" SelectedItem="{Binding SchoolSection}" Background="Transparent" BorderThickness="0" IsVisible="{Binding HasSchoolSections}" AutomationProperties.Name="Rubriques de l’établissement">
           <ListBox.ItemTemplate>
             <DataTemplate>
-              <StackPanel Orientation="Horizontal" Spacing="10">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <Border Classes="appicon" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
-              </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" ToolTip.Tip="{Binding Label}" />
+              </Grid>
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
         <TextBlock Text="CET APPAREIL" Classes="caption" Margin="10,10,0,2" />
-        <ListBox Classes="side" ItemsSource="{Binding PosteSections}" SelectedItem="{Binding PosteSection}" Background="Transparent" BorderThickness="0">
+        <ListBox Classes="side" ItemsSource="{Binding PosteSections}" SelectedItem="{Binding PosteSection}" Background="Transparent" BorderThickness="0" AutomationProperties.Name="Rubriques de cet appareil">
           <ListBox.ItemTemplate>
             <DataTemplate>
-              <StackPanel Orientation="Horizontal" Spacing="10">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <Border Classes="appicon" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
-              </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" ToolTip.Tip="{Binding Label}" />
+              </Grid>
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
@@ -94,7 +94,7 @@
         <!-- Android : un écran de rubriques indépendant, pas un long formulaire ni une liste déroulante. -->
         <StackPanel IsVisible="{Binding MobileCategoriesVisible}" Spacing="12">
           <TextBlock Text="Configuration" FontSize="{DynamicResource FsTitle}" FontWeight="SemiBold" Margin="4,2,0,0" />
-          <TextBlock Text="Choisissez la rubrique à personnaliser." Classes="muted" Margin="4,0,0,6" />
+          <TextBlock Text="Choisissez la rubrique à personnaliser." Classes="muted" Margin="4,0,0,6" TextWrapping="Wrap" />
 
           <StackPanel IsVisible="{Binding HasSchoolSections}" Spacing="5">
             <TextBlock Text="ÉTABLISSEMENT" Classes="caption" Margin="12,4,0,4" />
@@ -102,7 +102,7 @@
               <ItemsControl ItemsSource="{Binding SchoolSections}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Button Classes="settingsentry"
+                    <Button Classes="settingsentry" AutomationProperties.Name="{Binding Label}"
                             Command="{Binding $parent[ItemsControl].DataContext.OpenMobileSection}" CommandParameter="{Binding}">
                       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                         <Border Classes="appicon medium" Background="{Binding Brush}">
@@ -125,7 +125,7 @@
               <ItemsControl ItemsSource="{Binding PosteSections}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Button Classes="settingsentry"
+                    <Button Classes="settingsentry" AutomationProperties.Name="{Binding Label}"
                             Command="{Binding $parent[ItemsControl].DataContext.OpenMobileSection}" CommandParameter="{Binding}">
                       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                         <Border Classes="appicon medium" Background="{Binding Brush}">
@@ -278,7 +278,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
               <TextBlock Text="Code d'invitation de l'établissement" Classes="caption" />
               <TextBox Text="{Binding License.Invitation, Mode=TwoWay}"
                        PasswordChar="●" PlaceholderText="Invitation fournie par JP-Services"
-                       MaxLength="140" />
+                       MaxLength="140" AutomationProperties.Name="Code d’invitation de l’établissement" />
               <CheckBox IsChecked="{Binding License.Consent, Mode=TwoWay}"
                         Content="J'autorise ce serveur à déclarer les seules métadonnées commerciales annoncées." />
               <Button Classes="primary" Command="{Binding License.Enroll}"
@@ -328,7 +328,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <TextBlock Text="Modifier les mois et la date limite" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
               </StackPanel>
             </Button>
-            <ListBox ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear}" IsVisible="{Binding Phone}" Background="Transparent" BorderThickness="0">
+            <ListBox ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear}" IsVisible="{Binding Phone}" Background="Transparent" BorderThickness="0" AutomationProperties.Name="Années scolaires">
               <ListBox.ItemTemplate><DataTemplate>
                 <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="8,10">
                   <StackPanel Spacing="5">
@@ -342,7 +342,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 </Border>
               </DataTemplate></ListBox.ItemTemplate>
             </ListBox>
-            <DataGrid ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420" IsVisible="{Binding NotPhone}" infra:GridPriority.Adaptive="True">
+            <DataGrid ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420" IsVisible="{Binding NotPhone}" infra:GridPriority.Adaptive="True" AutomationProperties.Name="Années scolaires">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Année" Binding="{Binding Label}" Width="Auto" MinWidth="130" />
                 <DataGridTextColumn Header="Période" Binding="{Binding Period}" Width="*" MinWidth="250" />
@@ -390,7 +390,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
               <ItemsControl ItemsSource="{Binding SectionRows}" IsVisible="{Binding HasSectionRows}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Button Classes="sectionrow"
+                    <Button Classes="sectionrow" AutomationProperties.Name="{Binding Name}"
                             Command="{Binding $parent[ItemsControl].DataContext.EditSectionOnPhone}"
                             CommandParameter="{Binding}">
                       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
@@ -417,7 +417,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <StackPanel Spacing="8" HorizontalAlignment="Center">
                   <mi:MaterialIcon Kind="ViewGridPlus" Width="34" Height="34"
                                    HorizontalAlignment="Center" Foreground="{DynamicResource AccentBrush}" />
-                  <TextBlock Text="Aucune section pour le moment" FontWeight="SemiBold" TextAlignment="Center" />
+                  <TextBlock Text="Aucune section pour le moment" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
                   <TextBlock Text="Créez votre première filière avec le bouton ci-dessus."
                              Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
                 </StackPanel>
@@ -425,7 +425,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
             </StackPanel>
             <!-- Sur ordinateur, conserver la grille et ses actions de barre d'outils. -->
             <DataGrid ItemsSource="{Binding SectionRows}" SelectedItem="{Binding SelectedSection}"
-                      AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420" IsVisible="{Binding NotPhone}">
+                      AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420" IsVisible="{Binding NotPhone}" infra:GridPriority.Adaptive="True" AutomationProperties.Name="Sections de l’établissement">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="120" />
                 <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="*" MinWidth="140" />
@@ -440,7 +440,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
         <!-- Catégories de frais : inscription, examen, tenue… avec leur montant -->
         <Border Classes="card" IsVisible="{Binding IsFees}">
           <StackPanel Spacing="8">
-            <ListBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" IsVisible="{Binding Phone}" Background="Transparent" BorderThickness="0">
+            <ListBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" IsVisible="{Binding Phone}" Background="Transparent" BorderThickness="0" AutomationProperties.Name="Catégories de frais">
               <ListBox.ItemTemplate><DataTemplate>
                 <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="8,10">
                   <StackPanel Spacing="5">
@@ -453,7 +453,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 </Border>
               </DataTemplate></ListBox.ItemTemplate>
             </ListBox>
-            <DataGrid ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420" IsVisible="{Binding NotPhone}" infra:GridPriority.Adaptive="True">
+            <DataGrid ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420" IsVisible="{Binding NotPhone}" infra:GridPriority.Adaptive="True" AutomationProperties.Name="Catégories de frais">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Catégorie" Binding="{Binding Name}" Width="*" MinWidth="160" />
                 <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="120" />
@@ -483,7 +483,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
               <ItemsControl ItemsSource="{Binding Promotions}" IsVisible="{Binding HasPromotionRows}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Button Classes="sectionrow"
+                    <Button Classes="sectionrow" AutomationProperties.Name="{Binding Name}"
                             Command="{Binding $parent[ItemsControl].DataContext.EditPromotionOnPhone}"
                             CommandParameter="{Binding}">
                       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
@@ -521,7 +521,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
               </Border>
             </StackPanel>
             <DataGrid ItemsSource="{Binding Promotions}" SelectedItem="{Binding SelectedPromotion}"
-                      AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="520" IsVisible="{Binding NotPhone}">
+                      AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="520" IsVisible="{Binding NotPhone}" AutomationProperties.Name="Promotions">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="84" />
                 <DataGridTextColumn Header="Désignation" Binding="{Binding Name}" Width="*" MinWidth="140" />
@@ -540,7 +540,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
               <StackPanel Spacing="12">
                 <TextBlock Text="Thème" FontWeight="SemiBold" />
                 <UniformGrid Columns="3" infra:Adaptive.MinItemWidth="110">
-                  <RadioButton Classes="themecard" GroupName="theme" IsChecked="{Binding ThemeSystem}" Margin="0,0,10,0">
+                  <RadioButton Classes="themecard" GroupName="theme" IsChecked="{Binding ThemeSystem}" Margin="0,0,10,0" AutomationProperties.Name="Thème système">
                     <StackPanel Spacing="8">
                       <Border Classes="themepreview" Height="70">
                         <Grid ColumnDefinitions="*,*">
@@ -551,7 +551,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                       <TextBlock Text="{Binding SystemThemeLabel}" HorizontalAlignment="Center" />
                     </StackPanel>
                   </RadioButton>
-                  <RadioButton Classes="themecard" GroupName="theme" IsChecked="{Binding ThemeLight}" Margin="0,0,10,0">
+                  <RadioButton Classes="themecard" GroupName="theme" IsChecked="{Binding ThemeLight}" Margin="0,0,10,0" AutomationProperties.Name="Thème clair">
                     <StackPanel Spacing="8">
                       <Border Classes="themepreview" Height="70" Background="#F5F5F7">
                         <StackPanel Margin="10,12" Spacing="6">
@@ -562,7 +562,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                       <TextBlock Text="Clair" HorizontalAlignment="Center" />
                     </StackPanel>
                   </RadioButton>
-                  <RadioButton Classes="themecard" GroupName="theme" IsChecked="{Binding ThemeDark}">
+                  <RadioButton Classes="themecard" GroupName="theme" IsChecked="{Binding ThemeDark}" AutomationProperties.Name="Thème sombre">
                     <StackPanel Spacing="8">
                       <Border Classes="themepreview" Height="70" Background="#1C1C1E">
                         <StackPanel Margin="10,12" Spacing="6">
@@ -609,7 +609,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Quadrillage des tableaux" />
                   <TextBlock Text="Une ligne fine entre les lignes des listes." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Grid}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Grid}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Quadrillage des tableaux" />
               </Grid>
               </StackPanel>
             </Border>
@@ -623,7 +623,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Police" />
                   <TextBlock Text="{Binding FontHint}" Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding Fonts}" SelectedItem="{Binding Font}" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Fonts}" SelectedItem="{Binding Font}" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center" AutomationProperties.Name="Police de caractères" />
               </Grid>
               <Border Classes="prefsep" />
               <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
@@ -633,7 +633,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 </StackPanel>
                 <Grid Grid.Column="1" ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" MinWidth="100" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center">
                   <TextBlock Text="A" FontSize="12" VerticalAlignment="Center" />
-                  <Slider Grid.Column="1" Minimum="0.8" Maximum="1.6" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding TextScale, Mode=TwoWay}" MinWidth="0" VerticalAlignment="Center" />
+                  <Slider Grid.Column="1" Minimum="0.8" Maximum="1.6" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding TextScale, Mode=TwoWay}" MinWidth="0" VerticalAlignment="Center" AutomationProperties.Name="Taille du texte" />
                   <TextBlock Grid.Column="2" Text="A" FontSize="20" VerticalAlignment="Center" />
                   <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding TextScaleLabel}" TextAlignment="Right" FontWeight="SemiBold" />
                 </Grid>
@@ -644,7 +644,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Densité compacte" />
                   <TextBlock Text="Lignes et boutons plus serrés, pour voir plus de données à la fois." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Compact}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Compact}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Densité compacte" />
               </Grid>
               </StackPanel>
             </Border>
@@ -666,7 +666,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Au lancement" />
                   <TextBlock Text="Taille de la fenêtre une fois connecté." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding StartupModes}" SelectedItem="{Binding Startup}" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding StartupModes}" SelectedItem="{Binding Startup}" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center" AutomationProperties.Name="Page au démarrage" />
               </Grid>
               <Border Classes="prefsep" />
               <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
@@ -674,7 +674,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Volet latéral" />
                   <TextBlock Text="La liste des pages à gauche." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Sidebar}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Sidebar}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Volet de navigation" />
               </Grid>
               <Border Classes="prefsep" />
               <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
@@ -682,7 +682,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Ruban réduit" />
                   <TextBlock Text="Le ruban ne montre que ses onglets ; un clic l'ouvre." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.RibbonCollapsed}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.RibbonCollapsed}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Ruban réduit" />
               </Grid>
               <Border Classes="prefsep" />
               <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
@@ -690,7 +690,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Barre d'état" />
                   <TextBlock Text="En bas : compte connecté, serveur et zoom." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.StatusBar}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.StatusBar}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Barre d’état" />
               </Grid>
               <Border Classes="prefsep" />
               <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
@@ -698,7 +698,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Info-bulles" />
                   <TextBlock Text="La description d'une commande au survol." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Tips}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Tips}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Info-bulles" />
               </Grid>
               </StackPanel>
             </Border>
@@ -712,7 +712,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Animations" />
                   <TextBlock Text="Fondus et glissements à l'ouverture des fenêtres et des boîtes. Coupées, l'interface change d'un coup." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Animations}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Animations}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Animations" />
               </Grid>
               <Border Classes="prefsep" />
               <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
@@ -720,7 +720,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Transition entre les pages" />
                   <TextBlock Text="Un fondu court quand on passe d'une page à l'autre." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.PageTransitions}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.PageTransitions}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Transitions entre les pages" />
               </Grid>
               <Border Classes="prefsep" />
               <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
@@ -728,7 +728,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Vitesse des transitions" />
                   <TextBlock Text="Rapide pour un poste lent, douce pour plus de confort." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding Speeds}" SelectedItem="{Binding Speed}" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Speeds}" SelectedItem="{Binding Speed}" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center" AutomationProperties.Name="Vitesse des transitions" />
               </Grid>
               <Border Classes="prefsep" />
               <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420">
@@ -736,7 +736,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Écran d'ouverture" />
                   <TextBlock Text="Durée de la roue entre la connexion et l'accueil." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding OpeningDurations}" SelectedItem="{Binding OpeningDuration}" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding OpeningDurations}" SelectedItem="{Binding OpeningDuration}" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center" AutomationProperties.Name="Durée de l’écran d’ouverture" />
               </Grid>
               </StackPanel>
             </Border>
@@ -750,7 +750,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Sons" />
                   <TextBlock Text="Coupés, SCOLIA reste silencieux." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Sounds}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Sounds}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Sons" />
               </Grid>
               <Border Classes="prefsep" />
               <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420" IsEnabled="{Binding Prefs.Sounds}">
@@ -760,7 +760,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 </StackPanel>
                 <Grid Grid.Column="1" ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" MinWidth="100" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center">
                   <mi:MaterialIcon Kind="VolumeLow" Width="18" Height="18" />
-                  <Slider Grid.Column="1" Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding Volume, Mode=TwoWay}" MinWidth="0" VerticalAlignment="Center" />
+                  <Slider Grid.Column="1" Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding Volume, Mode=TwoWay}" MinWidth="0" VerticalAlignment="Center" AutomationProperties.Name="Volume sonore" />
                   <mi:MaterialIcon Grid.Column="2" Kind="VolumeHigh" Width="18" Height="18" />
                   <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding VolumeLabel}" TextAlignment="Right" FontWeight="SemiBold" />
                 </Grid>
@@ -771,7 +771,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Style des sons" />
                   <TextBlock Text="{Binding SoundStyleHint}" Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding SoundStyles}" SelectedItem="{Binding SoundStyle}" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding SoundStyles}" SelectedItem="{Binding SoundStyle}" MaxWidth="320" HorizontalAlignment="Stretch" VerticalAlignment="Center" AutomationProperties.Name="Style des sons" />
               </Grid>
               </StackPanel>
             </Border>
@@ -785,7 +785,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <Button Grid.Column="1" Classes="small" Command="{Binding TestSound}" CommandParameter="Success" ToolTip.Tip="Écouter ce son" Margin="0,0,12,0" VerticalAlignment="Center">
                   <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="PlayOutline" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
                 </Button>
-                <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundSuccess}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundSuccess}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Son de réussite" />
               </Grid>
               <Border Classes="prefsep" />
               <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow" infra:Adaptive.StackBelow="500">
@@ -796,7 +796,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <Button Grid.Column="1" Classes="small" Command="{Binding TestSound}" CommandParameter="Error" ToolTip.Tip="Écouter ce son" Margin="0,0,12,0" VerticalAlignment="Center">
                   <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="PlayOutline" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
                 </Button>
-                <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundError}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundError}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Son d’erreur" />
               </Grid>
               <Border Classes="prefsep" />
               <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow" infra:Adaptive.StackBelow="500">
@@ -807,7 +807,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <Button Grid.Column="1" Classes="small" Command="{Binding TestSound}" CommandParameter="Notification" ToolTip.Tip="Écouter ce son" Margin="0,0,12,0" VerticalAlignment="Center">
                   <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="PlayOutline" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
                 </Button>
-                <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundNotify}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundNotify}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Son de notification" />
               </Grid>
               <Border Classes="prefsep" />
               <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow" infra:Adaptive.StackBelow="500">
@@ -818,7 +818,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <Button Grid.Column="1" Classes="small" Command="{Binding TestSound}" CommandParameter="Opening" ToolTip.Tip="Écouter ce son" Margin="0,0,12,0" VerticalAlignment="Center">
                   <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="PlayOutline" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
                 </Button>
-                <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundOpening}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundOpening}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Son d’ouverture" />
               </Grid>
               </StackPanel>
             </Border>
@@ -835,7 +835,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <Button Grid.Column="1" Classes="small" Command="{Binding TestAlert}" ToolTip.Tip="Voir une bannière d'exemple" Margin="0,0,12,0" VerticalAlignment="Center">
                   <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="BellRingOutline" Width="14" Height="14" /><TextBlock Text="Essayer" /></StackPanel>
                 </Button>
-                <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.Alerts}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.Alerts}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Bannières des autres postes" />
               </Grid>
               <Border Classes="prefsep" />
               <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420" IsEnabled="{Binding Prefs.Alerts}">
@@ -843,7 +843,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Encaissements" />
                   <TextBlock Text="Nouveau reçu, lot de paiements ou reçu annulé." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.AlertPayments}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.AlertPayments}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Notifications des encaissements" />
               </Grid>
               <Border Classes="prefsep" />
               <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420" IsEnabled="{Binding Prefs.Alerts}">
@@ -851,7 +851,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Sauvegardes" />
                   <TextBlock Text="Sauvegarde manuelle ou automatique faite sur l'ordinateur principal." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.AlertBackups}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.AlertBackups}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Notifications des sauvegardes" />
               </Grid>
               <Border Classes="prefsep" />
               <Grid ColumnDefinitions="*,Auto" Classes="prefrow" infra:Adaptive.StackBelow="420" IsEnabled="{Binding Prefs.Alerts}">
@@ -859,7 +859,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <TextBlock Text="Rapport journalier" />
                   <TextBlock Text="Le PDF du jour est prêt, à l'heure programmée." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.AlertReports}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.AlertReports}" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="Notifications du rapport journalier" />
               </Grid>
               </StackPanel>
             </Border>

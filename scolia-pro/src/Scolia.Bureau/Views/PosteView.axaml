@@ -18,12 +18,12 @@
           <Button infra:Icons.Lead="ImageSearchOutline" Content="Importer une photo QR" Command="{Binding ImportQrImage}" Margin="0,0,10,6" IsVisible="{Binding CanImportQrImage}" />
           <Button infra:Icons.Lead="ServerOutline" Classes="ghost" Content="Utiliser cet ordinateur comme serveur" Command="{Binding UseThisComputer}" IsVisible="{Binding CanBecomeServer}" Margin="0,0,10,6" />
         </WrapPanel>
-        <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" />
+        <ProgressBar AutomationProperties.Name="Recherche des serveurs" IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" />
         <TextBlock Text="{Binding SearchLine}" IsVisible="{Binding HasSearchLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
         <ItemsControl ItemsSource="{Binding Servers}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Grid ColumnDefinitions="*,Auto" Margin="0,6">
+              <Grid ColumnDefinitions="*,Auto" Margin="0,6" ColumnSpacing="8" infra:Adaptive.StackBelow="320">
                 <StackPanel VerticalAlignment="Center" Spacing="2">
                   <TextBlock Text="{Binding School}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
@@ -67,19 +67,19 @@
             <Border Classes="chip">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <Ellipse Width="8" Height="8" Fill="{Binding WifiBrush}" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding WifiState}" FontSize="{DynamicResource FsSmall}" />
+                <TextBlock Text="{Binding WifiState}" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
               </StackPanel>
             </Border>
             <Border Classes="chip" IsVisible="{Binding Remote.CanManage}">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <Ellipse Width="8" Height="8" Fill="{Binding InternetBrush}" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding InternetState}" FontSize="{DynamicResource FsSmall}" />
+                <TextBlock Text="{Binding InternetState}" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
               </StackPanel>
             </Border>
             <Border Classes="chip" IsVisible="{Binding CanManageDevices}">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <mi:MaterialIcon Kind="CellphoneLink" Width="14" Height="14" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding DevicesState}" FontSize="{DynamicResource FsSmall}" />
+                <TextBlock Text="{Binding DevicesState}" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
               </StackPanel>
             </Border>
           </WrapPanel>
@@ -122,7 +122,7 @@
           </StackPanel>
           <ToggleSwitch Grid.Column="2" VerticalAlignment="Center" OnContent="" OffContent="" IsChecked="{Binding LanEnabled, Mode=OneWay}"
                         Command="{Binding ToggleLan}" IsEnabled="{Binding IsWindows}"
-                        ToolTip.Tip="Ouvrir ou fermer l'accès des autres postes du réseau local" />
+                        ToolTip.Tip="Ouvrir ou fermer l'accès des autres postes du réseau local" AutomationProperties.Name="Partager sur le Wi-Fi" />
         </Grid>
         <Border Height="1" Background="{DynamicResource LineBrush}" Margin="58,0,0,0" IsVisible="{Binding HasAddresses}" />
         <Grid ColumnDefinitions="*,Auto" Margin="58,12,18,14" IsVisible="{Binding HasAddresses}" ColumnSpacing="12">
@@ -156,7 +156,7 @@
               <Border Classes="chip" Margin="0" Padding="8,1">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <Ellipse Width="8" Height="8" Fill="{Binding Remote.StatusBrush}" VerticalAlignment="Center" />
-                  <TextBlock Text="{Binding Remote.StatusTitle}" FontSize="{DynamicResource FsSmall}" />
+                  <TextBlock Text="{Binding Remote.StatusTitle}" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
                 </StackPanel>
               </Border>
             </StackPanel>
@@ -213,7 +213,7 @@
             <TextBlock Text="{Binding ServiceLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
           </StackPanel>
           <ToggleSwitch Grid.Column="2" VerticalAlignment="Center" OnContent="" OffContent="" IsChecked="{Binding ServiceInstalled, Mode=OneWay}"
-                        Command="{Binding ToggleService}" IsEnabled="{Binding IsWindows}" ToolTip.Tip="Démarrer SCOLIA avec Windows" />
+                        Command="{Binding ToggleService}" IsEnabled="{Binding IsWindows}" ToolTip.Tip="Démarrer SCOLIA avec Windows" AutomationProperties.Name="Démarrer avec Windows" />
         </Grid>
 
         <!-- Les autres postes dépendent de cet ordinateur : il ne s'endort pas, même fenêtre réduite -->
