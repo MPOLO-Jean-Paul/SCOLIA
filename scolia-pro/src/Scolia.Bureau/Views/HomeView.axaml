@@ -135,7 +135,7 @@
         <ItemsControl x:Name="WelcomeQuickActions" ItemsSource="{Binding QuickActions}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
-              <UniformGrid Columns="2" infra:Adaptive.MinItemWidth="240" />
+              <infra:AdaptiveTiles MinItemWidth="240" MaxColumns="2" />
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
@@ -204,7 +204,7 @@
         <ItemsControl ItemsSource="{Binding Kpis}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
-              <UniformGrid Columns="4" infra:Adaptive.MinItemWidth="190" />
+              <infra:AdaptiveTiles MinItemWidth="190" MaxColumns="4" />
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
@@ -237,7 +237,7 @@
         <ItemsControl x:Name="FeatureCards" ItemsSource="{Binding MoreTools}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
-              <UniformGrid Columns="2" infra:Adaptive.MinItemWidth="240" />
+              <infra:AdaptiveTiles MinItemWidth="240" MaxColumns="2" />
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
@@ -278,7 +278,7 @@
                   <ItemsControl ItemsSource="{Binding Items}">
                     <ItemsControl.ItemsPanel>
                       <ItemsPanelTemplate>
-                        <UniformGrid Columns="4" infra:Adaptive.MinItemWidth="170" />
+                        <infra:AdaptiveTiles MinItemWidth="170" MaxColumns="4" />
                       </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
