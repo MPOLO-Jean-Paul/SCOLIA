@@ -24,6 +24,39 @@ public sealed class MobileIosAuthenticationViewsTests
         node.Attributes().Any(a => (a.Name.LocalName == key || a.Name.LocalName.EndsWith("." + key, StringComparison.Ordinal)) && a.Value == value);
 
     [Fact]
+    public void Les_trois_ecrans_utilisent_les_vecteurs_Fluent_et_conservent_les_reserves_de_saisie()
+    {
+        foreach (var (file, scroll, fields) in new[]
+        {
+            ("LoginView.axaml", "IosLoginScroll", new[] { "IosUserNameBox", "IosPasswordBox", "IosNewPasswordBox", "IosConfirmPasswordBox", "IosRecoveryCodeBox" }),
+            ("LockScreenView.axaml", "IosLockScroll", new[] { "IosLockCode" }),
+        })
+        {
+            var active = Assert.Single(Elements(file), e => Attribute(e, "Name", scroll));
+            var nodes = active.Descendants().ToArray();
+            foreach (var name in fields)
+            {
+                var field = Assert.Single(nodes, e => Attribute(e, "Name", name));
+                var grid = field.Parent!;
+                Assert.Contains(grid.Elements(), e => e.Name.LocalName == "PathIcon" && Attribute(e, "Classes", "authinputicon"));
+                var secret = name != "IosUserNameBox";
+                Assert.True(Attribute(field, "Padding", secret ? "46,0,54,0" : "46,0,14,0"));
+                if (secret)
+                {
+                    Assert.True(Attribute(field, "IsSensitive", "True"));
+                    Assert.Contains(grid.Descendants(), e => e.Name.LocalName == "PathIcon" &&
+                        e.Attributes().Any(a => a.Value.Contains("AuthGlyphs.EyeConverter")));
+                }
+            }
+            Assert.Contains(nodes, e => e.Name.LocalName == "PathIcon" && Attribute(e, "Data", "{x:Static infra:AuthGlyphs.Fingerprint}"));
+        }
+        Assert.NotNull(AuthGlyphs.Person);
+        Assert.NotNull(AuthGlyphs.Lock);
+        Assert.NotNull(AuthGlyphs.Fingerprint);
+        Assert.NotSame(AuthGlyphs.Eye, AuthGlyphs.EyeOff);
+    }
+
+    [Fact]
     public void La_reprise_iOS_conserve_le_code_et_la_biometrie()
     {
         var nodes = Elements("LockScreenView.axaml");
