@@ -93,6 +93,24 @@ public class CollectionSyncTests
     }
 
     [Fact]
+    public void Des_photographies_successives_reproduisent_exactement_leur_ordre()
+    {
+        var random = new Random(136);
+        var rows = new ObservableCollection<int?>();
+        var reset = false;
+        rows.CollectionChanged += (_, e) => reset |= e.Action == NotifyCollectionChangedAction.Reset;
+        for (var i = 0; i < 200; i++)
+        {
+            var incoming = Enumerable.Range(0, random.Next(0, 80))
+                .Select(_ => random.Next(0, 8) is var n && n == 0 ? (int?)null : n)
+                .ToArray();
+            CollectionSync.Apply(rows, incoming);
+            Assert.Equal(incoming, rows.ToArray());
+        }
+        Assert.False(reset);
+    }
+
+    [Fact]
     public async Task Une_commande_en_cours_ignore_un_second_appui()
     {
         var pending = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
