@@ -7,18 +7,18 @@
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
       <WrapPanel>
         <StackPanel Classes="field">
-          <TextBlock Text="Promotion" Classes="fieldlabel" />
-          <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+          <TextBlock Text="Promotion" Classes="fieldlabel" TextWrapping="Wrap" />
+          <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" AutomationProperties.Name="Promotion" />
         </StackPanel>
         <StackPanel Classes="field">
-          <TextBlock Text="Période" Classes="fieldlabel" />
-          <ComboBox Width="230" ItemsSource="{Binding Periods}" SelectedItem="{Binding Period}" />
+          <TextBlock Text="Période" Classes="fieldlabel" TextWrapping="Wrap" />
+          <ComboBox Width="230" ItemsSource="{Binding Periods}" SelectedItem="{Binding Period}" AutomationProperties.Name="Période" />
         </StackPanel>
         <CheckBox Content="Feuilles à relancer seulement" IsChecked="{Binding OnlyLate}" VerticalAlignment="Bottom" Margin="0,0,12,12" />
       </WrapPanel>
     </Border>
     <TextBlock Grid.Row="1" Text="{Binding Summary}" Classes="muted" TextWrapping="Wrap" Margin="4,0,4,8" />
-    <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" AutoGenerateColumns="False" IsReadOnly="True" AutomationProperties.Name="Progression de l’encodage">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="180" infra:GridPriority.Level="2" />
         <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="90" infra:GridPriority.Level="3" />

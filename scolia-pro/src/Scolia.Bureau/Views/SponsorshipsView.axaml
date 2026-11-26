@@ -7,7 +7,7 @@
   <c:EmptyState Icon="ShieldAccountOutline" Title="Aucune prise en charge"
                 Hint="{infra:Terms 'Une bourse ou une prise en charge s\'ajoute depuis la fiche de l\'apprenant, avec « Prise en charge ».'}"
                 IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
-  <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+  <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" AutomationProperties.Name="Prises en charge">
     <DataGrid.Columns>
       <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />
       <DataGridTextColumn Header="{infra:Terms 'Apprenant'}" Binding="{Binding Name}" Width="*" MinWidth="220" />
