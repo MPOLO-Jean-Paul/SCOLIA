@@ -373,7 +373,7 @@
               <mi:MaterialIcon Kind="{Binding CurrentIcon}" />
             </Border>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-              <TextBlock Text="{Binding Current.Heading}" FontSize="17" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding Current.Heading}" ToolTip.Tip="{Binding Current.Heading}" FontSize="17" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
               <!-- Le sous-titre porte l'état de la page : il passe sur deux lignes plutôt que d'être coupé. -->
               <TextBlock Text="{Binding Current.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}"
                          TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
@@ -388,7 +388,7 @@
                                Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
               <TextBox x:Name="HeaderFinderBox" Grid.Column="1" Classes="searchfield" MinHeight="{DynamicResource FieldHeight}"
                        Text="{Binding HeaderFinder.Query, Mode=TwoWay}" PlaceholderText="{Binding HeaderFinder.Placeholder}"
-                       GotFocus="OnHeaderFinderFocus" KeyDown="OnHeaderFinderKeyDown" ToolTip.Tip="{Binding GlobalSearchTip}" />
+                       GotFocus="OnHeaderFinderFocus" KeyDown="OnHeaderFinderKeyDown" ToolTip.Tip="{Binding GlobalSearchTip}" AutomationProperties.Name="Recherche générale" />
               <Button Grid.Column="3" Classes="baricon" Command="{Binding HeaderFinder.ClearQuery}" IsVisible="{Binding HeaderFinder.HasQuery}"
                       ToolTip.Tip="Effacer" Width="40" Height="40">
                 <mi:MaterialIcon Kind="Close" />
@@ -412,7 +412,7 @@
                                Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
               <TextBox x:Name="DesktopContextSearchBox" Grid.Column="1" Classes="searchfield"
                        Text="{Binding HeaderSearch.Query, Mode=TwoWay}" PlaceholderText="{Binding HeaderSearch.Placeholder}"
-                       KeyDown="OnDesktopContextSearchKeyDown" MinHeight="{DynamicResource FieldHeight}" />
+                       KeyDown="OnDesktopContextSearchKeyDown" MinHeight="{DynamicResource FieldHeight}" AutomationProperties.Name="{Binding HeaderSearch.Placeholder}" />
               <Button Grid.Column="2" Classes="baricon" Command="{Binding HeaderSearch.Clear}" IsVisible="{Binding HeaderSearch.HasQuery}"
                       ToolTip.Tip="Effacer" Width="40" Height="40">
                 <mi:MaterialIcon Kind="Close" />
@@ -433,7 +433,7 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Button Classes="hdr" Command="{Binding Command}" Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding Danger}" ToolTip.Tip="{Binding Hint}">
+                  <Button Classes="hdr" Command="{Binding Command}" Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding Danger}" ToolTip.Tip="{Binding Hint}" AutomationProperties.Name="{Binding Label}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <mi:MaterialIcon Kind="{Binding Icon, Converter={x:Static infra:Icons.LineConverter}}" Width="16" Height="16" />
                       <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
@@ -471,7 +471,7 @@
                 <Border Width="26" Height="26" CornerRadius="13" Background="{DynamicResource AccentBrush}">
                   <TextBlock Text="{Binding UserInitials}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource OnAccentBrush}" />
                 </Border>
-                <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" VerticalAlignment="Center" MaxWidth="140" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding AccountName}" ToolTip.Tip="{Binding AccountName}" FontWeight="SemiBold" VerticalAlignment="Center" MaxWidth="140" TextTrimming="CharacterEllipsis" />
               </StackPanel>
             </Button>
           </StackPanel>
@@ -498,7 +498,7 @@
             <StackPanel Orientation="Horizontal" Spacing="9">
               <mi:MaterialIcon Kind="{Binding CurrentIcon}" Width="18" Height="18"
                                Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
-              <TextBlock Text="{Binding Current.Title}" FontWeight="SemiBold" VerticalAlignment="Center"
+              <TextBlock Text="{Binding Current.Title}" ToolTip.Tip="{Binding Current.Title}" FontWeight="SemiBold" VerticalAlignment="Center"
                          MaxWidth="250" TextTrimming="CharacterEllipsis" />
             </StackPanel>
           </Border>
@@ -544,7 +544,7 @@
                       <Button Classes="startentry" Command="{Binding Open}" AutomationProperties.Name="{Binding Title}" ToolTip.Tip="{Binding Description}">
                         <StackPanel Spacing="7" HorizontalAlignment="Center" VerticalAlignment="Center">
                           <mi:MaterialIcon Kind="{Binding Icon}" Width="28" Height="28" Foreground="{DynamicResource TextBrush}" />
-                          <TextBlock Text="{Binding Title}" FontSize="14" HorizontalAlignment="Center" />
+                          <TextBlock Text="{Binding Title}" FontSize="14" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
                         </StackPanel>
                       </Button>
                     </DataTemplate>
@@ -580,7 +580,7 @@
                               <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding IsExpanded}" Margin="0,0,0,5">
                                 <ItemsControl.ItemTemplate>
                                   <DataTemplate>
-                                    <Button Classes="navitem" Classes.selected="{Binding IsSelected}" Command="{Binding Open}"
+                                    <Button Classes="navitem" Classes.selected="{Binding IsSelected}" Command="{Binding Open}" AutomationProperties.Name="{Binding Label}"
                                             Margin="0" HorizontalContentAlignment="Stretch">
                                       <Grid ColumnDefinitions="Auto,Auto,*">
                                         <Border Classes="navmark" Margin="-4,0,7,0" />

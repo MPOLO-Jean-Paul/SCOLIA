@@ -95,7 +95,7 @@
             <ItemsControl ItemsSource="{Binding Courses}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Button Classes="listrow" Command="{Binding Open}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,0,0,6" ToolTip.Tip="Ouvrir la feuille de ce cours">
+                  <Button Classes="listrow" Command="{Binding Open}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,0,0,6" ToolTip.Tip="{Binding Title}" AutomationProperties.Name="{Binding Title}">
                     <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
                       <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
                       <Border Grid.Column="1" CornerRadius="10" Padding="10,2" BorderThickness="1" BorderBrush="{Binding StateBrush}" VerticalAlignment="Top" Margin="10,0,0,0">
@@ -108,7 +108,7 @@
                       </TextBlock>
                       <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
                         <ProgressBar Classes="slim" Value="{Binding Percent, Mode=OneWay}" Maximum="100" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="1" Text="{Binding Progress}" Classes="muted" Margin="10,0,0,0" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding Progress}" ToolTip.Tip="{Binding Progress}" Classes="muted" Margin="10,0,0,0" VerticalAlignment="Center" />
                       </Grid>
                     </Grid>
                   </Button>
