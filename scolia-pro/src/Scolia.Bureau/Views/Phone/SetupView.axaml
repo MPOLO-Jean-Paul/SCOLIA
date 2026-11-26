@@ -121,13 +121,13 @@
               <Grid Height="52" Width="52" VerticalAlignment="Center" ClipToBounds="True">
                 <Border Background="{DynamicResource ToneBlue}" Opacity="0.12" CornerRadius="4" />
                 <Ellipse Fill="{DynamicResource ToneBlue}" Width="36" Height="36" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <mi:MaterialIcon Kind="ShieldCheckOutline" Foreground="White" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <PathIcon Data="{x:Static infra:AuthGlyphs.Shield}" Foreground="White" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Grid>
               <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
                 <TextBlock Text="ITM / IEM" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="Instituts techniques médicaux et d'enseignement médical" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
               </StackPanel>
-              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+              <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
             </Grid>
           </Button>
           <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="Maternelle" AutomationProperties.Name="École maternelle">
@@ -141,7 +141,7 @@
                 <TextBlock Text="École maternelle" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="Enseignement préscolaire" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
               </StackPanel>
-              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+              <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
             </Grid>
           </Button>
           <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="Primaire" AutomationProperties.Name="École primaire">
@@ -155,7 +155,7 @@
                 <TextBlock Text="École primaire" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="Classes et suivi des élèves" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
               </StackPanel>
-              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+              <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
             </Grid>
           </Button>
           <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="Secondaire" AutomationProperties.Name="École secondaire / technique">
@@ -169,7 +169,7 @@
                 <TextBlock Text="École secondaire / technique" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="Humanités, options et filières techniques" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
               </StackPanel>
-              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+              <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
             </Grid>
           </Button>
           <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="ComplexeScolaire" AutomationProperties.Name="Complexe scolaire">
@@ -183,7 +183,7 @@
                 <TextBlock Text="Complexe scolaire" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="Plusieurs cycles dans un même établissement" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
               </StackPanel>
-              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+              <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
             </Grid>
           </Button>
           <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="SuperieurLmd" AutomationProperties.Name="Université / institut supérieur">
@@ -191,13 +191,13 @@
               <Grid Height="52" Width="52" VerticalAlignment="Center" ClipToBounds="True">
                 <Border Background="{DynamicResource ToneIndigo}" Opacity="0.12" CornerRadius="4" />
                 <Ellipse Fill="{DynamicResource ToneIndigo}" Width="36" Height="36" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <mi:MaterialIcon Kind="School" Foreground="White" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <PathIcon Data="{x:Static infra:HomeGlyphs.School}" Foreground="White" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Grid>
               <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
                 <TextBlock Text="Université / institut supérieur" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="Enseignement supérieur et système LMD" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
               </StackPanel>
-              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+              <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
             </Grid>
           </Button>
 
@@ -274,7 +274,7 @@
                       <Grid ColumnDefinitions="90,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
                         <TextBox Classes="w11" Text="{Binding Code}" PlaceholderText="INF1" MaxLength="4" AutomationProperties.Name="Code de la promotion" />
                         <TextBox Classes="w11" Grid.Column="1" Text="{Binding Fee}" PlaceholderText="Montant" AutomationProperties.Name="Montant des frais" />
-                        <Button Grid.Column="2" Classes="toolicon" Command="{Binding Remove}" VerticalAlignment="Center"><mi:MaterialIcon Kind="Close" Width="16" Height="16" /></Button>
+                        <Button Grid.Column="2" Classes="toolicon" Command="{Binding Remove}" VerticalAlignment="Center"><PathIcon Data="{x:Static infra:HomeGlyphs.Dismiss}" Width="16" Height="16" /></Button>
                         <TextBox Classes="w11" Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Name}" PlaceholderText="Désignation" AutomationProperties.Name="Désignation de la promotion" />
                         <StackPanel Grid.Row="2" Grid.ColumnSpan="3" IsVisible="{Binding IsLmd}" Spacing="5">
                           <Grid ColumnDefinitions="*,70" ColumnSpacing="8">
@@ -344,7 +344,7 @@
 
         <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="10,8" IsVisible="{Binding HasError}">
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Top" />
+            <PathIcon Data="{x:Static infra:AuthGlyphs.Error}" Width="18" Height="18" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Top" />
             <TextBlock Grid.Column="1" Text="{Binding Error}" Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" />
           </Grid>
         </Border>
@@ -356,7 +356,7 @@
       <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
         <Button Classes="iossetupsecondary" Command="{Binding Back}" IsVisible="{Binding CanGoBack}" IsEnabled="{Binding !Busy}">
           <DockPanel>
-            <mi:MaterialIcon DockPanel.Dock="Left" Kind="ChevronLeft" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center" />
+            <PathIcon DockPanel.Dock="Left" Data="{x:Static infra:AuthGlyphs.Back}" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center" />
             <TextBlock Text="Retour" VerticalAlignment="Center" />
           </DockPanel>
         </Button>
@@ -374,7 +374,7 @@
         </Button>
         <Button x:Name="SetupFinishButton" AutomationProperties.Name="Terminer la configuration" Grid.Column="1" Classes="iossetupprimary" Command="{Binding Finish}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}">
           <DockPanel>
-            <mi:MaterialIcon DockPanel.Dock="Left" Kind="CheckCircleOutline" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center" />
+            <PathIcon DockPanel.Dock="Left" Data="{x:Static infra:AuthGlyphs.Check}" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center" />
             <Panel>
               <TextBlock Text="Terminer" VerticalAlignment="Center" IsVisible="{Binding !Busy}" />
               <TextBlock Text="En cours…" VerticalAlignment="Center" IsVisible="{Binding Busy}" />
