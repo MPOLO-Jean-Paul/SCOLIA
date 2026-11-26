@@ -659,10 +659,22 @@ public partial class MainView : UserControl
         var height = DesktopArea.Bounds.Height;
         if (width <= 0 || height <= 0) return;
         var corner = anchor.TranslatePoint(new Point(0, anchor.Bounds.Height), DesktopArea);
-        var top = Math.Clamp((corner?.Y ?? 0) + 6, 0, Math.Max(0, height - 160));
-        panel.Width = Math.Min(420, Math.Max(0, width - 16));
-        panel.MaxHeight = Math.Max(0, height - top - 8);
-        panel.Margin = new Thickness(0, top, 8, 8);
+        var bounds = CommandMenuBounds(new Size(width, height), corner?.Y ?? 0);
+        if (panel.Width != bounds.Width) panel.Width = bounds.Width;
+        if (panel.MaxHeight != bounds.Height) panel.MaxHeight = bounds.Height;
+        var margin = new Thickness(0, bounds.Y, 8, 8);
+        if (panel.Margin != margin) panel.Margin = margin;
+    }
+
+    /// <summary>Dimensions logiques du panneau, limitées au viewport client (indépendantes du DPI de l'écran).</summary>
+    public static Rect CommandMenuBounds(Size viewport, double anchorBottom)
+    {
+        var width = Math.Max(0, viewport.Width);
+        var height = Math.Max(0, viewport.Height);
+        var top = Math.Clamp(anchorBottom + 6, 0, Math.Max(0, height - 160));
+        var panelWidth = Math.Min(420, Math.Max(0, width - 16));
+        return new Rect(Math.Max(0, width - 8 - panelWidth), top, panelWidth,
+            Math.Max(0, height - top - 8));
     }
 
     private void CloseCommandMenu(bool restoreFocus = false)
