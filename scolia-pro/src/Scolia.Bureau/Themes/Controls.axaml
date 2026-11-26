@@ -1004,7 +1004,7 @@
   <!-- Exclure explicitement les champs de connexion bleu cobalt :
        un sélecteur métier trop spécifique remplaçait leur fond par Surface2Brush,
        alors que le texte demeurait blanc (champ blanc sur blanc). -->
-  <Style Selector="TextBox:not(.onbrand):not(.iosauthfield):not(.ioslockfield):not(.search):not(.searchfield):not(.code)">
+  <Style Selector="TextBox:not(.onbrand):not(.authfield):not(.iosauthfield):not(.ioslockfield):not(.search):not(.searchfield):not(.code)">
     <Setter Property="MinHeight" Value="36" />
     <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />

@@ -95,6 +95,22 @@ jobs:
         run: dotnet test tests/Scolia.Mobile.Tests/Scolia.Mobile.Tests.csproj -c Release --filter "FullyQualifiedName~UpdateCompletionPolicyTests|FullyQualifiedName~AndroidPrivacyManifestTests" --logger "trx;LogFileName=android-updates.trx"
       - name: Verifier les resultats du menu, les recherches contextuelles et la securite
         run: dotnet test tests/Scolia.Bureau.Tests/Scolia.Bureau.Tests.csproj -c Release --logger "trx;LogFileName=natif.trx"
+      # La publication native dépend également de la géométrie réelle des champs d'accès.
+      - name: Vérifier les icônes et le texte des champs de connexion Windows et Android
+        env:
+          SCOLIA_ASTUCES: '0'
+        run: |
+          dotnet build tests/Scolia.Bureau.Captures -c Release
+          SCOLIA_MOBILE=0 SCOLIA_TAILLE=1280x820 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-connexion/windows http://127.0.0.1:5293/ inutilise identite-connexion
+          SCOLIA_MOBILE=1 SCOLIA_TAILLE=390x740 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-connexion/android http://127.0.0.1:5293/ inutilise identite-connexion
+          SCOLIA_MOBILE=1 SCOLIA_TAILLE=390x740 SCOLIA_CAPTURE_DARK=1 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-connexion/android-sombre http://127.0.0.1:5293/ inutilise identite-connexion
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Controle_Geometrie_Connexion
+          path: scolia-pro/artifacts/controle-connexion/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Compiler les services de l'annee scolaire et des paiements
         run: dotnet build src/Scolia.Api/Scolia.Api.csproj -c Release
       - name: Verifier les regles de retard, les comptes et les API avec une base de test

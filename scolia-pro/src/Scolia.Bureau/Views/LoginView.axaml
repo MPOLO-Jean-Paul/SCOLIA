@@ -165,14 +165,14 @@
             </ItemsControl>
           </StackPanel>
           <Panel IsVisible="{Binding ShowAccountEntry}">
-            <TextBox x:Name="UserNameBox" Classes="w11 onbrand withicon" Text="{Binding UserName}" PlaceholderText="Identifiant" MaxLength="40" MinHeight="52" IsEnabled="{Binding CanType}" />
+            <TextBox x:Name="UserNameBox" Classes="w11 onbrand withicon" Text="{Binding UserName}" PlaceholderText="Identifiant" MaxLength="40" MinHeight="52" IsEnabled="{Binding CanType}" Padding="42,0,12,0" />
             <mi:MaterialIcon Classes="inicon" Kind="AccountOutline" />
           </Panel>
           <!-- Mot de passe : l'œil et la flèche sont dans le champ, comme le code PIN de Windows 11 -->
           <Panel IsVisible="{Binding ShowSignInPassword}">
             <TextBox x:Name="PasswordBox" Classes="w11 onbrand withicon withbuttons" Text="{Binding Password}" PlaceholderText="Mot de passe" PasswordChar="•" MaxLength="128" MinHeight="52"
                      TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
-                     RevealPassword="{Binding ShowPassword}" IsEnabled="{Binding CanType}" />
+                     RevealPassword="{Binding ShowPassword}" IsEnabled="{Binding CanType}" Padding="42,0,86,0" />
             <mi:MaterialIcon Classes="inicon" Kind="LockOutline" />
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="4" Margin="0,0,5,0">
               <Button Classes="fieldicon" Command="{Binding ToggleEye}" ToolTip.Tip="Afficher ou masquer le mot de passe" IsEnabled="{Binding CanType}">
@@ -205,7 +205,7 @@
               <TextBox x:Name="NewPasswordBox" Classes="w11 onbrand withicon witheye" Text="{Binding NewPassword}"
                        PlaceholderText="Nouveau mot de passe" PasswordChar="•" RevealPassword="{Binding ShowNewPassword}"
                        TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
-                       MaxLength="128" MinHeight="52" IsEnabled="{Binding NotBusy}" />
+                       MaxLength="128" MinHeight="52" IsEnabled="{Binding NotBusy}" Padding="42,0,52,0" />
               <mi:MaterialIcon Classes="inicon" Kind="LockOutline" />
               <Button Classes="fieldicon" HorizontalAlignment="Right" Margin="0,0,5,0"
                       Command="{Binding ToggleNewPasswordEye}" IsEnabled="{Binding NotBusy}"
@@ -220,7 +220,7 @@
               <TextBox x:Name="ConfirmPasswordBox" Classes="w11 onbrand withicon witheye" Text="{Binding ConfirmPassword}"
                        PlaceholderText="Confirmer le mot de passe" PasswordChar="•" RevealPassword="{Binding ShowConfirmPassword}"
                        TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
-                       MaxLength="128" MinHeight="52" IsEnabled="{Binding NotBusy}" />
+                       MaxLength="128" MinHeight="52" IsEnabled="{Binding NotBusy}" Padding="42,0,52,0" />
               <mi:MaterialIcon Classes="inicon" Kind="LockOutline" />
               <Button Classes="fieldicon" HorizontalAlignment="Right" Margin="0,0,5,0"
                       Command="{Binding ToggleConfirmPasswordEye}" IsEnabled="{Binding NotBusy}"
@@ -247,7 +247,7 @@
                        PlaceholderText="Code de récupération confidentiel" PasswordChar="•"
                        RevealPassword="{Binding ShowRecoveryCode}"
                        TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
-                       MaxLength="100" MinHeight="52" IsEnabled="{Binding NotBusy}" />
+                       MaxLength="100" MinHeight="52" IsEnabled="{Binding NotBusy}" Padding="42,0,52,0" />
               <mi:MaterialIcon Classes="inicon" Kind="KeyOutline" />
               <Button Classes="fieldicon" HorizontalAlignment="Right" Margin="0,0,5,0"
                       Command="{Binding ToggleRecoveryCodeEye}" IsEnabled="{Binding NotBusy}"
@@ -439,7 +439,7 @@
                   <Grid Classes="authinput">
                     <TextBox x:Name="IosUserNameBox" Classes="authfield withicon" Text="{Binding UserName}"
                              PlaceholderText="Votre identifiant" MaxLength="40" IsEnabled="{Binding CanType}"
-                             AutomationProperties.Name="Identifiant de connexion" />
+                             AutomationProperties.Name="Identifiant de connexion" Padding="46,0,14,0" />
                     <mi:MaterialIcon Classes="authinputicon" Kind="AccountOutline" />
                   </Grid>
                 </StackPanel>
@@ -450,7 +450,7 @@
                              PasswordChar="•" RevealPassword="{Binding ShowPassword}" MaxLength="128"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                              PlaceholderText="Votre mot de passe" IsEnabled="{Binding CanType}"
-                             AutomationProperties.Name="Mot de passe de connexion" />
+                             AutomationProperties.Name="Mot de passe de connexion" Padding="46,0,54,0" />
                     <mi:MaterialIcon Classes="authinputicon" Kind="LockOutline" />
                     <Button Classes="autheye" Command="{Binding ToggleEye}" IsEnabled="{Binding CanType}"
                             ToolTip.Tip="Afficher ou masquer le mot de passe" AutomationProperties.Name="Afficher ou masquer le mot de passe">
@@ -501,7 +501,7 @@
                              PasswordChar="•" RevealPassword="{Binding ShowNewPassword}" MaxLength="128"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                              PlaceholderText="Au moins 8 caractères" IsEnabled="{Binding NotBusy}"
-                             AutomationProperties.Name="Nouveau mot de passe" />
+                             AutomationProperties.Name="Nouveau mot de passe" Padding="46,0,54,0" />
                     <mi:MaterialIcon Classes="authinputicon" Kind="LockOutline" />
                     <Button Classes="autheye" Command="{Binding ToggleNewPasswordEye}"
                             IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer le nouveau mot de passe">
@@ -517,7 +517,7 @@
                              PasswordChar="•" RevealPassword="{Binding ShowConfirmPassword}" MaxLength="128"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                              PlaceholderText="Répéter le mot de passe" IsEnabled="{Binding NotBusy}"
-                             AutomationProperties.Name="Confirmation du nouveau mot de passe" />
+                             AutomationProperties.Name="Confirmation du nouveau mot de passe" Padding="46,0,54,0" />
                     <mi:MaterialIcon Classes="authinputicon" Kind="LockOutline" />
                     <Button Classes="autheye" Command="{Binding ToggleConfirmPasswordEye}"
                             IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer la confirmation">
@@ -533,7 +533,7 @@
                              PasswordChar="•" RevealPassword="{Binding ShowRecoveryCode}" MaxLength="100"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                              PlaceholderText="Code confidentiel" IsEnabled="{Binding NotBusy}"
-                             AutomationProperties.Name="Code de récupération confidentiel" />
+                             AutomationProperties.Name="Code de récupération confidentiel" Padding="46,0,54,0" />
                     <mi:MaterialIcon Classes="authinputicon" Kind="ShieldCheckOutline" />
                     <Button Classes="autheye" Command="{Binding ToggleRecoveryCodeEye}"
                             IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer le code de secours">
@@ -577,13 +577,13 @@
             <Border Classes="authmessage success" IsVisible="{Binding HasNotice}" ToolTip.Tip="{Binding Notice}">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
                 <mi:MaterialIcon Kind="InformationOutline" Width="18" Height="18" VerticalAlignment="Top" />
-                <TextBlock Grid.Column="1" Text="{Binding Notice}" AutomationProperties.Name="{Binding Notice}" />
+                <TextBlock Grid.Column="1" Text="{Binding Notice}" AutomationProperties.Name="{Binding Notice}" TextWrapping="Wrap" />
               </Grid>
             </Border>
             <Border Classes="authmessage error" IsVisible="{Binding HasError}">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
                 <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" VerticalAlignment="Top" />
-                <TextBlock Grid.Column="1" Text="{Binding Error}" />
+                <TextBlock Grid.Column="1" Text="{Binding Error}" TextWrapping="Wrap" />
               </Grid>
             </Border>
             <Border Classes="authmessage warning" IsVisible="{Binding Locked}">

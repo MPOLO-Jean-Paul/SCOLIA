@@ -193,6 +193,7 @@ if (args.Length > 3 && args[3] == "identite-connexion")
     shell.Login.SchoolName = "Institut technique médical de démonstration";
     shell.Login.RememberAccount("secretariat");
     Save(window, "01-connexion-compte-reconnu.png");
+    VerifyAuthFieldGeometry("compte reconnu");
     Control NamedIdentity(string name) => window.GetVisualDescendants().OfType<Control>()
         .Single(c => c.Name == name);
     var combined = NamedIdentity("CombinedIdentity");
@@ -218,13 +219,46 @@ if (args.Length > 3 && args[3] == "identite-connexion")
         throw new InvalidOperationException("Emblème invisible sur un téléphone de hauteur suffisante.");
     shell.Login.ToggleRecoveryHelp.Execute(null);
     Save(window, "02-recuperation.png");
+    VerifyAuthFieldGeometry("récupération");
     if (combined.IsEffectivelyVisible || !standalone.IsEffectivelyVisible)
         throw new InvalidOperationException("La récupération doit afficher le logo seul.");
     shell.Login.ToggleRecoveryHelp.Execute(null);
     shell.Login.ChangeAccount.Execute(null);
     Save(window, "03-nouveau-compte.png");
+    VerifyAuthFieldGeometry("nouveau compte");
     if (combined.IsEffectivelyVisible || !standalone.IsEffectivelyVisible)
         throw new InvalidOperationException("Le nouveau compte doit afficher le logo seul.");
+    void VerifyAuthFieldGeometry(string stage)
+    {
+        var fields = window.GetVisualDescendants().OfType<Grid>()
+            .Where(g => g.IsEffectivelyVisible && g.Classes.Contains("authinput")).ToArray();
+        if (fields.Length == 0) throw new InvalidOperationException($"Aucun champ de connexion visible : {stage}.");
+        foreach (var grid in fields)
+        {
+            var field = grid.Children.OfType<TextBox>().Single();
+            var icon = grid.Children.OfType<Control>().Single(c => c.Classes.Contains("authinputicon"));
+            Rect InGrid(Control c) => c.TransformToVisual(grid) is { } m
+                ? new Rect(c.Bounds.Size).TransformToAABB(m) : default;
+            var box = InGrid(field);
+            var pictogram = InGrid(icon);
+            var textStart = box.Left + field.Padding.Left;
+            var textEnd = box.Right - field.Padding.Right;
+            if (pictogram.Width <= 0 || textStart < pictogram.Right + 4 || textEnd <= textStart)
+                throw new InvalidOperationException($"Chevauchement icône/texte : {stage}, {field.Name}.");
+            var eye = grid.Children.OfType<Button>().FirstOrDefault(b => b.Classes.Contains("autheye"));
+            if (eye is not null && textEnd > InGrid(eye).Left - 2)
+                throw new InvalidOperationException($"Chevauchement texte/œil : {stage}, {field.Name}.");
+            var placeholder = field.GetVisualDescendants().OfType<TextBlock>()
+                .FirstOrDefault(t => t.Name == "PART_Placeholder" && t.IsEffectivelyVisible);
+            if (placeholder is not null && InGrid(placeholder).Left < pictogram.Right + 4)
+                throw new InvalidOperationException($"Placeholder recouvert : {stage}, {field.Name}.");
+            var presenter = field.GetVisualDescendants().OfType<Control>()
+                .FirstOrDefault(c => c.Name == "PART_TextPresenter" && c.IsEffectivelyVisible);
+            if (presenter is not null && InGrid(presenter).Left < pictogram.Right + 4)
+                throw new InvalidOperationException($"Zone de saisie recouverte : {stage}, {field.Name}.");
+            Console.WriteLine($"OK : {stage}, {field.Name}, réserve gauche {field.Padding.Left:0}, droite {field.Padding.Right:0}");
+        }
+    }
     window.Close();
     return;
 }
