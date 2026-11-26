@@ -430,6 +430,12 @@
     <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     <Setter Property="BorderThickness" Value="1.5" />
   </Style>
+  <!-- La zone de saisie conserve sa place entre retour, effacement et micro. -->
+  <Style Selector="LayoutTransformControl.phone TextBox.searchfield">
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="FontSize" Value="{DynamicResource FsBase}" />
+    <Setter Property="PlaceholderForeground" Value="{DynamicResource MutedBrush}" />
+  </Style>
   <Style Selector="LayoutTransformControl.phone TextBox.search">
     <Setter Property="MinHeight" Value="44" />
     <Setter Property="VerticalContentAlignment" Value="Center" />

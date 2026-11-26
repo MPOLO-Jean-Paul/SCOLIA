@@ -134,7 +134,7 @@
                 <TextBlock Text="{Binding UserInitials}" FontWeight="SemiBold" Foreground="{DynamicResource OnAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
               <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                <TextBlock Text="{Binding AccountName}" ToolTip.Tip="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding AccountName}" ToolTip.Tip="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2" />
                 <TextBlock Text="Mon compte, sécurité et réseau" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
               </StackPanel>
             </Grid>
@@ -203,7 +203,7 @@
         <Button Classes="baricon" Command="{Binding HeaderSearch.Close}" ToolTip.Tip="Fermer le filtre">
           <mi:MaterialIcon Kind="ArrowLeft" />
         </Button>
-        <TextBox x:Name="ContextSearchBox" Grid.Column="1" Classes="searchfield" Text="{Binding HeaderSearch.Query, Mode=TwoWay}"
+        <TextBox x:Name="ContextSearchBox" Grid.Column="1" Classes="searchfield" MinWidth="0" AutomationProperties.Name="{Binding HeaderSearch.Placeholder}" Text="{Binding HeaderSearch.Query, Mode=TwoWay}"
                  PlaceholderText="{Binding HeaderSearch.Placeholder}" KeyDown="OnContextSearchKeyDown" TextInputOptions.ReturnKeyType="Search" />
         <Button Grid.Column="2" Classes="baricon" Command="{Binding HeaderSearch.Clear}" IsVisible="{Binding HeaderSearch.HasQuery}" ToolTip.Tip="Effacer">
           <mi:MaterialIcon Kind="Close" />
@@ -291,7 +291,7 @@
               <Button Classes="baricon settingssearchcontrol" Command="{Binding SettingsSearch.Toggle}" ToolTip.Tip="Fermer la recherche">
                 <mi:MaterialIcon Kind="ArrowLeft" />
               </Button>
-              <TextBox x:Name="MenuSearchBox" Grid.Column="1" Classes="searchfield" Text="{Binding SettingsSearch.Query, Mode=TwoWay}"
+              <TextBox x:Name="MenuSearchBox" Grid.Column="1" Classes="searchfield" MinWidth="0" AutomationProperties.Name="{Binding SettingsSearch.Placeholder}" Text="{Binding SettingsSearch.Query, Mode=TwoWay}"
                        PlaceholderText="{Binding SettingsSearch.Placeholder}" KeyDown="OnSettingsSearchKeyDown" TextInputOptions.ReturnKeyType="Search" />
               <Button Grid.Column="2" Classes="baricon" Command="{Binding SettingsSearch.Clear}" IsVisible="{Binding SettingsSearch.HasQuery}" ToolTip.Tip="Effacer">
                 <mi:MaterialIcon Kind="Close" />
@@ -314,7 +314,7 @@
                     <TextBlock Text="{Binding UserInitials}" FontWeight="SemiBold" Foreground="{DynamicResource OnAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding AccountName}" ToolTip.Tip="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding AccountName}" ToolTip.Tip="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2" />
                     <TextBlock Text="Mon compte, sécurité et réseau" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                   </StackPanel>
                   <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />

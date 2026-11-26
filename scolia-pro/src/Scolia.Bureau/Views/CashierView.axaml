@@ -63,11 +63,11 @@
             <TextBlock Text="{Binding StudentInfo}" Classes="muted" TextWrapping="Wrap" />
             <Grid ColumnDefinitions="*,*" Margin="0,8,0,0" infra:Adaptive.StackBelow="360">
               <StackPanel>
-                <TextBlock Text="Solde à payer" Classes="caption" />
+                <TextBlock Text="Solde à payer" Classes="caption" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Balance}" Classes="kpi" TextWrapping="Wrap" />
               </StackPanel>
               <StackPanel Grid.Column="1">
-                <TextBlock Text="Reste exigible" Classes="caption" />
+                <TextBlock Text="Reste exigible" Classes="caption" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Overdue}" Classes="kpi" Foreground="{Binding OverdueBrush}" TextWrapping="Wrap" />
               </StackPanel>
             </Grid>
@@ -96,7 +96,7 @@
           <TextBlock Text="2. Versement" Classes="heading" />
           <!-- Mois à encaisser : une ligne par mois, touchée n'importe où pour la cocher. Le plus ancien en retard est déjà coché. -->
           <StackPanel Spacing="6">
-            <TextBlock Text="Mois et frais à encaisser" Classes="caption" />
+            <TextBlock Text="Mois et frais à encaisser" Classes="caption" TextWrapping="Wrap" />
             <TextBlock Text="{Binding MonthListStatus}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding HasMonths}" />
             <!-- Aucune liste silencieusement vide : diagnostiquer la configuration et proposer le bon écran. -->
             <Border Background="{DynamicResource OrangeSoftBrush}" CornerRadius="12" Padding="12"
@@ -134,7 +134,7 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
             <StackPanel Spacing="5" IsVisible="{Binding HasMonths}">
-              <TextBlock Text="Montant réellement reçu" Classes="caption" />
+              <TextBlock Text="Montant réellement reçu" Classes="caption" TextWrapping="Wrap" />
               <TextBox Text="{Binding AmountText, Mode=TwoWay}" PlaceholderText="Montant du versement"
                        HorizontalAlignment="Stretch" MinHeight="42" AutomationProperties.Name="Montant réellement reçu" />
               <TextBlock Text="{Binding TotalCaption}" Classes="muted" TextWrapping="Wrap" />
@@ -145,7 +145,7 @@
           <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="12" infra:Adaptive.StackBelow="700">
             <!-- Le total se lit dans la barre du bas, à côté du bouton Encaisser : il n'est pas répété ici. -->
             <StackPanel Grid.Column="0">
-              <TextBlock Text="Date du reçu" Classes="caption" />
+              <TextBlock Text="Date du reçu" Classes="caption" TextWrapping="Wrap" />
               <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" AutomationProperties.Name="Date de l’opération" />
             </StackPanel>
             <StackPanel Grid.Column="1" Grid.ColumnSpan="2">
@@ -157,7 +157,7 @@
               <TextBlock Text="Référence de la transaction" Classes="caption" TextWrapping="Wrap" />
               <Border Classes="autofield" ToolTip.Tip="Référence interne générée par SCOLIA" IsVisible="{Binding !NeedsExternalReference}">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="{Binding ReferenceText}" TextTrimming="CharacterEllipsis" FontWeight="Normal" FontSize="{DynamicResource FsSmall}" ToolTip.Tip="{Binding ReferenceText}" />
+                  <TextBlock Text="{Binding ReferenceText}" TextTrimming="CharacterEllipsis" FontWeight="Normal" FontSize="{DynamicResource FsSmall}" ToolTip.Tip="{Binding ReferenceText}" TextWrapping="Wrap" />
                   <mi:MaterialIcon Grid.Column="1" Kind="Autorenew" />
                 </Grid>
               </Border>
@@ -166,27 +166,27 @@
                        ToolTip.Tip="Recopiez la référence figurant sur la confirmation Mobile Money, bancaire ou du chèque" AutomationProperties.Name="Référence de transaction" />
             </StackPanel>
             <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
-              <TextBlock Text="Visé par" Classes="caption" />
+              <TextBlock Text="Visé par" Classes="caption" TextWrapping="Wrap" />
               <Border Classes="autofield" ToolTip.Tip="La personne connectée, qui reçoit l'argent">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="{Binding ReviewedBy}" ToolTip.Tip="{Binding ReviewedBy}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding ReviewedBy}" ToolTip.Tip="{Binding ReviewedBy}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
                   <mi:MaterialIcon Grid.Column="1" Kind="AccountCheckOutline" />
                 </Grid>
               </Border>
             </StackPanel>
             <StackPanel Grid.Row="1" Grid.Column="2" Spacing="4">
-              <TextBlock Text="Téléphone du payeur" Classes="caption" />
+              <TextBlock Text="Téléphone du payeur" Classes="caption" TextWrapping="Wrap" />
               <Border Classes="autofield" ToolTip.Tip="{infra:Terms 'Le téléphone du tuteur, repris du dossier de l\'apprenant'}">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="{Binding PayerPhoneText}" ToolTip.Tip="{Binding PayerPhoneText}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding PayerPhoneText}" ToolTip.Tip="{Binding PayerPhoneText}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
                   <mi:MaterialIcon Grid.Column="1" Kind="PhoneOutline" />
                 </Grid>
               </Border>
             </StackPanel>
           </Grid>
           <StackPanel Margin="0,4,0,0">
-            <TextBlock Text="Observation (facultative)" Classes="caption" />
-            <TextBox Text="{Binding Note}" AcceptsReturn="True" Height="60" TextWrapping="Wrap" PlaceholderText="Laissée vide, le reçu portera « OK »" AutomationProperties.Name="Observation facultative" />
+            <TextBlock Text="Observation (facultative)" Classes="caption" TextWrapping="Wrap" />
+            <TextBox Text="{Binding Note}" AcceptsReturn="True" MinHeight="60" TextWrapping="Wrap" VerticalContentAlignment="Top" PlaceholderText="Laissée vide, le reçu portera « OK »" AutomationProperties.Name="Observation facultative" />
           </StackPanel>
         </StackPanel>
       </Border>
@@ -205,8 +205,8 @@
                   <StackPanel Spacing="6">
                     <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextWrapping="Wrap" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="8" infra:Adaptive.StackBelow="230">
-                      <StackPanel Spacing="2"><TextBlock Text="Imputé" Classes="caption" /><TextBlock Text="{Binding Amount}" FontWeight="SemiBold" TextWrapping="Wrap" /></StackPanel>
-                      <StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Reste après" Classes="caption" /><TextBlock Text="{Binding Remaining}" TextWrapping="Wrap" /></StackPanel>
+                      <StackPanel Spacing="2"><TextBlock Text="Imputé" Classes="caption" TextWrapping="Wrap" /><TextBlock Text="{Binding Amount}" FontWeight="SemiBold" TextWrapping="Wrap" /></StackPanel>
+                      <StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Reste après" Classes="caption" TextWrapping="Wrap" /><TextBlock Text="{Binding Remaining}" TextWrapping="Wrap" /></StackPanel>
                     </Grid>
                   </StackPanel>
                 </Border>

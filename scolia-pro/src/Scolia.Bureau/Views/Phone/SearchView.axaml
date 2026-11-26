@@ -13,7 +13,7 @@
         <Button Classes="baricon" Command="{Binding Close}" AutomationProperties.Name="Fermer la recherche" ToolTip.Tip="Retour">
           <mi:MaterialIcon Kind="ArrowLeft" />
         </Button>
-        <TextBox x:Name="QueryBox" AutomationProperties.Name="{Binding Placeholder}" Grid.Column="1" Classes="searchfield" Text="{Binding Query}" PlaceholderText="{Binding Placeholder}"
+        <TextBox x:Name="QueryBox" AutomationProperties.Name="{Binding Placeholder}" Grid.Column="1" Classes="searchfield" MinWidth="0" Text="{Binding Query}" PlaceholderText="{Binding Placeholder}"
                  TextInputOptions.ReturnKeyType="Search" />
         <Button Grid.Column="2" Classes="baricon" Command="{Binding ClearQuery}" AutomationProperties.Name="Effacer la recherche" IsVisible="{Binding HasQuery}" ToolTip.Tip="Effacer">
           <mi:MaterialIcon Kind="Close" />
