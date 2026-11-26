@@ -365,6 +365,8 @@ public sealed class Preferences : Observable
             Resource("FsTitle", 24.0 * k);
             Resource("FsDisplay", 28.0 * k);
         }
+        Resource("FsPageHeading", 17.0 * k);
+        Resource("FsStickyValue", 20.0 * k);
         Resource("RowHeight", (compact ? 28.0 : 36.0) * k);
         Resource("CtlHeight", (compact ? 26.0 : 30.0) * k);
         Resource("GridLines", grid ? Avalonia.Controls.DataGridGridLinesVisibility.Horizontal : Avalonia.Controls.DataGridGridLinesVisibility.None);

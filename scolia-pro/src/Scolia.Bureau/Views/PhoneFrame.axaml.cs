@@ -15,6 +15,7 @@ public partial class PhoneFrame : UserControl
     public PhoneFrame()
     {
         InitializeComponent();
+        Infrastructure.StickyLayout.Track(PhoneStickyBar, PhoneHost, new Avalonia.Thickness(12, 12, 12, 20), 112);
         // Choisir un outil, depuis le menu ou un onglet, referme le menu, même si l'outil est déjà à l'écran.
         MenuPanel.AddHandler(Button.ClickEvent, (_, e) =>
         {
@@ -95,7 +96,7 @@ public partial class PhoneFrame : UserControl
         // Axe partagé d'Android 16 : glissement de quelques points et fondu, jamais toute la largeur.
         // Version légère : la nouvelle page arrive seule en 150 ms, sans attendre le fondu de l'ancienne.
         PhoneHost.PageTransition = new Infrastructure.SharedAxisTransition(
-            TimeSpan.FromMilliseconds(Math.Clamp(150 * shell.Prefs.SpeedFactor, 110, 220)), 16, lightweight: true);
+            TimeSpan.FromMilliseconds(Math.Clamp(150 * shell.Prefs.SpeedFactor, 110, 220)), 8, lightweight: true);
     }
 
     private void OnPreferencesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)

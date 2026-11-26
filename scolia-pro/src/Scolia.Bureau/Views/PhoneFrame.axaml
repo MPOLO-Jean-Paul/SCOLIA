@@ -166,7 +166,7 @@
         </Panel>
         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0" IsVisible="{Binding !HeaderSearch.IsOpen}">
           <!-- Petit téléphone : un titre long passe sur deux lignes plutôt que d'être coupé -->
-          <TextBlock Text="{Binding PhonePage.Heading}" ToolTip.Tip="{Binding PhonePage.Heading}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2" LineHeight="20" />
+          <TextBlock Text="{Binding PhonePage.Heading}" ToolTip.Tip="{Binding PhonePage.Heading}" FontSize="{DynamicResource FsPageHeading}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2" />
           <TextBlock Text="{Binding PhonePage.Subtitle}" ToolTip.Tip="{Binding PhonePage.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2"
                      IsVisible="{Binding PhonePage.Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
@@ -238,11 +238,11 @@
     <views:SkeletonView Classes.anim="{Binding Prefs.Animations}" Grid.Row="1" Background="{DynamicResource BgBrush}" VerticalAlignment="Stretch"
                         IsVisible="{Binding PhonePage.ShowSkeleton, FallbackValue=False}" />
     <!-- Barre d'action fixe de la page : le total et le bouton qui valide, toujours visibles en bas -->
-    <Border Grid.Row="1" Classes="stickybar" VerticalAlignment="Bottom" IsVisible="{Binding PhonePage.Sticky.IsVisible, FallbackValue=False}">
+    <Border x:Name="PhoneStickyBar" Grid.Row="1" Classes="stickybar" VerticalAlignment="Bottom" IsVisible="{Binding PhonePage.Sticky.IsVisible, FallbackValue=False}">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
         <StackPanel VerticalAlignment="Center" Spacing="1">
           <TextBlock Text="{Binding PhonePage.Sticky.Title}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding PhonePage.Sticky.Value}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding PhonePage.Sticky.Value}" ToolTip.Tip="{Binding PhonePage.Sticky.Value}" FontSize="{DynamicResource FsStickyValue}" FontWeight="SemiBold" TextWrapping="Wrap" />
           <TextBlock Text="{Binding PhonePage.Sticky.Detail}" ToolTip.Tip="{Binding PhonePage.Sticky.Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2"
                      IsVisible="{Binding PhonePage.Sticky.HasDetail, FallbackValue=False}" />
         </StackPanel>
@@ -278,7 +278,7 @@
               <Image Source="{DynamicResource ScoliaMark}" Width="34" Height="34" />
             </Panel>
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-              <TextBlock Text="{Binding SchoolHeaderTitle}" ToolTip.Tip="{Binding SchoolHeaderTitle}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" />
+              <TextBlock Text="{Binding SchoolHeaderTitle}" ToolTip.Tip="{Binding SchoolHeaderTitle}" FontSize="{DynamicResource FsPageHeading}" FontWeight="SemiBold" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" />
               <TextBlock Text="{Binding SchoolYearLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
             </StackPanel>
             <Button Grid.Column="2" Classes="baricon settingssearchcontrol" Command="{Binding SettingsSearch.Toggle}"

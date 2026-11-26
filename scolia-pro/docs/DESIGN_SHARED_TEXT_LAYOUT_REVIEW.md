@@ -1,0 +1,3 @@
+# Lisibilité et fluidité Windows / Android
+
+Les titres des pages et les valeurs de la barre fixe suivent le facteur typographique ; suppression de l'interligne fixe du titre mobile. Noms d'établissement et périodes du volet Windows sur deux lignes, avec infobulles. Le bas de page s'adapte à la hauteur mesurée de la barre fixe sans mise en page forcée, et ne change que lorsque la marge diffère. Mouvement latéral mobile ramené de 16 à 8 unités, sans changer la durée ou la préférence d'animation. Six cas de test ajoutés. Commandes et liaisons inchangées, modèles de cartes non modifiés. Validation de ce commit en CI nécessaire ; ne pas remplacer la publication 1.3.4 en cours.

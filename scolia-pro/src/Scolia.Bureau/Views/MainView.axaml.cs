@@ -48,6 +48,7 @@ public partial class MainView : UserControl
         isTypingHandler = IsTypingInView;
         InitializeComponent();
         Keyboard = new KeyboardAvoidance(this, RootContent);
+        StickyLayout.Track(DesktopStickyBar, PageHost, new Thickness(20, 8, 20, 16), 92);
         // Onde au toucher sur les boutons et les lignes, comme sur Android ; coupée avec les animations.
         TouchFeedback.Attach(this, () => Platform.IsMobile && (Shell?.Prefs.Animations ?? true));
         // Toute activité repousse la mise en veille : toucher, clic, molette, frappe.

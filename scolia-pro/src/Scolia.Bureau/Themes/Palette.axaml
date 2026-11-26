@@ -203,6 +203,8 @@
   <x:Double x:Key="FsSmall">12</x:Double>
   <x:Double x:Key="FsCaption">11</x:Double>
   <x:Double x:Key="FsHeading">15</x:Double>
+  <x:Double x:Key="FsPageHeading">17</x:Double>
+  <x:Double x:Key="FsStickyValue">20</x:Double>
   <x:Double x:Key="FsTitle">22</x:Double>
   <x:Double x:Key="FsDisplay">28</x:Double>
   <x:Double x:Key="RowHeight">36</x:Double>
