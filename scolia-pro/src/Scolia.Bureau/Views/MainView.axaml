@@ -20,6 +20,10 @@
     </Style>
     <Style Selector="views|MainView.mica views|LoginView ScrollViewer.authpage"><Setter Property="Background" Value="Transparent" /></Style>
     <Style Selector="views|MainView.mica Border.appheader"><Setter Property="Background" Value="{DynamicResource MicaHeaderBrush}" /></Style>
+    <Style Selector="Border.appheader.homechrome">
+      <Setter Property="Padding" Value="12,4,14,4" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
     <!-- Clavier ouvert sur le téléphone : la barre d'onglets du bas se retire pour laisser voir la saisie -->
     <Style Selector="views|MainView.keyboard Border.phonetabs"><Setter Property="MaxHeight" Value="0" /><Setter Property="ClipToBounds" Value="True" /></Style>
     <Style Selector="TransitioningContentControl#PageHost"><Setter Property="Margin" Value="20,8,20,16" /></Style>
@@ -104,22 +108,22 @@
     </Style>
     <Style Selector="Border#DesktopSidebar.homepane Border.appicon">
       <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Width" Value="22" />
+      <Setter Property="Height" Value="22" />
     </Style>
     <Style Selector="Border#DesktopSidebar.startpane">
-      <Setter Property="Width" Value="176" />
+      <Setter Property="Width" Value="184" />
       <Setter Property="Margin" Value="0" />
       <Setter Property="CornerRadius" Value="0" />
       <Setter Property="BorderThickness" Value="0,0,1,0" />
-      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
     </Style>
     <Style Selector="Button.startentry">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="0" />
-      <Setter Property="MinHeight" Value="96" />
-      <Setter Property="Height" Value="96" />
-      <Setter Property="Margin" Value="0" />
-      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+      <Setter Property="MinHeight" Value="54" />
+      <Setter Property="Padding" Value="10,7" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -131,6 +135,9 @@
       <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
     </Style>
     <Style Selector="Button.startentry:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <Style Selector="Button.startentry:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
 
@@ -373,11 +380,10 @@
     <Grid x:Name="AppArea" IsVisible="{Binding ShowApp}">
       <Grid.RenderTransform><TranslateTransform /></Grid.RenderTransform>
 
-      <!-- Ordinateur : bandeau bleu, volet, page et barre d'état -->
+      <!-- Ordinateur : commandes de la page, volet et barre d'état. -->
       <Grid x:Name="DesktopArea" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,*,Auto" IsVisible="{Binding !Phone}">
 
-      <!-- Bandeau bleu ciel sur toute la largeur : volet, flèches, titre de la page, recherche, actions, réseau, compte, menu -->
-      <Border Grid.Row="0" Grid.ColumnSpan="2" Classes="pagebar appheader" x:Name="PageBar">
+      <Border Grid.Row="0" Grid.ColumnSpan="2" Classes="pagebar appheader" Classes.homechrome="{Binding IsHomePage}" x:Name="PageBar">
         <Grid ColumnDefinitions="Auto,Auto,3*,3*,Auto,Auto,Auto" IsVisible="{Binding HasPage}">
           <Button Classes="toolicon" Command="{Binding ToggleSidebarCommand}" Margin="0,0,8,0" VerticalAlignment="Center"
                   ToolTip.Tip="Afficher ou masquer le volet (Ctrl+B)" IsEnabled="{Binding !IsStartPage}">
@@ -395,7 +401,7 @@
             </StackPanel>
           </Border>
           <Grid x:Name="HeaderTitle" Grid.Column="2" ColumnDefinitions="Auto,*" VerticalAlignment="Center" MinWidth="140" MaxWidth="380"
-                ToolTip.Tip="{Binding Current.Subtitle}">
+                IsVisible="{Binding !IsHomePage}" ToolTip.Tip="{Binding Current.Subtitle}">
             <Border Classes="appicon medium" Background="{Binding CurrentIconBrush}" Margin="0,0,10,0">
               <mi:MaterialIcon Kind="{Binding CurrentIcon}" />
             </Border>
@@ -409,7 +415,16 @@
           <!-- Recherche générale, dans la barre même, façon Android : on tape ici, les résultats se déroulent dessous.
                Sur une liste, la même place sert au filtre de la page (ci-dessous). -->
           <Border x:Name="HeaderFinderBar" Grid.Column="3" Classes="googlebar pill" MaxWidth="460" MinWidth="160" Margin="16,0,12,0"
-                  VerticalAlignment="Center" IsVisible="{Binding !HeaderSearch.IsOpen}">
+                  VerticalAlignment="Center">
+            <Border.IsVisible>
+              <MultiBinding Converter="{x:Static BoolConverters.And}">
+                <Binding Path="!HeaderSearch.IsOpen" />
+                <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                  <Binding Path="!IsHomePage" />
+                  <Binding Path="!SidebarShown" />
+                </MultiBinding>
+              </MultiBinding>
+            </Border.IsVisible>
             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
               <mi:MaterialIcon Kind="Magnify" Width="20" Height="20" Margin="14,0,4,0" VerticalAlignment="Center"
                                Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
@@ -484,8 +499,13 @@
               </Button.Flyout>
             </Button>
           </StackPanel>
-          <!-- État du réseau et compte connecté : toujours visibles, à droite -->
           <StackPanel x:Name="HeaderExtras" Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Spacing="6" Margin="12,0,0,0">
+            <StackPanel.IsVisible>
+              <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                <Binding Path="!IsHomePage" />
+                <Binding Path="!SidebarShown" />
+              </MultiBinding>
+            </StackPanel.IsVisible>
             <Button Classes="toolicon" Command="{Binding NetworkCommand}" ToolTip.Tip="{Binding Sync.StatusText}">
               <Panel Width="18" Height="18">
                 <mi:MaterialIcon Kind="LanConnect" Width="18" Height="18" IsVisible="{Binding Sync.Online}" />
@@ -550,15 +570,20 @@
                 <TextBlock Text="{Binding SchoolYearLine}" ToolTip.Tip="{Binding SchoolYearLine}" Classes="muted" FontSize="{DynamicResource FsCaption}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
               </StackPanel>
             </Grid>
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="4,0,4,4" IsVisible="{Binding IsHomePage}">
-              <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource AccentSoftBrush}">
-                <PathIcon Data="{x:Static infra:AuthGlyphs.Person}" Width="24" Height="24" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-              </Border>
-              <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding AccountName}" />
-                <TextBlock Text="{Binding SchoolTitle}" Classes="muted" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding SchoolTitle}" />
-              </StackPanel>
-            </Grid>
+            <Button Classes="workspacerow" IsVisible="{Binding IsHomePage}" Click="OnAccountClick"
+                    AutomationProperties.Name="Compte et poste" ToolTip.Tip="Compte et poste">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="9">
+                <Border Width="40" Height="40" CornerRadius="20" Background="{DynamicResource AccentSoftBrush}">
+                  <PathIcon Data="{x:Static infra:AuthGlyphs.Person}" Width="22" Height="22"
+                            Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding SchoolTitle}" Classes="muted" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <PathIcon Grid.Column="2" Classes="workspacechevron" Data="{x:Static infra:HomeGlyphs.Chevron}" />
+              </Grid>
+            </Button>
             <Button x:Name="HomeSidebarSearch" IsVisible="{Binding IsHomePage}" Command="{Binding SearchCommand}"
                     AutomationProperties.Name="Rechercher dans SCOLIA" ToolTip.Tip="{Binding GlobalSearchTip}"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" MinHeight="36" Padding="10,6"
@@ -566,37 +591,41 @@
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
                 <TextBlock Text="Rechercher dans SCOLIA" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"
                            TextTrimming="CharacterEllipsis" />
-                <mi:MaterialIcon Grid.Column="1" Kind="Magnify" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                <PathIcon Grid.Column="1" Data="{x:Static infra:HomeGlyphs.Search}" Width="16" Height="16"
+                          Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
               </Grid>
             </Button>
           </StackPanel>
           <Grid>
             <!-- Démarrer est un espace de lancement, et non le menu métier complet. -->
             <ScrollViewer IsVisible="{Binding IsStartPage}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-              <StackPanel Spacing="0" Margin="0,12,0,12">
+              <StackPanel Spacing="4" Margin="10,12">
                 <Button x:Name="OpenHomeButton" Classes="startentry" Command="{Binding StartNavigation.OpenHome}"
                         AutomationProperties.Name="Accueil" ToolTip.Tip="Ouvrir l’espace de travail">
-                  <StackPanel Spacing="7" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <mi:MaterialIcon Kind="HomeOutline" Width="28" Height="28" Foreground="{DynamicResource AccentBrush}" />
-                    <TextBlock Text="Accueil" FontSize="14" HorizontalAlignment="Center" />
-                  </StackPanel>
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
+                    <Border Classes="workspaceglyph">
+                      <PathIcon Data="{x:Static infra:HomeGlyphs.Home}" Foreground="{DynamicResource AccentBrush}" />
+                    </Border>
+                    <TextBlock Grid.Column="1" Text="Accueil" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+                  </Grid>
                 </Button>
                 <ItemsControl ItemsSource="{Binding StartNavigation.NewActions}" HorizontalAlignment="Stretch">
                   <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate><StackPanel Spacing="0" HorizontalAlignment="Stretch" /></ItemsPanelTemplate>
+                    <ItemsPanelTemplate><StackPanel Spacing="4" HorizontalAlignment="Stretch" /></ItemsPanelTemplate>
                   </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
                       <Button Classes="startentry" Command="{Binding Open}" AutomationProperties.Name="{Binding Title}" ToolTip.Tip="{Binding Description}">
-                        <StackPanel Spacing="7" HorizontalAlignment="Center" VerticalAlignment="Center">
-                          <mi:MaterialIcon Kind="{Binding Icon}" Width="28" Height="28" Foreground="{DynamicResource TextBrush}" />
-                          <TextBlock Text="{Binding Title}" FontSize="14" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
-                        </StackPanel>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
+                          <Border Classes="workspaceglyph">
+                            <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Foreground="{Binding Brush}" />
+                          </Border>
+                          <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+                        </Grid>
                       </Button>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <Border Background="{DynamicResource LineBrush}" Height="1" Margin="18,8,18,8" />
               </StackPanel>
             </ScrollViewer>
             <ScrollViewer IsVisible="{Binding !IsStartPage}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">

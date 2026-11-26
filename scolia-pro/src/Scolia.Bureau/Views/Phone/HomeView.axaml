@@ -63,7 +63,6 @@
       <StackPanel Spacing="10">
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
           <StackPanel Spacing="4">
-            <TextBlock Text="ESPACE DE TRAVAIL" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="SemiBold" />
             <TextBlock Text="{Binding Greeting}" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap" />
             <TextBlock Text="{Binding HeaderSchoolLine}" Classes="muted" TextWrapping="Wrap" />
             <TextBlock Text="{Binding DateLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
@@ -90,13 +89,13 @@
       </StackPanel>
     </Border>
     <StackPanel Spacing="7" IsVisible="{Binding !!Tools.Count}">
-      <TextBlock Text="Démarrer" Classes="worksection" />
+      <TextBlock Text="Actions rapides" Classes="worksection" />
       <ItemsControl x:Name="WelcomeQuickActions" ItemsSource="{Binding QuickActions}">
         <ItemsControl.ItemsPanel><ItemsPanelTemplate><infra:AdaptiveTiles MaxColumns="2" MinItemWidth="150" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate><DataTemplate><Button Classes="workaction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding ShortTitle}">
               <StackPanel Spacing="7">
-                <Border Width="36" Height="36" CornerRadius="7" Background="{DynamicResource GroupBrush}" HorizontalAlignment="Left">
-                  <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24" Foreground="{Binding Brush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Border Classes="workspaceglyph" HorizontalAlignment="Left">
+                  <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Foreground="{Binding Brush}" />
                 </Border>
                 <TextBlock Text="{Binding ShortTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
@@ -123,20 +122,21 @@
     <Border Classes="workpanel" IsVisible="{Binding OverviewUnavailable}">
       <TextBlock Text="Les indicateurs ne sont pas disponibles pour le moment. Vos outils restent accessibles." Classes="muted" TextWrapping="Wrap" />
     </Border>
-    <StackPanel Spacing="8">
-      <TextBlock Text="Recommandé pour vous" Classes="worksection" />
+    <StackPanel Spacing="8" IsVisible="{Binding !!Tools.Count}">
+      <TextBlock Text="Outils recommandés" Classes="worksection" />
       <Border Classes="workpanel" Padding="4">
         <StackPanel Spacing="3">
           <ItemsControl x:Name="FeatureCards" ItemsSource="{Binding MoreTools}">
             <ItemsControl.ItemTemplate><DataTemplate>
               <Button Classes="workrow" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding Title}">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                  <mi:MaterialIcon Kind="{Binding Icon}" Width="23" Height="23" Foreground="{Binding Brush}" VerticalAlignment="Center" />
+                  <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Width="22" Height="22"
+                            Foreground="{Binding Brush}" VerticalAlignment="Center" />
                   <StackPanel Grid.Column="1" Spacing="2">
                     <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                   </StackPanel>
-                  <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                  <PathIcon Grid.Column="2" Classes="workspacechevron" Data="{x:Static infra:HomeGlyphs.Chevron}" />
                 </Grid>
               </Button>
             </DataTemplate></ItemsControl.ItemTemplate>

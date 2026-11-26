@@ -70,19 +70,18 @@
       <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
     </Style>
   </UserControl.Styles>
-  <!-- Feuille de dialogue macOS : titre gras, champs, boutons en capsule alignés à droite -->
-  <Border Classes="card sheet" infra:Adaptive.FitDialog="True" Classes.embedded="{Binding Embedded}" MaxWidth="620" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
-          BoxShadow="0 8 32 0 #3D000000">
+  <!-- L'en-tête et les commandes restent visibles pendant le défilement des champs. -->
+  <Border Classes="dialogsurface sheet" infra:Adaptive.FitDialog="True" Classes.embedded="{Binding Embedded}" MaxWidth="620">
     <Grid RowDefinitions="Auto,*,Auto,Auto">
       <Grid Classes="formheader" ColumnDefinitions="Auto,*,Auto" Margin="24,22,18,0" IsVisible="{Binding !Embedded}">
         <Border Classes="appicon large" Background="{Binding HeaderBrush}" VerticalAlignment="Top" Margin="0,0,14,0">
           <mi:MaterialIcon Kind="{Binding HeaderIcon}" />
         </Border>
         <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-          <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasSubtitle}" />
         </StackPanel>
-        <Button Grid.Column="2" Classes="closex" AutomationProperties.Name="Fermer le formulaire" Command="{Binding Cancel}" IsEnabled="{Binding !Busy}" Margin="12,0,0,0"><mi:MaterialIcon Kind="Close" /></Button>
+        <Button Grid.Column="2" Classes="closex" AutomationProperties.Name="Fermer le formulaire" Command="{Binding Cancel}" IsEnabled="{Binding !Busy}" Margin="12,0,0,0"><PathIcon Data="{x:Static infra:HomeGlyphs.Dismiss}" /></Button>
       </Grid>
 
       <!-- Le message et les champs defilent ensemble, le bouton Importer reste fixe sur mobile. -->
@@ -125,9 +124,10 @@
                            TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" />
                   <Button Classes="quiet" Command="{Binding ToggleSecret}" Width="46" MinHeight="44"
                           HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,4,0"
-                          ToolTip.Tip="Afficher ou masquer ce champ sensible">
-                    <mi:MaterialIcon Kind="{Binding SecretEyeIcon}" Width="20" Height="20"
-                                     Foreground="{DynamicResource TextBrush}" />
+                          ToolTip.Tip="Afficher ou masquer ce champ sensible"
+                          AutomationProperties.Name="Afficher ou masquer ce champ sensible">
+                    <PathIcon Data="{Binding SecretEyeIcon, Converter={x:Static infra:AuthGlyphs.EyeConverter}}" Width="20" Height="20"
+                              Foreground="{DynamicResource TextBrush}" />
                   </Button>
                 </Panel>
                 <TextBox Classes="w11" Classes.invalid="{Binding HasError}" AutomationProperties.Name="{Binding Caption}" IsVisible="{Binding IsMultiline}" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" MinHeight="84" />

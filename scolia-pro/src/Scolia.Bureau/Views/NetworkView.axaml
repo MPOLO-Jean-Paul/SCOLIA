@@ -5,7 +5,7 @@
              x:Class="Scolia.Bureau.Views.NetworkView">
   <!-- Réseau et activité : l'état de la connexion, les autres postes, puis ce qui attend d'être envoyé -->
   <Grid>
-  <Border Classes="card" infra:Adaptive.FitDialog="True" Width="560" Padding="0" CornerRadius="16" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True" BoxShadow="0 12 40 0 #33000000">
+  <Border Classes="dialogsurface" infra:Adaptive.FitDialog="True" Width="560">
     <Grid RowDefinitions="Auto,*,Auto">
       <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,18,12,8">
         <Border Classes="appicon large" Background="{Binding Sync.StatusBrush}" Margin="0,0,12,0"><mi:MaterialIcon Kind="LanConnect" /></Border>
@@ -13,7 +13,7 @@
           <TextBlock Text="Réseau et activité" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Sync.StatusText}" Foreground="{Binding Sync.StatusBrush}" FontWeight="SemiBold" TextWrapping="Wrap" />
         </StackPanel>
-        <Button Grid.Column="2" Classes="closex" Command="{Binding Close}"><mi:MaterialIcon Kind="Close" /></Button>
+        <Button Grid.Column="2" Classes="closex" Command="{Binding Close}"><PathIcon Data="{x:Static infra:HomeGlyphs.Dismiss}" /></Button>
       </Grid>
 
       <ScrollViewer Grid.Row="1" MaxHeight="560" HorizontalScrollBarVisibility="Disabled" Padding="18,0,18,8">

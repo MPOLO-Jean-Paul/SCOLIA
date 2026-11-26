@@ -6,9 +6,8 @@
              x:DataType="infra:TailscaleInstaller">
   <!-- Assistant Tailscale commun à la configuration, à la connexion et au réseau : un seul dessin, partout pareil.
        Téléchargement et installation se font depuis SCOLIA ; on ne sort que pour se connecter au compte Tailscale. -->
-  <Grid IsVisible="{Binding IsOpen}" Background="#CC091326">
-    <Border Classes="card" MaxWidth="460" Margin="16" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center"
-            Background="{DynamicResource SurfaceBrush}" CornerRadius="18" infra:Adaptive.FitDialog="True">
+  <Grid IsVisible="{Binding IsOpen}" Background="{DynamicResource ScrimBrush}">
+    <Border Classes="dialogsurface" MaxWidth="460" Margin="16" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center" infra:Adaptive.FitDialog="True">
       <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="12">
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">

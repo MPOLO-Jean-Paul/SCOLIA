@@ -21,7 +21,7 @@
     </Style>
   </UserControl.Styles>
   <!-- Aide du mobile : les gestes à la place des raccourcis clavier, et où trouver chaque outil -->
-  <Border Classes="card" infra:Adaptive.FitDialog="True" Width="560" Padding="0" CornerRadius="16" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True">
+  <Border Classes="dialogsurface" infra:Adaptive.FitDialog="True" Width="560">
     <Grid RowDefinitions="Auto,*,Auto">
       <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,18,12,6">
         <Border Classes="appicon large" Background="{DynamicResource ToneBlue}" Margin="0,0,12,0"><mi:MaterialIcon Kind="GestureTap" /></Border>
@@ -29,7 +29,7 @@
           <TextBlock Text="Aide et gestes" FontSize="17" FontWeight="Bold" />
           <TextBlock Text="SCOLIA sur le téléphone et la tablette" Classes="muted" />
         </StackPanel>
-        <Button Grid.Column="2" Classes="closex" Command="{Binding Close}"><mi:MaterialIcon Kind="Close" /></Button>
+        <Button Grid.Column="2" Classes="closex" Command="{Binding Close}"><PathIcon Data="{x:Static infra:HomeGlyphs.Dismiss}" /></Button>
       </Grid>
       <ScrollViewer Grid.Row="1" MaxHeight="560" HorizontalScrollBarVisibility="Disabled" Padding="18,4,18,8">
         <StackPanel Spacing="4">
