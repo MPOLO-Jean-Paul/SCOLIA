@@ -1,0 +1,1936 @@
+{
+  "source": "https://github.com/microsoft/fluentui-system-icons",
+  "regular": [
+    {
+      "name": "Add",
+      "variant": "regular",
+      "aliases": [
+        "Plus"
+      ],
+      "sha256": "167c7f2703870a06ff80dbbcc5d60fa37bfae9d225f37ed3d585949239bc3431"
+    },
+    {
+      "name": "Alert",
+      "variant": "regular",
+      "aliases": [
+        "BellOutline",
+        "BellRingOutline"
+      ],
+      "sha256": "3b56e93152bd74091bc59e77b453d69811ae4afce78b699d38ecc55d1810b7f6"
+    },
+    {
+      "name": "Apps",
+      "variant": "regular",
+      "aliases": [
+        "DotsGrid",
+        "Grid",
+        "ViewGrid",
+        "ViewGridPlus"
+      ],
+      "sha256": "49acd3ca4b7fffce746312a729ebc007ec82d3d7372be9830577f50b541fa6df"
+    },
+    {
+      "name": "Archive",
+      "variant": "regular",
+      "aliases": [
+        "Archive"
+      ],
+      "sha256": "de1389ad2e4a8fe9ba9430d8457a1e1f459ef8eded2ef480788f90a7f7806306"
+    },
+    {
+      "name": "Arrow Clockwise",
+      "variant": "regular",
+      "aliases": [
+        "Update"
+      ],
+      "sha256": "488566eef8203823292a19660c47d4b9c86ca64e6910848342e6b5fa3c5a7558"
+    },
+    {
+      "name": "Arrow Counterclockwise",
+      "variant": "regular",
+      "aliases": [
+        "BackupRestore",
+        "Restore"
+      ],
+      "sha256": "ca716b401557bc94f2a25c40e4f073f2ca936ae0e91ec12beeeba66037267212"
+    },
+    {
+      "name": "Arrow Download",
+      "variant": "regular",
+      "aliases": [
+        "ArrowDownBoldCircleOutline",
+        "CloudDownload",
+        "Download",
+        "DownloadOutline"
+      ],
+      "sha256": "2749dfd0860188f7de7a573a634f3e37fe8ea4e99aa36fd1559e62d1a8243910"
+    },
+    {
+      "name": "Arrow Enter Left",
+      "variant": "regular",
+      "aliases": [
+        "LoginVariant"
+      ],
+      "sha256": "6273738dcc3be4b236ec00b0cdc5bbe237b4886871650d20e6e635dbd49bbc57"
+    },
+    {
+      "name": "Arrow Left",
+      "variant": "regular",
+      "aliases": [
+        "ArrowLeft"
+      ],
+      "sha256": "746b500d735b5f6ab075151ba0588600c7bb88d43102c03b2284fd064f5080ab"
+    },
+    {
+      "name": "Arrow Right",
+      "variant": "regular",
+      "aliases": [
+        "ArrowRight"
+      ],
+      "sha256": "4f415858d01fce575cf40c9a17f336ea848017b5697ccb464f6e0789116d60e3"
+    },
+    {
+      "name": "Arrow Swap",
+      "variant": "regular",
+      "aliases": [
+        "SwapHorizontal"
+      ],
+      "sha256": "c3b7c9b71cc5af4b7ddedf9f756c0b3749139bd773cedb0bed84ede0d2eb140c"
+    },
+    {
+      "name": "Arrow Sync",
+      "variant": "regular",
+      "aliases": [
+        "Autorenew",
+        "Loading",
+        "Refresh",
+        "Sync"
+      ],
+      "sha256": "9537e4dc984b915d1d67bf2ed61c1fdf713c69d0b293a4dc12b2520d57ab55b7"
+    },
+    {
+      "name": "Arrow Up Left",
+      "variant": "regular",
+      "aliases": [
+        "ArrowTopLeft"
+      ],
+      "sha256": "766bf1ae1733d62036983b4439f0fbf2d5205e8d39e7f17e5ecd203e78f3d2e2"
+    },
+    {
+      "name": "Arrow Upload",
+      "variant": "regular",
+      "aliases": [
+        "Publish",
+        "Upload"
+      ],
+      "sha256": "c2e41256baf47bf51122cf8efca0b2c13bebb31fb50284ce2b5a9a7edf0dd608"
+    },
+    {
+      "name": "Board",
+      "variant": "regular",
+      "aliases": [
+        "ViewDashboard",
+        "ViewDashboardOutline"
+      ],
+      "sha256": "05da669886959645d4ce4b91325e33e7b062b8f6db6b64a60d4eff5d7a10c94a"
+    },
+    {
+      "name": "Book",
+      "variant": "regular",
+      "aliases": [
+        "BookEducationOutline",
+        "BookOpenPageVariantOutline",
+        "BookOpenVariant",
+        "BookOpenVariantOutline"
+      ],
+      "sha256": "3ff995137b68ba3bd5811c30cbf5395fbba457c57f57cc9864bf400adc4624ac"
+    },
+    {
+      "name": "Book Exclamation Mark",
+      "variant": "regular",
+      "aliases": [
+        "BookAlertOutline"
+      ],
+      "sha256": "d1a280d3c8b5f177058ad4192d22c9193042cb698119c4f597b2cf286dd53bc9"
+    },
+    {
+      "name": "Briefcase",
+      "variant": "regular",
+      "aliases": [
+        "Briefcase",
+        "BriefcaseOutline"
+      ],
+      "sha256": "091610be21ec080409ffaf6ba2cf874d3b5c326c0db642a0d8c8537cf0f4abfa"
+    },
+    {
+      "name": "Building",
+      "variant": "regular",
+      "aliases": [
+        "OfficeBuilding",
+        "OfficeBuildingOutline"
+      ],
+      "sha256": "4aff30b09a9ec19c711f8824e36adb79e5def9018cfc2234106692bd5d7458ae"
+    },
+    {
+      "name": "Building Shop",
+      "variant": "regular",
+      "aliases": [
+        "StorefrontOutline"
+      ],
+      "sha256": "292ab2c0743076f08cf6b86114e58d917dfc6017fe9f15687589dfe4aade18e1"
+    },
+    {
+      "name": "Calendar",
+      "variant": "regular",
+      "aliases": [
+        "Calendar",
+        "CalendarMonth",
+        "CalendarMonthOutline",
+        "CalendarToday"
+      ],
+      "sha256": "7bb2e8004c34326c241d2d796c355d257e99fa1a5209178fb3d032cc429a8221"
+    },
+    {
+      "name": "Calendar Add",
+      "variant": "regular",
+      "aliases": [
+        "CalendarPlus",
+        "CalendarPlusOutline"
+      ],
+      "sha256": "14b34882da6385c574f8be47d8e0af5764b20a0eceb04e187caeb73f4e3c1a36"
+    },
+    {
+      "name": "Calendar Cancel",
+      "variant": "regular",
+      "aliases": [
+        "CalendarRemove"
+      ],
+      "sha256": "4235fcb9702a907521f5be9617b505daa7b18e33ce31f16d15b6e79dfccd81d9"
+    },
+    {
+      "name": "Calendar Checkmark",
+      "variant": "regular",
+      "aliases": [
+        "CalendarCheck"
+      ],
+      "sha256": "d814f9f0cb0501d48e247e6401d5340da30373fb602ec0603bb4e173b0fc2fb4"
+    },
+    {
+      "name": "Calendar Clock",
+      "variant": "regular",
+      "aliases": [
+        "CalendarClock"
+      ],
+      "sha256": "59e27eb33345255c84cba8c0bfc281afa5346176508490d8b14e6f13618b6656"
+    },
+    {
+      "name": "Calendar Edit",
+      "variant": "regular",
+      "aliases": [
+        "CalendarEdit",
+        "CalendarEditOutline"
+      ],
+      "sha256": "5f0cf80f56e6933a52294ac484111ef8abe6b70eb6efc5b8d55ec629cf739073"
+    },
+    {
+      "name": "Calendar LTR",
+      "variant": "regular",
+      "aliases": [
+        "CalendarRange"
+      ],
+      "sha256": "7bb2e8004c34326c241d2d796c355d257e99fa1a5209178fb3d032cc429a8221"
+    },
+    {
+      "name": "Calendar Lock",
+      "variant": "regular",
+      "aliases": [
+        "CalendarLock"
+      ],
+      "sha256": "a3666a69d9499b2a06b4150937467a60bdacb1d15f74320e593bb33def25a091"
+    },
+    {
+      "name": "Calendar Sync",
+      "variant": "regular",
+      "aliases": [
+        "CalendarSync"
+      ],
+      "sha256": "a4f00d1cfc8d29cfa003c1152e46f762912f6931a0397416cc5910f0e613a0bc"
+    },
+    {
+      "name": "Certificate",
+      "variant": "regular",
+      "aliases": [
+        "Certificate",
+        "CertificateOutline",
+        "CheckDecagramOutline"
+      ],
+      "sha256": "18c234a7f3ab69a2a22af5c540fbaca6c4f8f39b2c59187d85fe5aa6d6b9087d"
+    },
+    {
+      "name": "Chat",
+      "variant": "regular",
+      "aliases": [
+        "MessageText",
+        "MessageTextOutline"
+      ],
+      "sha256": "d6d2f402b87a7f79600f397b49aa1a4c40920b8eae30091e8286a583a1a7c003"
+    },
+    {
+      "name": "Checkbox Checked",
+      "variant": "regular",
+      "aliases": [
+        "CheckboxMultipleMarked"
+      ],
+      "sha256": "617379e778b87bb754628b65efcd61a55e4a0a70732e13bdd522b8cdc2011f4d"
+    },
+    {
+      "name": "Checkbox Unchecked",
+      "variant": "regular",
+      "aliases": [
+        "CheckboxMultipleBlank"
+      ],
+      "sha256": "12323ea35cf41e62d11a2e73303d20e03dec20cb3727eb3a41be6a6c954be30f"
+    },
+    {
+      "name": "Checkmark",
+      "variant": "regular",
+      "aliases": [
+        "Check",
+        "CheckAll"
+      ],
+      "sha256": "643b76be6638a22b348c14990f0957335fbe98b39e9adb7ba7b4dc86b6745177"
+    },
+    {
+      "name": "Checkmark Circle",
+      "variant": "regular",
+      "aliases": [
+        "CheckCircleOutline",
+        "ClockCheck",
+        "ClockCheckOutline"
+      ],
+      "sha256": "b3df75bf058b424fc56c8ec440672237051210017806404b8fecffee3d4253fc"
+    },
+    {
+      "name": "Chevron Down",
+      "variant": "regular",
+      "aliases": [
+        "ChevronDown"
+      ],
+      "sha256": "52b3569967dcd33b226bd19a7cb3bf1bf491dd22822c4c3a8d36f80cb6612ffa"
+    },
+    {
+      "name": "Chevron Left",
+      "variant": "regular",
+      "aliases": [
+        "ChevronLeft"
+      ],
+      "sha256": "3735add64f88d63dbc609c10c93ac3c5fc09c9e93a1ad8707be5e4a95f5dc2ce"
+    },
+    {
+      "name": "Chevron Right",
+      "variant": "regular",
+      "aliases": [
+        "ChevronRight"
+      ],
+      "sha256": "ebe7bfcc2d019af0970c8d77ecd35ab49b2981c46d923e676d1e698dc9142fc4"
+    },
+    {
+      "name": "Chevron Up",
+      "variant": "regular",
+      "aliases": [
+        "ChevronUp"
+      ],
+      "sha256": "052900e9e89261892a758ff3eab908013678a754a312d94f19444d864e3cfb8e"
+    },
+    {
+      "name": "Circle",
+      "variant": "regular",
+      "aliases": [
+        "CircleOutline",
+        "RadioboxBlank"
+      ],
+      "sha256": "8127dec10fc354a0bf5f5d81b0d7dabb8202aba9889773a92fca049a1416d9f2"
+    },
+    {
+      "name": "Circle",
+      "variant": "filled",
+      "aliases": [
+        "Circle"
+      ],
+      "sha256": "8bac347ddef5c5cb2f8aa4d4603e5728972cc7fbcbfcb3a0c5e54b8910bb5521"
+    },
+    {
+      "name": "Clipboard",
+      "variant": "regular",
+      "aliases": [
+        "ClipboardAccount",
+        "ClipboardPlus"
+      ],
+      "sha256": "03b15649909f8a5550055d3405c6901b1e83726b3b8fe128189633c9fc03fe59"
+    },
+    {
+      "name": "Clipboard Task",
+      "variant": "regular",
+      "aliases": [
+        "ClipboardCheck",
+        "ClipboardCheckOutline",
+        "ClipboardList",
+        "ClipboardTextOutline",
+        "FormatListChecks"
+      ],
+      "sha256": "b2db65a324f18726ea89ad41899b4574482b6747f270c1b15c0674f38b739c14"
+    },
+    {
+      "name": "Clipboard Text Edit",
+      "variant": "regular",
+      "aliases": [
+        "ClipboardEdit"
+      ],
+      "sha256": "f2df2d038f02eef8df90e765fa92f673cd2b2a6ba385bb93ecdd7000ecae9179"
+    },
+    {
+      "name": "Clock Alarm",
+      "variant": "regular",
+      "aliases": [
+        "ClockAlertOutline"
+      ],
+      "sha256": "68686ec2325be97eee2f1077c2c017047db4fd75df1922a8160d7363405b384b"
+    },
+    {
+      "name": "Cloud",
+      "variant": "regular",
+      "aliases": [
+        "Cloud",
+        "CloudLock",
+        "CloudLockOutline",
+        "CloudOutline",
+        "CloudSync",
+        "CloudSyncOutline"
+      ],
+      "sha256": "b631a912bb75df4ffb80361cbb168c14bda043b9a4deb6807b9e30f017207495"
+    },
+    {
+      "name": "Cloud Arrow Up",
+      "variant": "regular",
+      "aliases": [
+        "CloudUpload",
+        "CloudUploadOutline"
+      ],
+      "sha256": "6225bd7d596b8e4792345ccfc220eb62d7363b176825a6e1351d255ad4b94a98"
+    },
+    {
+      "name": "Cloud Checkmark",
+      "variant": "regular",
+      "aliases": [
+        "CloudCheckOutline"
+      ],
+      "sha256": "8edc51bedc45e3bb32ec418abd00951a26d1ed3101fb10be7dca77c2e6dda710"
+    },
+    {
+      "name": "Cloud Dismiss",
+      "variant": "regular",
+      "aliases": [
+        "CloudOffOutline"
+      ],
+      "sha256": "2f8f3cf174f5472f7893089541e7a427ca6adf2f70ee307f62f3b4a5b53186d0"
+    },
+    {
+      "name": "Color",
+      "variant": "regular",
+      "aliases": [
+        "Palette",
+        "ThemeLightDark"
+      ],
+      "sha256": "82a9db90034f33542b89c8658b351955da13033c0a00ed6212815c78aa89b25a"
+    },
+    {
+      "name": "Connector",
+      "variant": "regular",
+      "aliases": [
+        "LanConnect",
+        "LanDisconnect"
+      ],
+      "sha256": "df945ca9cfc91a7dd3ba624398c289e3bfdbb447c1d0fb73dacbad2d67cb7adc"
+    },
+    {
+      "name": "Contact Card",
+      "variant": "regular",
+      "aliases": [
+        "BadgeAccount",
+        "CardAccountDetails",
+        "CardAccountDetailsOutline",
+        "FileAccountOutline"
+      ],
+      "sha256": "28703826e44eb4d6e7383f9e1e96d167bd77147a72d6a46a9f983b959671a6e0"
+    },
+    {
+      "name": "Copy",
+      "variant": "regular",
+      "aliases": [
+        "ContentCopy",
+        "FileMultiple"
+      ],
+      "sha256": "599789902ed3de0b58da04dbac37e9a96cba962659197ecd0ea2463799ed85dd"
+    },
+    {
+      "name": "Data Bar Vertical",
+      "variant": "regular",
+      "aliases": [
+        "ChartBar",
+        "ChartBox"
+      ],
+      "sha256": "d4c616652864a0a2e65a9e580703beda732361e9cf2ea9b4a124ece096e0c1ff"
+    },
+    {
+      "name": "Data Line",
+      "variant": "regular",
+      "aliases": [
+        "ChartLine",
+        "Finance"
+      ],
+      "sha256": "5284f4ad688300c6ed0125dcf95e3e9ffb8ab367934328cf96e92b1dfd0cc8d8"
+    },
+    {
+      "name": "Data Pie",
+      "variant": "regular",
+      "aliases": [
+        "ChartArc",
+        "ChartDonut"
+      ],
+      "sha256": "322e24992161f45b5cee55e742433c3a674cf380c4bc015a843cbdfbaf06a332"
+    },
+    {
+      "name": "Database",
+      "variant": "regular",
+      "aliases": [
+        "DatabaseCheck",
+        "DatabaseCheckOutline",
+        "DatabaseExport",
+        "DatabaseExportOutline",
+        "DatabaseOutline"
+      ],
+      "sha256": "e57c4c83c2016d47554cc5b63a94bb23e5ebd0451d00a45b3a26dc75f66a068d"
+    },
+    {
+      "name": "Delete",
+      "variant": "regular",
+      "aliases": [
+        "Delete",
+        "DeleteForeverOutline",
+        "DeleteSweep",
+        "DeleteSweepOutline",
+        "Eraser",
+        "TrashCanOutline"
+      ],
+      "sha256": "0f0769b54d5862f2390ea7e51aab825e5dc10d4fa36da34d1559acc55799be92"
+    },
+    {
+      "name": "Desktop",
+      "variant": "regular",
+      "aliases": [
+        "DesktopTowerMonitor",
+        "MonitorEye"
+      ],
+      "sha256": "320f7422cc8da3425d060c8c16e073c698209f2b970ade3c07b6553e1a52988d"
+    },
+    {
+      "name": "Dialpad",
+      "variant": "regular",
+      "aliases": [
+        "Dialpad"
+      ],
+      "sha256": "c533e6e2d1b2677195186b4ad91b0a93d7cd80fabe57a2dc5e7c20ac09084803"
+    },
+    {
+      "name": "Dismiss",
+      "variant": "regular",
+      "aliases": [
+        "Close"
+      ],
+      "sha256": "f23a501be08e93ad334f1705be0c9e8224a8e7457bd884fe59263db1c6a4f3dc"
+    },
+    {
+      "name": "Dismiss Circle",
+      "variant": "regular",
+      "aliases": [
+        "CloseCircle"
+      ],
+      "sha256": "edee69077d82eedc9c802b7ff7b71825b23258a28622904f5c9e63d2339b225a"
+    },
+    {
+      "name": "Document",
+      "variant": "regular",
+      "aliases": [
+        "FileDocument",
+        "FileDocumentOutline"
+      ],
+      "sha256": "c70164c6ee7f495a3bb4978de76628e166d6ba5b52210a016ddcfe35138528b1"
+    },
+    {
+      "name": "Document Add",
+      "variant": "regular",
+      "aliases": [
+        "FileDocumentPlus"
+      ],
+      "sha256": "426f01a3139fbfffac66de4bc0460247c29b5eee23fbea7945a47c437125b4e0"
+    },
+    {
+      "name": "Document Arrow Left",
+      "variant": "regular",
+      "aliases": [
+        "FileImportOutline"
+      ],
+      "sha256": "28b149249cbc922098d385d70caff2405d6ad363eeade1d477b5da69179bedc2"
+    },
+    {
+      "name": "Document Arrow Right",
+      "variant": "regular",
+      "aliases": [
+        "FileExport"
+      ],
+      "sha256": "4acc984d858515686a5e7275e878642b6d27596b98f718d5663eb49dfec665d6"
+    },
+    {
+      "name": "Document Checkmark",
+      "variant": "regular",
+      "aliases": [
+        "FileCheck"
+      ],
+      "sha256": "59ff722d3bdfb210628aa60b2ebf33ca649847140240b8ef54a2cc17438db56e"
+    },
+    {
+      "name": "Document Data",
+      "variant": "regular",
+      "aliases": [
+        "FileChart",
+        "FileChartOutline"
+      ],
+      "sha256": "1ef874025dff468dc46024249dc585f63fe0ef3bcd66aef7ffa113d6b991d9ad"
+    },
+    {
+      "name": "Document PDF",
+      "variant": "regular",
+      "aliases": [
+        "FilePdfBox"
+      ],
+      "sha256": "851a522d0be10164fce8bc5c99fdf52065545ea8ac88fb4347d6a8021984f9cb"
+    },
+    {
+      "name": "Document Search",
+      "variant": "regular",
+      "aliases": [
+        "FileFind"
+      ],
+      "sha256": "a051370f067af2a37410547d1044585a8ec51963b1d184c8975d32f97ef9ca73"
+    },
+    {
+      "name": "Document Signature",
+      "variant": "regular",
+      "aliases": [
+        "FileSign"
+      ],
+      "sha256": "3989ff7f738e9f04758a7fc37ee30bffe4d43f71a9c15f95534c01682c749395"
+    },
+    {
+      "name": "Document Table",
+      "variant": "regular",
+      "aliases": [
+        "FileExcel"
+      ],
+      "sha256": "c76eaa00d41479ae85c10053b7a8b0cb1f24ba5d9f57eb82456b2f201c56a271"
+    },
+    {
+      "name": "Edit",
+      "variant": "regular",
+      "aliases": [
+        "Pen",
+        "Pencil",
+        "PencilBoxMultipleOutline",
+        "PencilBoxOutline",
+        "PencilOutline"
+      ],
+      "sha256": "2dae3a8425dbeb5ff15a0e1af84f5d15719fe62b012937a6a5457a1481804c73"
+    },
+    {
+      "name": "Error Circle",
+      "variant": "regular",
+      "aliases": [
+        "AlertCircle",
+        "AlertCircleOutline"
+      ],
+      "sha256": "56ce670f8d505b8fb2a9e66ae523d3d566aed346f29470666a5d914c7f3f504e"
+    },
+    {
+      "name": "Eye",
+      "variant": "regular",
+      "aliases": [
+        "Eye",
+        "EyeOutline"
+      ],
+      "sha256": "4a9ca45d072c986e159b46c9c19d4290463edabc507db07c28e46f64bddefb47"
+    },
+    {
+      "name": "Eye Off",
+      "variant": "regular",
+      "aliases": [
+        "EyeOffOutline"
+      ],
+      "sha256": "69c812230955937160708700e81ff4064251ff7107834fa86b9e1c7b2d479272"
+    },
+    {
+      "name": "Filter",
+      "variant": "regular",
+      "aliases": [
+        "FilterOutline",
+        "FilterVariant"
+      ],
+      "sha256": "06d1ca481689c345922149cae48b1471135d251a9a3e7caf389ab40caaddf8f7"
+    },
+    {
+      "name": "Filter Dismiss",
+      "variant": "regular",
+      "aliases": [
+        "FilterRemove",
+        "FilterRemoveOutline"
+      ],
+      "sha256": "015a2a3014c2afe9c4bf727bd1b3e271194c25b504ecc6d85693c5e27915a3da"
+    },
+    {
+      "name": "Fingerprint",
+      "variant": "regular",
+      "aliases": [
+        "Fingerprint"
+      ],
+      "sha256": "69b3ecf1c668a7ce06a82164a697b24b2877f91bed636f50afcfb347106625e8"
+    },
+    {
+      "name": "Folder Add",
+      "variant": "regular",
+      "aliases": [
+        "FolderPlus",
+        "FolderPlusOutline"
+      ],
+      "sha256": "8b37f8eab928a9be22413cf96742021047887a72bfdd0e65bd49bd73acaa6d78"
+    },
+    {
+      "name": "Food Cake",
+      "variant": "regular",
+      "aliases": [
+        "CakeVariant"
+      ],
+      "sha256": "ed89c5dcf073e33aafc7c9c00bc7bea3766fe2f7af87362ecb1ce0be77b0e429"
+    },
+    {
+      "name": "Gavel",
+      "variant": "regular",
+      "aliases": [
+        "Gavel",
+        "ScaleBalance"
+      ],
+      "sha256": "a0181ae472ca86f313e988460b42800b8211fd4664d1b7f3b62ebe1eed4a25ef"
+    },
+    {
+      "name": "Globe",
+      "variant": "regular",
+      "aliases": [
+        "IpNetworkOutline",
+        "Web"
+      ],
+      "sha256": "bb024c6df766abce2e500a714d6818f2654bfcb507594d68cff28ec48d7296fd"
+    },
+    {
+      "name": "Hat Graduation",
+      "variant": "regular",
+      "aliases": [
+        "School",
+        "SchoolOutline"
+      ],
+      "sha256": "4cbe9b2b81b62be37be88019ed20e77e95b8d425e132718f4e0ffb8a9aa2ed28"
+    },
+    {
+      "name": "Heart",
+      "variant": "regular",
+      "aliases": [
+        "HandHeart",
+        "HandHeartOutline"
+      ],
+      "sha256": "dac244731d22d22945c24705dacb480057acfa9c72b2852ed495d8cbe02d6ce1"
+    },
+    {
+      "name": "History",
+      "variant": "regular",
+      "aliases": [
+        "History",
+        "ProgressClock"
+      ],
+      "sha256": "07d75bb67b1b81cf504b86952cf90fc7af2de44ee6b335595ee3806047fc45b4"
+    },
+    {
+      "name": "Home",
+      "variant": "regular",
+      "aliases": [
+        "Home",
+        "HomeOutline"
+      ],
+      "sha256": "f78ef623c07e6f40474ebd55b88ad29739d77bf9629e20ef462f4db86452acf0"
+    },
+    {
+      "name": "Image",
+      "variant": "regular",
+      "aliases": [
+        "Image",
+        "ImageOutline"
+      ],
+      "sha256": "205577a958d9ba03377d211b00dc625abaa56a878719dd5ea880f8e2ea8cfac8"
+    },
+    {
+      "name": "Image Add",
+      "variant": "regular",
+      "aliases": [
+        "ImagePlusOutline"
+      ],
+      "sha256": "3d8ae43d6d5361f5253d66bb07150abeebaded407de04f6c7b2e8b1b73b15a2f"
+    },
+    {
+      "name": "Image Off",
+      "variant": "regular",
+      "aliases": [
+        "ImageOff"
+      ],
+      "sha256": "f0f55be1282b377fb5f778282d6d38fddfb62c71084070b3e80f21bbb9504c36"
+    },
+    {
+      "name": "Image Search",
+      "variant": "regular",
+      "aliases": [
+        "ImageSearchOutline"
+      ],
+      "sha256": "8b1d77fa98aa15832d565d8921f8c3d37506a4550abb0ec19863ebb65cb948f2"
+    },
+    {
+      "name": "InPrivate Account",
+      "variant": "regular",
+      "aliases": [
+        "Incognito"
+      ],
+      "sha256": "fa78a024840d2caf11bce5220599ac96a222995c814ecd852a322724c735de65"
+    },
+    {
+      "name": "Info",
+      "variant": "regular",
+      "aliases": [
+        "Information",
+        "InformationOutline"
+      ],
+      "sha256": "ec9891767b25630079faca1b06026cab94eee56129dc1264a40d256aa65911bb"
+    },
+    {
+      "name": "Key",
+      "variant": "regular",
+      "aliases": [
+        "Key",
+        "KeyChain",
+        "KeyChange",
+        "KeyOutline"
+      ],
+      "sha256": "1424c553a38abe9b9f686c83eface19100b7474a205a7d47b0c669bd18a7d708"
+    },
+    {
+      "name": "Keyboard",
+      "variant": "regular",
+      "aliases": [
+        "Keyboard"
+      ],
+      "sha256": "28ab75dbebc0371f8f4f28ca1011ed289439a895bbb0fac2679690987902b7cc"
+    },
+    {
+      "name": "Lock Closed",
+      "variant": "regular",
+      "aliases": [
+        "Lock",
+        "LockCheck",
+        "LockCheckOutline",
+        "LockClock",
+        "LockOutline"
+      ],
+      "sha256": "589e952219e9f3f018b33bebc9e2fe9ac8038cf2db5bc03350d5ff20a13dcd60"
+    },
+    {
+      "name": "Lock Open",
+      "variant": "regular",
+      "aliases": [
+        "LockOpenVariant",
+        "LockOpenVariantOutline"
+      ],
+      "sha256": "fdc90527c5838060e239e92a9a4ea4ac21f80eb58565ed78133e8e41c1ae6b32"
+    },
+    {
+      "name": "Mail",
+      "variant": "regular",
+      "aliases": [
+        "EmailOutline"
+      ],
+      "sha256": "93cddca2938c156d51e15fa4536d8e2ff3b0b077f8285c2ce26cc7a440c42831"
+    },
+    {
+      "name": "Mic",
+      "variant": "regular",
+      "aliases": [
+        "Microphone",
+        "MicrophoneOutline"
+      ],
+      "sha256": "fd21c3468e1b22a4969982a36041189d96eb74fe6000d33dea3deef1f2eb30ca"
+    },
+    {
+      "name": "Money",
+      "variant": "regular",
+      "aliases": [
+        "Cash",
+        "CashMultiple",
+        "CashRegister",
+        "HandCoin"
+      ],
+      "sha256": "4975ed74ad81f0ed84a8ce9eb20da8b8bc8f540cbfbbc85ab25652ea633d1876"
+    },
+    {
+      "name": "Money Hand",
+      "variant": "regular",
+      "aliases": [
+        "CashCheck",
+        "CashMinus",
+        "CashPlus"
+      ],
+      "sha256": "1f84a9a5b2a63773d8549654e1a3c3fce8e7975cc3e3f15cec068ace857a26cd"
+    },
+    {
+      "name": "More Horizontal",
+      "variant": "regular",
+      "aliases": [
+        "DotsHorizontal",
+        "DotsHorizontalCircleOutline"
+      ],
+      "sha256": "aacb8ee10e503858f5465d18beb79f16d1ad790eb2b802127ee572062129fc3a"
+    },
+    {
+      "name": "Navigation",
+      "variant": "regular",
+      "aliases": [
+        "Menu"
+      ],
+      "sha256": "4b0fd72aae5f2dcf5dde1a1a356a856fb690fd9c114716b4f78a7444e8a67c55"
+    },
+    {
+      "name": "Number Symbol Square",
+      "variant": "regular",
+      "aliases": [
+        "Dice5"
+      ],
+      "sha256": "50fcbd04daa5f13d5d10fe83ea56be09c12040f766f98161f2f4b28470948ef6"
+    },
+    {
+      "name": "Open",
+      "variant": "regular",
+      "aliases": [
+        "OpenInNew"
+      ],
+      "sha256": "1c6f88021029a3f1faa19e77f8d7d5eca72a5b01fdecca66515cabe28c74653e"
+    },
+    {
+      "name": "Options",
+      "variant": "regular",
+      "aliases": [
+        "Tune",
+        "TuneVariant"
+      ],
+      "sha256": "1738b2ee6e1d07119ac9e3b2faac51897bc451f248a42a2e65af882a4a3da858"
+    },
+    {
+      "name": "Organization",
+      "variant": "regular",
+      "aliases": [
+        "SitemapOutline"
+      ],
+      "sha256": "8932d1be96f5549837f24217b59389f3fae0b7ad74f5f595183cb53a349c165d"
+    },
+    {
+      "name": "Panel Left",
+      "variant": "regular",
+      "aliases": [
+        "DockLeft"
+      ],
+      "sha256": "4f9e2178b40bfcf45e1319490d8c18a21371de42877888ce167f2af79c773176"
+    },
+    {
+      "name": "Password",
+      "variant": "regular",
+      "aliases": [
+        "FormTextboxPassword"
+      ],
+      "sha256": "a9f4d1485f11b0702834dee6e4845c134fd197e165211de816102f90e1125899"
+    },
+    {
+      "name": "People Add",
+      "variant": "regular",
+      "aliases": [
+        "AccountMultiplePlusOutline"
+      ],
+      "sha256": "688734cb955dd14859770e8bb24f5e4c62baf689840413eb07babdaefb53bde6"
+    },
+    {
+      "name": "People Swap",
+      "variant": "regular",
+      "aliases": [
+        "AccountSwitch",
+        "AccountSwitchOutline"
+      ],
+      "sha256": "83a7545a69623b22b21aed9b55cabe07a1e5df8bdcb251f6ba76e4a845879bd0"
+    },
+    {
+      "name": "People Team",
+      "variant": "regular",
+      "aliases": [
+        "AccountGroup",
+        "AccountGroupOutline",
+        "AccountMultipleOutline"
+      ],
+      "sha256": "73bdeaa93eb574bbb2f960679e580918a3411a191ee17933d37a1e6aa912b0c3"
+    },
+    {
+      "name": "Person",
+      "variant": "regular",
+      "aliases": [
+        "Account",
+        "AccountCircleOutline",
+        "AccountCog",
+        "AccountCogOutline",
+        "AccountOutline",
+        "AccountSchool",
+        "AccountSchoolOutline",
+        "AccountTie"
+      ],
+      "sha256": "4f9862044a1afff206c2154d37d32ca652c4b9ba8beb615510316f473e4d862f"
+    },
+    {
+      "name": "Person Add",
+      "variant": "regular",
+      "aliases": [
+        "AccountPlus",
+        "AccountPlusOutline"
+      ],
+      "sha256": "dea6f23f3449c6b0bd635ebf17bc4d5fcb94fe06f56c1060aaf30c9964a40959"
+    },
+    {
+      "name": "Person Arrow Back",
+      "variant": "regular",
+      "aliases": [
+        "AccountArrowDown"
+      ],
+      "sha256": "fa4217619e3c4c5a0fd4f3202835cc6e27dd80d6cb94a408130f1a28043780d0"
+    },
+    {
+      "name": "Person Arrow Left",
+      "variant": "regular",
+      "aliases": [
+        "AccountArrowLeftOutline"
+      ],
+      "sha256": "49f45091539c6d4f2524c18de2035bf4ae84e18f8315fa2f1049f7e2e793c767"
+    },
+    {
+      "name": "Person Arrow Right",
+      "variant": "regular",
+      "aliases": [
+        "AccountArrowRight"
+      ],
+      "sha256": "fe40037959102a72c77bffa332818da8a6bf5aa9ee8df05962adb776b8f6ebcb"
+    },
+    {
+      "name": "Person Available",
+      "variant": "regular",
+      "aliases": [
+        "AccountCheck",
+        "AccountCheckOutline"
+      ],
+      "sha256": "9c9a7b62a485756f57d8304b6b43202d3321b30db33ff5d621a5c7a8fad15b62"
+    },
+    {
+      "name": "Person Board",
+      "variant": "regular",
+      "aliases": [
+        "HumanMaleBoard"
+      ],
+      "sha256": "9b397637527fde5d25dc25eb3dfa21de429b3e463f7d2fc1c028f03a250eedd8"
+    },
+    {
+      "name": "Person Clock",
+      "variant": "regular",
+      "aliases": [
+        "AccountClock"
+      ],
+      "sha256": "e2e57aee177a37e3e3f315ce29ecc324b693774ab9979a3a9feaeaf305c1e7ee"
+    },
+    {
+      "name": "Person Delete",
+      "variant": "regular",
+      "aliases": [
+        "AccountCancel",
+        "AccountCancelOutline",
+        "AccountMinus",
+        "AccountOffOutline",
+        "AccountRemove",
+        "AccountRemoveOutline"
+      ],
+      "sha256": "1eef79d186c4c90964510605b1a13e22a59315a94ae8ffe4177b15c0b5fbccb3"
+    },
+    {
+      "name": "Person Edit",
+      "variant": "regular",
+      "aliases": [
+        "AccountEdit",
+        "Rename"
+      ],
+      "sha256": "07fd6876eab2d80d00c1aeabd816f73b832d25e6e1b12679415ade513b91fbce"
+    },
+    {
+      "name": "Person Key",
+      "variant": "regular",
+      "aliases": [
+        "AccountKey",
+        "AccountKeyOutline"
+      ],
+      "sha256": "c6744d391338f1f89476cdafc1f706daef6aabfe70219e393cb2af07dc4d82bc"
+    },
+    {
+      "name": "Person Search",
+      "variant": "regular",
+      "aliases": [
+        "AccountSearchOutline"
+      ],
+      "sha256": "f918718dbe508d6c82c77d65f2469fe717a1cb680852c4d8352f8af3f7dfcfd3"
+    },
+    {
+      "name": "Person Star",
+      "variant": "regular",
+      "aliases": [
+        "AccountStarOutline"
+      ],
+      "sha256": "facb1a8da305380a237a44fe8003aac081f548b6a18e41f41a18929fca080250"
+    },
+    {
+      "name": "Person Voice",
+      "variant": "regular",
+      "aliases": [
+        "AccountTieVoiceOutline"
+      ],
+      "sha256": "be46dfbcd5fd273ce3cd9575dd019a67d1335c176383f8e5615e6204af5f9fff"
+    },
+    {
+      "name": "Phone",
+      "variant": "regular",
+      "aliases": [
+        "Cellphone",
+        "CellphoneCheck",
+        "CellphoneOff",
+        "CellphoneRemove",
+        "PhoneOutline"
+      ],
+      "sha256": "6719d206f68101ee2b495b3b0ba8867a9994b276080d391b2f10c5b155533cd9"
+    },
+    {
+      "name": "Phone Laptop",
+      "variant": "regular",
+      "aliases": [
+        "CellphoneLink"
+      ],
+      "sha256": "532100391c38e259e17d64ea670414e1f825b4b967eb6a34e3e873471f49a54e"
+    },
+    {
+      "name": "Phone Lock",
+      "variant": "regular",
+      "aliases": [
+        "CellphoneLock"
+      ],
+      "sha256": "83ace1fb36326d077f53366d04f6080782124cf67ae35b3f0564f12fbcaf805b"
+    },
+    {
+      "name": "Play Circle",
+      "variant": "regular",
+      "aliases": [
+        "AnimationPlay",
+        "PlayOutline"
+      ],
+      "sha256": "5d2b909f5bfbcb05158512e1df6c15597fbf3dddcd1855f023fba10be196f25f"
+    },
+    {
+      "name": "Power",
+      "variant": "regular",
+      "aliases": [
+        "Power",
+        "PowerSettings"
+      ],
+      "sha256": "370bb663ee39f2c327c1f615b1d2a5725803c5372867159a3f90067732265083"
+    },
+    {
+      "name": "Print",
+      "variant": "regular",
+      "aliases": [
+        "Printer"
+      ],
+      "sha256": "2c2a4048308f4d87f16c2daa9ab936d66ed6a995367108c669925b15d0a43e56"
+    },
+    {
+      "name": "QR Code",
+      "variant": "regular",
+      "aliases": [
+        "QrcodePlus",
+        "QrcodeScan"
+      ],
+      "sha256": "6c52af1e835bdec778db289d54b5e91e099e830c2b07c05bda2b14f5a6059b4c"
+    },
+    {
+      "name": "Question Circle",
+      "variant": "regular",
+      "aliases": [
+        "HelpCircleOutline"
+      ],
+      "sha256": "568e3b4de63a80958f8577a33a9e3a57fe4fd065b79f135b8459db1926468450"
+    },
+    {
+      "name": "Radio Button",
+      "variant": "filled",
+      "aliases": [
+        "RadioboxMarked"
+      ],
+      "sha256": "36f588801b0af590e1259aa06863f41975eeb441139dd51b0ba14435611f710b"
+    },
+    {
+      "name": "Receipt",
+      "variant": "regular",
+      "aliases": [
+        "Receipt",
+        "ReceiptText",
+        "ReceiptTextOutline",
+        "ReceiptTextRemoveOutline"
+      ],
+      "sha256": "29cf6e19f774ac44bdc2737855a19eca0f3c3fd1bca96504eef27034148e571e"
+    },
+    {
+      "name": "Save",
+      "variant": "regular",
+      "aliases": [
+        "ContentSave",
+        "ContentSaveOutline"
+      ],
+      "sha256": "35d473d8af5134ab3679d3f41e7270d6ac6bce66fc5f98caccb42d75350b237f"
+    },
+    {
+      "name": "Search",
+      "variant": "regular",
+      "aliases": [
+        "Magnify"
+      ],
+      "sha256": "dc8ec761e8cdc52032b86e15c424716ded96d168970b5b611257253a41484b62"
+    },
+    {
+      "name": "Send",
+      "variant": "regular",
+      "aliases": [
+        "SendOutline"
+      ],
+      "sha256": "ff90f7edc63239be72d28e76ee2fd67395f1f9e49aa43cf34f44b84c2ee09d11"
+    },
+    {
+      "name": "Server",
+      "variant": "regular",
+      "aliases": [
+        "ServerOutline"
+      ],
+      "sha256": "ea65287c1ac725607d2e5b6ea2bfcd7d588b82a9f68084ef61511e65aa7af8a5"
+    },
+    {
+      "name": "Settings",
+      "variant": "regular",
+      "aliases": [
+        "Cog",
+        "CogOutline"
+      ],
+      "sha256": "5ac05e6e11c9ec9f24703091c42ca1f5c91f4032cb0eee35c892d1872a38871b"
+    },
+    {
+      "name": "Share Android",
+      "variant": "regular",
+      "aliases": [
+        "ShareVariantOutline"
+      ],
+      "sha256": "33a5f8aaa8f9b963e0d80a96bf5afb822a6d5b336bcfea57e726c06d994a072b"
+    },
+    {
+      "name": "Shield",
+      "variant": "regular",
+      "aliases": [
+        "ShieldAccount",
+        "ShieldAccountOutline"
+      ],
+      "sha256": "b760261754d66e65fc21ceba3eb988b32aa25efe8f2086eca9865e4ef22f5bbd"
+    },
+    {
+      "name": "Shield Checkmark",
+      "variant": "regular",
+      "aliases": [
+        "ShieldCheck",
+        "ShieldCheckOutline"
+      ],
+      "sha256": "d25f0805ecf71295565592d2a4677fdc30eb8894922882fc8c1d8fdcd5f2140f"
+    },
+    {
+      "name": "Shield Dismiss",
+      "variant": "regular",
+      "aliases": [
+        "ShieldOff"
+      ],
+      "sha256": "7cb0fe4aa504aa12d1fb4ae33b35784bf02284409febe71cef245a13f7ae1657"
+    },
+    {
+      "name": "Shield Lock",
+      "variant": "regular",
+      "aliases": [
+        "ShieldLockOutline"
+      ],
+      "sha256": "8ac457627d37f3f2aa419de000c7b59066ad0403bf8cb95e29786c8c6ceb49e2"
+    },
+    {
+      "name": "Sign Out",
+      "variant": "regular",
+      "aliases": [
+        "Logout",
+        "LogoutVariant"
+      ],
+      "sha256": "afa068599e0225204efc23250e25886e26b5173120b62bde43a27d275e7f05fc"
+    },
+    {
+      "name": "Speaker 1",
+      "variant": "regular",
+      "aliases": [
+        "VolumeLow"
+      ],
+      "sha256": "54b67e40cfb37179b212d8ae8eef98bd645f52194e9179c0a35fd57cd5c45392"
+    },
+    {
+      "name": "Speaker 2",
+      "variant": "regular",
+      "aliases": [
+        "VolumeHigh"
+      ],
+      "sha256": "7e8c26c6b8283df8b41e786b0684fb37355bbafd626ea6567ae103f286b6c0e3"
+    },
+    {
+      "name": "Square",
+      "variant": "regular",
+      "aliases": [
+        "WindowMaximize"
+      ],
+      "sha256": "12323ea35cf41e62d11a2e73303d20e03dec20cb3727eb3a41be6a6c954be30f"
+    },
+    {
+      "name": "Stop",
+      "variant": "regular",
+      "aliases": [
+        "Stop",
+        "StopOutline"
+      ],
+      "sha256": "00dbf98c80cad5069f11311046585118b2f27fd622c84fb28eb90c5127bb760a"
+    },
+    {
+      "name": "Subtract",
+      "variant": "regular",
+      "aliases": [
+        "Minus"
+      ],
+      "sha256": "8c2e073d38e1442d7726f60dd7886dff5b498550cdf030fae6102adac5859f0c"
+    },
+    {
+      "name": "Tag Add",
+      "variant": "regular",
+      "aliases": [
+        "TagPlusOutline"
+      ],
+      "sha256": "dbd3d528dd891ae0c39b6a7aa9f775fc8a9df447bfff9d02c1cee9df19122086"
+    },
+    {
+      "name": "Tag Multiple",
+      "variant": "regular",
+      "aliases": [
+        "TagMultipleOutline"
+      ],
+      "sha256": "c96d3b9c80340a4cb1134ce97abc120fa8f54e007db770ffc85c4e898ca58b29"
+    },
+    {
+      "name": "Tap Double",
+      "variant": "regular",
+      "aliases": [
+        "GestureDoubleTap"
+      ],
+      "sha256": "4c851d0672362ced93e0e38e1d06848eecd4d69d1d1ee253c0176bc9077df365"
+    },
+    {
+      "name": "Tap Single",
+      "variant": "regular",
+      "aliases": [
+        "CallToAction",
+        "Cta",
+        "GestureTap",
+        "GestureTapButton",
+        "GestureTouchButton"
+      ],
+      "sha256": "d5008d090a18fda95aef617f46fe2cca5ff800d61e4762fe0dc3d480aee0b4c6"
+    },
+    {
+      "name": "Text Font",
+      "variant": "regular",
+      "aliases": [
+        "FormatFont"
+      ],
+      "sha256": "51064a300f1cd26a2e3d3b0556d4e1c669077416ea1aa485857af0e07ada858c"
+    },
+    {
+      "name": "Text Number List LTR",
+      "variant": "regular",
+      "aliases": [
+        "FormatListNumbered"
+      ],
+      "sha256": "422143ccc9ed831d089d2e91d48d91696c45de97480b712ccc22784db2702184"
+    },
+    {
+      "name": "Timer",
+      "variant": "regular",
+      "aliases": [
+        "TimerSandComplete",
+        "TimerSandEmpty"
+      ],
+      "sha256": "beb3918cb04c5ac833b974777d12bc0a714b944c8c12a8ee406295bff118fe45"
+    },
+    {
+      "name": "Tray Item Remove",
+      "variant": "regular",
+      "aliases": [
+        "TrayRemove"
+      ],
+      "sha256": "dab2f74a695c50a63651b8a4faff8bbe2033d542121dd960774ff987310dbb68"
+    },
+    {
+      "name": "Trophy",
+      "variant": "regular",
+      "aliases": [
+        "Podium"
+      ],
+      "sha256": "3f0c241009916e1e8e2ea3b0daa5aaaed0bbc37b47f4504be31981dcfb21072c"
+    },
+    {
+      "name": "Vault",
+      "variant": "regular",
+      "aliases": [
+        "Safe"
+      ],
+      "sha256": "4e946505a7eada0611fd16be71397c4fd2634816bafc6b5ae7ef0ebe975cccd2"
+    },
+    {
+      "name": "Wallet",
+      "variant": "regular",
+      "aliases": [
+        "Wallet",
+        "WalletOutline"
+      ],
+      "sha256": "a8da2d33da5de5affcac0cbe5936fa9e3ef777753cca604538f02723087e6165"
+    },
+    {
+      "name": "Wand",
+      "variant": "regular",
+      "aliases": [
+        "AutoFix"
+      ],
+      "sha256": "8cb487039393c8b0d5474ea2d86a01212b84307d4cfb467faeec70f20fd822b3"
+    },
+    {
+      "name": "Warning",
+      "variant": "regular",
+      "aliases": [
+        "AlertOctagon",
+        "AlertOctagonOutline",
+        "BatteryAlertVariantOutline",
+        "ShieldAlertOutline"
+      ],
+      "sha256": "9ea77c6c004bf7ce7232d348bda79baf63e4ef3bccca09638066dee955811976"
+    },
+    {
+      "name": "Weather Moon",
+      "variant": "regular",
+      "aliases": [
+        "WeatherNight",
+        "WeatherNightOutline"
+      ],
+      "sha256": "7b8c77347c704ca3f76a5fed4865f9011caf4663d011850043067ca8ee490ee8"
+    },
+    {
+      "name": "Weather Sunny",
+      "variant": "regular",
+      "aliases": [
+        "WeatherSunny"
+      ],
+      "sha256": "0ab79963a8c16c623980da51a0b2623be939b9ee167958123c11240adfcdbbaa"
+    },
+    {
+      "name": "WiFi 1",
+      "variant": "regular",
+      "aliases": [
+        "Wifi"
+      ],
+      "sha256": "07c836aa844c26399802e2bcc6b7e2405150078d458a312bbb680480f29f59d0"
+    }
+  ],
+  "color": [
+    {
+      "name": "Add Circle",
+      "path": "assets/Add Circle/SVG/ic_fluent_add_circle_32_color.svg",
+      "sha256": "04d1b2a8140202987884279e32b0d800baf6d732356d54f6bb782b0f6679d670"
+    },
+    {
+      "name": "Alert",
+      "path": "assets/Alert/SVG/ic_fluent_alert_48_color.svg",
+      "sha256": "bcbfb32ae6d29b0a833b259209986b196daa66f4c9799f7959b2a9627dfafd7a"
+    },
+    {
+      "name": "Approvals App",
+      "path": "assets/Approvals App/SVG/ic_fluent_approvals_app_32_color.svg",
+      "sha256": "c691b6858aca2ec06796715181a3499cf78733c22a2b14ded2c2016870e7005a"
+    },
+    {
+      "name": "Apps",
+      "path": "assets/Apps/SVG/ic_fluent_apps_48_color.svg",
+      "sha256": "9623340edb7bb9015c48faad341242c27bd31048d293e9f25a44049ff12f9dbe"
+    },
+    {
+      "name": "Apps List",
+      "path": "assets/Apps List/SVG/ic_fluent_apps_list_32_color.svg",
+      "sha256": "ad71a5015be2c679c424c0eff3b9914ed153cab9a8b538eae6dcf09d9e03c240"
+    },
+    {
+      "name": "Arrow Square",
+      "path": "assets/Arrow Square/SVG/ic_fluent_arrow_square_32_color.svg",
+      "sha256": "d4188e3f01633597df08c3d4681cd91b4602baaa4372729cf1127b08e9040d89"
+    },
+    {
+      "name": "Arrow Square Down",
+      "path": "assets/Arrow Square Down/SVG/ic_fluent_arrow_square_down_32_color.svg",
+      "sha256": "d4188e3f01633597df08c3d4681cd91b4602baaa4372729cf1127b08e9040d89"
+    },
+    {
+      "name": "Arrow Sync",
+      "path": "assets/Arrow Sync/SVG/ic_fluent_arrow_sync_24_color.svg",
+      "sha256": "bb5b3763ca57b2dd31b31e309dd186886be05d38f1a29ad4e41284eb62289171"
+    },
+    {
+      "name": "Board",
+      "path": "assets/Board/SVG/ic_fluent_board_28_color.svg",
+      "sha256": "914e641f6c5f1b16d82576066afa8be01bf823c30855ff0d27121ffe378c5a87"
+    },
+    {
+      "name": "Book",
+      "path": "assets/Book/SVG/ic_fluent_book_48_color.svg",
+      "sha256": "efe9e44780896b54e05537f9910f63961a0101e9aa5049b01adad8a50fd9b6b4"
+    },
+    {
+      "name": "Book Star",
+      "path": "assets/Book Star/SVG/ic_fluent_book_star_24_color.svg",
+      "sha256": "31fd741ac122c21abb77f7fb78979ac08238a9f8eb5f82e69bc28eb3c554aba6"
+    },
+    {
+      "name": "Bookmark",
+      "path": "assets/Bookmark/SVG/ic_fluent_bookmark_32_color.svg",
+      "sha256": "89496b58131591d15abbc01b5b5447a680ef1ac56683be5fab7d098ca9ca7170"
+    },
+    {
+      "name": "Briefcase",
+      "path": "assets/Briefcase/SVG/ic_fluent_briefcase_48_color.svg",
+      "sha256": "2a60948dad6967f399a8960d4a5995074300a544e2f75d4a44ddfd3db61b1462"
+    },
+    {
+      "name": "Building",
+      "path": "assets/Building/SVG/ic_fluent_building_48_color.svg",
+      "sha256": "a5cbbc9e3b550d9a938fb0f1b14d029eac41931bae3d965bb366dab192ef78ce"
+    },
+    {
+      "name": "Calendar",
+      "path": "assets/Calendar/SVG/ic_fluent_calendar_48_color.svg",
+      "sha256": "26c1258b373935970ede62c90fcb9ce259663737f098f9fc16b534f30238b11d"
+    },
+    {
+      "name": "Calendar Cancel",
+      "path": "assets/Calendar Cancel/SVG/ic_fluent_calendar_cancel_24_color.svg",
+      "sha256": "1c04b485a04e6b79ab8ad77139940e9c89af666ef063129b22b3186e29ed5734"
+    },
+    {
+      "name": "Calendar Checkmark",
+      "path": "assets/Calendar Checkmark/SVG/ic_fluent_calendar_checkmark_24_color.svg",
+      "sha256": "9bf6d7b8fa3410619447b0ebc5506675baefcefcec2092d260179492978a80af"
+    },
+    {
+      "name": "Calendar Clock",
+      "path": "assets/Calendar Clock/SVG/ic_fluent_calendar_clock_24_color.svg",
+      "sha256": "9ef1b7f1038adf6f1b8f4267283edf7aac0d3eb4cc80f1da0242cec5c77504ec"
+    },
+    {
+      "name": "Calendar Edit",
+      "path": "assets/Calendar Edit/SVG/ic_fluent_calendar_edit_32_color.svg",
+      "sha256": "b351720fcea8384cdef0fdbe72183cccdab9493e3acefce5676c17a32811e590"
+    },
+    {
+      "name": "Calendar Sync",
+      "path": "assets/Calendar Sync/SVG/ic_fluent_calendar_sync_24_color.svg",
+      "sha256": "598679a3b8d552b289234ca8afe0b04e9a11f2cf98e2debb022c32f0d1eada20"
+    },
+    {
+      "name": "Certificate",
+      "path": "assets/Certificate/SVG/ic_fluent_certificate_32_color.svg",
+      "sha256": "4be408d834a71876ca229a73d6e946aa36aaca4438080a7efe142c4936c57df2"
+    },
+    {
+      "name": "Chat",
+      "path": "assets/Chat/SVG/ic_fluent_chat_48_color.svg",
+      "sha256": "10cc1ed486419bf7e405fc53924a2b186e55dca4f45fd78f7e0433ab3fbd0d44"
+    },
+    {
+      "name": "Checkbox",
+      "path": "assets/Checkbox/SVG/ic_fluent_checkbox_24_color.svg",
+      "sha256": "fe2fd5841e6527e92e496d1f1e7d5179dae9f9896a27db486d40c75594142b07"
+    },
+    {
+      "name": "Checkmark Circle",
+      "path": "assets/Checkmark Circle/SVG/ic_fluent_checkmark_circle_48_color.svg",
+      "sha256": "7b53cb5380ef901bdfda1e8fe1822dc667103e77f09b1f6186dba6c08e60d646"
+    },
+    {
+      "name": "Clipboard",
+      "path": "assets/Clipboard/SVG/ic_fluent_clipboard_48_color.svg",
+      "sha256": "1e603f99a4081503ebf68a38c140e05cddc4a15a874ea4e192fe81e181c9e563"
+    },
+    {
+      "name": "Clipboard Task",
+      "path": "assets/Clipboard Task/SVG/ic_fluent_clipboard_task_24_color.svg",
+      "sha256": "c81cab69d8fdf02ac921dc31b66f46ec4388ba1dc85818fe9488de4dea0ca831"
+    },
+    {
+      "name": "Clipboard Text Edit",
+      "path": "assets/Clipboard Text Edit/SVG/ic_fluent_clipboard_text_edit_32_color.svg",
+      "sha256": "7626218fd03bbc11620d7209f8953f9ec83e1407eda0f71c2afb950fedc67cf0"
+    },
+    {
+      "name": "Clock",
+      "path": "assets/Clock/SVG/ic_fluent_clock_48_color.svg",
+      "sha256": "51bd508b4ba39ce5138ea4131b7419c522b1e1cad664b6bedc12250053018499"
+    },
+    {
+      "name": "Clock Alarm",
+      "path": "assets/Clock Alarm/SVG/ic_fluent_clock_alarm_48_color.svg",
+      "sha256": "5d9382ff4960db0cb1221c491948606102fdd57b946e9b4cac18b3456766fa58"
+    },
+    {
+      "name": "Cloud",
+      "path": "assets/Cloud/SVG/ic_fluent_cloud_48_color.svg",
+      "sha256": "277e29c7d251d0b065dfc86a396101ca57725f5dcd82fa4754f8a63018473fd7"
+    },
+    {
+      "name": "Cloud Dismiss",
+      "path": "assets/Cloud Dismiss/SVG/ic_fluent_cloud_dismiss_48_color.svg",
+      "sha256": "983a010b5ee354ce1e4004cecd9e43377a562791e420ce86d968467dbc87301e"
+    },
+    {
+      "name": "Coin Multiple",
+      "path": "assets/Coin Multiple/SVG/ic_fluent_coin_multiple_48_color.svg",
+      "sha256": "b7a05305abe79daca4cc599e08ca43c7b1d461a0ed06c3e439325da85fa3b8cb"
+    },
+    {
+      "name": "Contact Card",
+      "path": "assets/Contact Card/SVG/ic_fluent_contact_card_48_color.svg",
+      "sha256": "3f8c091bc6b5cf8d4eee6d8b59e9e09990955610826f494ca1c4fb5baf2f5c31"
+    },
+    {
+      "name": "Content View",
+      "path": "assets/Content View/SVG/ic_fluent_content_view_32_color.svg",
+      "sha256": "3fdec4b501778e1a108e0aba2cf5f3ac06da81bfbff76ef0ba0a8c46d5dc3a40"
+    },
+    {
+      "name": "Data Bar Vertical Ascending",
+      "path": "assets/Data Bar Vertical Ascending/SVG/ic_fluent_data_bar_vertical_ascending_24_color.svg",
+      "sha256": "fbbc2b60b4b8b1b6296016a598f7705fdc1cf9c2729ad54b10e812cc0a3a5045"
+    },
+    {
+      "name": "Data Line",
+      "path": "assets/Data Line/SVG/ic_fluent_data_line_32_color.svg",
+      "sha256": "9f9e7112d2362e2b4afc377905e66b8833193f652cae1575fb076fe5e2bce313"
+    },
+    {
+      "name": "Data Pie",
+      "path": "assets/Data Pie/SVG/ic_fluent_data_pie_32_color.svg",
+      "sha256": "555da0bdadcca3a1183262bdc93e47a200aaed1a3a751f36f5c1d6953d55953c"
+    },
+    {
+      "name": "Database",
+      "path": "assets/Database/SVG/ic_fluent_database_48_color.svg",
+      "sha256": "9d0d93c81d819f13a9541286d35bf0fc7c7993721aca91e4ff5945a1d98f5b7c"
+    },
+    {
+      "name": "Design Ideas",
+      "path": "assets/Design Ideas/SVG/ic_fluent_design_ideas_48_color.svg",
+      "sha256": "5f40ac99747629e2087b5e65369c26d04847657f9475dcbc80986d075ef2f51e"
+    },
+    {
+      "name": "Dismiss Circle",
+      "path": "assets/Dismiss Circle/SVG/ic_fluent_dismiss_circle_48_color.svg",
+      "sha256": "d36474f5e86046fd7a584e7a61129239d603c59e8fd52fa94164c0bb673d16a2"
+    },
+    {
+      "name": "Document",
+      "path": "assets/Document/SVG/ic_fluent_document_48_color.svg",
+      "sha256": "806eaefed45088137496309ce60c9b5d994059f55ed386f92e323ed4752d5d0c"
+    },
+    {
+      "name": "Document Add",
+      "path": "assets/Document Add/SVG/ic_fluent_document_add_48_color.svg",
+      "sha256": "fb2d2ec337412efa810125beaddedf07c7022e59142a1dbb2aca9e1f7a4fc31d"
+    },
+    {
+      "name": "Document Folder",
+      "path": "assets/Document Folder/SVG/ic_fluent_document_folder_24_color.svg",
+      "sha256": "06f76f631718174c6bdafb0c6609166ddb78092ce55ab9b7bba272cd827ca14d"
+    },
+    {
+      "name": "Edit",
+      "path": "assets/Edit/SVG/ic_fluent_edit_32_color.svg",
+      "sha256": "21f50931dc5b687dba38a3926a9fe804fe9f07d16fcb9fb69ddf06c4b7a3d561"
+    },
+    {
+      "name": "Error Circle",
+      "path": "assets/Error Circle/SVG/ic_fluent_error_circle_48_color.svg",
+      "sha256": "3425a6bf1848d1ceb155f58ca47a928b624ab11bc9b54c8019cac1b4cfc94a5a"
+    },
+    {
+      "name": "Fast Forward Circle",
+      "path": "assets/Fast Forward Circle/SVG/ic_fluent_fast_forward_circle_24_color.svg",
+      "sha256": "303d60e117e02b301ffece03dc9d4582dfdc3425217287fdb08e8ec089036308"
+    },
+    {
+      "name": "Food",
+      "path": "assets/Food/SVG/ic_fluent_food_48_color.svg",
+      "sha256": "5c3932b6942e0f5d12f1e04c57ebb0668092aa95a274441b046f09184690be5a"
+    },
+    {
+      "name": "Globe",
+      "path": "assets/Globe/SVG/ic_fluent_globe_24_color.svg",
+      "sha256": "b726489c1c3e0438b0d9f2d85495643c1e1d8dbaf44613290baf3efce115fd34"
+    },
+    {
+      "name": "Guest",
+      "path": "assets/Guest/SVG/ic_fluent_guest_48_color.svg",
+      "sha256": "445f49c9d4cb41830a23bed71beb2f3a10e2a8e7ce1f8efda9b901033143ff2c"
+    },
+    {
+      "name": "Headphones",
+      "path": "assets/Headphones/SVG/ic_fluent_headphones_48_color.svg",
+      "sha256": "09b9deb336a08ecbac241cc66862433a8b9101fc7b0235e5c9481a3624bfdcc2"
+    },
+    {
+      "name": "Heart",
+      "path": "assets/Heart/SVG/ic_fluent_heart_48_color.svg",
+      "sha256": "319b81000e26f0f71a160d67a01baaf2e79bb21589cf947e5da22c205efab4c5"
+    },
+    {
+      "name": "History",
+      "path": "assets/History/SVG/ic_fluent_history_48_color.svg",
+      "sha256": "6df7ea3d2350a153f482c21dd365e75439e7f9613ac1ced2313815dd718056c8"
+    },
+    {
+      "name": "Home",
+      "path": "assets/Home/SVG/ic_fluent_home_48_color.svg",
+      "sha256": "ae35ac77254a1a198a88787b71de1101e849ed504a6e8210a14e9f7ad5a4ed59"
+    },
+    {
+      "name": "Image",
+      "path": "assets/Image/SVG/ic_fluent_image_48_color.svg",
+      "sha256": "552b87bb882e3a66aa28fdf19ea28631dcdd34253ab01ac56191ee75941c0b96"
+    },
+    {
+      "name": "Image Off",
+      "path": "assets/Image Off/SVG/ic_fluent_image_off_48_color.svg",
+      "sha256": "7108b50c72e4a5a5fc16e2d899011b7d68688504c0c13b8fc0a54eadc98a55da"
+    },
+    {
+      "name": "Laptop",
+      "path": "assets/Laptop/SVG/ic_fluent_laptop_48_color.svg",
+      "sha256": "71ce35201c2640cded3bfc0a45da6d4c7fce120667ab85d1620da896c8b6ecb6"
+    },
+    {
+      "name": "Lock Closed",
+      "path": "assets/Lock Closed/SVG/ic_fluent_lock_closed_48_color.svg",
+      "sha256": "8810e3f6fd5a597fe6bdfb949f06d0e30530e9b214526d4a4f09d8fc0d2afd55"
+    },
+    {
+      "name": "Mail",
+      "path": "assets/Mail/SVG/ic_fluent_mail_48_color.svg",
+      "sha256": "0e44eb7e1a679ba6f565c890b004bb07d56ef062fd383d9a20d820d113ff23b8"
+    },
+    {
+      "name": "Mic",
+      "path": "assets/Mic/SVG/ic_fluent_mic_48_color.svg",
+      "sha256": "f05670d69a85aae47705b9eebe3ac60e33591b1d01cfd454d3f0462a76698aab"
+    },
+    {
+      "name": "Number Symbol Square",
+      "path": "assets/Number Symbol Square/SVG/ic_fluent_number_symbol_square_32_color.svg",
+      "sha256": "857ea52e148eb203ab2fcd36f075635c1894b0cb7e4a8294799e7bf60b8574e5"
+    },
+    {
+      "name": "Options",
+      "path": "assets/Options/SVG/ic_fluent_options_48_color.svg",
+      "sha256": "c550d31bde2b3449f693bdca61ed292ae1a64e88c7e64b7056926d3e86bdae2e"
+    },
+    {
+      "name": "Org",
+      "path": "assets/Org/SVG/ic_fluent_org_48_color.svg",
+      "sha256": "1c745f1dfe4fc9f9756c2633c773125906c79da2b6d4d486f3674c172a45ab18"
+    },
+    {
+      "name": "Paint Brush",
+      "path": "assets/Paint Brush/SVG/ic_fluent_paint_brush_32_color.svg",
+      "sha256": "a411d22a6fdd7283975e1200bb435fa9b60f1c6aa999d13cc6d28b0522cea02c"
+    },
+    {
+      "name": "People Add",
+      "path": "assets/People Add/SVG/ic_fluent_people_add_32_color.svg",
+      "sha256": "23cfeb2bb4289f6b3aa3dad387a5752e2282d80208553a1e2b62e1e313b3c9b9"
+    },
+    {
+      "name": "People Team",
+      "path": "assets/People Team/SVG/ic_fluent_people_team_48_color.svg",
+      "sha256": "581190a76d64a1b8ed82d2bcb292c023131c140227529f11f147ef71e03734e2"
+    },
+    {
+      "name": "Person",
+      "path": "assets/Person/SVG/ic_fluent_person_48_color.svg",
+      "sha256": "1bde167166c0b8943c4a266a3275630c01f7ef1ca8878d8cf63eaf0a8a23df13"
+    },
+    {
+      "name": "Person Add",
+      "path": "assets/Person Add/SVG/ic_fluent_person_add_48_color.svg",
+      "sha256": "56b8aac56aa010cb961c91f5c2495a8ac3100e15756a77e8a57b3c1e378a9527"
+    },
+    {
+      "name": "Person Available",
+      "path": "assets/Person Available/SVG/ic_fluent_person_available_24_color.svg",
+      "sha256": "98fd90f26947a89ddf5db39f804291c47abe1cc385780d7678ab92e55155febb"
+    },
+    {
+      "name": "Person Edit",
+      "path": "assets/Person Edit/SVG/ic_fluent_person_edit_32_color.svg",
+      "sha256": "3e62e2b9f4af2801e8ccd10c035bc6128588bbe5c2207e56491a16d7f491115f"
+    },
+    {
+      "name": "Person Key",
+      "path": "assets/Person Key/SVG/ic_fluent_person_key_32_color.svg",
+      "sha256": "0dc84e8015505a09f563bb8356b43818913cf58365933e229cd86c1b0f208b03"
+    },
+    {
+      "name": "Phone",
+      "path": "assets/Phone/SVG/ic_fluent_phone_48_color.svg",
+      "sha256": "8543eabb05352948fbf7ed771012335ca2b4adf1f236c462d685b4e8988b9f6e"
+    },
+    {
+      "name": "Phone Laptop",
+      "path": "assets/Phone Laptop/SVG/ic_fluent_phone_laptop_32_color.svg",
+      "sha256": "1ed1f2f5278d0ea47a4917896fde73c052be947a38a462d60ddb6ad3cbd5151b"
+    },
+    {
+      "name": "Question Circle",
+      "path": "assets/Question Circle/SVG/ic_fluent_question_circle_48_color.svg",
+      "sha256": "b72d9aaf7b725a618fd75d7d2cc0def88eba8be3bfda877ce5de1be1211c7e58"
+    },
+    {
+      "name": "Receipt",
+      "path": "assets/Receipt/SVG/ic_fluent_receipt_32_color.svg",
+      "sha256": "9695bd859f62d1d0cd62f7d1d587b8e6fc38c7a144262b5a21a6e5bd75831536"
+    },
+    {
+      "name": "Savings",
+      "path": "assets/Savings/SVG/ic_fluent_savings_32_color.svg",
+      "sha256": "8354bf4c24f37734daa98363defb3a4c2017be78bbf500a7d6dbc06f19907d03"
+    },
+    {
+      "name": "Scan Type",
+      "path": "assets/Scan Type/SVG/ic_fluent_scan_type_24_color.svg",
+      "sha256": "4bbf78d0e358d5a1f9084210bd0b025ba85b61e5061b0b71cf423279b8ee2405"
+    },
+    {
+      "name": "Search Visual",
+      "path": "assets/Search Visual/SVG/ic_fluent_search_visual_24_color.svg",
+      "sha256": "0178f697fa83feb213c9c876b6051ce4aec36da472290c4db0909e33ac5fb2cd"
+    },
+    {
+      "name": "Send",
+      "path": "assets/Send/SVG/ic_fluent_send_48_color.svg",
+      "sha256": "6b1dd05ec98af010d87117b0ca0bb17402a860ad6d7c78b879daea77ca5e33ef"
+    },
+    {
+      "name": "Settings",
+      "path": "assets/Settings/SVG/ic_fluent_settings_48_color.svg",
+      "sha256": "6b57cd87eda688c801011999a435c596d0e2263316d87e8792dd1d124d520f9b"
+    },
+    {
+      "name": "Share Android",
+      "path": "assets/Share Android/SVG/ic_fluent_share_android_32_color.svg",
+      "sha256": "9bcb934240821731df5f46eb76a5e7545be6ff03e4769e2f56f294c6f7196e3f"
+    },
+    {
+      "name": "Shield",
+      "path": "assets/Shield/SVG/ic_fluent_shield_48_color.svg",
+      "sha256": "cc47f64255d0aa6381a76af26d752b3fc68e0e94d0bf457769eb2fbbebb54238"
+    },
+    {
+      "name": "Shield Checkmark",
+      "path": "assets/Shield Checkmark/SVG/ic_fluent_shield_checkmark_48_color.svg",
+      "sha256": "a788c29b01e8e4d273cac5371753560b6f59a0da28cfe44311075c756e53a4ec"
+    },
+    {
+      "name": "Text Edit Style",
+      "path": "assets/Text Edit Style/SVG/ic_fluent_text_edit_style_24_color.svg",
+      "sha256": "202d1349f81d1912e9547cf7de82bc888770251b2763040696b1df8a4be35f66"
+    },
+    {
+      "name": "Trophy",
+      "path": "assets/Trophy/SVG/ic_fluent_trophy_48_color.svg",
+      "sha256": "8887fca48177c2b34e4747cdac5cf0503a5e18de05059f7ed0e7db081fea5be0"
+    },
+    {
+      "name": "Vault",
+      "path": "assets/Vault/SVG/ic_fluent_vault_24_color.svg",
+      "sha256": "1e6f9d44ca7b0af51e6603b984b0dba3b66aa2f0116bee524c0af4fd08aa0637"
+    },
+    {
+      "name": "Warning",
+      "path": "assets/Warning/SVG/ic_fluent_warning_48_color.svg",
+      "sha256": "dc5dd89e3653a45177ef9711d8355908f70faa04d9262a27f990059dd5d2719b"
+    },
+    {
+      "name": "Weather Sunny Low",
+      "path": "assets/Weather Sunny Low/SVG/ic_fluent_weather_sunny_low_48_color.svg",
+      "sha256": "19d98bedf7f017781193eef7606fa2aa2ffe19123a221bbb5b39d21bd9c68e91"
+    },
+    {
+      "name": "WiFi",
+      "path": "assets/WiFi/SVG/ic_fluent_wifi_24_color.svg",
+      "sha256": "95c6ac7abf9ee00105c3b4a35d4a4fe106419399b47f3aaa5dd55056504fb4e1"
+    },
+    {
+      "name": "Wrench",
+      "path": "assets/Wrench/SVG/ic_fluent_wrench_24_color.svg",
+      "sha256": "aa22b006fc07ae368038a0c1ba82702caaaa3236afa4d9a89b6b150051042eba"
+    }
+  ]
+}

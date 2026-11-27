@@ -409,7 +409,7 @@
           </Border>
           <Grid x:Name="HeaderTitle" Grid.Column="2" ColumnDefinitions="Auto,*" VerticalAlignment="Center" MinWidth="140" MaxWidth="380"
                 IsVisible="{Binding !IsHomePage}" ToolTip.Tip="{Binding Current.Subtitle}">
-            <Border Classes="appicon medium" Background="{Binding CurrentIconBrush}" Margin="0,0,10,0">
+            <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" Margin="0,0,10,0">
               <mi:MaterialIcon Kind="{Binding CurrentIcon}" />
             </Border>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
@@ -643,7 +643,7 @@
                           <Border Classes="workspaceglyph">
                         <Grid>
                           <Border CornerRadius="7" Background="{Binding Brush}" Opacity="0.14" IsHitTestVisible="False" />
-                          <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Foreground="{Binding Brush}" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+                          <Image Source="{Binding Icon, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
                         </Grid>
                       </Border>
                           <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
@@ -668,7 +668,7 @@
                             <StackPanel Spacing="0">
                               <Button Classes="navcategory" IsVisible="{Binding HasTitle}" Command="{Binding Toggle}" ToolTip.Tip="{Binding Title}">
                                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-                                  <Border Classes="appicon" Background="{Binding Brush}">
+                                  <Border Classes="appicon" Background="{DynamicResource SurfaceBrush}">
                                     <mi:MaterialIcon Kind="{Binding Icon}" />
                                   </Border>
                                   <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
@@ -685,7 +685,7 @@
                                             Margin="0" HorizontalContentAlignment="Stretch">
                                       <Grid ColumnDefinitions="Auto,Auto,*">
                                         <Border Classes="navmark" Margin="-4,0,7,0" />
-                                        <Border Grid.Column="1" Classes="appicon" Background="{Binding Brush}" Margin="0,0,10,0">
+                                        <Border Grid.Column="1" Classes="appicon" Background="{DynamicResource SurfaceBrush}" Margin="0,0,10,0">
                                           <mi:MaterialIcon Kind="{Binding Icon}" />
                                         </Border>
                                         <TextBlock Grid.Column="2" Text="{Binding Label}" VerticalAlignment="Center"

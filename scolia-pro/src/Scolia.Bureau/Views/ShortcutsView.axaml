@@ -7,7 +7,7 @@
   <Border Classes="dialogsurface" infra:Adaptive.FitDialog="True" Width="720">
     <StackPanel>
       <Grid ColumnDefinitions="Auto,*,Auto" Margin="24,22,18,8">
-        <Border Classes="appicon large" Background="{DynamicResource ToneNeutral}" Margin="0,0,14,0"><mi:MaterialIcon Kind="Keyboard" /></Border>
+        <Border Classes="appicon large" Background="{DynamicResource SurfaceBrush}" Margin="0,0,14,0"><mi:MaterialIcon Kind="Keyboard" /></Border>
         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
           <TextBlock Text="Raccourcis clavier" FontSize="17" FontWeight="Bold" />
           <TextBlock Text="Ils fonctionnent sur toutes les pages. Les mêmes commandes sont dans le menu, en haut à droite." Classes="muted" TextWrapping="Wrap" />

@@ -63,7 +63,7 @@ public static class HomeGlyphs
         MaterialIconKind.School => School,
         MaterialIconKind.CalendarMonth or MaterialIconKind.CalendarCheck => Calendar,
         MaterialIconKind.CardAccountDetailsOutline => ContactCard,
-        _ => Apps,
+        _ => FluentGlyphs.For(kind),
     };
     public static readonly IValueConverter Converter = new FuncValueConverter<MaterialIconKind, Geometry>(For);
 }

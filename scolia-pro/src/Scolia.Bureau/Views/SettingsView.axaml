@@ -69,7 +69,7 @@
           <ListBox.ItemTemplate>
             <DataTemplate>
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                <Border Classes="appicon" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                <Border Classes="appicon" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
                 <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" ToolTip.Tip="{Binding Label}" />
               </Grid>
             </DataTemplate>
@@ -80,7 +80,7 @@
           <ListBox.ItemTemplate>
             <DataTemplate>
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                <Border Classes="appicon" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                <Border Classes="appicon" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
                 <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" ToolTip.Tip="{Binding Label}" />
               </Grid>
             </DataTemplate>
@@ -105,7 +105,7 @@
                     <Button Classes="settingsentry" AutomationProperties.Name="{Binding Label}"
                             Command="{Binding $parent[ItemsControl].DataContext.OpenMobileSection}" CommandParameter="{Binding}">
                       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                        <Border Classes="appicon medium" Background="{Binding Brush}">
+                        <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}">
                           <mi:MaterialIcon Kind="{Binding Icon}" />
                         </Border>
                         <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
@@ -128,7 +128,7 @@
                     <Button Classes="settingsentry" AutomationProperties.Name="{Binding Label}"
                             Command="{Binding $parent[ItemsControl].DataContext.OpenMobileSection}" CommandParameter="{Binding}">
                       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                        <Border Classes="appicon medium" Background="{Binding Brush}">
+                        <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}">
                           <mi:MaterialIcon Kind="{Binding Icon}" />
                         </Border>
                         <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
@@ -154,7 +154,7 @@
 
         <!-- En-tête de la rubrique : grande icône, titre et explication, comme les Réglages de macOS -->
         <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,4">
-          <Border Classes="appicon large" Background="{Binding Section.Brush}" VerticalAlignment="Center"><mi:MaterialIcon Kind="{Binding Section.Icon}" /></Border>
+          <Border Classes="appicon large" Background="{DynamicResource SurfaceBrush}" VerticalAlignment="Center"><mi:MaterialIcon Kind="{Binding Section.Icon}" /></Border>
           <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
             <TextBlock Text="{Binding SectionTitle}" FontSize="{DynamicResource FsTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
             <TextBlock Text="{Binding SectionHint}" Classes="muted" TextWrapping="Wrap" />
@@ -190,35 +190,35 @@
               <!-- Coordonnées de JP-Services : une ligne par contact, avec son avatar -->
               <StackPanel>
                 <Grid ColumnDefinitions="Auto,*" Margin="0,7">
-                  <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneIndigo}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneIndigo}"><mi:MaterialIcon Kind="OfficeBuildingOutline" /></Border><Ellipse Classes="sheen" /></Grid>
+                  <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneIndigo}" /><Border Classes="appicon avatar" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="OfficeBuildingOutline" /></Border><Ellipse Classes="sheen" /></Grid>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="Éditeur" Classes="muted" FontSize="{DynamicResource FsSmall}" />
                     <TextBlock Text="{Binding AboutModel.Publisher}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
                 <Grid ColumnDefinitions="Auto,*" Margin="0,7">
-                  <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneBlue}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="AccountTie" /></Border><Ellipse Classes="sheen" /></Grid>
+                  <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneBlue}" /><Border Classes="appicon avatar" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="AccountTie" /></Border><Ellipse Classes="sheen" /></Grid>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="Développement" Classes="muted" FontSize="{DynamicResource FsSmall}" />
                     <TextBlock Text="{Binding AboutModel.Developer}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
                 <Grid ColumnDefinitions="Auto,*" Margin="0,7">
-                  <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneGreen}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneGreen}"><mi:MaterialIcon Kind="Whatsapp" /></Border><Ellipse Classes="sheen" /></Grid>
+                  <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneGreen}" /><Border Classes="appicon avatar" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="Whatsapp" /></Border><Ellipse Classes="sheen" /></Grid>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="Téléphone et WhatsApp" Classes="muted" FontSize="{DynamicResource FsSmall}" />
                     <TextBlock Text="{Binding AboutModel.Phone}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
                 <Grid ColumnDefinitions="Auto,*" Margin="0,7">
-                  <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneOrange}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneOrange}"><mi:MaterialIcon Kind="EmailOutline" /></Border><Ellipse Classes="sheen" /></Grid>
+                  <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneOrange}" /><Border Classes="appicon avatar" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="EmailOutline" /></Border><Ellipse Classes="sheen" /></Grid>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="E-mail" Classes="muted" FontSize="{DynamicResource FsSmall}" />
                     <TextBlock Text="{Binding AboutModel.Email}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
                 <Grid ColumnDefinitions="Auto,*" Margin="0,7">
-                  <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneTeal}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneTeal}"><mi:MaterialIcon Kind="Web" /></Border><Ellipse Classes="sheen" /></Grid>
+                  <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneTeal}" /><Border Classes="appicon avatar" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="Web" /></Border><Ellipse Classes="sheen" /></Grid>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="Site Internet" Classes="muted" FontSize="{DynamicResource FsSmall}" />
                     <TextBlock Text="{Binding AboutModel.Website}" FontWeight="SemiBold" TextWrapping="Wrap" />
@@ -252,7 +252,7 @@
         <Border Classes="card" IsVisible="{Binding IsLicense}" Padding="18">
           <StackPanel Spacing="12">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-              <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}">
+              <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}">
                 <mi:MaterialIcon Kind="ShieldLockOutline" />
               </Border>
               <StackPanel Grid.Column="1" Spacing="4">
@@ -370,7 +370,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
             <StackPanel Spacing="12" IsVisible="{Binding Phone}">
               <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="14" Padding="14">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                  <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}" VerticalAlignment="Top">
+                  <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" VerticalAlignment="Top">
                     <mi:MaterialIcon Kind="ViewGrid" />
                   </Border>
                   <StackPanel Grid.Column="1" Spacing="4">
@@ -487,7 +487,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                             Command="{Binding $parent[ItemsControl].DataContext.EditPromotionOnPhone}"
                             CommandParameter="{Binding}">
                       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                        <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" VerticalAlignment="Top">
+                        <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" VerticalAlignment="Top">
                           <mi:MaterialIcon Kind="School" />
                         </Border>
                         <StackPanel Grid.Column="1" Spacing="6">

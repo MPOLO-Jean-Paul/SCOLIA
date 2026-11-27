@@ -161,7 +161,7 @@
     <!-- Session protégée : même modèle sobre que la connexion. L'avatar du compte, son nom, le champ et
          le bouton ; la marque passe en bas de page. -->
     <ThemeVariantScope>
-    <ScrollViewer x:Name="IosLockScroll" Classes="authpage" IsVisible="False" HorizontalScrollBarVisibility="Disabled"
+    <ScrollViewer x:Name="IosLockScroll" Classes="authpage fluentaccess" IsVisible="False" HorizontalScrollBarVisibility="Disabled"
                    VerticalScrollBarVisibility="Auto">
       <StackPanel Classes="authbody">
         <Border Classes="authcard">
@@ -173,7 +173,7 @@
                 <Ellipse Classes="ring" />
                 <Border Classes="disc"><TextBlock Text="{Binding Initials}" /></Border>
                 <Border Classes="badge locked" ToolTip.Tip="Session verrouillée">
-                  <PathIcon Data="{x:Static infra:AuthGlyphs.Lock}" Width="11" Height="11" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"  />
+                  <Image Source="{DynamicResource AuthLockArtwork}" Width="22" Height="22" IsHitTestVisible="False" />
                 </Border>
               </Grid>
               <TextBlock Classes="authtitle" Text="{Binding DisplayName}" ToolTip.Tip="{Binding DisplayName}" MaxLines="2" />
@@ -194,6 +194,7 @@
                         ToolTip.Tip="Afficher ou masquer le code" AutomationProperties.Name="Afficher ou masquer le code">
                   <PathIcon Data="{Binding EyeIcon, Converter={x:Static infra:AuthGlyphs.EyeConverter}}"  />
                 </Button>
+                <Border Classes="authfocusline" />
               </Grid>
               <Button Classes="authprimary" Command="{Binding Unlock}" IsEnabled="{Binding CanUnlockCode}">
                 <Panel>

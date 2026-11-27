@@ -10,7 +10,7 @@
       <TextBlock Text="ÉTABLISSEMENT ET CYCLES" Classes="groupcaps" />
       <Border Classes="phonegroup" Padding="14,12">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-          <Border Classes="appicon large" Background="{DynamicResource ToneBlue}"
+          <Border Classes="appicon large" Background="{DynamicResource SurfaceBrush}"
                   VerticalAlignment="Center">
             <mi:MaterialIcon Kind="SchoolOutline" />
           </Border>
@@ -27,7 +27,7 @@
 
       <Border Classes="phonegroup" Padding="14,12" IsVisible="{Binding !CanConfigure}">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-          <Border Classes="appicon medium" Background="{DynamicResource ToneOrange}">
+          <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}">
             <mi:MaterialIcon Kind="LockOutline" />
           </Border>
           <TextBlock Grid.Column="1"
@@ -79,7 +79,7 @@
 
       <Border Classes="phonegroup" Padding="14,12">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-          <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}">
+          <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}">
             <mi:MaterialIcon Kind="ShieldCheckOutline" />
           </Border>
           <TextBlock Grid.Column="1"

@@ -40,7 +40,7 @@
       <Border Classes="card aboutcontacts" Padding="16,6">
         <StackPanel>
           <Grid ColumnDefinitions="Auto,*" Margin="0,10">
-            <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneIndigo}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneIndigo}"><mi:MaterialIcon Kind="OfficeBuildingOutline" /></Border><Ellipse Classes="sheen" /></Grid>
+            <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneIndigo}" /><Border Classes="appicon avatar" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="OfficeBuildingOutline" /></Border><Ellipse Classes="sheen" /></Grid>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
               <TextBlock Text="Éditeur" Classes="muted" />
               <TextBlock Text="{Binding Publisher}" FontWeight="SemiBold" TextWrapping="Wrap" />
@@ -48,7 +48,7 @@
           </Grid>
           <Border Height="1" Background="{DynamicResource LineBrush}" />
           <Grid ColumnDefinitions="Auto,*" Margin="0,10">
-            <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneBlue}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="AccountTie" /></Border><Ellipse Classes="sheen" /></Grid>
+            <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneBlue}" /><Border Classes="appicon avatar" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="AccountTie" /></Border><Ellipse Classes="sheen" /></Grid>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
               <TextBlock Text="{Binding Role}" Classes="muted" />
               <TextBlock Text="{Binding Developer}" FontWeight="SemiBold" TextWrapping="Wrap" />
@@ -56,7 +56,7 @@
           </Grid>
           <Border Height="1" Background="{DynamicResource LineBrush}" />
           <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,10">
-            <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneGreen}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneGreen}"><mi:MaterialIcon Kind="Whatsapp" /></Border><Ellipse Classes="sheen" /></Grid>
+            <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneGreen}" /><Border Classes="appicon avatar" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="Whatsapp" /></Border><Ellipse Classes="sheen" /></Grid>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
               <TextBlock Text="Téléphone et WhatsApp" Classes="muted" />
               <TextBlock Text="{Binding Phone}" FontWeight="SemiBold" TextWrapping="Wrap" />
@@ -65,7 +65,7 @@
           </Grid>
           <Border Height="1" Background="{DynamicResource LineBrush}" />
           <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,10">
-            <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneOrange}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneOrange}"><mi:MaterialIcon Kind="EmailOutline" /></Border><Ellipse Classes="sheen" /></Grid>
+            <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneOrange}" /><Border Classes="appicon avatar" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="EmailOutline" /></Border><Ellipse Classes="sheen" /></Grid>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
               <TextBlock Text="E-mail" Classes="muted" />
               <TextBlock Text="{Binding Email}" FontWeight="SemiBold" TextWrapping="Wrap" ToolTip.Tip="{Binding Email}" />
@@ -74,7 +74,7 @@
           </Grid>
           <Border Height="1" Background="{DynamicResource LineBrush}" />
           <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,10">
-            <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneTeal}" /><Border Classes="appicon avatar" Background="{DynamicResource ToneTeal}"><mi:MaterialIcon Kind="Web" /></Border><Ellipse Classes="sheen" /></Grid>
+            <Grid Classes="featureavatar mini" Margin="0,0,12,0"><Ellipse Classes="halo" Fill="{DynamicResource ToneTeal}" /><Border Classes="appicon avatar" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="Web" /></Border><Ellipse Classes="sheen" /></Grid>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
               <TextBlock Text="Site Internet" Classes="muted" />
               <TextBlock Text="{Binding Website}" FontWeight="SemiBold" TextWrapping="Wrap" ToolTip.Tip="{Binding Website}" />

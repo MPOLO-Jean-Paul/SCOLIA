@@ -11,7 +11,7 @@ public partial class LockScreenView : UserControl
     public LockScreenView()
     {
         InitializeComponent();
-        // Même reprise de session iOS sur le téléphone et sur l'ordinateur.
+        // Même reprise de session Fluent sur le téléphone et sur l'ordinateur.
         var ios = AuthLayout.UseIosStyle;
         ClassicLockScreen.IsVisible = !ios;
         IosLockScroll.IsVisible = ios;

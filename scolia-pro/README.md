@@ -24,11 +24,12 @@ Le détail est dans [`docs/GUIDE_UTILISATEUR.md`](docs/GUIDE_UTILISATEUR.md) et 
 Il parle au serveur SCOLIA par la même API que l'interface web. Au lancement, il démarre le serveur `SCOLIA-Serveur.exe`
 du même dossier s'il n'est pas déjà actif. Le paquet Windows contient les deux exécutables.
 
-Le client reprend le design des Réglages de macOS, sans les trois boutons de fenêtre colorés. À gauche, un volet
-flottant aux coins arrondis : la recherche (Ctrl+K), le compte, puis chaque outil avec son icône blanche sur un carré
-de couleur, rangés par métier. En haut de la page, les flèches précédent et suivant (Alt+Gauche, Alt+Droite) dans une
-capsule, le titre en gras, les boutons en capsule (le principal en bleu) et le menu de toutes les commandes. Les réglages
-et les listes sont rangés dans des blocs gris arrondis. L'accueil présente les outils recommandés et les reçus récents.
+Le client utilise une interface Fluent inspirée de Windows 11, adaptée à l'ordinateur et au téléphone. Le volet
+regroupe la recherche (Ctrl+K), le compte et les outils par métier. Les pictogrammes Microsoft sont dessinés en
+vecteurs : en couleur pour les fonctionnalités, au trait pour les commandes. Les surfaces neutres, les champs et
+les dialogues partagent les mêmes finitions ; les contrôles mobiles gardent des cibles adaptées au toucher.
+Les flèches précédent et suivant (Alt+Gauche, Alt+Droite), le titre et les commandes restent en haut de la page.
+L'accueil présente les outils recommandés et les reçus récents.
 Clair, sombre, taille du texte, densité, zoom et volet latéral se règlent dans le menu, Affichage.
 
 Le menu reprend le catalogue de commandes ci-dessous :
@@ -53,6 +54,9 @@ Contrôles sans affichage (rendu Avalonia Headless, sur les données d'un serveu
 dotnet run --project tests/Scolia.Bureau.Captures -c Release -- <dossier_de_sortie> http://localhost:5080/ <mot_de_passe>
 # Parcours métier complet : lectures, encaissement, inscription, notes, présences, etc., avec vérification serveur
 dotnet run --project tests/Scolia.Bureau.Captures -c Release -- <dossier_de_sortie> http://localhost:5080/ <mot_de_passe> smoke
+# Visite de tous les écrans avec leurs icônes Fluent, en clair/sombre et desktop/mobile.
+# Les projets API et Captures doivent être compilés ; le serveur et les données sont temporaires.
+python3 scripts/verifier-interfaces-fluent.py
 ```
 
 Les tests de la logique du client (montants, dates, requêtes, validation des formulaires) sont dans

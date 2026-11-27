@@ -463,7 +463,7 @@
               <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="4" Padding="18,16">
                 <StackPanel Spacing="10">
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="ShieldAccountOutline" /></Border>
+                    <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="ShieldAccountOutline" /></Border>
                     <TextBlock Text="Secrétariat" Classes="section" VerticalAlignment="Center" />
                   </StackPanel>
                   <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
@@ -479,7 +479,7 @@
               <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="4" Padding="18,16">
                 <StackPanel Spacing="10">
                   <Grid ColumnDefinitions="Auto,*,Auto">
-                    <Border Classes="appicon medium" Background="{DynamicResource ToneGreen}"><mi:MaterialIcon Kind="CashRegister" /></Border>
+                    <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="CashRegister" /></Border>
                     <TextBlock Grid.Column="1" Text="Comptabilité" Classes="section" VerticalAlignment="Center" Margin="10,0,8,0" />
                     <ToggleSwitch Grid.Column="2" IsChecked="{Binding UseComptabilite}" OnContent="" OffContent="" ToolTip.Tip="Créer le compte comptabilité" />
                   </Grid>
@@ -496,17 +496,17 @@
               <!-- Conseils : ce qui se passe à la connexion et comment choisir les mots de passe -->
               <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="*,*,*" ColumnSpacing="16" RowSpacing="10" Margin="0,16,0,0" infra:Adaptive.StackBelow="760">
                 <DockPanel>
-                  <Border DockPanel.Dock="Left" Margin="0,0,10,0" Classes="appicon medium" Background="{DynamicResource ToneIndigo}"><mi:MaterialIcon Kind="FormTextboxPassword" /></Border>
+                  <Border DockPanel.Dock="Left" Margin="0,0,10,0" Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="FormTextboxPassword" /></Border>
                   <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" VerticalAlignment="Center"
                              Text="Code PIN de 6 chiffres ou plus, ou mot de passe de 8 caractères ou plus." />
                 </DockPanel>
                 <DockPanel Grid.Column="1">
-                  <Border DockPanel.Dock="Left" Margin="0,0,10,0" Classes="appicon medium" Background="{DynamicResource ToneOrange}"><mi:MaterialIcon Kind="LockClock" /></Border>
+                  <Border DockPanel.Dock="Left" Margin="0,0,10,0" Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="LockClock" /></Border>
                   <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" VerticalAlignment="Center"
                              Text="Après 5 erreurs, la connexion est bloquée 2 minutes." />
                 </DockPanel>
                 <DockPanel Grid.Column="2">
-                  <Border DockPanel.Dock="Left" Margin="0,0,10,0" Classes="appicon medium" Background="{DynamicResource ToneTeal}"><mi:MaterialIcon Kind="AccountMultiplePlusOutline" /></Border>
+                  <Border DockPanel.Dock="Left" Margin="0,0,10,0" Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="AccountMultiplePlusOutline" /></Border>
                   <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" VerticalAlignment="Center"
                              Text="D'autres comptes s'ajoutent ensuite dans Paramètres." />
                 </DockPanel>

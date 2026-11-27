@@ -330,10 +330,9 @@
       </Grid>
     </ScrollViewer>
 
-    <!-- Connexion : modèle sobre des comptes Microsoft et Google, commun au téléphone et à l'ordinateur.
-         Téléphone : le formulaire se pose sur le fond clair ; grand écran : une carte blanche centrée. -->
+    <!-- Connexion Fluent : formulaire dégagé, icônes natives et aide discrète sur grand écran. -->
     <ThemeVariantScope x:Name="IosLoginThemeScope" IsVisible="False">
-    <ScrollViewer x:Name="IosLoginScroll" Classes="authpage" IsVisible="False"
+    <ScrollViewer x:Name="IosLoginScroll" Classes="authpage fluentaccess" IsVisible="False"
                   HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
       <Grid Classes="authworkspace" ColumnDefinitions="*,Auto">
       <StackPanel x:Name="IosLoginLayout" Classes="authbody">
@@ -342,9 +341,17 @@
             <!-- En-tête : logo, application et établissement, sans phrase d'introduction -->
             <StackPanel Spacing="6" HorizontalAlignment="Stretch" Margin="0,0,0,6">
               <Panel x:Name="StandaloneBrand">
-                <Border Classes="authlogo">
-                  <Image Source="{DynamicResource ScoliaMark}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
+                <Grid Classes="accessidentity">
+                  <Border Classes="authlogo" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <Image Source="{DynamicResource ScoliaMark}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <Border Classes="accessbadge" IsVisible="{Binding !RecoveryOpen}">
+                    <Image Source="{DynamicResource AuthPersonArtwork}" Width="24" Height="24" IsHitTestVisible="False" />
+                  </Border>
+                  <Border Classes="accessbadge" IsVisible="{Binding RecoveryOpen}">
+                    <Image Source="{DynamicResource AuthRecoveryArtwork}" Width="26" Height="26" IsHitTestVisible="False" />
+                  </Border>
+                </Grid>
               </Panel>
               <!-- Identité commune : deux cercles décalés, contours indépendants,
                    une seule silhouette. Le logo ne masque pas les initiales. -->
@@ -441,6 +448,7 @@
                              PlaceholderText="Votre identifiant" MaxLength="40" IsEnabled="{Binding CanType}"
                              AutomationProperties.Name="Identifiant de connexion" Padding="46,0,14,0" />
                     <PathIcon Classes="authinputicon" Data="{x:Static infra:AuthGlyphs.Person}"  />
+                    <Border Classes="authfocusline" />
                   </Grid>
                 </StackPanel>
                 <StackPanel Spacing="6" IsVisible="{Binding ShowSignInPassword}">
@@ -456,6 +464,7 @@
                             ToolTip.Tip="Afficher ou masquer le mot de passe" AutomationProperties.Name="Afficher ou masquer le mot de passe">
                       <PathIcon Data="{Binding EyeIcon, Converter={x:Static infra:AuthGlyphs.EyeConverter}}"  />
                     </Button>
+                    <Border Classes="authfocusline" />
                   </Grid>
                 </StackPanel>
                 <Button x:Name="IosLoginSubmitButton" Classes="authprimary" Command="{Binding Submit}"
@@ -508,6 +517,7 @@
                             AutomationProperties.Name="Afficher ou masquer le nouveau mot de passe">
                       <PathIcon Data="{Binding NewPasswordEyeIcon, Converter={x:Static infra:AuthGlyphs.EyeConverter}}"  />
                     </Button>
+                    <Border Classes="authfocusline" />
                   </Grid>
                   <TextBlock Classes="authhint" Text="{Binding RecoveryPasswordHint}" IsVisible="{Binding HasRecoveryPasswordHint}" />
                 </StackPanel>
@@ -525,6 +535,7 @@
                             AutomationProperties.Name="Afficher ou masquer la confirmation">
                       <PathIcon Data="{Binding ConfirmPasswordEyeIcon, Converter={x:Static infra:AuthGlyphs.EyeConverter}}"  />
                     </Button>
+                    <Border Classes="authfocusline" />
                   </Grid>
                   <TextBlock Classes="authhint" Text="{Binding RecoveryConfirmationHint}" IsVisible="{Binding HasRecoveryConfirmationHint}" />
                 </StackPanel>
@@ -542,11 +553,18 @@
                             AutomationProperties.Name="Afficher ou masquer le code de secours">
                       <PathIcon Data="{Binding RecoveryCodeEyeIcon, Converter={x:Static infra:AuthGlyphs.EyeConverter}}"  />
                     </Button>
+                    <Border Classes="authfocusline" />
                   </Grid>
                 </StackPanel>
                 <Button Classes="authprimary" Command="{Binding RecoverWithCode}" Margin="0,4,0,0"
                         IsEnabled="{Binding CanRecoverWithCode}">
-                  <TextBlock Text="Restaurer le mot de passe" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
+                  <Panel>
+                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding Busy}" HorizontalAlignment="Center">
+                      <mi:MaterialIcon Kind="Loading" Classes="spin" Width="18" Height="18" VerticalAlignment="Center" />
+                      <TextBlock Text="Réinitialisation en cours…" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <TextBlock Text="Réinitialiser le mot de passe" IsVisible="{Binding NotBusy}" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
+                  </Panel>
                 </Button>
                 <StackPanel Spacing="12" IsVisible="{Binding CanUseBiometricSignIn}">
                   <Grid Classes="author" ColumnDefinitions="*,Auto,*">
@@ -649,15 +667,32 @@
       </StackPanel>
       <Border Grid.Column="1" Classes="authrail">
         <StackPanel Spacing="16" VerticalAlignment="Center">
-          <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="4" Height="92">
-            <PathIcon Data="{x:Static infra:AuthGlyphs.Shield}" Width="42" Height="42" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"  />
+          <Border Classes="accesshero">
+            <Image Source="{DynamicResource AuthShieldArtwork}" Width="72" Height="72" IsHitTestVisible="False" />
           </Border>
           <TextBlock Classes="authrailtitle" Text="Votre espace sécurisé" />
           <TextBlock Classes="authhint" Text="Connectez-vous avec votre compte personnel pour accéder à votre établissement." />
           <Border Height="1" Background="{DynamicResource LineBrush}" />
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9"><PathIcon Data="{x:Static infra:AuthGlyphs.Person}" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"  /><TextBlock Grid.Column="1" Classes="authhint" Text="Compte personnel" /></Grid>
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9"><PathIcon Data="{x:Static infra:AuthGlyphs.Lock}" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"  /><TextBlock Grid.Column="1" Classes="authhint" Text="Récupération protégée" /></Grid>
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9"><mi:MaterialIcon Kind="LanConnect" Width="19" Height="19" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Classes="authhint" Text="Liaison à votre serveur" /></Grid>
+          <StackPanel Spacing="8">
+            <Border Classes="accessfeature">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Image Source="{DynamicResource AuthPersonArtwork}" Width="24" Height="24" IsHitTestVisible="False" />
+                <TextBlock Grid.Column="1" Classes="authhint" Text="Compte personnel" VerticalAlignment="Center" />
+              </Grid>
+            </Border>
+            <Border Classes="accessfeature">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Image Source="{DynamicResource AuthRecoveryArtwork}" Width="24" Height="24" IsHitTestVisible="False" />
+                <TextBlock Grid.Column="1" Classes="authhint" Text="Récupération protégée" VerticalAlignment="Center" />
+              </Grid>
+            </Border>
+            <Border Classes="accessfeature">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Image Source="{DynamicResource AuthNetworkArtwork}" Width="24" Height="24" IsHitTestVisible="False" />
+                <TextBlock Grid.Column="1" Classes="authhint" Text="Liaison à votre serveur" VerticalAlignment="Center" />
+              </Grid>
+            </Border>
+          </StackPanel>
         </StackPanel>
       </Border>
       </Grid>

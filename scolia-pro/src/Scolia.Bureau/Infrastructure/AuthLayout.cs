@@ -6,7 +6,7 @@ namespace Scolia.Bureau.Infrastructure;
 
 /// <summary>
 /// Écrans d'accès (premier écran, jumelage, connexion, récupération du mot de passe, session verrouillée) :
-/// un seul langage iOS clair, sur le téléphone comme sur l'ordinateur, et des tailles qui suivent l'écran.
+    /// un langage Fluent sobre, sur le téléphone comme sur l'ordinateur, et des tailles qui suivent l'écran.
 /// <para>
 /// Les classes posées sur l'hôte de la page permettent aux styles de réduire marges, polices et champs sur
 /// les petits téléphones, de resserrer la hauteur quand l'écran est bas (clavier ouvert, paysage) et
@@ -15,7 +15,7 @@ namespace Scolia.Bureau.Infrastructure;
 /// </summary>
 public static class AuthLayout
 {
-    /// <summary>Le style iOS est commun au téléphone et à l'ordinateur : une seule apparence, plus professionnelle.</summary>
+    /// <summary>Active le rendu commun aux appareils ; le nom historique est conservé pour les vues existantes.</summary>
     public static bool UseIosStyle { get; } = true;
 
     /// <summary>Largeur sous laquelle l'écran est un petit téléphone (marges et titres réduits).</summary>
@@ -33,7 +33,10 @@ public static class AuthLayout
     /// <summary>Largeur à partir de laquelle la page dispose d'un grand écran (ordinateur, tablette).</summary>
     public const double WideWidth = 720;
 
-    /// <summary>Suit la taille de l'hôte et pose les classes compact, tiny, short et wide.</summary>
+    /// <summary>Largeur confortable pour le volet d'aide des écrans de connexion.</summary>
+    public const double ExpandedWidth = 960;
+
+    /// <summary>Suit la taille de l'hôte et pose les classes de densité et de disposition.</summary>
     public static void Track(Control host, Action<Size>? changed = null)
     {
         ArgumentNullException.ThrowIfNull(host);
@@ -83,5 +86,6 @@ public static class AuthLayout
         classes.Set("short", size.Height < ShortHeight);
         classes.Set("micro", size.Height < MicroHeight);
         classes.Set("wide", size.Width >= WideWidth);
+        classes.Set("expanded", size.Width >= ExpandedWidth);
     }
 }

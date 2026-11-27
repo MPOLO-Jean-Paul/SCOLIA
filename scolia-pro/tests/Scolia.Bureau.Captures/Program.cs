@@ -261,6 +261,16 @@ if (args.Length > 3 && args[3] == "identite-connexion")
 
     void VerifyAuthFieldGeometry(string stage)
     {
+        var access = window.GetVisualDescendants().OfType<ScrollViewer>()
+            .Single(s => s.IsEffectivelyVisible && s.Classes.Contains("fluentaccess"));
+        if (access.Extent.Width > access.Viewport.Width + 1)
+            throw new InvalidOperationException($"Défilement horizontal de l'écran d'accès : {stage}.");
+        var rail = access.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => b.Classes.Contains("authrail"));
+        if (rail is not null && rail.IsEffectivelyVisible != (access.Bounds.Width >= AuthLayout.ExpandedWidth))
+            throw new InvalidOperationException($"Le volet d'aide doit laisser assez de place au formulaire : {stage}.");
+        foreach (var image in access.GetVisualDescendants().OfType<Image>().Where(i => i.IsEffectivelyVisible))
+            if (image.Source is not { Size.Width: > 0, Size.Height: > 0 })
+                throw new InvalidOperationException($"Illustration d'accès absente : {stage}.");
         var fields = window.GetVisualDescendants().OfType<Grid>()
             .Where(g => g.IsEffectivelyVisible && g.Classes.Contains("authinput")).ToArray();
         if (fields.Length == 0) throw new InvalidOperationException($"Aucun champ d'accès visible : {stage}.");
@@ -279,6 +289,11 @@ if (args.Length > 3 && args[3] == "identite-connexion")
             var eye = grid.Children.OfType<Button>().FirstOrDefault(b => b.Classes.Contains("autheye"));
             if (eye is not null && textEnd > InGrid(eye).Left - 2)
                 throw new InvalidOperationException($"Chevauchement texte/œil : {stage}, {field.Name}.");
+            if (field.Bounds.Height < 44 || eye is not null && (eye.Bounds.Width < 44 || eye.Bounds.Height < 44))
+                throw new InvalidOperationException($"Cible tactile trop petite : {stage}, {field.Name}.");
+            var underline = grid.Children.OfType<Border>().Single(b => b.Classes.Contains("authfocusline"));
+            if (underline.IsHitTestVisible || field.IsFocused && Math.Abs(underline.Bounds.Height - 2) > 0.1)
+                throw new InvalidOperationException($"Le filet de focus doit rester visible sans intercepter la saisie : {stage}, {field.Name}.");
             var placeholder = field.GetVisualDescendants().OfType<TextBlock>()
                 .FirstOrDefault(t => t.Name == "PART_Placeholder" && t.IsEffectivelyVisible);
             if (placeholder is not null && InGrid(placeholder).Left < pictogram.Right + 4)
@@ -2299,15 +2314,21 @@ if (args.Length > 3 && args[3] == "commandes")
 // comme en remontant. Chaque pas compare la position demandée à celle obtenue après la mise en page.
 // Visite de tous les écrans : chaque page qui s'ouvre avec le seul shell est capturée (ordinateur ou téléphone).
 // SCOLIA_MOBILE=0 dotnet run -- <sortie> <serveur> <mot_de_passe> visite
-if (args.Length > 3 && args[3] == "visite")
+if (args.Length > 3 && args[3] is "visite" or "visite-fluent")
 {
     prefs.Animations = false;
     prefs.Tips = false;
     Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    window.Width = int.Parse(taille[0]);
+    window.Height = int.Parse(taille[1]);
+    var strict = args[3] == "visite-fluent";
+    var failures = new List<string>();
+    var visited = new List<string>();
     var suffix = Preferences.MobileLayout ? "mobile" : "bureau";
     var pages = typeof(PageViewModel).Assembly.GetTypes()
         .Where(t => !t.IsAbstract && typeof(PageViewModel).IsAssignableFrom(t)
-                    && t.GetConstructor([typeof(ShellViewModel)]) is not null)
+                    && t.GetConstructors().Any(c => c.GetParameters() is [var first, .. var rest]
+                        && first.ParameterType == typeof(ShellViewModel) && rest.All(p => p.IsOptional)))
         .OrderBy(t => t.Name, StringComparer.Ordinal).ToList();
     var onlyPages = Environment.GetEnvironmentVariable("SCOLIA_PAGES")?.Split(',', StringSplitOptions.RemoveEmptyEntries);
     foreach (var type in pages)
@@ -2315,15 +2336,49 @@ if (args.Length > 3 && args[3] == "visite")
         if (onlyPages is { Length: > 0 } && !onlyPages.Contains(type.Name)) continue;
         try
         {
-            Wait(shell.Open(() => (PageViewModel)Activator.CreateInstance(type, shell)!));
+            var constructor = type.GetConstructors().First(c => c.GetParameters() is [var first, .. var rest]
+                && first.ParameterType == typeof(ShellViewModel) && rest.All(p => p.IsOptional));
+            var parameters = constructor.GetParameters().Select((p, index) => index == 0 ? (object)shell : p.DefaultValue).ToArray();
+            Wait(shell.Open(() => (PageViewModel)constructor.Invoke(parameters)));
             Wait(Task.Delay(500));
             Save(window, $"visite-{type.Name}-{suffix}.png");
+            if (strict)
+            {
+                foreach (var icon in window.GetVisualDescendants().OfType<Material.Icons.Avalonia.MaterialIcon>()
+                             .Where(i => i.IsEffectivelyVisible && i.Bounds.Width > 0 && i.Kind is not null))
+                {
+                    var kind = icon.Kind!.Value;
+                    if (!FluentGlyphs.HasPath(kind) && kind is not Material.Icons.MaterialIconKind.MicrosoftExcel
+                        and not Material.Icons.MaterialIconKind.Whatsapp)
+                        throw new InvalidOperationException($"Pictogramme hors catalogue Fluent : {kind}.");
+                    if (icon.Drawing.Geometry is not { Bounds.Width: > 0, Bounds.Height: > 0 })
+                        throw new InvalidOperationException($"Pictogramme vide : {kind}.");
+                    if (icon.GetVisualAncestors().OfType<Border>().Any(b => b.Classes.Contains("appicon")))
+                    {
+                        var image = icon.GetVisualDescendants().OfType<Image>().FirstOrDefault();
+                        if (image?.Source is not { Size.Width: > 0, Size.Height: > 0 })
+                            throw new InvalidOperationException($"Illustration Fluent absente : {kind}.");
+                        if (FluentGlyphs.ArtworkKey(kind) is { } key &&
+                            (!Application.Current!.Resources.TryGetResource(key, Application.Current.ActualThemeVariant, out var artwork)
+                             || !ReferenceEquals(artwork, image.Source)))
+                            throw new InvalidOperationException($"Illustration Fluent remplacée par un secours : {kind}.");
+                    }
+                }
+            }
+            visited.Add(type.Name);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"VISITE {type.Name} : {ex.GetBaseException().Message}");
+            var failure = $"VISITE {type.Name} : {ex.GetBaseException().Message}";
+            Console.WriteLine(failure);
+            failures.Add(failure);
         }
     }
+    File.WriteAllLines(Path.Combine(output, "interfaces-verifiees.txt"),
+        [$"{visited.Count} interfaces rendues, {failures.Count} échec(s).", .. visited, .. failures]);
+    shell.Sync.Stop();
+    window.Close();
+    Environment.ExitCode = failures.Count == 0 ? 0 : 1;
     return;
 }
 

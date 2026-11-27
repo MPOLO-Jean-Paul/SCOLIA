@@ -15,7 +15,7 @@ public partial class LoginView : UserControl
     public LoginView()
     {
         InitializeComponent();
-        // Même page iOS claire sur le téléphone et sur l'ordinateur ; l'ancienne page bleue reste en réserve.
+        // Même page Fluent sur le téléphone et l'ordinateur ; l'ancienne page bleue reste en réserve.
         var ios = AuthLayout.UseIosStyle;
         LoginScroll.IsVisible = !ios;
         IosLoginScroll.IsVisible = ios;

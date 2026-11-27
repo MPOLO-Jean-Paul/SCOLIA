@@ -1,0 +1,219 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Microsoft Fluent UI System Icons (MIT). Original paths and gradients, converted to native Avalonia drawings.
+       Source and license: Assets/FluentAuth/NOTICE.txt. No rasterization, system font, or network at runtime. -->
+  <DrawingImage x:Key="AuthPersonArtwork">
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H48 V48 H0 Z" />
+        <GeometryDrawing Geometry="F1 M12.2499 28C9.90326 28 8.00002 29.9013 8 32.2489L8 33C8 36.7556 9.94167 39.5669 12.9202 41.3802C15.8491 43.1633 19.7861 44 24 44C28.2139 44 32.1509 43.1633 35.0798 41.3802C38.0583 39.5669 40 36.7556 40 33L40 32.2487C40 29.9012 38.0967 28 35.7502 28H12.2499Z">
+          <GeometryDrawing.Brush>
+            <LinearGradientBrush StartPoint="15.6097,30.127" EndPoint="20.779,46.6354" Opacity="1">
+              <GradientStop Offset="0.125321" Color="#9C6CFE" />
+              <GradientStop Offset="1" Color="#7A41DC" />
+            </LinearGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="F1 M12.2499 28C9.90326 28 8.00002 29.9013 8 32.2489L8 33C8 36.7556 9.94167 39.5669 12.9202 41.3802C15.8491 43.1633 19.7861 44 24 44C28.2139 44 32.1509 43.1633 35.0798 41.3802C38.0583 39.5669 40 36.7556 40 33L40 32.2487C40 29.9012 38.0967 28 35.7502 28H12.2499Z">
+          <GeometryDrawing.Brush>
+            <LinearGradientBrush StartPoint="24,26.0952" EndPoint="31.2381,53.1429" Opacity="1">
+              <GradientStop Offset="0" Color="#00885EDB" />
+              <GradientStop Offset="1" Color="#E362F8" />
+            </LinearGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="F1 M24 4C18.4772 4 14 8.47715 14 14C14 19.5228 18.4772 24 24 24C29.5228 24 34 19.5228 34 14C34 8.47715 29.5228 4 24 4Z">
+          <GeometryDrawing.Brush>
+            <LinearGradientBrush StartPoint="18.7561,6.65871" EndPoint="28.9488,22.9342" Opacity="1">
+              <GradientStop Offset="0.125321" Color="#9C6CFE" />
+              <GradientStop Offset="1" Color="#7A41DC" />
+            </LinearGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+  <DrawingImage x:Key="AuthLockArtwork">
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H48 V48 H0 Z" />
+        <GeometryDrawing Geometry="F1 M16 12V15H18.5V12C18.5 8.96243 20.9624 6.5 24 6.5C27.0376 6.5 29.5 8.96243 29.5 12V15H32V12C32 7.58172 28.4183 4 24 4C19.5817 4 16 7.58172 16 12Z">
+          <GeometryDrawing.Brush>
+            <LinearGradientBrush StartPoint="19.4286,1.89851" EndPoint="31.6698,22.1132" Opacity="1">
+              <GradientStop Offset="0" Color="#FFC205" />
+              <GradientStop Offset="1" Color="#FB5937" />
+            </LinearGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="F1 M40 20.25C40 16.7982 37.2018 14 33.75 14H14.25C10.7982 14 8 16.7982 8 20.25V35.75C8 39.2018 10.7982 42 14.25 42H33.75C37.2018 42 40 39.2018 40 35.75V20.25Z">
+          <GeometryDrawing.Brush>
+            <LinearGradientBrush StartPoint="42.2857,43.75" EndPoint="13.084,16.5556" Opacity="1">
+              <GradientStop Offset="0" Color="#FF6F47" />
+              <GradientStop Offset="1" Color="#FFCD0F" />
+            </LinearGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="F1 M27 28C27 29.6569 25.6569 31 24 31C22.3431 31 21 29.6569 21 28C21 26.3431 22.3431 25 24 25C25.6569 25 27 26.3431 27 28Z">
+          <GeometryDrawing.Brush>
+            <RadialGradientBrush Center="0,0" GradientOrigin="0,0" RadiusX="1" RadiusY="1" TransformOrigin="0,0" Opacity="1">
+              <RadialGradientBrush.Transform><MatrixTransform Matrix="-2.9999371,-10.500055,14.568751,-4.1623914,25.5,31" /></RadialGradientBrush.Transform>
+              <GradientStop Offset="0" Color="#944600" />
+              <GradientStop Offset="1" Color="#CD8E02" />
+            </RadialGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+  <DrawingImage x:Key="AuthShieldArtwork">
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H48 V48 H0 Z" />
+        <GeometryDrawing Geometry="F1 M24.8646 4.34751C24.3811 3.88416 23.6184 3.88416 23.1349 4.34751C20.3762 6.99127 16.4502 8.42541 13.0979 9.18734C11.4389 9.56438 9.95899 9.76829 8.89553 9.87765C8.36453 9.93226 7.93932 9.9631 7.64987 9.98021C7.50519 9.98876 7.39459 9.99387 7.32181 9.9968C7.28543 9.99827 7.25851 9.99919 7.24154 9.99973L7.2236 10.0003L7.2202 10.0004C6.54169 10.0165 5.99999 10.5713 6 11.2501V20.75C6 25.587 7.24269 30.4082 10.0977 34.5249C12.9592 38.6508 17.3886 41.9936 23.6269 43.9431C23.8697 44.019 24.1298 44.019 24.3726 43.9431C36.9406 40.0156 42 30.4968 42 21V11.25C42 10.5711 41.4577 10.0164 40.7791 10.0003L40.7764 10.0003L40.7585 9.99973C40.7415 9.99919 40.7146 9.99827 40.6782 9.9968C40.6054 9.99387 40.4948 9.98876 40.3501 9.98021C40.0606 9.9631 39.6354 9.93226 39.1044 9.87765C38.0409 9.76829 36.5609 9.56438 34.9019 9.18733C31.5494 8.42541 27.6233 6.99126 24.8646 4.34751Z">
+          <GeometryDrawing.Brush>
+            <RadialGradientBrush Center="0,0" GradientOrigin="0,0" RadiusX="1" RadiusY="1" TransformOrigin="0,0" Opacity="1">
+              <RadialGradientBrush.Transform><MatrixTransform Matrix="55.285702,77.499971,-68.461232,48.83779,-8.14286,-18.5" /></RadialGradientBrush.Transform>
+              <GradientStop Offset="0.337728" Color="#0FAFFF" />
+              <GradientStop Offset="0.529425" Color="#367AF2" />
+              <GradientStop Offset="0.682436" Color="#5750E2" />
+              <GradientStop Offset="0.860903" Color="#CC23D1" />
+            </RadialGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="F1 M24.8646 4.34751C24.3811 3.88416 23.6184 3.88416 23.1349 4.34751C20.3762 6.99127 16.4502 8.42541 13.0979 9.18734C11.4389 9.56438 9.95899 9.76829 8.89553 9.87765C8.36453 9.93226 7.93932 9.9631 7.64987 9.98021C7.50519 9.98876 7.39459 9.99387 7.32181 9.9968C7.28543 9.99827 7.25851 9.99919 7.24154 9.99973L7.2236 10.0003L7.2202 10.0004C6.54169 10.0165 5.99999 10.5713 6 11.2501V20.75C6 25.587 7.24269 30.4082 10.0977 34.5249C12.9592 38.6508 17.3886 41.9936 23.6269 43.9431C23.8697 44.019 24.1298 44.019 24.3726 43.9431C36.9406 40.0156 42 30.4968 42 21V11.25C42 10.5711 41.4577 10.0164 40.7791 10.0003L40.7764 10.0003L40.7585 9.99973C40.7415 9.99919 40.7146 9.99827 40.6782 9.9968C40.6054 9.99387 40.4948 9.98876 40.3501 9.98021C40.0606 9.9631 39.6354 9.93226 39.1044 9.87765C38.0409 9.76829 36.5609 9.56438 34.9019 9.18733C31.5494 8.42541 27.6233 6.99126 24.8646 4.34751Z">
+          <GeometryDrawing.Brush>
+            <RadialGradientBrush Center="0,0" GradientOrigin="0,0" RadiusX="1" RadiusY="1" TransformOrigin="0,0" Opacity="0.5">
+              <RadialGradientBrush.Transform><MatrixTransform Matrix="9.0317701e-16,14.75,-15.1714,9.2898032e-16,35.5714,37.75" /></RadialGradientBrush.Transform>
+              <GradientStop Offset="0.5" Color="#1E1868" />
+              <GradientStop Offset="1" Color="#001E1868" />
+            </RadialGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Brush="#444444" Geometry="F1 M46 35C46 28.9249 41.0751 24 35 24C28.9249 24 24 28.9249 24 35C24 41.0751 28.9249 46 35 46C41.0751 46 46 41.0751 46 35Z" />
+        <GeometryDrawing Geometry="F1 M46 35C46 28.9249 41.0751 24 35 24C28.9249 24 24 28.9249 24 35C24 41.0751 28.9249 46 35 46C41.0751 46 46 41.0751 46 35Z">
+          <GeometryDrawing.Brush>
+            <LinearGradientBrush StartPoint="24.7857,28.125" EndPoint="39.9684,43.8992" Opacity="1">
+              <GradientStop Offset="0" Color="#52D17C" />
+              <GradientStop Offset="1" Color="#22918B" />
+            </LinearGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Brush="#D9D9D9" Geometry="F1 M41.7071 30.2929C42.0976 30.6834 42.0976 31.3166 41.7071 31.7071L33.7071 39.7071C33.3166 40.0976 32.6834 40.0976 32.2929 39.7071L28.2929 35.7071C27.9024 35.3166 27.9024 34.6834 28.2929 34.2929C28.6834 33.9024 29.3166 33.9024 29.7071 34.2929L33 37.5858L40.2929 30.2929C40.6834 29.9024 41.3166 29.9024 41.7071 30.2929Z" />
+        <GeometryDrawing Geometry="F1 M41.7071 30.2929C42.0976 30.6834 42.0976 31.3166 41.7071 31.7071L33.7071 39.7071C33.3166 40.0976 32.6834 40.0976 32.2929 39.7071L28.2929 35.7071C27.9024 35.3166 27.9024 34.6834 28.2929 34.2929C28.6834 33.9024 29.3166 33.9024 29.7071 34.2929L33 37.5858L40.2929 30.2929C40.6834 29.9024 41.3166 29.9024 41.7071 30.2929Z">
+          <GeometryDrawing.Brush>
+            <LinearGradientBrush StartPoint="30.625,31.0201" EndPoint="32.8994,42.2605" Opacity="1">
+              <GradientStop Offset="0" Color="white" />
+              <GradientStop Offset="1" Color="#E3FFD9" />
+            </LinearGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+  <DrawingImage x:Key="AuthRecoveryArtwork">
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z" />
+        <GeometryDrawing Geometry="F1 M25.125 18.0556V22.2222L17.0299 29.9714C16.69 29.9904 16.3465 30 15.9999 30C12.8015 30 9.85906 29.177 7.68492 27.7934C5.52264 26.4174 4.00003 24.3935 4.00001 22.0001L4 21.5001C3.99994 19.5671 5.56696 18 7.5 18H24.5C24.7133 18 24.9222 18.0191 25.125 18.0556Z">
+          <GeometryDrawing.Brush>
+            <LinearGradientBrush StartPoint="9.70729,19.5952" EndPoint="13.5843,31.9766" Opacity="1">
+              <GradientStop Offset="0.125321" Color="#9C6CFE" />
+              <GradientStop Offset="1" Color="#7A41DC" />
+            </LinearGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="F1 M25.125 18.0556V22.2222L17.0299 29.9714C16.69 29.9904 16.3465 30 15.9999 30C12.8015 30 9.85906 29.177 7.68492 27.7934C5.52264 26.4174 4.00003 24.3935 4.00001 22.0001L4 21.5001C3.99994 19.5671 5.56696 18 7.5 18H24.5C24.7133 18 24.9222 18.0191 25.125 18.0556Z">
+          <GeometryDrawing.Brush>
+            <LinearGradientBrush StartPoint="16,16.5714" EndPoint="21.4286,36.8572" Opacity="1">
+              <GradientStop Offset="0" Color="#00885EDB" />
+              <GradientStop Offset="1" Color="#E362F8" />
+            </LinearGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="F1 M25.125 18.0556V22.2222L17.0299 29.9714C16.69 29.9904 16.3465 30 15.9999 30C12.8015 30 9.85906 29.177 7.68492 27.7934C5.52264 26.4174 4.00003 24.3935 4.00001 22.0001L4 21.5001C3.99994 19.5671 5.56696 18 7.5 18H24.5C24.7133 18 24.9222 18.0191 25.125 18.0556Z">
+          <GeometryDrawing.Brush>
+            <RadialGradientBrush Center="0,0" GradientOrigin="0,0" RadiusX="1" RadiusY="1" TransformOrigin="0,0" Opacity="0.75">
+              <RadialGradientBrush.Transform><MatrixTransform Matrix="9.6822918,-16.285788,8.4264119,5.0097042,20.724,34.2858" /></RadialGradientBrush.Transform>
+              <GradientStop Offset="0" Color="#BF0A1852" />
+              <GradientStop Offset="1" Color="#000A1852" />
+            </RadialGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="F1 M25.125 18.0556V22.2222L17.0299 29.9714C16.69 29.9904 16.3465 30 15.9999 30C12.8015 30 9.85906 29.177 7.68492 27.7934C5.52264 26.4174 4.00003 24.3935 4.00001 22.0001L4 21.5001C3.99994 19.5671 5.56696 18 7.5 18H24.5C24.7133 18 24.9222 18.0191 25.125 18.0556Z">
+          <GeometryDrawing.Brush>
+            <RadialGradientBrush Center="0,0" GradientOrigin="0,0" RadiusX="1" RadiusY="1" TransformOrigin="0,0" Opacity="0.75">
+              <RadialGradientBrush.Transform><MatrixTransform Matrix="3.3677787e-16,-5.5,7.25,4.4393446e-16,26,21.5" /></RadialGradientBrush.Transform>
+              <GradientStop Offset="0" Color="#BF0A1852" />
+              <GradientStop Offset="1" Color="#000A1852" />
+            </RadialGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="F1 M16 16C19.866 16 23 12.866 23 8.99998C23 5.134 19.866 2 16 2C12.134 2 9 5.134 9 8.99998C9 12.866 12.134 16 16 16Z">
+          <GeometryDrawing.Brush>
+            <LinearGradientBrush StartPoint="12.3293,3.8611" EndPoint="19.4641,15.2539" Opacity="1">
+              <GradientStop Offset="0.125321" Color="#9C6CFE" />
+              <GradientStop Offset="1" Color="#7A41DC" />
+            </LinearGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="F0 M25 25.8995C26.5885 26.2222 28.3035 25.7676 29.5355 24.5355C31.4882 22.5829 31.4882 19.4171 29.5355 17.4645C27.5829 15.5118 24.4171 15.5118 22.4645 17.4645C21.0481 18.8808 20.6591 20.9355 21.2975 22.7025L16.1464 27.8536C16.0527 27.9473 16 28.0745 16 28.2071V30.5C16 30.7761 16.2239 31 16.5 31H20.5C20.7761 31 21 30.7761 21 30.5V29.5C21 29.2239 21.2239 29 21.5 29H22.5C22.7761 29 23 28.7761 23 28.5V27.5C23 27.2239 23.2239 27 23.5 27H24.5C24.7761 27 25 26.7761 25 26.5V25.8995ZM28.1213 20.2929C27.7308 20.6834 27.0976 20.6834 26.7071 20.2929C26.3166 19.9024 26.3166 19.2692 26.7071 18.8787C27.0976 18.4882 27.7308 18.4882 28.1213 18.8787C28.5118 19.2692 28.5118 19.9024 28.1213 20.2929Z">
+          <GeometryDrawing.Brush>
+            <LinearGradientBrush StartPoint="31.0215,30.9942" EndPoint="16.7743,19.3394" Opacity="1">
+              <GradientStop Offset="0" Color="#FF6F47" />
+              <GradientStop Offset="1" Color="#FFCD0F" />
+            </LinearGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+  <DrawingImage x:Key="AuthNetworkArtwork">
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H48 V48 H0 Z" />
+        <GeometryDrawing Geometry="F1 M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z">
+          <GeometryDrawing.Brush>
+            <LinearGradientBrush StartPoint="12.8889,10.6667" EndPoint="41.7778,37.3333" Opacity="1">
+              <GradientStop Offset="0" Color="#29C3FF" />
+              <GradientStop Offset="1" Color="#2052CB" />
+            </LinearGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="F1 M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z">
+          <GeometryDrawing.Brush>
+            <RadialGradientBrush Center="0,0" GradientOrigin="0,0" RadiusX="1" RadiusY="1" TransformOrigin="0,0" Opacity="0.7">
+              <RadialGradientBrush.Transform><MatrixTransform Matrix="-16.8029,2.0577618e-15,-2.0577618e-15,-16.8029,36.3438,34.3125" /></RadialGradientBrush.Transform>
+              <GradientStop Offset="0" Color="#003580" />
+              <GradientStop Offset="1" Color="#00003580" />
+            </RadialGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="F1 M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z">
+          <GeometryDrawing.Brush>
+            <RadialGradientBrush Center="0,0" GradientOrigin="0,0" RadiusX="1" RadiusY="1" TransformOrigin="0,0" Opacity="0.2">
+              <RadialGradientBrush.Transform><MatrixTransform Matrix="20.937518,15.937529,-17.288692,22.712575,37.125,34" /></RadialGradientBrush.Transform>
+              <GradientStop Offset="0.411967" Color="#1B44B1" />
+              <GradientStop Offset="1" Color="#001B44B1" />
+            </RadialGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="F0 M18.9101 4.65341C18.1165 5.72366 17.4043 7.0242 16.7859 8.48742C15.8819 10.6269 15.1518 13.1779 14.6662 16H5.66404C5.31146 16.807 5.01059 17.6417 4.76562 18.5H14.3094C14.1079 20.2618 13.9999 22.1049 13.9999 24C13.9999 26.0751 14.1295 28.088 14.3693 30H4.91547C5.18552 30.8598 5.51207 31.6946 5.89077 32.5H14.7553C15.2392 35.1237 15.9356 37.5002 16.7859 39.5126C17.4043 40.9758 18.1165 42.2763 18.9101 43.3466C20.5352 43.773 22.241 44 23.9999 44C25.7587 44 27.4645 43.773 29.0896 43.3466C29.8832 42.2763 30.5955 40.9758 31.2138 39.5126C32.0642 37.5002 32.7606 35.1237 33.2444 32.5H42.109C42.4877 31.6946 42.8142 30.8598 43.0843 30H33.6304C33.8703 28.088 33.9999 26.0751 33.9999 24C33.9999 22.1049 33.8918 20.2618 33.6904 18.5H43.2341C42.9891 17.6417 42.6883 16.807 42.3357 16H33.3335C32.8479 13.1779 32.1179 10.6269 31.2138 8.48742C30.5955 7.0242 29.8832 5.72366 29.0896 4.65341C27.4645 4.22704 25.7587 4 23.9999 4C22.241 4 20.5352 4.22704 18.9101 4.65341ZM17.2053 16C17.6593 13.5217 18.3097 11.3043 19.0888 9.46054C19.8647 7.62444 20.7446 6.21505 21.6364 5.28514C22.5334 4.34983 23.3385 4 23.9999 4C24.6612 4 25.4663 4.34983 26.3633 5.28514C27.2551 6.21505 28.1351 7.62444 28.9109 9.46054C29.6901 11.3043 30.3404 13.5217 30.7944 16H17.2053ZM23.9999 44C24.6612 44 25.4663 43.6502 26.3633 42.7149C27.2551 41.7849 28.1351 40.3756 28.9109 38.5395C29.6373 36.8206 30.2517 34.777 30.6995 32.5H17.3002C17.748 34.777 18.3625 36.8206 19.0888 38.5395C19.8647 40.3756 20.7446 41.7849 21.6364 42.7149C22.5334 43.6502 23.3385 44 23.9999 44ZM16.4999 24C16.4999 26.093 16.6385 28.1074 16.89 30H31.1097C31.3612 28.1074 31.4999 26.093 31.4999 24C31.4999 22.0903 31.3844 20.246 31.1732 18.5H16.8266C16.6153 20.246 16.4999 22.0903 16.4999 24Z">
+          <GeometryDrawing.Brush>
+            <RadialGradientBrush Center="0,0" GradientOrigin="0,0" RadiusX="1" RadiusY="1" TransformOrigin="0,0" Opacity="1">
+              <RadialGradientBrush.Transform><MatrixTransform Matrix="20.008043,18.267997,-19.513297,21.371959,37.5056,37" /></RadialGradientBrush.Transform>
+              <GradientStop Offset="0.445" Color="#003BD5FF" />
+              <GradientStop Offset="0.815" Color="#3BD5FF" />
+            </RadialGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="F1 M28.0023 40.4623C27.639 39.9477 27.3247 39.4102 27.0599 38.85C26.3552 37.3597 26 35.7087 26 33.9V28.125C26 27.6694 26.3731 27.3 26.8333 27.3C28.3888 27.3 29.9232 27.0133 31.4391 26.4367C32.2939 26.1115 33.1428 25.6942 33.9864 25.1841C34.4928 24.8779 34.9973 24.5382 35.5 24.165C35.7963 23.945 36.2037 23.945 36.5 24.165C37.255 24.7256 38.0141 25.2104 38.7778 25.6201C39.697 26.1131 40.6227 26.497 41.5556 26.7726C42.2801 26.9867 43.0089 27.1354 43.7423 27.2191C44.2152 27.2731 44.6899 27.3 45.1667 27.3C45.6269 27.3 46 27.6694 46 28.125V33.9C46 39.4013 42.7138 43.4433 36.3054 45.9426C36.1091 46.0191 35.8909 46.0191 35.6946 45.9426C33.5776 45.117 31.8013 44.123 30.3717 42.9636C30.1539 42.7871 29.9442 42.6067 29.7426 42.4224C29.4513 42.1563 29.1768 41.8821 28.9192 41.6C28.5851 41.2341 28.2794 40.8549 28.0023 40.4623Z">
+          <GeometryDrawing.Brush>
+            <LinearGradientBrush StartPoint="29.75,24" EndPoint="46.0262,45.2299" Opacity="1">
+              <GradientStop Offset="0" Color="#62BE55" />
+              <GradientStop Offset="1" Color="#1E794A" />
+            </LinearGradientBrush>
+          </GeometryDrawing.Brush>
+        </GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+</ResourceDictionary>

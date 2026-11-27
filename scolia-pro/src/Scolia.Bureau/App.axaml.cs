@@ -12,6 +12,7 @@ public partial class App : Avalonia.Application
 {
     public override void Initialize()
     {
+        FluentGlyphs.Install();
         AvaloniaXamlLoader.Load(this);
         // Défilement à la molette amorti, au rythme de macOS (ordinateur seulement).
         Infrastructure.SmoothScroll.Install();
