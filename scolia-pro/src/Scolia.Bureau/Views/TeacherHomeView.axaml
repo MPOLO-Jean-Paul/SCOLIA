@@ -169,7 +169,7 @@
     <!-- Android : exactement le langage en lignes du secrétariat (Phone/HomeView),
          sans carte géante de bienvenue ni boutons avec contenu TextBlock. -->
     <StackPanel x:Name="TeacherPhoneSections" IsVisible="{Binding Phone}"
-                Spacing="12" Margin="0,0,0,12">
+                Spacing="16" Margin="0,0,0,12">
       <Border Classes="phonegroup" ClipToBounds="True">
         <StackPanel Spacing="0">
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="14,14,14,12">
@@ -180,7 +180,7 @@
                                VerticalAlignment="Center" />
             </Border>
             <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-              <TextBlock Text="{Binding Greeting}" FontSize="18" FontWeight="SemiBold"
+              <TextBlock Text="{Binding Greeting}" FontSize="{DynamicResource FsTitle}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextBrush}"
                          TextWrapping="Wrap" MaxLines="3" />
               <TextBlock Text="{Binding Role}" Classes="muted"
@@ -226,14 +226,14 @@
       </Border>
 
       <StackPanel Spacing="5" IsVisible="{Binding !IsBlocked}">
-        <TextBlock Text="APERÇU" Classes="groupcaps" />
+        <TextBlock Text="Aperçu" Classes="phoneblocktitle" />
         <Border Classes="phonegroup" ClipToBounds="True">
           <ItemsControl Classes="teacherrows" ItemsSource="{Binding Stats}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
                 <StackPanel Spacing="0">
                   <Border Classes="teacherrowsep" />
-                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="12,9,14,9">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="12,12,12,12">
                     <!-- KpiVm expose Accent, pas Brush : liaison incorrecte = tuile blanche et icône blanche. -->
                     <Border Classes="appicon large teacheroverviewicon" Background="{DynamicResource SurfaceBrush}"
                             infra:TileGlyph.Enabled="False"
@@ -247,7 +247,7 @@
                     </StackPanel>
                     <TextBlock Grid.Column="2" Text="{Binding Value}" FontWeight="SemiBold"
                                TextAlignment="Right" VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" MaxLines="1" />
+                               TextWrapping="Wrap" />
                   </Grid>
                 </StackPanel>
               </DataTemplate>
@@ -257,7 +257,7 @@
       </StackPanel>
 
       <StackPanel Spacing="5" IsVisible="{Binding !IsBlocked}">
-        <TextBlock Text="MES COURS" Classes="groupcaps" />
+        <TextBlock Text="Mes cours" Classes="phoneblocktitle" />
         <Border Classes="phonegroup" ClipToBounds="True">
           <StackPanel Spacing="0">
             <TextBlock Text="Aucun cours attribué pour cette année."
@@ -293,7 +293,7 @@
                                          VerticalAlignment="Center" />
                             <TextBlock Grid.Column="1" Text="{Binding Progress}"
                                        Classes="muted" FontSize="{DynamicResource FsSmall}"
-                                       VerticalAlignment="Center" TextWrapping="NoWrap" />
+                                       VerticalAlignment="Center" TextWrapping="Wrap" />
                           </Grid>
                         </StackPanel>
                       </Grid>
@@ -307,7 +307,7 @@
       </StackPanel>
 
       <StackPanel Spacing="5" IsVisible="{Binding HasNotices}">
-        <TextBlock Text="ANNONCES" Classes="groupcaps" />
+        <TextBlock Text="Annonces" Classes="phoneblocktitle" />
         <Border Classes="phonegroup" Padding="14">
           <ItemsControl ItemsSource="{Binding Notices}">
             <ItemsControl.ItemTemplate>
@@ -324,7 +324,7 @@
       </StackPanel>
 
       <StackPanel Spacing="5">
-        <TextBlock Text="INFORMATIONS" Classes="groupcaps" />
+        <TextBlock Text="Informations" Classes="phoneblocktitle" />
         <Border Classes="phonegroup" Padding="0" ClipToBounds="True">
           <Expander Classes="teacherinfo" IsExpanded="False"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
@@ -334,7 +334,7 @@
                   <mi:MaterialIcon Kind="ShieldCheckOutline" />
                 </Border>
                 <TextBlock Grid.Column="1" Text="Règles de l'encodage"
-                           FontWeight="Medium" VerticalAlignment="Center" />
+                           FontWeight="Medium" VerticalAlignment="Center" TextWrapping="Wrap" />
               </Grid>
             </Expander.Header>
             <TextBlock Text="{Binding Rules}" TextWrapping="Wrap"
