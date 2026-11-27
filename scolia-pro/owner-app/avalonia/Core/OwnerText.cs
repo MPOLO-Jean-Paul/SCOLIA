@@ -103,8 +103,11 @@ public static class OwnerText
     };
 
     /// <summary>Nombre de jours saisi : entier positif, borné.</summary>
-    public static int? Days(string? text, int max) =>
-        int.TryParse(text?.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var n) && n >= 1 && n <= max ? n : null;
+    public static int? Days(string? text, int max, int min = 1) =>
+        int.TryParse(text?.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var n) && n >= min && n <= max ? n : null;
+
+    public static bool Matches(string value, string? query) =>
+        string.IsNullOrWhiteSpace(query) || French.CompareInfo.IndexOf(value, query.Trim(), CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0;
 }
 
 public enum LicenseTone { Good, Info, Warning, Bad }
