@@ -58,6 +58,17 @@ jobs:
           dotnet build tests/Scolia.Bureau.Captures -c Release
 
       # Captures natives de l'accueil Power BI : donnees fictives, sans serveur scolaire.
+      - name: Icones SCOLIA - proportions, symetrie et themes
+        run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/icones-scolia http://127.0.0.1:1/ inutilise icones-scolia
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Icones_Bleu_Vert
+          path: scolia-pro/artifacts/icones-scolia/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Accueil Power BI - Windows 11 (formats et themes)
         env:
           SCOLIA_ASTUCES: '0'

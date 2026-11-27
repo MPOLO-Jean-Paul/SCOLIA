@@ -23,14 +23,14 @@ public class ThemeContrastTests
 
 
     [Theory]
-    [InlineData("ToneBlue", "#0040DD")]
-    [InlineData("ToneGreen", "#1F7A35")]
+    [InlineData("ToneBlue", "#1D4ED8")]
+    [InlineData("ToneGreen", "#15803D")]
     [InlineData("ToneOrange", "#B53000")]
-    [InlineData("TonePurple", "#8944AB")]
+    [InlineData("TonePurple", "#1D4ED8")]
     [InlineData("ToneRed", "#C9001A")]
-    [InlineData("ToneTeal", "#006D9E")]
-    [InlineData("ToneIndigo", "#3634A3")]
-    [InlineData("TonePink", "#C7083E")]
+    [InlineData("ToneTeal", "#15803D")]
+    [InlineData("ToneIndigo", "#1D4ED8")]
+    [InlineData("TonePink", "#15803D")]
     [InlineData("ToneNeutral", "#636366")]
     public void Les_icones_gardent_leurs_teintes_et_un_pictogramme_blanc(string tone, string expected)
     {
@@ -44,14 +44,16 @@ public class ThemeContrastTests
     }
 
     [Theory]
-    [InlineData("#409CFF", "#0040DD")]
-    [InlineData("#30D158", "#1F7A35")]
+    [InlineData("#78B9FF", "#1D4ED8")]
+    [InlineData("#6CE09C", "#15803D")]
+    [InlineData("#409CFF", "#1D4ED8")]
+    [InlineData("#30D158", "#15803D")]
     [InlineData("#FF9F0A", "#B53000")]
-    [InlineData("#BF5AF2", "#8944AB")]
+    [InlineData("#BF5AF2", "#1D4ED8")]
     [InlineData("#FF453A", "#C9001A")]
-    [InlineData("#40C8E0", "#006D9E")]
-    [InlineData("#8B88FF", "#3634A3")]
-    [InlineData("#FF375F", "#C7083E")]
+    [InlineData("#40C8E0", "#15803D")]
+    [InlineData("#8B88FF", "#1D4ED8")]
+    [InlineData("#FF375F", "#15803D")]
     [InlineData("#98989D", "#636366")]
     public void La_tuile_sombre_retrouve_sa_couleur_originale(string sombre, string clair)
     {

@@ -1,12 +1,27 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mi="using:Material.Icons.Avalonia"
-        xmlns:infra="using:Scolia.Bureau.Infrastructure">
+        xmlns:infra="using:Scolia.Bureau.Infrastructure"
+        xmlns:ctl="using:Scolia.Bureau.Controls">
   <!-- Langage commun des écrans métier : mêmes surfaces, contrôles et repères que les pages de compte.
        La disposition et les cibles tactiles restent adaptées à la taille réelle de chaque appareil. -->
   <Style Selector="mi|MaterialIcon">
     <Setter Property="IsHitTestVisible" Value="False" />
     <Setter Property="UseLayoutRounding" Value="True" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <ctl:FluentIcon Kind="{TemplateBinding Kind}" Foreground="{TemplateBinding Foreground}" />
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="PathIcon">
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <ctl:FluentIcon Data="{TemplateBinding Data}" Foreground="{TemplateBinding Foreground}" />
+      </ControlTemplate>
+    </Setter>
   </Style>
 
   <!-- Repères en couleur pour les fonctionnalités, vecteurs au trait pour les commandes.

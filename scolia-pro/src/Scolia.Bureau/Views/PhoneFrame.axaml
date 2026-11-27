@@ -158,8 +158,8 @@
     <Border Grid.Row="0" Classes="phonebar">
       <StackPanel>
       <Grid x:Name="PhoneHeaderGrid" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto" IsVisible="{Binding !HeaderSearch.IsOpen}">
-        <Button Classes="phoneicon" Command="{Binding BackCommand}" IsVisible="{Binding CanGoBack}" ToolTip.Tip="Retour">
-          <mi:MaterialIcon Kind="ChevronLeft" />
+        <Button x:Name="PhoneBack" Classes="phoneicon" Command="{Binding BackCommand}" IsVisible="{Binding CanGoBack}" ToolTip.Tip="Retour" AutomationProperties.Name="Page précédente">
+          <mi:MaterialIcon Kind="ArrowLeft" />
         </Button>
         <Panel Width="44" Height="44" IsVisible="{Binding !CanGoBack}">
           <Image Source="{DynamicResource ScoliaMark}" Width="26" Height="26" />
@@ -167,11 +167,11 @@
         <TextBlock x:Name="PhonePageHeading" Text="{Binding PhonePage.Heading}"
                    FontWeight="SemiBold" TextWrapping="Wrap" />
         <!-- Présence : les autres postes connectés ; le point vert bat quand l'un d'eux enregistre quelque chose -->
-        <Button Grid.Column="2" Classes="phoneicon" Command="{Binding NetworkCommand}" ToolTip.Tip="Réseau et activité">
+        <Button x:Name="PhoneNetwork" Grid.Column="2" Classes="phoneicon" Command="{Binding NetworkCommand}" ToolTip.Tip="Réseau et activité" AutomationProperties.Name="{Binding Sync.StatusText}">
           <Panel>
-            <Ellipse Width="10" Height="10" Fill="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <mi:MaterialIcon Kind="LanDisconnect" Foreground="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" />
             <Panel IsVisible="{Binding Sync.Online}">
-              <mi:MaterialIcon Kind="AccountMultipleOutline" />
+              <mi:MaterialIcon Kind="LanConnect" />
               <Border Classes="livedot" Classes.pulse="{Binding Sync.Pulse}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-2,-4,0" />
               <Border Classes="peercount" IsVisible="{Binding Sync.HasPeers}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-8,-4">
                 <TextBlock Text="{Binding Sync.PeersCount}" />

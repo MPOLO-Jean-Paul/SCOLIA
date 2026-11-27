@@ -14,6 +14,7 @@ on:
     branches: [feature/jp-services-admin-server-discovery-20261109, release/direct-apk-scolia-pro-20261103]
     paths:
       - 'scolia-pro/owner-app/avalonia/**'
+      - 'scolia-pro/src/Scolia.Bureau/Themes/FluentArtwork.axaml'
       - 'scolia-pro/deploy/owner-console/**'
       - '.github/workflows/scolia-owner-avalonia.yml'
   workflow_dispatch:

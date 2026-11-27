@@ -1801,7 +1801,7 @@ public sealed class ShellViewModel : Observable
                 if (item.IsSelected) match = item;
             }
         // L'icône de la page reprend celle de son outil dans le volet latéral, avec la même couleur.
-        CurrentIcon = match?.Icon ?? Current?.Glyph ?? Material.Icons.MaterialIconKind.FileDocument;
+        CurrentIcon = match?.Icon ?? Current?.FeatureGlyph ?? Material.Icons.MaterialIconKind.FileDocument;
         CurrentIconBrush = match?.Brush ?? ThemeBrush.Get("ToneNeutral");
         Raise(nameof(CurrentIcon));
         Raise(nameof(CurrentIconBrush));

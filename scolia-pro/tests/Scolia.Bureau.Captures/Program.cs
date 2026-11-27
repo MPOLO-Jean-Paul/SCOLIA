@@ -23,6 +23,12 @@ Scolia.Bureau.Program.BuildAvaloniaApp()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
     .SetupWithoutStarting();
 
+if (args.Length > 3 && args[3] == "icones-scolia")
+{
+    FluentIconCapture.Run(output);
+    return;
+}
+
 // Attend une tâche tout en faisant tourner la boucle d'affichage de l'interface.
 static T Result<T>(Task<T> task)
 {
@@ -2806,6 +2812,30 @@ if (args.Length > 3 && args[3] == "finitions-roles")
             var expenses = new ExpensesPage(shell);
             ShowRole(() => expenses, "depenses");
             CheckForm(expenses, "nouvelle-depense");
+        }
+    }
+    // Les boutons visibles sont exercés avec la souris/tactile, plutôt qu'en appelant le ViewModel.
+    if (shell.CanGoBack && shell.Current is { } beforeBack)
+    {
+        var name = Preferences.MobileLayout ? "PhoneBack" : "DesktopBack";
+        var back = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == name && b.IsEffectivelyVisible);
+        CheckRole("Retour : nom accessible", !string.IsNullOrWhiteSpace(Avalonia.Automation.AutomationProperties.GetName(back)));
+        if (!Preferences.MobileLayout) CheckRole("Retour : un seul contour de navigation", back.BorderThickness == new Thickness(0));
+        var point = back.TranslatePoint(new Point(back.Bounds.Width / 2, back.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(point, Avalonia.Input.MouseButton.Left);
+        window.MouseUp(point, Avalonia.Input.MouseButton.Left);
+        Wait(Task.Delay(180));
+        CheckRole("Retour : le bouton restaure la page précédente", !ReferenceEquals(beforeBack, shell.Current) && shell.CanGoForward);
+        RenderRole("navigation-retour");
+        if (!Preferences.MobileLayout)
+        {
+            var next = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "DesktopForward" && b.IsEffectivelyVisible);
+            CheckRole("Suivant : disponible et sans contour intérieur", next.IsEnabled && next.BorderThickness == new Thickness(0));
+            point = next.TranslatePoint(new Point(next.Bounds.Width / 2, next.Bounds.Height / 2), window)!.Value;
+            window.MouseDown(point, Avalonia.Input.MouseButton.Left);
+            window.MouseUp(point, Avalonia.Input.MouseButton.Left);
+            Wait(Task.Delay(180));
+            CheckRole("Suivant : le bouton restaure la bonne page", ReferenceEquals(beforeBack, shell.Current));
         }
     }
     if (Preferences.MobileLayout)

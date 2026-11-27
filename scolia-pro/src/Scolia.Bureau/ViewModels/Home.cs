@@ -12,7 +12,7 @@ public sealed record ToolCardVm(string Title, string Description, MaterialIconKi
 {
     /// <summary>Libellé d'un seul mot pour les gros boutons du téléphone : jamais coupé au milieu d'un mot.</summary>
     public string ShortTitle { get; init; } = Title;
-    /// <summary>Avatar illustré de la fonctionnalité (personnage, objet et pastille), dessiné en vecteurs.</summary>
+    /// <summary>Repère Fluent de la fonctionnalité, dans les couleurs du logo.</summary>
     public Avalonia.Media.IImage Illustration => Infrastructure.Illustrations.For(Icon, Brush);
     /// <summary>Numéro de la carte sur l'accueil (« 01 », « 02 »…).</summary>
     public string Number { get; init; } = string.Empty;
@@ -29,7 +29,7 @@ public sealed record RecentReceiptVm(string Number, string Student, string Date,
 /// <summary>Indicateur de l'accueil : une icône, un chiffre, une précision ; un clic ouvre la page détaillée.</summary>
 public sealed record HomeKpiVm(string Label, string Value, string Hint, MaterialIconKind Icon, IBrush Brush, AsyncCommand Open)
 {
-    /// <summary>Avatar illustré de l'indicateur (mêmes personnages que les cartes de fonctionnalités).</summary>
+    /// <summary>Repère Fluent de l'indicateur.</summary>
     public IImage Illustration => Illustrations.For(Icon, Brush);
 }
 
@@ -263,7 +263,7 @@ public sealed class HomePage : PageViewModel
         void Add(string? perm, string title, string description, MaterialIconKind icon, string tone, Func<Task> run, string? shortTitle = null)
         {
             if (perm is null || Shell.Can(perm))
-                Tools.Add(new ToolCardVm(title, description, icon, ThemeBrush.Get(tone), new AsyncCommand(() => Shell.Run(run)))
+                Tools.Add(new ToolCardVm(title, description, icon, ThemeBrush.Get(FeatureVisuals.NavigationTone(tone)), new AsyncCommand(() => Shell.Run(run)))
                     { ShortTitle = shortTitle ?? title, Number = (Tools.Count + 1).ToString("00", System.Globalization.CultureInfo.InvariantCulture) });
         }
 
@@ -279,7 +279,7 @@ public sealed class HomePage : PageViewModel
             () => Shell.Open(() => new ReceiptsPage(Shell)), "Reçus");
         Add(Perm.AcademicsRead, "Présences", "Faire l'appel du jour par promotion.", MaterialIconKind.ClipboardCheck, "ToneTeal",
             () => Shell.Open(() => new AttendancePage(Shell)));
-        Add(Perm.ReportsRead, "Tableau de bord", "Recettes, retards et indicateurs de l'année.", MaterialIconKind.ViewDashboard, "ToneIndigo",
+        Add(Perm.ReportsRead, "Tableau de bord", "Recettes, retards et indicateurs de l'année.", MaterialIconKind.ChartBox, "ToneBlue",
             () => Shell.Open(() => new DashboardPage(Shell)), "Indicateurs");
         Add(Perm.StudentsRead, Shell.StudentTerms.PluralTitle, "Rechercher un dossier et ouvrir sa fiche.", MaterialIconKind.AccountGroup, "ToneBlue",
             () => Shell.Open(() => new StudentsPage(Shell)));

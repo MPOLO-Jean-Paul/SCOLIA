@@ -24,7 +24,7 @@ public sealed class PhoneOfflineHeaderTests
         Assert.DoesNotContain(elements, e => e.Name.LocalName == "Button" &&
             (string?)e.Attribute("Classes") is { } classes &&
             classes.Split(' ').Contains("livestrip") && classes.Split(' ').Contains("offline"));
-        Assert.Contains(elements, e => e.Name.LocalName == "Ellipse" &&
+        Assert.Contains(elements, e => e.Name.LocalName == "MaterialIcon" && (string?)e.Attribute("Kind") == "LanDisconnect" &&
             e.Attributes().Any(a => a.Name.LocalName == "IsVisible" &&
                 a.Value.Contains("Sync.Offline", StringComparison.Ordinal)));
         // Les conflits réels restent signalés. Pas de suppression d'une alerte importante.

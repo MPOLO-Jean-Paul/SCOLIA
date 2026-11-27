@@ -56,14 +56,14 @@ public static class IconPalette
     private static readonly IReadOnlyDictionary<string, Color> Colors =
         new Dictionary<string, Color>(StringComparer.Ordinal)
         {
-            ["ToneBlue"] = Color.Parse("#0040DD"),
-            ["ToneGreen"] = Color.Parse("#1F7A35"),
+            ["ToneBlue"] = Color.Parse("#1D4ED8"),
+            ["ToneGreen"] = Color.Parse("#15803D"),
             ["ToneOrange"] = Color.Parse("#B53000"),
-            ["TonePurple"] = Color.Parse("#8944AB"),
+            ["TonePurple"] = Color.Parse("#1D4ED8"),
             ["ToneRed"] = Color.Parse("#C9001A"),
-            ["ToneTeal"] = Color.Parse("#006D9E"),
-            ["ToneIndigo"] = Color.Parse("#3634A3"),
-            ["TonePink"] = Color.Parse("#C7083E"),
+            ["ToneTeal"] = Color.Parse("#15803D"),
+            ["ToneIndigo"] = Color.Parse("#1D4ED8"),
+            ["TonePink"] = Color.Parse("#15803D"),
             ["ToneNeutral"] = Color.Parse("#636366")
         };
 
@@ -72,6 +72,8 @@ public static class IconPalette
     private static readonly IReadOnlyDictionary<Color, string> DarkTones =
         new Dictionary<Color, string>
         {
+            [Color.Parse("#78B9FF")] = "ToneBlue",
+            [Color.Parse("#6CE09C")] = "ToneGreen",
             [Color.Parse("#409CFF")] = "ToneBlue",
             [Color.Parse("#30D158")] = "ToneGreen",
             [Color.Parse("#FF9F0A")] = "ToneOrange",

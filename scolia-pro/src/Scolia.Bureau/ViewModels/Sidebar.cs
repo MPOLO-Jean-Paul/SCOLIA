@@ -14,8 +14,8 @@ public sealed class NavItemVm : Observable
     public NavItemVm(string label, MaterialIconKind icon, string tone, Type page, Func<PageViewModel> create, ShellViewModel shell)
     {
         Label = label;
-        Icon = icon;
-        Brush = IconPalette.Get(tone);
+        Icon = FeatureVisuals.ForPage(page, icon);
+        Brush = IconPalette.Get(FeatureVisuals.NavigationTone(tone));
         PageType = page;
         Open = new AsyncCommand(() => shell.Run(() => shell.Open(create)));
     }

@@ -7,12 +7,13 @@ namespace Scolia.Bureau.ViewModels;
 /// utilisés sur ordinateur, téléphone et tablette ; aucune icône générique répétée.
 /// Les couleurs sont des ressources du thème, pas des couleurs codées dans les vues.
 /// </summary>
-public static class FeatureVisuals
+public static partial class FeatureVisuals
 {
     public static MaterialIconKind Icon(string title) => title switch
     {
         "" or "Accueil" => MaterialIconKind.Home,
-        "Données" or "Sauvegardes" => MaterialIconKind.DatabaseExport,
+        "Données" => MaterialIconKind.DatabaseExport,
+        "Sauvegardes" => MaterialIconKind.CloudLock,
         "Contrôle" => MaterialIconKind.DatabaseCheck,
         "Effacement" => MaterialIconKind.DeleteSweep,
         "Secrétariat" => MaterialIconKind.AccountGroup,
@@ -25,7 +26,7 @@ public static class FeatureVisuals
         "Enseignants et cours" => MaterialIconKind.HumanMaleBoard,
         "Délibérations" => MaterialIconKind.Gavel,
         "Administration" or "Personnel" => MaterialIconKind.Briefcase,
-        "Pilotage" => MaterialIconKind.ViewDashboard,
+        "Pilotage" => ForPage<PromoterDashboardPage>(),
         "Paramètres" or "Préférences" => MaterialIconKind.Cog,
         "Sécurité" => MaterialIconKind.ShieldCheck,
         "Exports" or "Export" or "Rapports" => MaterialIconKind.FileChart,
@@ -36,42 +37,28 @@ public static class FeatureVisuals
     /// <summary>Couleur fonctionnelle des petites commandes, jamais une teinte arbitraire.</summary>
     public static string CommandTone(string label, string originalTone)
     {
-        if (originalTone != "ToneNeutral") return originalTone;
         if (label.StartsWith("Effacer", StringComparison.OrdinalIgnoreCase)
-            || label.StartsWith("Annuler", StringComparison.OrdinalIgnoreCase)) return "ToneRed";
+            || label.StartsWith("Annuler", StringComparison.OrdinalIgnoreCase)
+            || label.StartsWith("Supprimer", StringComparison.OrdinalIgnoreCase)) return "ToneRed";
+        if (originalTone != "ToneNeutral") return NavigationTone(originalTone);
         if (label.StartsWith("Nouvel", StringComparison.OrdinalIgnoreCase)
             || label.StartsWith("Sauvegarder", StringComparison.OrdinalIgnoreCase)) return "ToneGreen";
         if (label.Contains("reçu", StringComparison.OrdinalIgnoreCase)
-            || label.Contains("débiteur", StringComparison.OrdinalIgnoreCase)) return "ToneOrange";
-        if (label.Contains("PDF", StringComparison.OrdinalIgnoreCase)) return "ToneIndigo";
+            || label.Contains("débiteur", StringComparison.OrdinalIgnoreCase)) return "ToneGreen";
+        if (label.Contains("PDF", StringComparison.OrdinalIgnoreCase)) return "ToneBlue";
         if (label.Contains("Excel", StringComparison.OrdinalIgnoreCase)
-            || label.StartsWith("Importer", StringComparison.OrdinalIgnoreCase)) return "ToneTeal";
+            || label.StartsWith("Importer", StringComparison.OrdinalIgnoreCase)) return "ToneGreen";
         if (label.StartsWith("Vérifier", StringComparison.OrdinalIgnoreCase)
-            || label.Contains("Sécurité", StringComparison.OrdinalIgnoreCase)) return "ToneTeal";
+            || label.Contains("Sécurité", StringComparison.OrdinalIgnoreCase)) return "ToneGreen";
         if (label.Contains("Police", StringComparison.OrdinalIgnoreCase)
             || label.Contains("texte", StringComparison.OrdinalIgnoreCase)
-            || label.Contains("Préférences", StringComparison.OrdinalIgnoreCase)) return "TonePurple";
+            || label.Contains("Préférences", StringComparison.OrdinalIgnoreCase)) return "ToneBlue";
         return "ToneBlue";
     }
 
     public static string Tone(string title) => title switch
     {
-        "" or "Accueil" or "Secrétariat" => "ToneBlue",
-        "Données" or "Exports" or "Export" or "Rapports" => "ToneIndigo",
-        "Sauvegardes" or "Contrôle" => "ToneTeal",
-        "Effacement" => "ToneRed",
-        "Finances" or "Paiements" => "ToneGreen",
-        "Scolarité" or "Organisation pédagogique" => "TonePurple",
-        "Réseau et postes" => "ToneTeal",
-        "Délibération" => "ToneRed",
-        "Espace enseignant" or "Mon espace" => "TonePurple",
-        "Délibérations" => "ToneRed",
-        "Enseignants et cours" => "ToneOrange",
-        "Administration" or "Personnel" => "ToneOrange",
-        "Pilotage" => "ToneIndigo",
-        "Paramètres" or "Préférences" => "ToneTeal",
-        "Sécurité" => "ToneRed",
-        "Aide" => "ToneBlue",
-        _ => "ToneIndigo"
+        "Finances" or "Paiements" or "Sauvegardes" or "Contrôle" or "Réseau et postes" or "Sécurité" => "ToneGreen",
+        _ => "ToneBlue"
     };
 }

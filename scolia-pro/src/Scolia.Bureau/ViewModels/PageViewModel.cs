@@ -100,6 +100,7 @@ public abstract class PageViewModel : Observable
     public virtual string Heading => Title;
     public virtual string Subtitle => string.Empty;
     public virtual MaterialIconKind Glyph => MaterialIconKind.FileDocumentOutline;
+    public MaterialIconKind FeatureGlyph => FeatureVisuals.ForPage(GetType(), Glyph);
     public ObservableCollection<ActionVm> Actions { get; } = [];
     /// <summary>L'action principale et les plus courantes, affichées en boutons.</summary>
     public IReadOnlyList<ActionVm> VisibleActions => visibleActions ??= Array.AsReadOnly(HeaderActions.Take(Shown).ToArray());
