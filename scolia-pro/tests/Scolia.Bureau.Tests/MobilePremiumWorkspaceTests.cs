@@ -47,4 +47,25 @@ public sealed class MobilePremiumWorkspaceTests
             Assert.Contains(doc.Descendants(), x => Attr(x, "Text") == label && Attr(x, "TextWrapping") == "Wrap");
         }
     }
+
+    [Fact]
+    public void Mobile_forms_keep_tactile_fields_and_password_reserve()
+    {
+        var doc = Read("Views/FormView.axaml");
+        var fields = Assert.Single(doc.Descendants(), x => Attr(x, "Selector") ==
+            "LayoutTransformControl.phone Border.sheet TextBox.w11, LayoutTransformControl.phone Border.sheet ComboBox.w11, LayoutTransformControl.phone Border.sheet CalendarDatePicker.w11");
+        Assert.Contains(fields.Elements(), x => Attr(x, "Property") == "MinHeight" && Attr(x, "Value") == "48");
+        Assert.Contains(fields.Elements(), x => Attr(x, "Property") == "CornerRadius" && Attr(x, "Value") == "{DynamicResource RadiusInput}");
+        Assert.Contains(doc.Descendants(), x => Attr(x, "RevealPassword") == "{Binding ShowSecret}" &&
+            Attr(x, "Padding") == "14,8,52,8");
+    }
+
+    [Fact]
+    public void Mobile_sticky_action_adapts_to_narrow_viewport()
+    {
+        var frame = Read("Views/PhoneFrame.axaml");
+        var sticky = Assert.Single(frame.Descendants(), x => Attr(x, "Name") == "PhoneStickyBar");
+        Assert.Contains(sticky.Elements(), x => Attr(x, "StackBelow") == "285");
+        Assert.Contains(sticky.Descendants(), x => Attr(x, "Command") == "{Binding PhonePage.Sticky.Command}");
+    }
 }
