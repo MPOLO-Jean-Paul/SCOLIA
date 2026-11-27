@@ -20,6 +20,7 @@ SCENARIOS = {
     'mobile-sombre': ('390x844', True, True, 1),
     'mobile-compact': ('320x640', True, False, 1),
     'mobile-texte': ('360x740', True, False, 1.3),
+    'mobile-paysage': ('640x360', True, False, 1),
     'bureau': ('1440x1000', False, False, 1),
     'bureau-sombre': ('1440x1000', False, True, 1),
     'bureau-compact': ('1024x768', False, False, 1.2),

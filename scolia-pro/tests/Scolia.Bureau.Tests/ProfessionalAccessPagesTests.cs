@@ -330,7 +330,7 @@ public sealed class ProfessionalAccessPagesTests
         var nodes = Elements("Themes/Controls.axaml");
         // Graisse du texte courant : Medium sur le téléphone, Regular sur l'ordinateur comme dans Windows 11.
         Assert.Equal("{DynamicResource BodyWeight}", Setting(StyleOf(nodes, "TextBlock"), "FontWeight"));
-        Assert.Equal("{DynamicResource BodyWeight}", Setting(StyleOf(nodes, "TemplatedControl"), "FontWeight"));
+        Assert.Equal("{DynamicResource BodyWeight}", Setting(StyleOf(nodes, ":is(TemplatedControl)"), "FontWeight"));
         var palette = File.ReadAllText(Source("Themes/Palette.axaml"));
         Assert.Contains("<FontWeight x:Key=\"BodyWeight\">Medium</FontWeight>", palette, StringComparison.Ordinal);
         var windows = File.ReadAllText(Source("Themes/Windows11.axaml"));

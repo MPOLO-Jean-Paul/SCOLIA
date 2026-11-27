@@ -140,7 +140,9 @@ public sealed class Preferences : Observable
     public string Theme { get => theme; set { if (Set(ref theme, value)) Raise(nameof(IsDark)); } }
     public bool IsDark { get => theme == "dark"; set => Theme = value ? "dark" : "light"; }
     public string Accent { get => accent; set => Set(ref accent, AccentTable.Any(a => a.Key == value) ? value : "bleu"); }
-    public double Scale { get => scale; set { if (Set(ref scale, Math.Clamp(Math.Round(value, 2), 0.8, 1.6))) Raise(nameof(ZoomLabel)); } }
+    public const double MinimumTextScale = 0.8;
+    public const double MaximumTextScale = 1.6;
+    public double Scale { get => scale; set { if (Set(ref scale, Math.Clamp(Math.Round(value, 2), MinimumTextScale, MaximumTextScale))) Raise(nameof(ZoomLabel)); } }
     public string ZoomLabel => $"{Math.Round(scale * 100):0} %";
     /// <summary>Taille de texte choisie par l'utilisateur. L'adaptation à la fenêtre agit à part, sur toute l'interface.</summary>
     public double Factor => scale;

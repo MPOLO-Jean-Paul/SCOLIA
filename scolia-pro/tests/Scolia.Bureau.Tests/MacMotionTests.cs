@@ -60,10 +60,10 @@ public sealed class MacMotionTests
     public void L_ordinateur_reprend_les_controles_de_Windows_11()
     {
         var windows = File.ReadAllText(Source("Themes/Windows11.axaml"));
-        // Boutons et champs de 32 px, coins de 4 px, filet d'élévation plus sombre en bas.
+        // Boutons et champs de 32 px, coins communs de 6 px, filet d'élévation plus sombre en bas.
         Assert.Contains("<x:Double x:Key=\"FieldHeight\">32</x:Double>", windows, StringComparison.Ordinal);
         Assert.Contains("<Thickness x:Key=\"ButtonStroke\">1</Thickness>", windows, StringComparison.Ordinal);
-        Assert.Contains("<CornerRadius x:Key=\"RadiusInput\">4</CornerRadius>", windows, StringComparison.Ordinal);
+        Assert.Contains("<CornerRadius x:Key=\"RadiusInput\">6</CornerRadius>", windows, StringComparison.Ordinal);
         Assert.Contains("x:Key=\"ButtonStrokeBrush\"", windows, StringComparison.Ordinal);
         var controls = File.ReadAllText(Source("Themes/Controls.axaml"));
         Assert.Contains("Value=\"{DynamicResource ButtonStroke}\"", controls, StringComparison.Ordinal);

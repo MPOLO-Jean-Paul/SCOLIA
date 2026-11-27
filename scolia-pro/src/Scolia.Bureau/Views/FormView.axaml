@@ -16,34 +16,45 @@
     <!-- Sur Android : présentation des configurations, sans minimum desktop ni débordement horizontal. -->
     <Style Selector="LayoutTransformControl.phone Border.sheet">
       <Setter Property="MinWidth" Value="0" />
-      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="CornerRadius" Value="16" />
       <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet Grid.formheader">
-      <Setter Property="Margin" Value="16,16,12,0" />
+      <Setter Property="Margin" Value="14,16,14,0" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet ScrollViewer.formscroll">
-      <Setter Property="Padding" Value="16,10,12,8" />
+      <Setter Property="Padding" Value="14,12,14,8" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet Panel.formfooter">
-      <Setter Property="Margin" Value="16,12,16,16" />
+      <Setter Property="Margin" Value="14,12,14,14" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet Border.formerror">
-      <Setter Property="Margin" Value="16,4,16,8" />
+      <Setter Property="Margin" Value="14,4,14,8" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet TextBox.w11, LayoutTransformControl.phone Border.sheet ComboBox.w11, LayoutTransformControl.phone Border.sheet CalendarDatePicker.w11">
       <Setter Property="MinHeight" Value="48" />
-      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet Button.formaction">
       <Setter Property="MinHeight" Value="48" />
-      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet StackPanel.formentry">
-      <Setter Property="Margin" Value="0,0,0,12" />
+      <Setter Property="Margin" Value="0,0,0,14" />
+      <Setter Property="Spacing" Value="6" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet StackPanel.formgrouphead">
       <Setter Property="Margin" Value="0,14,0,8" />
+    </Style>
+    <Style Selector="TextBlock.formheading"><Setter Property="FontSize" Value="18" /></Style>
+    <Style Selector="LayoutTransformControl.phone Border.sheet TextBlock.formheading">
+      <Setter Property="FontSize" Value="{DynamicResource FsPageHeading}" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Border.sheet CheckBox">
+      <Setter Property="MinHeight" Value="48" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Border.sheet CheckBox :is(TextBlock)">
+      <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
     <!-- Formulaires métier : le libellé et l'aide gardent toute leur largeur. -->
     <Style Selector="TextBlock.formintro, ItemsControl.formfields">
@@ -78,7 +89,7 @@
           <mi:MaterialIcon Kind="{Binding HeaderIcon}" />
         </Border>
         <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-          <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Title}" Classes="formheading" FontWeight="SemiBold" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasSubtitle}" />
         </StackPanel>
         <Button Grid.Column="2" Classes="closex" AutomationProperties.Name="Fermer le formulaire" Command="{Binding Cancel}" IsEnabled="{Binding !Busy}" Margin="12,0,0,0"><PathIcon Data="{x:Static infra:HomeGlyphs.Dismiss}" /></Button>

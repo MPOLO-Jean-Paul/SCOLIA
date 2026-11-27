@@ -240,7 +240,7 @@
                         IsVisible="{Binding PhonePage.ShowSkeleton, FallbackValue=False}" />
     <!-- Barre d'action fixe de la page : le total et le bouton qui valide, toujours visibles en bas -->
     <Border x:Name="PhoneStickyBar" Grid.Row="1" Classes="stickybar" VerticalAlignment="Bottom" IsVisible="{Binding PhonePage.Sticky.IsVisible, FallbackValue=False}">
-      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" RowSpacing="8" infra:Adaptive.StackBelow="285">
         <StackPanel VerticalAlignment="Center" Spacing="1">
           <TextBlock Text="{Binding PhonePage.Sticky.Title}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding PhonePage.Sticky.Value}" ToolTip.Tip="{Binding PhonePage.Sticky.Value}" FontSize="{DynamicResource FsStickyValue}" FontWeight="SemiBold" TextWrapping="Wrap" />

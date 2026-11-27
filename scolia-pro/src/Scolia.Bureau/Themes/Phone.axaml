@@ -10,7 +10,7 @@
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="0,0,0,1" />
-      <Setter Property="Padding" Value="4,6,4,6" />
+      <Setter Property="Padding" Value="8,6,8,6" />
     </Style>
     <Style Selector="Button.phoneicon">
       <Setter Property="Background" Value="Transparent" />
@@ -72,7 +72,7 @@
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="0,1,0,0" />
-      <Setter Property="Padding" Value="2,4,2,4" />
+      <Setter Property="Padding" Value="4,5,4,5" />
     </Style>
     <Style Selector="Button.phonetab">
       <Setter Property="Background" Value="Transparent" />
@@ -101,13 +101,13 @@
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
     <Style Selector="Button.phonetab TextBlock">
-      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontSize" Value="{DynamicResource FsCaption}" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="MinWidth" Value="0" />
       <Setter Property="TextAlignment" Value="Center" />
-      <Setter Property="TextWrapping" Value="NoWrap" />
-      <Setter Property="MaxLines" Value="1" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="MaxLines" Value="2" />
       <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
     <!-- La graisse reste stable : seule la couleur indique la sélection,
@@ -445,5 +445,62 @@
   <Style Selector="LayoutTransformControl.phone TextBlock.fieldlabel, LayoutTransformControl.phone TextBlock.phoneblocktitle">
     <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="TextAlignment" Value="Left" />
+  </Style>
+
+  <!-- Finitions premium du poste mobile : mêmes primitives pour tous les profils.
+       Les sélecteurs restent limités au cadre téléphone ; les vues desktop et d'accès gardent leurs styles. -->
+  <Style Selector="LayoutTransformControl.phone Border.card, LayoutTransformControl.phone Border.desktopgroup, LayoutTransformControl.phone Border.tile, LayoutTransformControl.phone Border.phonegroup, LayoutTransformControl.phone Border.phoneblockcard">
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock.heading, LayoutTransformControl.phone TextBlock.phonegrouptitle, LayoutTransformControl.phone TextBlock.phoneblocktitle">
+    <Setter Property="FontSize" Value="{DynamicResource FsHeading}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock.groupcaps">
+    <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.phonerow, LayoutTransformControl.phone Button.phonecategory, LayoutTransformControl.phone Button.settingsentry, LayoutTransformControl.phone Button.sheetitem">
+    <Setter Property="MinHeight" Value="56" />
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.phonerow TextBlock, LayoutTransformControl.phone Button.settingsentry TextBlock, LayoutTransformControl.phone Button.phonecategory TextBlock, LayoutTransformControl.phone Button.sheetitem TextBlock">
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.primary, LayoutTransformControl.phone Button.outline">
+    <Setter Property="MinHeight" Value="48" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.phonetab">
+    <Setter Property="MinHeight" Value="60" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.phonerow:pressed /template/ ContentPresenter#PART_ContentPresenter, LayoutTransformControl.phone Button.settingsentry:pressed /template/ ContentPresenter#PART_ContentPresenter, LayoutTransformControl.phone Button.phonecategory:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+  </Style>
+
+  <!-- Cartes de listes métier : identité constante, libellés et montants lisibles. -->
+  <Style Selector="LayoutTransformControl.phone Border.phonecard">
+    <Setter Property="Padding" Value="12,12,10,12" />
+    <Setter Property="Margin" Value="0,0,0,10" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock.phonetitle">
+    <Setter Property="FontSize" Value="{DynamicResource FsHeading}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock.phonesub, LayoutTransformControl.phone TextBlock.phonelabel">
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.stickybar">
+    <Setter Property="Padding" Value="12,10,12,10" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.stickyaction">
+    <Setter Property="FontSize" Value="{DynamicResource FsBase}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
   </Style>
 </Styles>

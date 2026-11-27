@@ -73,5 +73,5 @@
   <CornerRadius x:Key="RadiusField">8</CornerRadius>
   <CornerRadius x:Key="RadiusPill">20</CornerRadius>
   <CornerRadius x:Key="RadiusSmall">8</CornerRadius>
-  <CornerRadius x:Key="RadiusInput">8</CornerRadius>
+  <CornerRadius x:Key="RadiusInput">10</CornerRadius>
 </ResourceDictionary>

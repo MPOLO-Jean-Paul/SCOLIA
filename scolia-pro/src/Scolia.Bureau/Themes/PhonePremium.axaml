@@ -86,7 +86,7 @@
     <Setter Property="FontSize" Value="{DynamicResource FsPageHeading}" />
     <Setter Property="LineHeight" Value="{DynamicResource LhPhoneHeading}" />
   </Style>
-  <Style Selector="LayoutTransformControl.phone UserControl.shortphone TextBlock#PhonePageHeading">
+  <Style Selector="LayoutTransformControl.phone :is(UserControl).shortphone TextBlock#PhonePageHeading">
     <Setter Property="Grid.Row" Value="0" />
     <Setter Property="Grid.Column" Value="1" />
     <Setter Property="Grid.ColumnSpan" Value="1" />
@@ -95,7 +95,7 @@
     <Setter Property="LineHeight" Value="{DynamicResource LhPhoneBody}" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
-  <Style Selector="LayoutTransformControl.phone UserControl.shortphone Border#PhoneContextLine">
+  <Style Selector="LayoutTransformControl.phone :is(UserControl).shortphone Border#PhoneContextLine">
     <Setter Property="IsVisible" Value="False" />
   </Style>
   <Style Selector="LayoutTransformControl.phone Border.phonegroup, LayoutTransformControl.phone Border.phoneblockcard, LayoutTransformControl.phone Border.workpanel, LayoutTransformControl.phone Border.mobilecard, LayoutTransformControl.phone Border.card, LayoutTransformControl.phone Border.tile">
