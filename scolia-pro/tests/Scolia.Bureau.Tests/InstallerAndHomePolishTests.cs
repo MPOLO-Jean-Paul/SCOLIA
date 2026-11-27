@@ -101,8 +101,8 @@ public sealed class InstallerAndHomePolishTests
             var items = Assert.Single(panels.Descendants(), e => e.Name.LocalName == "ItemsControl" &&
                 (string?)e.Attribute("ItemsSource") == "{Binding " + binding + "}");
             Assert.Contains(items.Descendants(), e => e.Name.LocalName == "Button" && (string?)e.Attribute("Command") == "{Binding Open}");
-            Assert.Contains(items.Descendants(), e => e.Name.LocalName == "PathIcon" &&
-                e.Attributes().Any(a => a.Value.Contains("HomeGlyphs.Converter")));
+            Assert.Contains(items.Descendants(), e => e.Name.LocalName == "Image" &&
+                e.Attributes().Any(a => a.Value.Contains("FluentGlyphs.ArtworkConverter")));
         }
         var shell = XDocument.Load(Source("src/Scolia.Bureau/Views/MainView.axaml"));
         Assert.Contains(shell.Descendants(), e => e.Attributes().Any(a => a.Name.LocalName == "Classes.homepane" && a.Value == "{Binding IsHomePage}"));

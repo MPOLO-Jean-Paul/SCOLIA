@@ -8,7 +8,7 @@
       <TextBlock Text="DOCUMENT PÉDAGOGIQUE NON OFFICIEL" Classes="groupcaps" />
       <Border Classes="phonegroup" Padding="14,12">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-          <Border Classes="appicon medium" Background="{DynamicResource ToneOrange}"
+          <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"
                   VerticalAlignment="Center">
             <mi:MaterialIcon Kind="FileDocumentOutline" />
           </Border>

@@ -59,7 +59,7 @@
     <!-- ===== Serveur : vue d'ensemble du partage ===== -->
     <Border Classes="card" Padding="18,16" IsVisible="{Binding IsServerComputer}">
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14" RowSpacing="10" infra:Adaptive.StackBelow="560">
-        <Border Classes="appicon medium" Background="{Binding AccessBrush}" VerticalAlignment="Top" HorizontalAlignment="Left"><mi:MaterialIcon Kind="ShareVariantOutline" /></Border>
+        <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" VerticalAlignment="Top" HorizontalAlignment="Left"><mi:MaterialIcon Kind="ShareVariantOutline" /></Border>
         <StackPanel Grid.Column="1" Spacing="6">
           <TextBlock Text="{Binding AccessTitle}" FontWeight="SemiBold" FontSize="{DynamicResource FsHeading}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding AccessSummary}" Classes="muted" TextWrapping="Wrap" />
@@ -99,7 +99,7 @@
     <Border Classes="card" Padding="0" IsVisible="{Binding IsLinked}">
       <StackPanel>
         <Grid ColumnDefinitions="Auto,*" Margin="18,16">
-          <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" Margin="0,0,14,0"><mi:MaterialIcon Kind="DesktopTowerMonitor" /></Border>
+          <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" Margin="0,0,14,0"><mi:MaterialIcon Kind="DesktopTowerMonitor" /></Border>
           <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
             <TextBlock Text="{Binding ConnectionTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
             <TextBlock Text="{Binding ConnectionLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
@@ -115,7 +115,7 @@
     <Border Classes="card" Padding="0" IsVisible="{Binding IsServerComputer}">
       <StackPanel>
         <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,16">
-          <Border Classes="appicon medium" Background="{DynamicResource ToneGreen}" Margin="0,0,14,0"><mi:MaterialIcon Kind="Wifi" /></Border>
+          <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" Margin="0,0,14,0"><mi:MaterialIcon Kind="Wifi" /></Border>
           <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
             <TextBlock Text="Partager avec les postes du Wi-Fi" />
             <TextBlock Text="{Binding LanLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
@@ -149,7 +149,7 @@
     <Border Classes="card" Padding="0" IsVisible="{Binding Remote.CanManage}">
       <StackPanel>
         <Grid ColumnDefinitions="Auto,*" Margin="18,16">
-          <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" Margin="0,0,14,0" VerticalAlignment="Top"><mi:MaterialIcon Kind="CloudLockOutline" /></Border>
+          <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" Margin="0,0,14,0" VerticalAlignment="Top"><mi:MaterialIcon Kind="CloudLockOutline" /></Border>
           <StackPanel Grid.Column="1" Spacing="4">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Text="Appareils distants" />
@@ -184,9 +184,9 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate>
               <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,8,18,10">
-                <Border Classes="appicon small" Background="{DynamicResource ToneIndigo}" Margin="0,0,12,0" VerticalAlignment="Center"
+                <Border Classes="appicon small" Background="{DynamicResource SurfaceBrush}" Margin="0,0,12,0" VerticalAlignment="Center"
                         IsVisible="{Binding Active}"><mi:MaterialIcon Kind="CellphoneCheck" /></Border>
-                <Border Classes="appicon small" Background="{DynamicResource ToneNeutral}" Margin="0,0,12,0" VerticalAlignment="Center"
+                <Border Classes="appicon small" Background="{DynamicResource SurfaceBrush}" Margin="0,0,12,0" VerticalAlignment="Center"
                         IsVisible="{Binding !Active}"><mi:MaterialIcon Kind="CellphoneOff" /></Border>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
                   <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
@@ -207,7 +207,7 @@
     <Border Classes="card" Padding="0" IsVisible="{Binding IsServerComputer}">
       <StackPanel>
         <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,16">
-          <Border Classes="appicon medium" Background="{DynamicResource ToneNeutral}" Margin="0,0,14,0"><mi:MaterialIcon Kind="Power" /></Border>
+          <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" Margin="0,0,14,0"><mi:MaterialIcon Kind="Power" /></Border>
           <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
             <TextBlock Text="Démarrer avec Windows" />
             <TextBlock Text="{Binding ServiceLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
@@ -219,7 +219,7 @@
         <!-- Les autres postes dépendent de cet ordinateur : il ne s'endort pas, même fenêtre réduite -->
         <Border Height="1" Background="{DynamicResource LineBrush}" Margin="58,0,0,0" IsVisible="{Binding ShowAwake}" />
         <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,16" IsVisible="{Binding ShowAwake}">
-          <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}" Margin="0,0,14,0"><mi:MaterialIcon Kind="WeatherNight" /></Border>
+          <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" Margin="0,0,14,0"><mi:MaterialIcon Kind="WeatherNight" /></Border>
           <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
             <TextBlock Text="Toujours éveillé pour les autres postes" />
             <TextBlock Text="{Binding AwakeLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />

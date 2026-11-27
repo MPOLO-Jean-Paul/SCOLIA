@@ -33,11 +33,11 @@
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet TextBox.w11, LayoutTransformControl.phone Border.sheet ComboBox.w11, LayoutTransformControl.phone Border.sheet CalendarDatePicker.w11">
       <Setter Property="MinHeight" Value="48" />
-      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="CornerRadius" Value="6" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet Button.formaction">
       <Setter Property="MinHeight" Value="48" />
-      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="CornerRadius" Value="6" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet StackPanel.formentry">
       <Setter Property="Margin" Value="0,0,0,12" />
@@ -74,7 +74,7 @@
   <Border Classes="dialogsurface sheet" infra:Adaptive.FitDialog="True" Classes.embedded="{Binding Embedded}" MaxWidth="620">
     <Grid RowDefinitions="Auto,*,Auto,Auto">
       <Grid Classes="formheader" ColumnDefinitions="Auto,*,Auto" Margin="24,22,18,0" IsVisible="{Binding !Embedded}">
-        <Border Classes="appicon large" Background="{Binding HeaderBrush}" VerticalAlignment="Top" Margin="0,0,14,0">
+        <Border Classes="appicon large" Background="{DynamicResource SurfaceBrush}" VerticalAlignment="Top" Margin="0,0,14,0">
           <mi:MaterialIcon Kind="{Binding HeaderIcon}" />
         </Border>
         <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">

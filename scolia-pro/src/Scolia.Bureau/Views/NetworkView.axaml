@@ -8,7 +8,7 @@
   <Border Classes="dialogsurface" infra:Adaptive.FitDialog="True" Width="560">
     <Grid RowDefinitions="Auto,*,Auto">
       <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,18,12,8">
-        <Border Classes="appicon large" Background="{Binding Sync.StatusBrush}" Margin="0,0,12,0"><mi:MaterialIcon Kind="LanConnect" /></Border>
+        <Border Classes="appicon large" Background="{DynamicResource SurfaceBrush}" Margin="0,0,12,0"><mi:MaterialIcon Kind="LanConnect" /></Border>
         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
           <TextBlock Text="Réseau et activité" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Sync.StatusText}" Foreground="{Binding Sync.StatusBrush}" FontWeight="SemiBold" TextWrapping="Wrap" />
@@ -40,7 +40,7 @@
           <!-- Serveur : un seul endroit pour le partage, la page Réseau et postes. -->
           <Border Classes="phonegroup" IsVisible="{Binding IsServerComputer}">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="14,12">
-              <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}" VerticalAlignment="Top">
+              <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" VerticalAlignment="Top">
                 <mi:MaterialIcon Kind="ShareVariantOutline" />
               </Border>
               <StackPanel Grid.Column="1" Spacing="6">
@@ -70,7 +70,7 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
                     <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="6" Margin="0,5">
-                      <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}">
+                      <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}">
                         <mi:MaterialIcon Kind="CellphoneLink" />
                       </Border>
                       <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">

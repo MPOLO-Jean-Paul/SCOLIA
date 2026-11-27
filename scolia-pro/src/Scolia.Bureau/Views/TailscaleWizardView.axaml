@@ -11,7 +11,7 @@
       <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="12">
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-            <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}"><mi:MaterialIcon Kind="ShieldCheckOutline" /></Border>
+            <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="ShieldCheckOutline" /></Border>
             <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding DialogTitle}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
               <TextBlock Text="{Binding Step}" Classes="muted" TextWrapping="Wrap" />

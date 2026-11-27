@@ -43,7 +43,7 @@
           <Border Height="3" Background="{DynamicResource AccentBrush}" />
           <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15"
                 Margin="18,17,18,17" infra:Adaptive.StackBelow="760">
-            <Border Classes="appicon large" Background="{DynamicResource TonePurple}"
+            <Border Classes="appicon large" Background="{DynamicResource SurfaceBrush}"
                     VerticalAlignment="Center" Margin="0,0,0,0">
               <mi:MaterialIcon Kind="AccountSchool" />
             </Border>
@@ -191,7 +191,7 @@
           <Button Classes="settingsentry" Command="{Binding EncodeByCode}"
                   HorizontalContentAlignment="Stretch" AutomationProperties.Name="Encoder mes cotes">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-              <Border Classes="appicon medium" Background="{DynamicResource TonePurple}">
+              <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}">
                 <mi:MaterialIcon Kind="Pen" />
               </Border>
               <TextBlock Grid.Column="1" Text="Encoder mes cotes" FontWeight="SemiBold"
@@ -204,7 +204,7 @@
           <Button Classes="settingsentry" Command="{Binding ChooseCode}"
                   HorizontalContentAlignment="Stretch" AutomationProperties.Name="Mon code d'accès">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-              <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}">
+              <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}">
                 <mi:MaterialIcon Kind="ShieldLockOutline" />
               </Border>
               <TextBlock Grid.Column="1" Text="Mon code d'accès"
@@ -235,7 +235,7 @@
                   <Border Classes="teacherrowsep" />
                   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="12,9,14,9">
                     <!-- KpiVm expose Accent, pas Brush : liaison incorrecte = tuile blanche et icône blanche. -->
-                    <Border Classes="appicon large teacheroverviewicon" Background="{Binding Accent}"
+                    <Border Classes="appicon large teacheroverviewicon" Background="{DynamicResource SurfaceBrush}"
                             infra:TileGlyph.Enabled="False"
                             VerticalAlignment="Center" AutomationProperties.Name="{Binding Label}">
                       <mi:MaterialIcon Kind="{Binding Icon}" Foreground="White" />
@@ -272,7 +272,7 @@
                             HorizontalContentAlignment="Stretch"
                             ToolTip.Tip="Ouvrir la feuille de ce cours">
                       <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                        <Border Classes="appicon medium" Background="{DynamicResource TonePurple}"
+                        <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"
                                 VerticalAlignment="Top">
                           <mi:MaterialIcon Kind="BookOpenVariant" />
                         </Border>
@@ -330,7 +330,7 @@
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
             <Expander.Header>
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="12,8,12,8">
-                <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}">
+                <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}">
                   <mi:MaterialIcon Kind="ShieldCheckOutline" />
                 </Border>
                 <TextBlock Grid.Column="1" Text="Règles de l'encodage"

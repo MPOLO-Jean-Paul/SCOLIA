@@ -177,7 +177,7 @@
         <Border Classes="card">
           <StackPanel Spacing="10">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-              <Border Classes="appicon large" Background="{DynamicResource ToneBlue}" VerticalAlignment="Top">
+              <Border Classes="appicon large" Background="{DynamicResource SurfaceBrush}" VerticalAlignment="Top">
                 <mi:MaterialIcon Kind="QrcodeScan" />
               </Border>
               <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
@@ -209,7 +209,7 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate>
                 <Grid ColumnDefinitions="Auto,*,Auto" Margin="14,12" ColumnSpacing="10">
-                  <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}">
+                  <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}">
                     <mi:MaterialIcon Kind="{Binding Icon}" />
                   </Border>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
@@ -227,7 +227,7 @@
         <Border Classes="card">
           <StackPanel Spacing="8">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-              <Border Classes="appicon medium" Background="{DynamicResource ToneGreen}">
+              <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}">
                 <mi:MaterialIcon Kind="Wifi" />
               </Border>
               <StackPanel Grid.Column="1" Spacing="3">

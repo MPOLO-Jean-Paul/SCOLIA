@@ -46,7 +46,7 @@
   <Border Classes="dialogsurface" infra:Adaptive.FitDialog="True" Width="520">
     <Grid RowDefinitions="Auto,*,Auto">
       <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,18,12,8">
-        <Border Classes="appicon large" Background="{DynamicResource ToneBlue}" Margin="0,0,12,0"><mi:MaterialIcon Kind="FormatFont" /></Border>
+        <Border Classes="appicon large" Background="{DynamicResource SurfaceBrush}" Margin="0,0,12,0"><mi:MaterialIcon Kind="FormatFont" /></Border>
         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
           <TextBlock Text="Police et taille du texte" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" />
           <TextBlock Classes="muted" TextWrapping="Wrap">

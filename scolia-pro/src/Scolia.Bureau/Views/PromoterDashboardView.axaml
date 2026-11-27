@@ -43,7 +43,7 @@
       <!-- En-tête : ce qu'est cet écran, et l'heure des chiffres -->
       <Border Classes="card" Padding="16">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-          <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}" VerticalAlignment="Top">
+          <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" VerticalAlignment="Top">
             <mi:MaterialIcon Kind="ViewDashboardOutline" />
           </Border>
           <StackPanel Grid.Column="1" Spacing="4">
@@ -84,7 +84,7 @@
               <StackPanel Spacing="6">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
                   <TextBlock Text="{Binding Label}" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" />
-                  <Border Grid.Column="1" Classes="appicon" Background="{Binding Brush}" VerticalAlignment="Top">
+                  <Border Grid.Column="1" Classes="appicon" Background="{DynamicResource SurfaceBrush}" VerticalAlignment="Top">
                     <mi:MaterialIcon Kind="{Binding Icon}" />
                   </Border>
                 </Grid>

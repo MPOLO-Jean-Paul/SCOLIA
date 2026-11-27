@@ -315,7 +315,7 @@
           <Border Classes="card">
             <StackPanel Spacing="10">
               <StackPanel Orientation="Horizontal" Spacing="10">
-                <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="ShieldAccountOutline" /></Border>
+                <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="ShieldAccountOutline" /></Border>
                 <TextBlock Text="Secrétariat" FontWeight="SemiBold" VerticalAlignment="Center" />
               </StackPanel>
               <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" Text="Compte administrateur : tout le travail, le paramétrage, les utilisateurs et les sauvegardes." />
@@ -328,7 +328,7 @@
           <Border Classes="card">
             <StackPanel Spacing="10">
               <Grid ColumnDefinitions="Auto,*,Auto">
-                <Border Classes="appicon medium" Background="{DynamicResource ToneGreen}"><mi:MaterialIcon Kind="CashRegister" /></Border>
+                <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="CashRegister" /></Border>
                 <TextBlock Grid.Column="1" Text="Comptabilité (facultatif)" FontWeight="SemiBold" VerticalAlignment="Center" Margin="10,0,0,0" TextWrapping="Wrap" />
                 <ToggleSwitch Grid.Column="2" IsChecked="{Binding UseComptabilite}" OnContent="" OffContent="" />
               </Grid>

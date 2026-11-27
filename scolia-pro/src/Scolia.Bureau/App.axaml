@@ -10,6 +10,7 @@
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://SCOLIA/Themes/Palette.axaml" />
         <ResourceInclude Source="avares://SCOLIA/Themes/AuthArtwork.axaml" />
+        <ResourceInclude Source="avares://SCOLIA/Themes/FluentArtwork.axaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>
@@ -21,5 +22,6 @@
     <StyleInclude Source="avares://SCOLIA/Themes/Phone.axaml" />
     <StyleInclude Source="avares://SCOLIA/Themes/Auth.axaml" />
     <StyleInclude Source="avares://SCOLIA/Themes/AuthAccess.axaml" />
+    <StyleInclude Source="avares://SCOLIA/Themes/FluentWorkspace.axaml" />
   </Application.Styles>
 </Application>

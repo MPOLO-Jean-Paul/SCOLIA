@@ -81,18 +81,17 @@ public sealed class TeacherPhoneAndOfflineUxTests
             Attr(x, "Name", "TeacherPhoneSections"));
         var overview = Assert.Single(phone.Descendants(), x =>
             x.Name.LocalName == "ItemsControl" && Attr(x, "ItemsSource", "{Binding Stats}"));
-        // Régression observée sur appareil réel en 1.2.67 : KpiVm possède Accent,
-        // mais la vue cherchait Brush. Avec le fond transparent, la glyphe blanche
-        // devenait illisible malgré le succès des anciens tests de présence.
+        // Les illustrations Fluent utilisent Icon ; le fond neutre n'est plus la source de leur couleur.
+        // Une ancienne liaison Brush absente de KpiVm ne doit pas revenir sur cet écran.
         Assert.NotNull(typeof(KpiVm).GetProperty(nameof(KpiVm.Accent)));
         Assert.Null(typeof(KpiVm).GetProperty("Brush"));
         var tile = Assert.Single(overview.Descendants(), x =>
             x.Name.LocalName == "Border" && Attr(x, "Classes", "appicon large teacheroverviewicon"));
-        Assert.True(Attr(tile, "Background", "{Binding Accent}"));
+        Assert.True(Attr(tile, "Background", "{DynamicResource SurfaceBrush}"));
         Assert.True(Attr(tile, "TileGlyph.Enabled", "False"));
         var glyph = Assert.Single(tile.Elements(), x => x.Name.LocalName == "MaterialIcon");
         Assert.True(Attr(glyph, "Kind", "{Binding Icon}"));
-        Assert.True(Attr(glyph, "Foreground", "White"));
+        Assert.NotNull(Scolia.Bureau.Infrastructure.FluentGlyphs.ArtworkKey(Material.Icons.MaterialIconKind.AccountSchool));
         Assert.DoesNotContain(overview.Descendants(), x =>
             x.Name.LocalName == "Border" && Attr(x, "Background", "{Binding Brush}"));
     }

@@ -150,6 +150,17 @@ jobs:
       - name: Tests du domaine et de l'API
         run: dotnet test Scolia.sln -c Release --no-build --logger "trx;LogFileName=resultats.trx"
 
+      - name: Catalogue Fluent et visite de toutes les interfaces natives
+        run: python3 scripts/verifier-interfaces-fluent.py
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Interfaces_Fluent
+          path: scolia-pro/artifacts/interfaces-fluent/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Interfaces natives mobiles (paiements, menus, actualisation, petits écrans et clavier)
         env:
           SCOLIA_MOBILE: '1'

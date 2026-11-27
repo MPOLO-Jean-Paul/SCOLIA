@@ -184,7 +184,7 @@
                         <Border Classes="workspaceglyph">
                         <Grid>
                           <Border CornerRadius="7" Background="{Binding Brush}" Opacity="0.14" IsHitTestVisible="False" />
-                          <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Foreground="{Binding Brush}" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+                          <Image Source="{Binding Icon, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
                         </Grid>
                       </Border>
                         <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
@@ -247,7 +247,7 @@
                       <Border Classes="workspaceglyph">
                         <Grid>
                           <Border CornerRadius="7" Background="{Binding Brush}" Opacity="0.14" IsHitTestVisible="False" />
-                          <PathIcon Data="{Binding Icon, Converter={x:Static infra:HomeGlyphs.Converter}}" Foreground="{Binding Brush}" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+                          <Image Source="{Binding Icon, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
                         </Grid>
                       </Border>
                       <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
