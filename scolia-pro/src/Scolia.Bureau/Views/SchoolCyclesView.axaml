@@ -136,11 +136,15 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
-      <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-        <Button Grid.Column="0" Content="Ajouter une branche" Command="{Binding AddSubject}"
-                MinHeight="44" HorizontalAlignment="Stretch" />
-        <Button Grid.Column="1" Content="Modifier un maximum" Command="{Binding SetSubjectMax}"
-                MinHeight="44" HorizontalAlignment="Stretch" />
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowSpacing="8" infra:Adaptive.StackBelow="480">
+        <Button Grid.Column="0" Command="{Binding AddSubject}" AutomationProperties.Name="Ajouter une branche"
+                MinHeight="44" HorizontalAlignment="Stretch">
+          <TextBlock Text="Ajouter une branche" TextWrapping="Wrap" TextAlignment="Center" />
+        </Button>
+        <Button Grid.Column="1" Command="{Binding SetSubjectMax}" AutomationProperties.Name="Modifier un maximum"
+                MinHeight="44" HorizontalAlignment="Stretch">
+          <TextBlock Text="Modifier un maximum" TextWrapping="Wrap" TextAlignment="Center" />
+        </Button>
       </Grid>
       <TextBlock Text="Chaque trimestre ou semestre compte ses périodes de travail suivies d'un examen. Les bulletins officiels s'impriment dans Scolarité › Résultats et bulletins, une fois le règlement pédagogique validé."
                  Classes="muted" TextWrapping="Wrap" />
