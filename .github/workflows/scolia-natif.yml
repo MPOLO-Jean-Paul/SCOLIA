@@ -112,6 +112,15 @@ jobs:
           SCOLIA_MOBILE=1 SCOLIA_TAILLE=320x640 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-connexion/petit-telephone http://127.0.0.1:5293/ inutilise identite-connexion
           SCOLIA_MOBILE=1 SCOLIA_TAILLE=390x740 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-connexion/android http://127.0.0.1:5293/ inutilise identite-connexion
           SCOLIA_MOBILE=1 SCOLIA_TAILLE=390x740 SCOLIA_CAPTURE_DARK=1 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-connexion/android-sombre http://127.0.0.1:5293/ inutilise identite-connexion
+      - name: Vérifier les proportions, le contraste et les ressources partagées des icônes
+        run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-icones http://127.0.0.1:1/ inutilise icones-scolia
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Controle_Icones_Bleu_Vert
+          path: scolia-pro/artifacts/controle-icones/
+          if-no-files-found: ignore
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:

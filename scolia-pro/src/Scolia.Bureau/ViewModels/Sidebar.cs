@@ -14,15 +14,18 @@ public sealed class NavItemVm : Observable
     public NavItemVm(string label, MaterialIconKind icon, string tone, Type page, Func<PageViewModel> create, ShellViewModel shell)
     {
         Label = label;
-        Icon = icon;
-        Brush = IconPalette.Get(tone);
+        Icon = FeatureVisuals.ForPage(page, icon);
+        Brush = IconPalette.Get(FeatureVisuals.NavigationTone(tone));
         PageType = page;
         Open = new AsyncCommand(() => shell.Run(() => shell.Open(create)));
     }
 
     public string Label { get; }
     /// <summary>Libellé court des onglets du téléphone, où la place manque : « Reçus » pour « Journal des reçus ».</summary>
-    public string TabLabel => Label switch
+    public string TabLabel => PageType == typeof(StartPage) ? "Outils"
+        : PageType == typeof(StudentsPage) ? "Dossiers"
+        : PageType == typeof(CashierPage) ? "Paiement"
+        : Label switch
     {
         "Journal des reçus" => "Reçus",
         "Suivi mensuel" => "Suivi",

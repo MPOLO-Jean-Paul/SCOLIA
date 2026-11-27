@@ -33,7 +33,7 @@ public sealed class Preferences : Observable
     private static readonly (string Key, string Label, string Light, string Dark)[] AccentTable =
     [
         // Contraste élevé : en clair, le texte blanc des boutons dépasse 5:1 sur chaque accent.
-        ("bleu", "Bleu", "#0062D1", "#78B9FF"), ("indigo", "Indigo", "#5856D6", "#B7B4FF"), ("violet", "Violet", "#8E44AD", "#D09BFF"),
+        ("bleu", "Bleu", "#1D4ED8", "#78B9FF"), ("indigo", "Indigo", "#5856D6", "#B7B4FF"), ("violet", "Violet", "#8E44AD", "#D09BFF"),
         ("vert", "Vert", "#1F7A35", "#63E58A"), ("orange", "Orange", "#A84E00", "#FFB45E"), ("graphite", "Graphite", "#55555A", "#B8B8BE"),
     ];
 

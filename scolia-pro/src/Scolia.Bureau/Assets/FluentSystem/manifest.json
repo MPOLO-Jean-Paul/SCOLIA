@@ -1,9 +1,16 @@
 {
   "source": "https://github.com/microsoft/fluentui-system-icons",
+  "commit": "a3de63245b4fa49c30e20d9838593a105affe774",
+  "palette": {
+    "blue": "#1D4ED8",
+    "green": "#16A34A"
+  },
+  "adaptation": "Original geometry; chromatic gradients adapted to SCOLIA blue and green. Semantic alerts retain their colors.",
   "regular": [
     {
       "name": "Add",
       "variant": "regular",
+      "path": "assets/Add/SVG/ic_fluent_add_24_regular.svg",
       "aliases": [
         "Plus"
       ],
@@ -12,6 +19,7 @@
     {
       "name": "Alert",
       "variant": "regular",
+      "path": "assets/Alert/SVG/ic_fluent_alert_24_regular.svg",
       "aliases": [
         "BellOutline",
         "BellRingOutline"
@@ -19,19 +27,38 @@
       "sha256": "3b56e93152bd74091bc59e77b453d69811ae4afce78b699d38ecc55d1810b7f6"
     },
     {
+      "name": "Approvals App",
+      "variant": "regular",
+      "path": "assets/Approvals App/SVG/ic_fluent_approvals_app_24_regular.svg",
+      "aliases": [
+        "Gavel"
+      ],
+      "sha256": "53a8d5cb13df98b684d38b36fe622a6c70527230bfbacc9994a67b80af6bd6c6"
+    },
+    {
       "name": "Apps",
       "variant": "regular",
+      "path": "assets/Apps/SVG/ic_fluent_apps_24_regular.svg",
       "aliases": [
         "DotsGrid",
         "Grid",
-        "ViewGrid",
         "ViewGridPlus"
       ],
       "sha256": "49acd3ca4b7fffce746312a729ebc007ec82d3d7372be9830577f50b541fa6df"
     },
     {
+      "name": "Apps List Detail",
+      "variant": "regular",
+      "path": "assets/Apps List Detail/SVG/ic_fluent_apps_list_detail_24_regular.svg",
+      "aliases": [
+        "ViewGrid"
+      ],
+      "sha256": "19fa194a7ffe514b539dd3efaf59584379fa2a6a261cccc5dff5f51d6a830eed"
+    },
+    {
       "name": "Archive",
       "variant": "regular",
+      "path": "assets/Archive/SVG/ic_fluent_archive_24_regular.svg",
       "aliases": [
         "Archive"
       ],
@@ -40,6 +67,7 @@
     {
       "name": "Arrow Clockwise",
       "variant": "regular",
+      "path": "assets/Arrow Clockwise/SVG/ic_fluent_arrow_clockwise_24_regular.svg",
       "aliases": [
         "Update"
       ],
@@ -48,6 +76,7 @@
     {
       "name": "Arrow Counterclockwise",
       "variant": "regular",
+      "path": "assets/Arrow Counterclockwise/SVG/ic_fluent_arrow_counterclockwise_24_regular.svg",
       "aliases": [
         "BackupRestore",
         "Restore"
@@ -57,6 +86,7 @@
     {
       "name": "Arrow Download",
       "variant": "regular",
+      "path": "assets/Arrow Download/SVG/ic_fluent_arrow_download_24_regular.svg",
       "aliases": [
         "ArrowDownBoldCircleOutline",
         "CloudDownload",
@@ -68,6 +98,7 @@
     {
       "name": "Arrow Enter Left",
       "variant": "regular",
+      "path": "assets/Arrow Enter Left/SVG/ic_fluent_arrow_enter_left_24_regular.svg",
       "aliases": [
         "LoginVariant"
       ],
@@ -76,6 +107,7 @@
     {
       "name": "Arrow Left",
       "variant": "regular",
+      "path": "assets/Arrow Left/SVG/ic_fluent_arrow_left_24_regular.svg",
       "aliases": [
         "ArrowLeft"
       ],
@@ -84,6 +116,7 @@
     {
       "name": "Arrow Right",
       "variant": "regular",
+      "path": "assets/Arrow Right/SVG/ic_fluent_arrow_right_24_regular.svg",
       "aliases": [
         "ArrowRight"
       ],
@@ -92,6 +125,7 @@
     {
       "name": "Arrow Swap",
       "variant": "regular",
+      "path": "assets/Arrow Swap/SVG/ic_fluent_arrow_swap_24_regular.svg",
       "aliases": [
         "SwapHorizontal"
       ],
@@ -100,6 +134,7 @@
     {
       "name": "Arrow Sync",
       "variant": "regular",
+      "path": "assets/Arrow Sync/SVG/ic_fluent_arrow_sync_24_regular.svg",
       "aliases": [
         "Autorenew",
         "Loading",
@@ -111,6 +146,7 @@
     {
       "name": "Arrow Up Left",
       "variant": "regular",
+      "path": "assets/Arrow Up Left/SVG/ic_fluent_arrow_up_left_24_regular.svg",
       "aliases": [
         "ArrowTopLeft"
       ],
@@ -119,6 +155,7 @@
     {
       "name": "Arrow Upload",
       "variant": "regular",
+      "path": "assets/Arrow Upload/SVG/ic_fluent_arrow_upload_24_regular.svg",
       "aliases": [
         "Publish",
         "Upload"
@@ -126,36 +163,37 @@
       "sha256": "c2e41256baf47bf51122cf8efca0b2c13bebb31fb50284ce2b5a9a7edf0dd608"
     },
     {
-      "name": "Board",
-      "variant": "regular",
-      "aliases": [
-        "ViewDashboard",
-        "ViewDashboardOutline"
-      ],
-      "sha256": "05da669886959645d4ce4b91325e33e7b062b8f6db6b64a60d4eff5d7a10c94a"
-    },
-    {
       "name": "Book",
       "variant": "regular",
+      "path": "assets/Book/SVG/ic_fluent_book_24_regular.svg",
       "aliases": [
-        "BookEducationOutline",
         "BookOpenPageVariantOutline",
-        "BookOpenVariant",
         "BookOpenVariantOutline"
       ],
       "sha256": "3ff995137b68ba3bd5811c30cbf5395fbba457c57f57cc9864bf400adc4624ac"
     },
     {
-      "name": "Book Exclamation Mark",
+      "name": "Book Contacts",
       "variant": "regular",
+      "path": "assets/Book Contacts/SVG/ic_fluent_book_contacts_24_regular.svg",
       "aliases": [
-        "BookAlertOutline"
+        "AccountTieVoiceOutline"
       ],
-      "sha256": "d1a280d3c8b5f177058ad4192d22c9193042cb698119c4f597b2cf286dd53bc9"
+      "sha256": "9f0456663ddd068ef8fd01f7ef76b04d2cd75eb1e2951dffccd7603e439b13a4"
+    },
+    {
+      "name": "Book Open",
+      "variant": "regular",
+      "path": "assets/Book Open/SVG/ic_fluent_book_open_24_regular.svg",
+      "aliases": [
+        "BookOpenVariant"
+      ],
+      "sha256": "d7623873a8264a1ade7f195bafa80e202a85ff10e3e4411e04290d993be1aafa"
     },
     {
       "name": "Briefcase",
       "variant": "regular",
+      "path": "assets/Briefcase/SVG/ic_fluent_briefcase_24_regular.svg",
       "aliases": [
         "Briefcase",
         "BriefcaseOutline"
@@ -165,6 +203,7 @@
     {
       "name": "Building",
       "variant": "regular",
+      "path": "assets/Building/SVG/ic_fluent_building_24_regular.svg",
       "aliases": [
         "OfficeBuilding",
         "OfficeBuildingOutline"
@@ -172,8 +211,18 @@
       "sha256": "4aff30b09a9ec19c711f8824e36adb79e5def9018cfc2234106692bd5d7458ae"
     },
     {
+      "name": "Building Government",
+      "variant": "regular",
+      "path": "assets/Building Government/SVG/ic_fluent_building_government_24_regular.svg",
+      "aliases": [
+        "SchoolOutline"
+      ],
+      "sha256": "d0b9d52dd248a4e96a04f6d72b2ee9e7a3177efed4e87dbd7df0f8311e4dc485"
+    },
+    {
       "name": "Building Shop",
       "variant": "regular",
+      "path": "assets/Building Shop/SVG/ic_fluent_building_shop_24_regular.svg",
       "aliases": [
         "StorefrontOutline"
       ],
@@ -182,6 +231,7 @@
     {
       "name": "Calendar",
       "variant": "regular",
+      "path": "assets/Calendar/SVG/ic_fluent_calendar_24_regular.svg",
       "aliases": [
         "Calendar",
         "CalendarMonth",
@@ -193,6 +243,7 @@
     {
       "name": "Calendar Add",
       "variant": "regular",
+      "path": "assets/Calendar Add/SVG/ic_fluent_calendar_add_24_regular.svg",
       "aliases": [
         "CalendarPlus",
         "CalendarPlusOutline"
@@ -202,6 +253,7 @@
     {
       "name": "Calendar Cancel",
       "variant": "regular",
+      "path": "assets/Calendar Cancel/SVG/ic_fluent_calendar_cancel_24_regular.svg",
       "aliases": [
         "CalendarRemove"
       ],
@@ -210,6 +262,7 @@
     {
       "name": "Calendar Checkmark",
       "variant": "regular",
+      "path": "assets/Calendar Checkmark/SVG/ic_fluent_calendar_checkmark_24_regular.svg",
       "aliases": [
         "CalendarCheck"
       ],
@@ -218,6 +271,7 @@
     {
       "name": "Calendar Clock",
       "variant": "regular",
+      "path": "assets/Calendar Clock/SVG/ic_fluent_calendar_clock_24_regular.svg",
       "aliases": [
         "CalendarClock"
       ],
@@ -226,6 +280,7 @@
     {
       "name": "Calendar Edit",
       "variant": "regular",
+      "path": "assets/Calendar Edit/SVG/ic_fluent_calendar_edit_24_regular.svg",
       "aliases": [
         "CalendarEdit",
         "CalendarEditOutline"
@@ -235,6 +290,7 @@
     {
       "name": "Calendar LTR",
       "variant": "regular",
+      "path": "assets/Calendar LTR/SVG/ic_fluent_calendar_ltr_24_regular.svg",
       "aliases": [
         "CalendarRange"
       ],
@@ -243,32 +299,36 @@
     {
       "name": "Calendar Lock",
       "variant": "regular",
+      "path": "assets/Calendar Lock/SVG/ic_fluent_calendar_lock_24_regular.svg",
       "aliases": [
         "CalendarLock"
       ],
       "sha256": "a3666a69d9499b2a06b4150937467a60bdacb1d15f74320e593bb33def25a091"
     },
     {
-      "name": "Calendar Sync",
-      "variant": "regular",
-      "aliases": [
-        "CalendarSync"
-      ],
-      "sha256": "a4f00d1cfc8d29cfa003c1152e46f762912f6931a0397416cc5910f0e613a0bc"
-    },
-    {
       "name": "Certificate",
       "variant": "regular",
+      "path": "assets/Certificate/SVG/ic_fluent_certificate_24_regular.svg",
       "aliases": [
         "Certificate",
-        "CertificateOutline",
         "CheckDecagramOutline"
       ],
       "sha256": "18c234a7f3ab69a2a22af5c540fbaca6c4f8f39b2c59187d85fe5aa6d6b9087d"
     },
     {
+      "name": "Chart Multiple",
+      "variant": "regular",
+      "path": "assets/Chart Multiple/SVG/ic_fluent_chart_multiple_24_regular.svg",
+      "aliases": [
+        "ChartBox",
+        "ViewDashboard"
+      ],
+      "sha256": "cee5bb85d05fe1f2656aeefa7760a015e0d76c64ef26279648dba4232acc788c"
+    },
+    {
       "name": "Chat",
       "variant": "regular",
+      "path": "assets/Chat/SVG/ic_fluent_chat_24_regular.svg",
       "aliases": [
         "MessageText",
         "MessageTextOutline"
@@ -276,16 +336,19 @@
       "sha256": "d6d2f402b87a7f79600f397b49aa1a4c40920b8eae30091e8286a583a1a7c003"
     },
     {
-      "name": "Checkbox Checked",
+      "name": "Checkbox Person",
       "variant": "regular",
+      "path": "assets/Checkbox Person/SVG/ic_fluent_checkbox_person_24_regular.svg",
       "aliases": [
-        "CheckboxMultipleMarked"
+        "ClipboardCheck",
+        "ClipboardCheckOutline"
       ],
-      "sha256": "617379e778b87bb754628b65efcd61a55e4a0a70732e13bdd522b8cdc2011f4d"
+      "sha256": "e3c56c120d09462d0b2a8fbed77f51bb75c20560262ae9d9251e1c7f92ba8e03"
     },
     {
       "name": "Checkbox Unchecked",
       "variant": "regular",
+      "path": "assets/Checkbox Unchecked/SVG/ic_fluent_checkbox_unchecked_24_regular.svg",
       "aliases": [
         "CheckboxMultipleBlank"
       ],
@@ -294,6 +357,7 @@
     {
       "name": "Checkmark",
       "variant": "regular",
+      "path": "assets/Checkmark/SVG/ic_fluent_checkmark_24_regular.svg",
       "aliases": [
         "Check",
         "CheckAll"
@@ -303,16 +367,16 @@
     {
       "name": "Checkmark Circle",
       "variant": "regular",
+      "path": "assets/Checkmark Circle/SVG/ic_fluent_checkmark_circle_24_regular.svg",
       "aliases": [
-        "CheckCircleOutline",
-        "ClockCheck",
-        "ClockCheckOutline"
+        "CheckCircleOutline"
       ],
       "sha256": "b3df75bf058b424fc56c8ec440672237051210017806404b8fecffee3d4253fc"
     },
     {
       "name": "Chevron Down",
       "variant": "regular",
+      "path": "assets/Chevron Down/SVG/ic_fluent_chevron_down_24_regular.svg",
       "aliases": [
         "ChevronDown"
       ],
@@ -321,6 +385,7 @@
     {
       "name": "Chevron Left",
       "variant": "regular",
+      "path": "assets/Chevron Left/SVG/ic_fluent_chevron_left_24_regular.svg",
       "aliases": [
         "ChevronLeft"
       ],
@@ -329,6 +394,7 @@
     {
       "name": "Chevron Right",
       "variant": "regular",
+      "path": "assets/Chevron Right/SVG/ic_fluent_chevron_right_24_regular.svg",
       "aliases": [
         "ChevronRight"
       ],
@@ -337,6 +403,7 @@
     {
       "name": "Chevron Up",
       "variant": "regular",
+      "path": "assets/Chevron Up/SVG/ic_fluent_chevron_up_24_regular.svg",
       "aliases": [
         "ChevronUp"
       ],
@@ -345,6 +412,7 @@
     {
       "name": "Circle",
       "variant": "regular",
+      "path": "assets/Circle/SVG/ic_fluent_circle_24_regular.svg",
       "aliases": [
         "CircleOutline",
         "RadioboxBlank"
@@ -352,8 +420,18 @@
       "sha256": "8127dec10fc354a0bf5f5d81b0d7dabb8202aba9889773a92fca049a1416d9f2"
     },
     {
+      "name": "Circle Multiple Hint Checkmark",
+      "variant": "regular",
+      "path": "assets/Circle Multiple Hint Checkmark/SVG/ic_fluent_circle_multiple_hint_checkmark_24_regular.svg",
+      "aliases": [
+        "CheckboxMultipleMarked"
+      ],
+      "sha256": "238c55d9bae252aeb68336e2644c7906dc47b54ba541315cce927e5acb4ff9c2"
+    },
+    {
       "name": "Circle",
       "variant": "filled",
+      "path": "assets/Circle/SVG/ic_fluent_circle_24_filled.svg",
       "aliases": [
         "Circle"
       ],
@@ -362,6 +440,7 @@
     {
       "name": "Clipboard",
       "variant": "regular",
+      "path": "assets/Clipboard/SVG/ic_fluent_clipboard_24_regular.svg",
       "aliases": [
         "ClipboardAccount",
         "ClipboardPlus"
@@ -371,26 +450,43 @@
     {
       "name": "Clipboard Task",
       "variant": "regular",
+      "path": "assets/Clipboard Task/SVG/ic_fluent_clipboard_task_24_regular.svg",
       "aliases": [
-        "ClipboardCheck",
-        "ClipboardCheckOutline",
-        "ClipboardList",
-        "ClipboardTextOutline",
-        "FormatListChecks"
+        "ClipboardList"
       ],
       "sha256": "b2db65a324f18726ea89ad41899b4574482b6747f270c1b15c0674f38b739c14"
     },
     {
+      "name": "Clipboard Task List LTR",
+      "variant": "regular",
+      "path": "assets/Clipboard Task List LTR/SVG/ic_fluent_clipboard_task_list_ltr_24_regular.svg",
+      "aliases": [
+        "FormatListChecks"
+      ],
+      "sha256": "42c533cb929fddbbcc805b463936bf6d862def3957783eacbf3deb025e50805a"
+    },
+    {
       "name": "Clipboard Text Edit",
       "variant": "regular",
+      "path": "assets/Clipboard Text Edit/SVG/ic_fluent_clipboard_text_edit_24_regular.svg",
       "aliases": [
         "ClipboardEdit"
       ],
       "sha256": "f2df2d038f02eef8df90e765fa92f673cd2b2a6ba385bb93ecdd7000ecae9179"
     },
     {
+      "name": "Clock",
+      "variant": "regular",
+      "path": "assets/Clock/SVG/ic_fluent_clock_24_regular.svg",
+      "aliases": [
+        "ProgressClock"
+      ],
+      "sha256": "5b2faea30a81e8db8c2ec212be3c0f1aa7f756e62b2ef3c7f0fc081afdf08726"
+    },
+    {
       "name": "Clock Alarm",
       "variant": "regular",
+      "path": "assets/Clock Alarm/SVG/ic_fluent_clock_alarm_24_regular.svg",
       "aliases": [
         "ClockAlertOutline"
       ],
@@ -399,10 +495,9 @@
     {
       "name": "Cloud",
       "variant": "regular",
+      "path": "assets/Cloud/SVG/ic_fluent_cloud_24_regular.svg",
       "aliases": [
         "Cloud",
-        "CloudLock",
-        "CloudLockOutline",
         "CloudOutline",
         "CloudSync",
         "CloudSyncOutline"
@@ -410,8 +505,19 @@
       "sha256": "b631a912bb75df4ffb80361cbb168c14bda043b9a4deb6807b9e30f017207495"
     },
     {
+      "name": "Cloud Archive",
+      "variant": "regular",
+      "path": "assets/Cloud Archive/SVG/ic_fluent_cloud_archive_24_regular.svg",
+      "aliases": [
+        "CloudLock",
+        "CloudLockOutline"
+      ],
+      "sha256": "22afaf41718c76513ab06621a7b3cd661446711f408168039cb7e3867c392dfb"
+    },
+    {
       "name": "Cloud Arrow Up",
       "variant": "regular",
+      "path": "assets/Cloud Arrow Up/SVG/ic_fluent_cloud_arrow_up_24_regular.svg",
       "aliases": [
         "CloudUpload",
         "CloudUploadOutline"
@@ -421,6 +527,7 @@
     {
       "name": "Cloud Checkmark",
       "variant": "regular",
+      "path": "assets/Cloud Checkmark/SVG/ic_fluent_cloud_checkmark_24_regular.svg",
       "aliases": [
         "CloudCheckOutline"
       ],
@@ -429,6 +536,7 @@
     {
       "name": "Cloud Dismiss",
       "variant": "regular",
+      "path": "assets/Cloud Dismiss/SVG/ic_fluent_cloud_dismiss_24_regular.svg",
       "aliases": [
         "CloudOffOutline"
       ],
@@ -437,6 +545,7 @@
     {
       "name": "Color",
       "variant": "regular",
+      "path": "assets/Color/SVG/ic_fluent_color_24_regular.svg",
       "aliases": [
         "Palette",
         "ThemeLightDark"
@@ -444,17 +553,9 @@
       "sha256": "82a9db90034f33542b89c8658b351955da13033c0a00ed6212815c78aa89b25a"
     },
     {
-      "name": "Connector",
-      "variant": "regular",
-      "aliases": [
-        "LanConnect",
-        "LanDisconnect"
-      ],
-      "sha256": "df945ca9cfc91a7dd3ba624398c289e3bfdbb447c1d0fb73dacbad2d67cb7adc"
-    },
-    {
       "name": "Contact Card",
       "variant": "regular",
+      "path": "assets/Contact Card/SVG/ic_fluent_contact_card_24_regular.svg",
       "aliases": [
         "BadgeAccount",
         "CardAccountDetails",
@@ -466,6 +567,7 @@
     {
       "name": "Copy",
       "variant": "regular",
+      "path": "assets/Copy/SVG/ic_fluent_copy_24_regular.svg",
       "aliases": [
         "ContentCopy",
         "FileMultiple"
@@ -473,17 +575,9 @@
       "sha256": "599789902ed3de0b58da04dbac37e9a96cba962659197ecd0ea2463799ed85dd"
     },
     {
-      "name": "Data Bar Vertical",
-      "variant": "regular",
-      "aliases": [
-        "ChartBar",
-        "ChartBox"
-      ],
-      "sha256": "d4c616652864a0a2e65a9e580703beda732361e9cf2ea9b4a124ece096e0c1ff"
-    },
-    {
       "name": "Data Line",
       "variant": "regular",
+      "path": "assets/Data Line/SVG/ic_fluent_data_line_24_regular.svg",
       "aliases": [
         "ChartLine",
         "Finance"
@@ -493,6 +587,7 @@
     {
       "name": "Data Pie",
       "variant": "regular",
+      "path": "assets/Data Pie/SVG/ic_fluent_data_pie_24_regular.svg",
       "aliases": [
         "ChartArc",
         "ChartDonut"
@@ -500,8 +595,18 @@
       "sha256": "322e24992161f45b5cee55e742433c3a674cf380c4bc015a843cbdfbaf06a332"
     },
     {
+      "name": "Data Trending",
+      "variant": "regular",
+      "path": "assets/Data Trending/SVG/ic_fluent_data_trending_24_regular.svg",
+      "aliases": [
+        "ChartBar"
+      ],
+      "sha256": "4d22547f90e294bd9483a05027cbb5fd370602a9ce8e471c6cd186a37b171d8a"
+    },
+    {
       "name": "Database",
       "variant": "regular",
+      "path": "assets/Database/SVG/ic_fluent_database_24_regular.svg",
       "aliases": [
         "DatabaseCheck",
         "DatabaseCheckOutline",
@@ -514,6 +619,7 @@
     {
       "name": "Delete",
       "variant": "regular",
+      "path": "assets/Delete/SVG/ic_fluent_delete_24_regular.svg",
       "aliases": [
         "Delete",
         "DeleteForeverOutline",
@@ -527,6 +633,7 @@
     {
       "name": "Desktop",
       "variant": "regular",
+      "path": "assets/Desktop/SVG/ic_fluent_desktop_24_regular.svg",
       "aliases": [
         "DesktopTowerMonitor",
         "MonitorEye"
@@ -536,6 +643,7 @@
     {
       "name": "Dialpad",
       "variant": "regular",
+      "path": "assets/Dialpad/SVG/ic_fluent_dialpad_24_regular.svg",
       "aliases": [
         "Dialpad"
       ],
@@ -544,6 +652,7 @@
     {
       "name": "Dismiss",
       "variant": "regular",
+      "path": "assets/Dismiss/SVG/ic_fluent_dismiss_24_regular.svg",
       "aliases": [
         "Close"
       ],
@@ -552,6 +661,7 @@
     {
       "name": "Dismiss Circle",
       "variant": "regular",
+      "path": "assets/Dismiss Circle/SVG/ic_fluent_dismiss_circle_24_regular.svg",
       "aliases": [
         "CloseCircle"
       ],
@@ -560,15 +670,16 @@
     {
       "name": "Document",
       "variant": "regular",
+      "path": "assets/Document/SVG/ic_fluent_document_24_regular.svg",
       "aliases": [
-        "FileDocument",
-        "FileDocumentOutline"
+        "FileDocument"
       ],
       "sha256": "c70164c6ee7f495a3bb4978de76628e166d6ba5b52210a016ddcfe35138528b1"
     },
     {
       "name": "Document Add",
       "variant": "regular",
+      "path": "assets/Document Add/SVG/ic_fluent_document_add_24_regular.svg",
       "aliases": [
         "FileDocumentPlus"
       ],
@@ -577,6 +688,7 @@
     {
       "name": "Document Arrow Left",
       "variant": "regular",
+      "path": "assets/Document Arrow Left/SVG/ic_fluent_document_arrow_left_24_regular.svg",
       "aliases": [
         "FileImportOutline"
       ],
@@ -585,6 +697,7 @@
     {
       "name": "Document Arrow Right",
       "variant": "regular",
+      "path": "assets/Document Arrow Right/SVG/ic_fluent_document_arrow_right_24_regular.svg",
       "aliases": [
         "FileExport"
       ],
@@ -593,6 +706,7 @@
     {
       "name": "Document Checkmark",
       "variant": "regular",
+      "path": "assets/Document Checkmark/SVG/ic_fluent_document_checkmark_24_regular.svg",
       "aliases": [
         "FileCheck"
       ],
@@ -601,6 +715,7 @@
     {
       "name": "Document Data",
       "variant": "regular",
+      "path": "assets/Document Data/SVG/ic_fluent_document_data_24_regular.svg",
       "aliases": [
         "FileChart",
         "FileChartOutline"
@@ -608,8 +723,18 @@
       "sha256": "1ef874025dff468dc46024249dc585f63fe0ef3bcd66aef7ffa113d6b991d9ad"
     },
     {
+      "name": "Document Edit",
+      "variant": "regular",
+      "path": "assets/Document Edit/SVG/ic_fluent_document_edit_24_regular.svg",
+      "aliases": [
+        "PencilBoxMultipleOutline"
+      ],
+      "sha256": "bd09a5f12f6fcced9db832cf676c0cd0eada7aba5997fcf6f3a45272399766ad"
+    },
+    {
       "name": "Document PDF",
       "variant": "regular",
+      "path": "assets/Document PDF/SVG/ic_fluent_document_pdf_24_regular.svg",
       "aliases": [
         "FilePdfBox"
       ],
@@ -618,6 +743,7 @@
     {
       "name": "Document Search",
       "variant": "regular",
+      "path": "assets/Document Search/SVG/ic_fluent_document_search_24_regular.svg",
       "aliases": [
         "FileFind"
       ],
@@ -626,6 +752,7 @@
     {
       "name": "Document Signature",
       "variant": "regular",
+      "path": "assets/Document Signature/SVG/ic_fluent_document_signature_24_regular.svg",
       "aliases": [
         "FileSign"
       ],
@@ -634,18 +761,28 @@
     {
       "name": "Document Table",
       "variant": "regular",
+      "path": "assets/Document Table/SVG/ic_fluent_document_table_24_regular.svg",
       "aliases": [
         "FileExcel"
       ],
       "sha256": "c76eaa00d41479ae85c10053b7a8b0cb1f24ba5d9f57eb82456b2f201c56a271"
     },
     {
+      "name": "Document Text",
+      "variant": "regular",
+      "path": "assets/Document Text/SVG/ic_fluent_document_text_24_regular.svg",
+      "aliases": [
+        "FileDocumentOutline"
+      ],
+      "sha256": "f76c2ec8378f3d0d2f6569b34ff54b7b3c3b7215a93745b92d4906aa882f84e5"
+    },
+    {
       "name": "Edit",
       "variant": "regular",
+      "path": "assets/Edit/SVG/ic_fluent_edit_24_regular.svg",
       "aliases": [
         "Pen",
         "Pencil",
-        "PencilBoxMultipleOutline",
         "PencilBoxOutline",
         "PencilOutline"
       ],
@@ -654,6 +791,7 @@
     {
       "name": "Error Circle",
       "variant": "regular",
+      "path": "assets/Error Circle/SVG/ic_fluent_error_circle_24_regular.svg",
       "aliases": [
         "AlertCircle",
         "AlertCircleOutline"
@@ -663,6 +801,7 @@
     {
       "name": "Eye",
       "variant": "regular",
+      "path": "assets/Eye/SVG/ic_fluent_eye_24_regular.svg",
       "aliases": [
         "Eye",
         "EyeOutline"
@@ -672,6 +811,7 @@
     {
       "name": "Eye Off",
       "variant": "regular",
+      "path": "assets/Eye Off/SVG/ic_fluent_eye_off_24_regular.svg",
       "aliases": [
         "EyeOffOutline"
       ],
@@ -680,6 +820,7 @@
     {
       "name": "Filter",
       "variant": "regular",
+      "path": "assets/Filter/SVG/ic_fluent_filter_24_regular.svg",
       "aliases": [
         "FilterOutline",
         "FilterVariant"
@@ -689,6 +830,7 @@
     {
       "name": "Filter Dismiss",
       "variant": "regular",
+      "path": "assets/Filter Dismiss/SVG/ic_fluent_filter_dismiss_24_regular.svg",
       "aliases": [
         "FilterRemove",
         "FilterRemoveOutline"
@@ -698,6 +840,7 @@
     {
       "name": "Fingerprint",
       "variant": "regular",
+      "path": "assets/Fingerprint/SVG/ic_fluent_fingerprint_24_regular.svg",
       "aliases": [
         "Fingerprint"
       ],
@@ -706,6 +849,7 @@
     {
       "name": "Folder Add",
       "variant": "regular",
+      "path": "assets/Folder Add/SVG/ic_fluent_folder_add_24_regular.svg",
       "aliases": [
         "FolderPlus",
         "FolderPlusOutline"
@@ -715,59 +859,52 @@
     {
       "name": "Food Cake",
       "variant": "regular",
+      "path": "assets/Food Cake/SVG/ic_fluent_food_cake_24_regular.svg",
       "aliases": [
         "CakeVariant"
       ],
       "sha256": "ed89c5dcf073e33aafc7c9c00bc7bea3766fe2f7af87362ecb1ce0be77b0e429"
     },
     {
-      "name": "Gavel",
+      "name": "Form",
       "variant": "regular",
+      "path": "assets/Form/SVG/ic_fluent_form_24_regular.svg",
       "aliases": [
-        "Gavel",
-        "ScaleBalance"
+        "ClipboardTextOutline"
       ],
-      "sha256": "a0181ae472ca86f313e988460b42800b8211fd4664d1b7f3b62ebe1eed4a25ef"
+      "sha256": "b808efc0f8acd0c174942572d593853791f60b3eeda0b763a09e601290e4fa6b"
+    },
+    {
+      "name": "Gauge",
+      "variant": "regular",
+      "path": "assets/Gauge/SVG/ic_fluent_gauge_24_regular.svg",
+      "aliases": [
+        "ViewDashboardOutline"
+      ],
+      "sha256": "7f5b7f577f212401083fc5584ce661b04e12eaa5dc227f0cd1fa1232f3904b51"
     },
     {
       "name": "Globe",
       "variant": "regular",
+      "path": "assets/Globe/SVG/ic_fluent_globe_24_regular.svg",
       "aliases": [
-        "IpNetworkOutline",
         "Web"
       ],
       "sha256": "bb024c6df766abce2e500a714d6818f2654bfcb507594d68cff28ec48d7296fd"
     },
     {
-      "name": "Hat Graduation",
-      "variant": "regular",
-      "aliases": [
-        "School",
-        "SchoolOutline"
-      ],
-      "sha256": "4cbe9b2b81b62be37be88019ed20e77e95b8d425e132718f4e0ffb8a9aa2ed28"
-    },
-    {
-      "name": "Heart",
-      "variant": "regular",
-      "aliases": [
-        "HandHeart",
-        "HandHeartOutline"
-      ],
-      "sha256": "dac244731d22d22945c24705dacb480057acfa9c72b2852ed495d8cbe02d6ce1"
-    },
-    {
       "name": "History",
       "variant": "regular",
+      "path": "assets/History/SVG/ic_fluent_history_24_regular.svg",
       "aliases": [
-        "History",
-        "ProgressClock"
+        "History"
       ],
       "sha256": "07d75bb67b1b81cf504b86952cf90fc7af2de44ee6b335595ee3806047fc45b4"
     },
     {
       "name": "Home",
       "variant": "regular",
+      "path": "assets/Home/SVG/ic_fluent_home_24_regular.svg",
       "aliases": [
         "Home",
         "HomeOutline"
@@ -777,6 +914,7 @@
     {
       "name": "Image",
       "variant": "regular",
+      "path": "assets/Image/SVG/ic_fluent_image_24_regular.svg",
       "aliases": [
         "Image",
         "ImageOutline"
@@ -786,6 +924,7 @@
     {
       "name": "Image Add",
       "variant": "regular",
+      "path": "assets/Image Add/SVG/ic_fluent_image_add_24_regular.svg",
       "aliases": [
         "ImagePlusOutline"
       ],
@@ -794,6 +933,7 @@
     {
       "name": "Image Off",
       "variant": "regular",
+      "path": "assets/Image Off/SVG/ic_fluent_image_off_24_regular.svg",
       "aliases": [
         "ImageOff"
       ],
@@ -802,6 +942,7 @@
     {
       "name": "Image Search",
       "variant": "regular",
+      "path": "assets/Image Search/SVG/ic_fluent_image_search_24_regular.svg",
       "aliases": [
         "ImageSearchOutline"
       ],
@@ -810,6 +951,7 @@
     {
       "name": "InPrivate Account",
       "variant": "regular",
+      "path": "assets/InPrivate Account/SVG/ic_fluent_inprivate_account_24_regular.svg",
       "aliases": [
         "Incognito"
       ],
@@ -818,6 +960,7 @@
     {
       "name": "Info",
       "variant": "regular",
+      "path": "assets/Info/SVG/ic_fluent_info_24_regular.svg",
       "aliases": [
         "Information",
         "InformationOutline"
@@ -827,6 +970,7 @@
     {
       "name": "Key",
       "variant": "regular",
+      "path": "assets/Key/SVG/ic_fluent_key_24_regular.svg",
       "aliases": [
         "Key",
         "KeyChain",
@@ -838,14 +982,25 @@
     {
       "name": "Keyboard",
       "variant": "regular",
+      "path": "assets/Keyboard/SVG/ic_fluent_keyboard_24_regular.svg",
       "aliases": [
         "Keyboard"
       ],
       "sha256": "28ab75dbebc0371f8f4f28ca1011ed289439a895bbb0fac2679690987902b7cc"
     },
     {
+      "name": "Library",
+      "variant": "regular",
+      "path": "assets/Library/SVG/ic_fluent_library_24_regular.svg",
+      "aliases": [
+        "School"
+      ],
+      "sha256": "a69a77dfa303db739d2fab27e2d80b484a6743a4abf961ee1d0946c658a88be7"
+    },
+    {
       "name": "Lock Closed",
       "variant": "regular",
+      "path": "assets/Lock Closed/SVG/ic_fluent_lock_closed_24_regular.svg",
       "aliases": [
         "Lock",
         "LockCheck",
@@ -858,6 +1013,7 @@
     {
       "name": "Lock Open",
       "variant": "regular",
+      "path": "assets/Lock Open/SVG/ic_fluent_lock_open_24_regular.svg",
       "aliases": [
         "LockOpenVariant",
         "LockOpenVariantOutline"
@@ -867,6 +1023,7 @@
     {
       "name": "Mail",
       "variant": "regular",
+      "path": "assets/Mail/SVG/ic_fluent_mail_24_regular.svg",
       "aliases": [
         "EmailOutline"
       ],
@@ -875,6 +1032,7 @@
     {
       "name": "Mic",
       "variant": "regular",
+      "path": "assets/Mic/SVG/ic_fluent_mic_24_regular.svg",
       "aliases": [
         "Microphone",
         "MicrophoneOutline"
@@ -884,17 +1042,18 @@
     {
       "name": "Money",
       "variant": "regular",
+      "path": "assets/Money/SVG/ic_fluent_money_24_regular.svg",
       "aliases": [
         "Cash",
         "CashMultiple",
-        "CashRegister",
-        "HandCoin"
+        "CashRegister"
       ],
       "sha256": "4975ed74ad81f0ed84a8ce9eb20da8b8bc8f540cbfbbc85ab25652ea633d1876"
     },
     {
       "name": "Money Hand",
       "variant": "regular",
+      "path": "assets/Money Hand/SVG/ic_fluent_money_hand_24_regular.svg",
       "aliases": [
         "CashCheck",
         "CashMinus",
@@ -905,6 +1064,7 @@
     {
       "name": "More Horizontal",
       "variant": "regular",
+      "path": "assets/More Horizontal/SVG/ic_fluent_more_horizontal_24_regular.svg",
       "aliases": [
         "DotsHorizontal",
         "DotsHorizontalCircleOutline"
@@ -914,14 +1074,43 @@
     {
       "name": "Navigation",
       "variant": "regular",
+      "path": "assets/Navigation/SVG/ic_fluent_navigation_24_regular.svg",
       "aliases": [
         "Menu"
       ],
       "sha256": "4b0fd72aae5f2dcf5dde1a1a356a856fb690fd9c114716b4f78a7444e8a67c55"
     },
     {
+      "name": "Network Check",
+      "variant": "regular",
+      "path": "assets/Network Check/SVG/ic_fluent_network_check_24_regular.svg",
+      "aliases": [
+        "IpNetworkOutline"
+      ],
+      "sha256": "81594ac97283963487f023e05cc767c33bf47c0e25052640968c81b2b374f9b1"
+    },
+    {
+      "name": "Notebook",
+      "variant": "regular",
+      "path": "assets/Notebook/SVG/ic_fluent_notebook_24_regular.svg",
+      "aliases": [
+        "BookEducationOutline"
+      ],
+      "sha256": "6eaac6a7a2e0bad0f2234a6fc6b2cfed810e1f6aac1820e5c5168e5d417772f6"
+    },
+    {
+      "name": "Notebook Question Mark",
+      "variant": "regular",
+      "path": "assets/Notebook Question Mark/SVG/ic_fluent_notebook_question_mark_24_regular.svg",
+      "aliases": [
+        "BookAlertOutline"
+      ],
+      "sha256": "92f9b9b21e96b120d2686e458ce4f209967ca70a730284999512758f7011c394"
+    },
+    {
       "name": "Number Symbol Square",
       "variant": "regular",
+      "path": "assets/Number Symbol Square/SVG/ic_fluent_number_symbol_square_24_regular.svg",
       "aliases": [
         "Dice5"
       ],
@@ -930,6 +1119,7 @@
     {
       "name": "Open",
       "variant": "regular",
+      "path": "assets/Open/SVG/ic_fluent_open_24_regular.svg",
       "aliases": [
         "OpenInNew"
       ],
@@ -938,6 +1128,7 @@
     {
       "name": "Options",
       "variant": "regular",
+      "path": "assets/Options/SVG/ic_fluent_options_24_regular.svg",
       "aliases": [
         "Tune",
         "TuneVariant"
@@ -947,14 +1138,25 @@
     {
       "name": "Organization",
       "variant": "regular",
+      "path": "assets/Organization/SVG/ic_fluent_organization_24_regular.svg",
       "aliases": [
         "SitemapOutline"
       ],
       "sha256": "8932d1be96f5549837f24217b59389f3fae0b7ad74f5f595183cb53a349c165d"
     },
     {
+      "name": "Organization Horizontal",
+      "variant": "regular",
+      "path": "assets/Organization Horizontal/SVG/ic_fluent_organization_horizontal_24_regular.svg",
+      "aliases": [
+        "LanConnect"
+      ],
+      "sha256": "4c6663e797ff0825517cf178878436dbd89a54f3127b9a22ba48181dcc83d869"
+    },
+    {
       "name": "Panel Left",
       "variant": "regular",
+      "path": "assets/Panel Left/SVG/ic_fluent_panel_left_24_regular.svg",
       "aliases": [
         "DockLeft"
       ],
@@ -963,22 +1165,53 @@
     {
       "name": "Password",
       "variant": "regular",
+      "path": "assets/Password/SVG/ic_fluent_password_24_regular.svg",
       "aliases": [
         "FormTextboxPassword"
       ],
       "sha256": "a9f4d1485f11b0702834dee6e4845c134fd197e165211de816102f90e1125899"
     },
     {
+      "name": "Payment",
+      "variant": "regular",
+      "path": "assets/Payment/SVG/ic_fluent_payment_24_regular.svg",
+      "aliases": [
+        "HandCoin"
+      ],
+      "sha256": "080f7595bd3b81f8c5acbe38db41eea8b88a6d89b713e1a623f3dcc11a18d62c"
+    },
+    {
       "name": "People Add",
       "variant": "regular",
+      "path": "assets/People Add/SVG/ic_fluent_people_add_24_regular.svg",
       "aliases": [
         "AccountMultiplePlusOutline"
       ],
       "sha256": "688734cb955dd14859770e8bb24f5e4c62baf689840413eb07babdaefb53bde6"
     },
     {
+      "name": "People List",
+      "variant": "regular",
+      "path": "assets/People List/SVG/ic_fluent_people_list_24_regular.svg",
+      "aliases": [
+        "HumanMaleBoard"
+      ],
+      "sha256": "093d7165d9afb6875dacb9087f8b7a83360f3fb7c9cdc3673b81ffd54222ceca"
+    },
+    {
+      "name": "People Settings",
+      "variant": "regular",
+      "path": "assets/People Settings/SVG/ic_fluent_people_settings_24_regular.svg",
+      "aliases": [
+        "AccountCog",
+        "AccountCogOutline"
+      ],
+      "sha256": "5573c397cf622f536aed7e6588f7eea3db8906cc6a5f71cf391efd9cfe0f396a"
+    },
+    {
       "name": "People Swap",
       "variant": "regular",
+      "path": "assets/People Swap/SVG/ic_fluent_people_swap_24_regular.svg",
       "aliases": [
         "AccountSwitch",
         "AccountSwitchOutline"
@@ -986,8 +1219,18 @@
       "sha256": "83a7545a69623b22b21aed9b55cabe07a1e5df8bdcb251f6ba76e4a845879bd0"
     },
     {
+      "name": "People Sync",
+      "variant": "regular",
+      "path": "assets/People Sync/SVG/ic_fluent_people_sync_24_regular.svg",
+      "aliases": [
+        "CalendarSync"
+      ],
+      "sha256": "b8221ecf462c6fb89bc8a6d89a1f33c328094899c240bd5461a98aa2cfe76f7b"
+    },
+    {
       "name": "People Team",
       "variant": "regular",
+      "path": "assets/People Team/SVG/ic_fluent_people_team_24_regular.svg",
       "aliases": [
         "AccountGroup",
         "AccountGroupOutline",
@@ -998,14 +1241,11 @@
     {
       "name": "Person",
       "variant": "regular",
+      "path": "assets/Person/SVG/ic_fluent_person_24_regular.svg",
       "aliases": [
         "Account",
         "AccountCircleOutline",
-        "AccountCog",
-        "AccountCogOutline",
         "AccountOutline",
-        "AccountSchool",
-        "AccountSchoolOutline",
         "AccountTie"
       ],
       "sha256": "4f9862044a1afff206c2154d37d32ca652c4b9ba8beb615510316f473e4d862f"
@@ -1013,6 +1253,7 @@
     {
       "name": "Person Add",
       "variant": "regular",
+      "path": "assets/Person Add/SVG/ic_fluent_person_add_24_regular.svg",
       "aliases": [
         "AccountPlus",
         "AccountPlusOutline"
@@ -1022,6 +1263,7 @@
     {
       "name": "Person Arrow Back",
       "variant": "regular",
+      "path": "assets/Person Arrow Back/SVG/ic_fluent_person_arrow_back_24_regular.svg",
       "aliases": [
         "AccountArrowDown"
       ],
@@ -1030,6 +1272,7 @@
     {
       "name": "Person Arrow Left",
       "variant": "regular",
+      "path": "assets/Person Arrow Left/SVG/ic_fluent_person_arrow_left_24_regular.svg",
       "aliases": [
         "AccountArrowLeftOutline"
       ],
@@ -1038,6 +1281,7 @@
     {
       "name": "Person Arrow Right",
       "variant": "regular",
+      "path": "assets/Person Arrow Right/SVG/ic_fluent_person_arrow_right_24_regular.svg",
       "aliases": [
         "AccountArrowRight"
       ],
@@ -1046,6 +1290,7 @@
     {
       "name": "Person Available",
       "variant": "regular",
+      "path": "assets/Person Available/SVG/ic_fluent_person_available_24_regular.svg",
       "aliases": [
         "AccountCheck",
         "AccountCheckOutline"
@@ -1055,14 +1300,17 @@
     {
       "name": "Person Board",
       "variant": "regular",
+      "path": "assets/Person Board/SVG/ic_fluent_person_board_24_regular.svg",
       "aliases": [
-        "HumanMaleBoard"
+        "AccountSchool",
+        "AccountSchoolOutline"
       ],
       "sha256": "9b397637527fde5d25dc25eb3dfa21de429b3e463f7d2fc1c028f03a250eedd8"
     },
     {
       "name": "Person Clock",
       "variant": "regular",
+      "path": "assets/Person Clock/SVG/ic_fluent_person_clock_24_regular.svg",
       "aliases": [
         "AccountClock"
       ],
@@ -1071,6 +1319,7 @@
     {
       "name": "Person Delete",
       "variant": "regular",
+      "path": "assets/Person Delete/SVG/ic_fluent_person_delete_24_regular.svg",
       "aliases": [
         "AccountCancel",
         "AccountCancelOutline",
@@ -1084,6 +1333,7 @@
     {
       "name": "Person Edit",
       "variant": "regular",
+      "path": "assets/Person Edit/SVG/ic_fluent_person_edit_24_regular.svg",
       "aliases": [
         "AccountEdit",
         "Rename"
@@ -1091,17 +1341,28 @@
       "sha256": "07fd6876eab2d80d00c1aeabd816f73b832d25e6e1b12679415ade513b91fbce"
     },
     {
+      "name": "Person Heart",
+      "variant": "regular",
+      "path": "assets/Person Heart/SVG/ic_fluent_person_heart_24_regular.svg",
+      "aliases": [
+        "HandHeart",
+        "HandHeartOutline"
+      ],
+      "sha256": "0359cf76ff98de8050be437bcb7aaa6135f2888a7b08e6862d47b281f194ed61"
+    },
+    {
       "name": "Person Key",
       "variant": "regular",
+      "path": "assets/Person Key/SVG/ic_fluent_person_key_24_regular.svg",
       "aliases": [
-        "AccountKey",
-        "AccountKeyOutline"
+        "AccountKey"
       ],
       "sha256": "c6744d391338f1f89476cdafc1f706daef6aabfe70219e393cb2af07dc4d82bc"
     },
     {
       "name": "Person Search",
       "variant": "regular",
+      "path": "assets/Person Search/SVG/ic_fluent_person_search_24_regular.svg",
       "aliases": [
         "AccountSearchOutline"
       ],
@@ -1110,22 +1371,25 @@
     {
       "name": "Person Star",
       "variant": "regular",
+      "path": "assets/Person Star/SVG/ic_fluent_person_star_24_regular.svg",
       "aliases": [
         "AccountStarOutline"
       ],
       "sha256": "facb1a8da305380a237a44fe8003aac081f548b6a18e41f41a18929fca080250"
     },
     {
-      "name": "Person Voice",
+      "name": "Person Warning",
       "variant": "regular",
+      "path": "assets/Person Warning/SVG/ic_fluent_person_warning_24_regular.svg",
       "aliases": [
-        "AccountTieVoiceOutline"
+        "AlertOctagon"
       ],
-      "sha256": "be46dfbcd5fd273ce3cd9575dd019a67d1335c176383f8e5615e6204af5f9fff"
+      "sha256": "177573327d2953c3d2481c6fcdac11b1debca12200b1b88ddd5946a2b9db5ed0"
     },
     {
       "name": "Phone",
       "variant": "regular",
+      "path": "assets/Phone/SVG/ic_fluent_phone_24_regular.svg",
       "aliases": [
         "Cellphone",
         "CellphoneCheck",
@@ -1138,6 +1402,7 @@
     {
       "name": "Phone Laptop",
       "variant": "regular",
+      "path": "assets/Phone Laptop/SVG/ic_fluent_phone_laptop_24_regular.svg",
       "aliases": [
         "CellphoneLink"
       ],
@@ -1146,6 +1411,7 @@
     {
       "name": "Phone Lock",
       "variant": "regular",
+      "path": "assets/Phone Lock/SVG/ic_fluent_phone_lock_24_regular.svg",
       "aliases": [
         "CellphoneLock"
       ],
@@ -1154,6 +1420,7 @@
     {
       "name": "Play Circle",
       "variant": "regular",
+      "path": "assets/Play Circle/SVG/ic_fluent_play_circle_24_regular.svg",
       "aliases": [
         "AnimationPlay",
         "PlayOutline"
@@ -1161,8 +1428,18 @@
       "sha256": "5d2b909f5bfbcb05158512e1df6c15597fbf3dddcd1855f023fba10be196f25f"
     },
     {
+      "name": "Plug Disconnected",
+      "variant": "regular",
+      "path": "assets/Plug Disconnected/SVG/ic_fluent_plug_disconnected_24_regular.svg",
+      "aliases": [
+        "LanDisconnect"
+      ],
+      "sha256": "0dc599297c473870b88bed65673bae2f860b227bf2b3565b252a4abbc55c4bee"
+    },
+    {
       "name": "Power",
       "variant": "regular",
+      "path": "assets/Power/SVG/ic_fluent_power_24_regular.svg",
       "aliases": [
         "Power",
         "PowerSettings"
@@ -1172,6 +1449,7 @@
     {
       "name": "Print",
       "variant": "regular",
+      "path": "assets/Print/SVG/ic_fluent_print_24_regular.svg",
       "aliases": [
         "Printer"
       ],
@@ -1180,6 +1458,7 @@
     {
       "name": "QR Code",
       "variant": "regular",
+      "path": "assets/QR Code/SVG/ic_fluent_qr_code_24_regular.svg",
       "aliases": [
         "QrcodePlus",
         "QrcodeScan"
@@ -1189,6 +1468,7 @@
     {
       "name": "Question Circle",
       "variant": "regular",
+      "path": "assets/Question Circle/SVG/ic_fluent_question_circle_24_regular.svg",
       "aliases": [
         "HelpCircleOutline"
       ],
@@ -1197,6 +1477,7 @@
     {
       "name": "Radio Button",
       "variant": "filled",
+      "path": "assets/Radio Button/SVG/ic_fluent_radio_button_24_filled.svg",
       "aliases": [
         "RadioboxMarked"
       ],
@@ -1205,6 +1486,7 @@
     {
       "name": "Receipt",
       "variant": "regular",
+      "path": "assets/Receipt/SVG/ic_fluent_receipt_24_regular.svg",
       "aliases": [
         "Receipt",
         "ReceiptText",
@@ -1214,8 +1496,18 @@
       "sha256": "29cf6e19f774ac44bdc2737855a19eca0f3c3fd1bca96504eef27034148e571e"
     },
     {
+      "name": "Ribbon Star",
+      "variant": "regular",
+      "path": "assets/Ribbon Star/SVG/ic_fluent_ribbon_star_24_regular.svg",
+      "aliases": [
+        "CertificateOutline"
+      ],
+      "sha256": "d56b7b394fd9149c5763a7d25e9d959714d1680615df67ab00eb937f1e39cc44"
+    },
+    {
       "name": "Save",
       "variant": "regular",
+      "path": "assets/Save/SVG/ic_fluent_save_24_regular.svg",
       "aliases": [
         "ContentSave",
         "ContentSaveOutline"
@@ -1223,8 +1515,27 @@
       "sha256": "35d473d8af5134ab3679d3f41e7270d6ac6bce66fc5f98caccb42d75350b237f"
     },
     {
+      "name": "Scales",
+      "variant": "regular",
+      "path": "assets/Scales/SVG/ic_fluent_scales_24_regular.svg",
+      "aliases": [
+        "ScaleBalance"
+      ],
+      "sha256": "ca812a99ef7b2cc67d360bd8da84dd3343d47e6ab720121f1a15fadb745d12a4"
+    },
+    {
+      "name": "Scan Person",
+      "variant": "regular",
+      "path": "assets/Scan Person/SVG/ic_fluent_scan_person_24_regular.svg",
+      "aliases": [
+        "AccountKeyOutline"
+      ],
+      "sha256": "a55e26269c8b491ec5f4fa2f7fb2e3ecf7e09c8de29818f941dd92b796b76105"
+    },
+    {
       "name": "Search",
       "variant": "regular",
+      "path": "assets/Search/SVG/ic_fluent_search_24_regular.svg",
       "aliases": [
         "Magnify"
       ],
@@ -1233,6 +1544,7 @@
     {
       "name": "Send",
       "variant": "regular",
+      "path": "assets/Send/SVG/ic_fluent_send_24_regular.svg",
       "aliases": [
         "SendOutline"
       ],
@@ -1241,6 +1553,7 @@
     {
       "name": "Server",
       "variant": "regular",
+      "path": "assets/Server/SVG/ic_fluent_server_24_regular.svg",
       "aliases": [
         "ServerOutline"
       ],
@@ -1249,6 +1562,7 @@
     {
       "name": "Settings",
       "variant": "regular",
+      "path": "assets/Settings/SVG/ic_fluent_settings_24_regular.svg",
       "aliases": [
         "Cog",
         "CogOutline"
@@ -1258,6 +1572,7 @@
     {
       "name": "Share Android",
       "variant": "regular",
+      "path": "assets/Share Android/SVG/ic_fluent_share_android_24_regular.svg",
       "aliases": [
         "ShareVariantOutline"
       ],
@@ -1266,6 +1581,7 @@
     {
       "name": "Shield",
       "variant": "regular",
+      "path": "assets/Shield/SVG/ic_fluent_shield_24_regular.svg",
       "aliases": [
         "ShieldAccount",
         "ShieldAccountOutline"
@@ -1275,6 +1591,7 @@
     {
       "name": "Shield Checkmark",
       "variant": "regular",
+      "path": "assets/Shield Checkmark/SVG/ic_fluent_shield_checkmark_24_regular.svg",
       "aliases": [
         "ShieldCheck",
         "ShieldCheckOutline"
@@ -1284,6 +1601,7 @@
     {
       "name": "Shield Dismiss",
       "variant": "regular",
+      "path": "assets/Shield Dismiss/SVG/ic_fluent_shield_dismiss_24_regular.svg",
       "aliases": [
         "ShieldOff"
       ],
@@ -1292,14 +1610,26 @@
     {
       "name": "Shield Lock",
       "variant": "regular",
+      "path": "assets/Shield Lock/SVG/ic_fluent_shield_lock_24_regular.svg",
       "aliases": [
         "ShieldLockOutline"
       ],
       "sha256": "8ac457627d37f3f2aa419de000c7b59066ad0403bf8cb95e29786c8c6ceb49e2"
     },
     {
+      "name": "Shifts",
+      "variant": "regular",
+      "path": "assets/Shifts/SVG/ic_fluent_shifts_24_regular.svg",
+      "aliases": [
+        "ClockCheck",
+        "ClockCheckOutline"
+      ],
+      "sha256": "1261f26b7914cd9b77e762bfd785195fabab0909d3620356e676ab44ae36e45e"
+    },
+    {
       "name": "Sign Out",
       "variant": "regular",
+      "path": "assets/Sign Out/SVG/ic_fluent_sign_out_24_regular.svg",
       "aliases": [
         "Logout",
         "LogoutVariant"
@@ -1309,6 +1639,7 @@
     {
       "name": "Speaker 1",
       "variant": "regular",
+      "path": "assets/Speaker 1/SVG/ic_fluent_speaker_1_24_regular.svg",
       "aliases": [
         "VolumeLow"
       ],
@@ -1317,6 +1648,7 @@
     {
       "name": "Speaker 2",
       "variant": "regular",
+      "path": "assets/Speaker 2/SVG/ic_fluent_speaker_2_24_regular.svg",
       "aliases": [
         "VolumeHigh"
       ],
@@ -1325,6 +1657,7 @@
     {
       "name": "Square",
       "variant": "regular",
+      "path": "assets/Square/SVG/ic_fluent_square_24_regular.svg",
       "aliases": [
         "WindowMaximize"
       ],
@@ -1333,6 +1666,7 @@
     {
       "name": "Stop",
       "variant": "regular",
+      "path": "assets/Stop/SVG/ic_fluent_stop_24_regular.svg",
       "aliases": [
         "Stop",
         "StopOutline"
@@ -1342,6 +1676,7 @@
     {
       "name": "Subtract",
       "variant": "regular",
+      "path": "assets/Subtract/SVG/ic_fluent_subtract_24_regular.svg",
       "aliases": [
         "Minus"
       ],
@@ -1350,6 +1685,7 @@
     {
       "name": "Tag Add",
       "variant": "regular",
+      "path": "assets/Tag Add/SVG/ic_fluent_tag_add_24_regular.svg",
       "aliases": [
         "TagPlusOutline"
       ],
@@ -1358,6 +1694,7 @@
     {
       "name": "Tag Multiple",
       "variant": "regular",
+      "path": "assets/Tag Multiple/SVG/ic_fluent_tag_multiple_24_regular.svg",
       "aliases": [
         "TagMultipleOutline"
       ],
@@ -1366,6 +1703,7 @@
     {
       "name": "Tap Double",
       "variant": "regular",
+      "path": "assets/Tap Double/SVG/ic_fluent_tap_double_24_regular.svg",
       "aliases": [
         "GestureDoubleTap"
       ],
@@ -1374,6 +1712,7 @@
     {
       "name": "Tap Single",
       "variant": "regular",
+      "path": "assets/Tap Single/SVG/ic_fluent_tap_single_24_regular.svg",
       "aliases": [
         "CallToAction",
         "Cta",
@@ -1386,6 +1725,7 @@
     {
       "name": "Text Font",
       "variant": "regular",
+      "path": "assets/Text Font/SVG/ic_fluent_text_font_24_regular.svg",
       "aliases": [
         "FormatFont"
       ],
@@ -1394,6 +1734,7 @@
     {
       "name": "Text Number List LTR",
       "variant": "regular",
+      "path": "assets/Text Number List LTR/SVG/ic_fluent_text_number_list_ltr_24_regular.svg",
       "aliases": [
         "FormatListNumbered"
       ],
@@ -1402,6 +1743,7 @@
     {
       "name": "Timer",
       "variant": "regular",
+      "path": "assets/Timer/SVG/ic_fluent_timer_24_regular.svg",
       "aliases": [
         "TimerSandComplete",
         "TimerSandEmpty"
@@ -1411,6 +1753,7 @@
     {
       "name": "Tray Item Remove",
       "variant": "regular",
+      "path": "assets/Tray Item Remove/SVG/ic_fluent_tray_item_remove_24_regular.svg",
       "aliases": [
         "TrayRemove"
       ],
@@ -1419,6 +1762,7 @@
     {
       "name": "Trophy",
       "variant": "regular",
+      "path": "assets/Trophy/SVG/ic_fluent_trophy_24_regular.svg",
       "aliases": [
         "Podium"
       ],
@@ -1427,6 +1771,7 @@
     {
       "name": "Vault",
       "variant": "regular",
+      "path": "assets/Vault/SVG/ic_fluent_vault_24_regular.svg",
       "aliases": [
         "Safe"
       ],
@@ -1435,6 +1780,7 @@
     {
       "name": "Wallet",
       "variant": "regular",
+      "path": "assets/Wallet/SVG/ic_fluent_wallet_24_regular.svg",
       "aliases": [
         "Wallet",
         "WalletOutline"
@@ -1444,6 +1790,7 @@
     {
       "name": "Wand",
       "variant": "regular",
+      "path": "assets/Wand/SVG/ic_fluent_wand_24_regular.svg",
       "aliases": [
         "AutoFix"
       ],
@@ -1452,8 +1799,8 @@
     {
       "name": "Warning",
       "variant": "regular",
+      "path": "assets/Warning/SVG/ic_fluent_warning_24_regular.svg",
       "aliases": [
-        "AlertOctagon",
         "AlertOctagonOutline",
         "BatteryAlertVariantOutline",
         "ShieldAlertOutline"
@@ -1463,6 +1810,7 @@
     {
       "name": "Weather Moon",
       "variant": "regular",
+      "path": "assets/Weather Moon/SVG/ic_fluent_weather_moon_24_regular.svg",
       "aliases": [
         "WeatherNight",
         "WeatherNightOutline"
@@ -1472,6 +1820,7 @@
     {
       "name": "Weather Sunny",
       "variant": "regular",
+      "path": "assets/Weather Sunny/SVG/ic_fluent_weather_sunny_24_regular.svg",
       "aliases": [
         "WeatherSunny"
       ],
@@ -1480,6 +1829,7 @@
     {
       "name": "WiFi 1",
       "variant": "regular",
+      "path": "assets/WiFi 1/SVG/ic_fluent_wifi_1_24_regular.svg",
       "aliases": [
         "Wifi"
       ],
@@ -1513,6 +1863,11 @@
       "sha256": "ad71a5015be2c679c424c0eff3b9914ed153cab9a8b538eae6dcf09d9e03c240"
     },
     {
+      "name": "Apps List Detail",
+      "path": "assets/Apps List Detail/SVG/ic_fluent_apps_list_detail_32_color.svg",
+      "sha256": "577092e2d8631dafdac72752234f1e5219954b5e012a3dfddae17f7986c9377c"
+    },
+    {
       "name": "Arrow Square",
       "path": "assets/Arrow Square/SVG/ic_fluent_arrow_square_32_color.svg",
       "sha256": "d4188e3f01633597df08c3d4681cd91b4602baaa4372729cf1127b08e9040d89"
@@ -1538,6 +1893,16 @@
       "sha256": "efe9e44780896b54e05537f9910f63961a0101e9aa5049b01adad8a50fd9b6b4"
     },
     {
+      "name": "Book Contacts",
+      "path": "assets/Book Contacts/SVG/ic_fluent_book_contacts_48_color.svg",
+      "sha256": "c4390c49e097d7573f567d375dacbf50f878cf18632699d802d5cd17d4cc3266"
+    },
+    {
+      "name": "Book Open",
+      "path": "assets/Book Open/SVG/ic_fluent_book_open_48_color.svg",
+      "sha256": "3d655edd351850463bc14fa72c6fc62a349eb23e2ad0f95ed7d6a3d819d9ad7b"
+    },
+    {
       "name": "Book Star",
       "path": "assets/Book Star/SVG/ic_fluent_book_star_24_color.svg",
       "sha256": "31fd741ac122c21abb77f7fb78979ac08238a9f8eb5f82e69bc28eb3c554aba6"
@@ -1556,6 +1921,11 @@
       "name": "Building",
       "path": "assets/Building/SVG/ic_fluent_building_48_color.svg",
       "sha256": "a5cbbc9e3b550d9a938fb0f1b14d029eac41931bae3d965bb366dab192ef78ce"
+    },
+    {
+      "name": "Building Government",
+      "path": "assets/Building Government/SVG/ic_fluent_building_government_32_color.svg",
+      "sha256": "85af9f7ac88e2777abb9a79882d1f32c6bc5d15fa806ba47c3a4448bd608be8f"
     },
     {
       "name": "Calendar",
@@ -1593,6 +1963,11 @@
       "sha256": "4be408d834a71876ca229a73d6e946aa36aaca4438080a7efe142c4936c57df2"
     },
     {
+      "name": "Chart Multiple",
+      "path": "assets/Chart Multiple/SVG/ic_fluent_chart_multiple_32_color.svg",
+      "sha256": "32013fff6923de564c4b2f6ce4a2143c72dbfd0ef296da5d141e5e7b52da1aba"
+    },
+    {
       "name": "Chat",
       "path": "assets/Chat/SVG/ic_fluent_chat_48_color.svg",
       "sha256": "10cc1ed486419bf7e405fc53924a2b186e55dca4f45fd78f7e0433ab3fbd0d44"
@@ -1603,9 +1978,19 @@
       "sha256": "fe2fd5841e6527e92e496d1f1e7d5179dae9f9896a27db486d40c75594142b07"
     },
     {
+      "name": "Checkbox Person",
+      "path": "assets/Checkbox Person/SVG/ic_fluent_checkbox_person_24_color.svg",
+      "sha256": "9c57ca6d31341b16d0bcbdb080bffd83c3dedc0ac31840980a72acd184d49fc4"
+    },
+    {
       "name": "Checkmark Circle",
       "path": "assets/Checkmark Circle/SVG/ic_fluent_checkmark_circle_48_color.svg",
       "sha256": "7b53cb5380ef901bdfda1e8fe1822dc667103e77f09b1f6186dba6c08e60d646"
+    },
+    {
+      "name": "Circle Multiple Hint Checkmark",
+      "path": "assets/Circle Multiple Hint Checkmark/SVG/ic_fluent_circle_multiple_hint_checkmark_48_color.svg",
+      "sha256": "14e7bcd859fa468b4d91f8eeec96be79ca56c06cbd44d775c8c7106fdb42b8bb"
     },
     {
       "name": "Clipboard",
@@ -1673,6 +2058,11 @@
       "sha256": "555da0bdadcca3a1183262bdc93e47a200aaed1a3a751f36f5c1d6953d55953c"
     },
     {
+      "name": "Data Trending",
+      "path": "assets/Data Trending/SVG/ic_fluent_data_trending_48_color.svg",
+      "sha256": "8791ddf4865412924a3959a6e13fcd43720eb239653148958e95c66b0f8d9a81"
+    },
+    {
       "name": "Database",
       "path": "assets/Database/SVG/ic_fluent_database_48_color.svg",
       "sha256": "9d0d93c81d819f13a9541286d35bf0fc7c7993721aca91e4ff5945a1d98f5b7c"
@@ -1698,9 +2088,19 @@
       "sha256": "fb2d2ec337412efa810125beaddedf07c7022e59142a1dbb2aca9e1f7a4fc31d"
     },
     {
+      "name": "Document Edit",
+      "path": "assets/Document Edit/SVG/ic_fluent_document_edit_24_color.svg",
+      "sha256": "f700fc5e71212724b8cc447fc458bbbcdebee23bde60dff7606dffa14e57e388"
+    },
+    {
       "name": "Document Folder",
       "path": "assets/Document Folder/SVG/ic_fluent_document_folder_24_color.svg",
       "sha256": "06f76f631718174c6bdafb0c6609166ddb78092ce55ab9b7bba272cd827ca14d"
+    },
+    {
+      "name": "Document Text",
+      "path": "assets/Document Text/SVG/ic_fluent_document_text_48_color.svg",
+      "sha256": "a0f5e47363db1434001dbdebba42c73617d2e4089759ed0db55a7bf839f79446"
     },
     {
       "name": "Edit",
@@ -1721,6 +2121,16 @@
       "name": "Food",
       "path": "assets/Food/SVG/ic_fluent_food_48_color.svg",
       "sha256": "5c3932b6942e0f5d12f1e04c57ebb0668092aa95a274441b046f09184690be5a"
+    },
+    {
+      "name": "Form",
+      "path": "assets/Form/SVG/ic_fluent_form_48_color.svg",
+      "sha256": "852154765471a4004c1bfa29bda76e01617523b45c42ac8e6e56e2eeef32bf4e"
+    },
+    {
+      "name": "Gauge",
+      "path": "assets/Gauge/SVG/ic_fluent_gauge_32_color.svg",
+      "sha256": "9cead7cf604f99c61df754ae9a79ba7be62ca5ece728e4bf2b4e7f1f0f3545b5"
     },
     {
       "name": "Globe",
@@ -1768,6 +2178,11 @@
       "sha256": "71ce35201c2640cded3bfc0a45da6d4c7fce120667ab85d1620da896c8b6ecb6"
     },
     {
+      "name": "Library",
+      "path": "assets/Library/SVG/ic_fluent_library_32_color.svg",
+      "sha256": "b7b90660d92f7ef96ca0002afbddc7a4f2f5f93da73454345e413fd9edd1ed5c"
+    },
+    {
       "name": "Lock Closed",
       "path": "assets/Lock Closed/SVG/ic_fluent_lock_closed_48_color.svg",
       "sha256": "8810e3f6fd5a597fe6bdfb949f06d0e30530e9b214526d4a4f09d8fc0d2afd55"
@@ -1781,6 +2196,16 @@
       "name": "Mic",
       "path": "assets/Mic/SVG/ic_fluent_mic_48_color.svg",
       "sha256": "f05670d69a85aae47705b9eebe3ac60e33591b1d01cfd454d3f0462a76698aab"
+    },
+    {
+      "name": "Notebook",
+      "path": "assets/Notebook/SVG/ic_fluent_notebook_32_color.svg",
+      "sha256": "e0af1459ea79c84c710184cf62f8f7beabeaccb741f030519dfdc60ca276f636"
+    },
+    {
+      "name": "Notebook Question Mark",
+      "path": "assets/Notebook Question Mark/SVG/ic_fluent_notebook_question_mark_24_color.svg",
+      "sha256": "a632bc6a4f6bdf57c101fc7c69409ed853208d4a01d9151004cbd2086a94926c"
     },
     {
       "name": "Number Symbol Square",
@@ -1808,6 +2233,16 @@
       "sha256": "23cfeb2bb4289f6b3aa3dad387a5752e2282d80208553a1e2b62e1e313b3c9b9"
     },
     {
+      "name": "People List",
+      "path": "assets/People List/SVG/ic_fluent_people_list_32_color.svg",
+      "sha256": "81ca53d75834766d05cb5adf45ab6b1e685ccc11cf1bddf530409c84535008a3"
+    },
+    {
+      "name": "People Sync",
+      "path": "assets/People Sync/SVG/ic_fluent_people_sync_32_color.svg",
+      "sha256": "120431a60b694561b155042c7b393c5d386d40f9e7e4ab375a8cd86d9e995121"
+    },
+    {
       "name": "People Team",
       "path": "assets/People Team/SVG/ic_fluent_people_team_48_color.svg",
       "sha256": "581190a76d64a1b8ed82d2bcb292c023131c140227529f11f147ef71e03734e2"
@@ -1833,9 +2268,24 @@
       "sha256": "3e62e2b9f4af2801e8ccd10c035bc6128588bbe5c2207e56491a16d7f491115f"
     },
     {
+      "name": "Person Feedback",
+      "path": "assets/Person Feedback/SVG/ic_fluent_person_feedback_48_color.svg",
+      "sha256": "1fc5235aba513809e7eee2cd86e889b93c9375f7ed7c98b3c98e5d63382c8abe"
+    },
+    {
+      "name": "Person Heart",
+      "path": "assets/Person Heart/SVG/ic_fluent_person_heart_48_color.svg",
+      "sha256": "7fc821ddc586c442ca1e607fffe47bf32cd39ca5b2bb4664d0473f3b6d6f13de"
+    },
+    {
       "name": "Person Key",
       "path": "assets/Person Key/SVG/ic_fluent_person_key_32_color.svg",
       "sha256": "0dc84e8015505a09f563bb8356b43818913cf58365933e229cd86c1b0f208b03"
+    },
+    {
+      "name": "Person Warning",
+      "path": "assets/Person Warning/SVG/ic_fluent_person_warning_48_color.svg",
+      "sha256": "17ede581eca8e51fb0e77167f3f64f99a795d842df91bd5b36189daad7681018"
     },
     {
       "name": "Phone",
@@ -1858,9 +2308,19 @@
       "sha256": "9695bd859f62d1d0cd62f7d1d587b8e6fc38c7a144262b5a21a6e5bd75831536"
     },
     {
+      "name": "Ribbon Star",
+      "path": "assets/Ribbon Star/SVG/ic_fluent_ribbon_star_32_color.svg",
+      "sha256": "1d49d8a9abee08c146f1bcccfe7b51304751667625a54125ecb9caf35ec769f7"
+    },
+    {
       "name": "Savings",
       "path": "assets/Savings/SVG/ic_fluent_savings_32_color.svg",
       "sha256": "8354bf4c24f37734daa98363defb3a4c2017be78bbf500a7d6dbc06f19907d03"
+    },
+    {
+      "name": "Scan Person",
+      "path": "assets/Scan Person/SVG/ic_fluent_scan_person_48_color.svg",
+      "sha256": "f999bd4d5ebf99e4901efa0d94c454ca4c722fd31f2915f0165cf32c1f50b6d1"
     },
     {
       "name": "Scan Type",
@@ -1896,6 +2356,16 @@
       "name": "Shield Checkmark",
       "path": "assets/Shield Checkmark/SVG/ic_fluent_shield_checkmark_48_color.svg",
       "sha256": "a788c29b01e8e4d273cac5371753560b6f59a0da28cfe44311075c756e53a4ec"
+    },
+    {
+      "name": "Shifts",
+      "path": "assets/Shifts/SVG/ic_fluent_shifts_32_color.svg",
+      "sha256": "8ada429fc98c165b5309a9055ad540c6e6f16236b7704853b9735c3113f82475"
+    },
+    {
+      "name": "Text Bullet List Square",
+      "path": "assets/Text Bullet List Square/SVG/ic_fluent_text_bullet_list_square_48_color.svg",
+      "sha256": "fe45fb9ad0b8f07c687d682dfed5d7334665bed4efd76aeef7b4e9b8a94aebe0"
     },
     {
       "name": "Text Edit Style",

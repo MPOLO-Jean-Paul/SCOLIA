@@ -73,4 +73,28 @@ public sealed class FluentCatalogueTests
         Assert.All(keys, key => Assert.False(string.IsNullOrWhiteSpace(key)));
         Assert.Equal(kinds.Length, keys.Distinct(StringComparer.Ordinal).Count());
     }
+
+    [Fact]
+    public void Chaque_ecran_principal_a_sa_propre_forme_et_sa_propre_illustration()
+    {
+        FluentGlyphs.Install();
+        var screens = FeatureVisuals.PageIcons;
+        Assert.True(screens.Count >= 50);
+        foreach (var duplicates in screens.GroupBy(p => MaterialIconDataProvider.Instance.ProvideData(p.Value)).Where(g => g.Count() > 1))
+            Assert.Fail("Écrans avec le même tracé : " + string.Join(", ", duplicates.Select(p => p.Key.Name)));
+        foreach (var duplicates in screens.GroupBy(p => FluentGlyphs.ArtworkKey(p.Value)).Where(g => g.Count() > 1))
+            Assert.Fail("Écrans avec la même illustration : " + string.Join(", ", duplicates.Select(p => p.Key.Name)));
+        Assert.All(screens.Values, icon => Assert.NotNull(FluentGlyphs.ArtworkKey(icon)));
+    }
+
+    [Fact]
+    public void Retour_suivant_chevron_et_reseau_gardent_des_formes_differentes()
+    {
+        FluentGlyphs.Install();
+        var kinds = new[] { MaterialIconKind.ArrowLeft, MaterialIconKind.ArrowRight,
+            MaterialIconKind.ChevronLeft, MaterialIconKind.LanConnect, MaterialIconKind.LanDisconnect,
+            MaterialIconKind.Wifi, MaterialIconKind.AccountMultipleOutline, MaterialIconKind.CellphoneLink };
+        var paths = kinds.Select(MaterialIconDataProvider.Instance.ProvideData).ToArray();
+        Assert.Equal(kinds.Length, paths.Distinct(StringComparer.Ordinal).Count());
+    }
 }

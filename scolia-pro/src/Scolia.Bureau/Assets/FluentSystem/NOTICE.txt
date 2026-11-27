@@ -1,11 +1,12 @@
 Microsoft Fluent UI System Icons
 https://github.com/microsoft/fluentui-system-icons
 
-Glyphs: official SVG paths on a 24 px canvas, referenced by the existing SCOLIA action identifiers.
-Filled variants identify selected radio buttons and solid color swatches.
-Color icons: official SVG paths and gradients transcribed to Themes/FluentArtwork.axaml.
-The manifest records the source name and SHA-256 of every original SVG downloaded on 2026-11-27.
-Source paths: assets/<name>/SVG/ic_fluent_<name>_<size>_<regular|filled|color>.svg
+Original regular glyphs on a fixed 24 px canvas. Original color geometry and gradients
+transcribed to native Avalonia drawings, with chromatic colors adapted to SCOLIA blue
+(#1D4ED8) and green (#16A34A), retaining neutral shading and semantic alert colors.
+Source commit, paths and SHA-256 of the original SVGs are recorded in manifest.json.
+Rebuild with scripts/generer-icones-scolia.py; catalogue.json holds semantic associations.
+The application needs no network connection or system icon font to render these assets.
 
 MIT License
 

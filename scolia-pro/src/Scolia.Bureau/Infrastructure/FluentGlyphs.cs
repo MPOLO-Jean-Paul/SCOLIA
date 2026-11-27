@@ -38,9 +38,13 @@ public static partial class FluentGlyphs
             app.Resources.TryGetResource(key, app.ActualThemeVariant, out var value) && value is IImage image)
             return image;
         // Les marques tierces gardent leur dessin ; un nouvel identifiant reste visible pendant son ajout au catalogue.
-        return FallbackArtwork.GetOrAdd(icon, static glyph => new DrawingImage(new GeometryDrawing
+        return FallbackArtwork.GetOrAdd(icon, static glyph => new DrawingImage(new DrawingGroup
         {
-            Geometry = For(glyph), Brush = ThemeBrush.Get("ToneGreen")
+            Children =
+            {
+                new GeometryDrawing { Geometry = new RectangleGeometry(new Rect(0, 0, 24, 24)), Brush = Brushes.Transparent },
+                new GeometryDrawing { Geometry = For(glyph), Brush = ThemeBrush.Get("ToneBlue") }
+            }
         }));
     }
 
