@@ -9,6 +9,7 @@
       <infra:IsEmptyConverter x:Key="IsEmpty" />
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://SCOLIA/Themes/Palette.axaml" />
+        <ResourceInclude Source="avares://SCOLIA/Themes/AuthArtwork.axaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>
@@ -19,5 +20,6 @@
     <StyleInclude Source="avares://SCOLIA/Themes/Controls.axaml" />
     <StyleInclude Source="avares://SCOLIA/Themes/Phone.axaml" />
     <StyleInclude Source="avares://SCOLIA/Themes/Auth.axaml" />
+    <StyleInclude Source="avares://SCOLIA/Themes/AuthAccess.axaml" />
   </Application.Styles>
 </Application>

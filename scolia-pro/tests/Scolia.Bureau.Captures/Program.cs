@@ -261,6 +261,16 @@ if (args.Length > 3 && args[3] == "identite-connexion")
 
     void VerifyAuthFieldGeometry(string stage)
     {
+        var access = window.GetVisualDescendants().OfType<ScrollViewer>()
+            .Single(s => s.IsEffectivelyVisible && s.Classes.Contains("fluentaccess"));
+        if (access.Extent.Width > access.Viewport.Width + 1)
+            throw new InvalidOperationException($"Défilement horizontal de l'écran d'accès : {stage}.");
+        var rail = access.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => b.Classes.Contains("authrail"));
+        if (rail is not null && rail.IsEffectivelyVisible != (access.Bounds.Width >= AuthLayout.ExpandedWidth))
+            throw new InvalidOperationException($"Le volet d'aide doit laisser assez de place au formulaire : {stage}.");
+        foreach (var image in access.GetVisualDescendants().OfType<Image>().Where(i => i.IsEffectivelyVisible))
+            if (image.Source is not { Size.Width: > 0, Size.Height: > 0 })
+                throw new InvalidOperationException($"Illustration d'accès absente : {stage}.");
         var fields = window.GetVisualDescendants().OfType<Grid>()
             .Where(g => g.IsEffectivelyVisible && g.Classes.Contains("authinput")).ToArray();
         if (fields.Length == 0) throw new InvalidOperationException($"Aucun champ d'accès visible : {stage}.");
@@ -279,6 +289,11 @@ if (args.Length > 3 && args[3] == "identite-connexion")
             var eye = grid.Children.OfType<Button>().FirstOrDefault(b => b.Classes.Contains("autheye"));
             if (eye is not null && textEnd > InGrid(eye).Left - 2)
                 throw new InvalidOperationException($"Chevauchement texte/œil : {stage}, {field.Name}.");
+            if (field.Bounds.Height < 44 || eye is not null && (eye.Bounds.Width < 44 || eye.Bounds.Height < 44))
+                throw new InvalidOperationException($"Cible tactile trop petite : {stage}, {field.Name}.");
+            var underline = grid.Children.OfType<Border>().Single(b => b.Classes.Contains("authfocusline"));
+            if (underline.IsHitTestVisible || field.IsFocused && Math.Abs(underline.Bounds.Height - 2) > 0.1)
+                throw new InvalidOperationException($"Le filet de focus doit rester visible sans intercepter la saisie : {stage}, {field.Name}.");
             var placeholder = field.GetVisualDescendants().OfType<TextBlock>()
                 .FirstOrDefault(t => t.Name == "PART_Placeholder" && t.IsEffectivelyVisible);
             if (placeholder is not null && InGrid(placeholder).Left < pictogram.Right + 4)
