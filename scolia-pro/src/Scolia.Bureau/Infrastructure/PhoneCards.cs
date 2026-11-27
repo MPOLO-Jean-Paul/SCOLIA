@@ -228,6 +228,7 @@ public static class PhoneCards
         {
             var more = new Button { Content = new MaterialIcon { Kind = MaterialIconKind.DotsHorizontal, Width = 20, Height = 20, IsHitTestVisible = false }, VerticalAlignment = VerticalAlignment.Top };
             ToolTip.SetTip(more, "Actions de la ligne");
+            Avalonia.Automation.AutomationProperties.SetName(more, "Actions de la ligne");
             more.Classes.Add("phonemore");
             more.Click += (_, e) =>
             {

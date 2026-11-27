@@ -772,6 +772,7 @@
             <Button Classes="ghost" Padding="8,0" MinHeight="32"
                     IsVisible="{Binding IsLoggedIn}"
                     Command="{Binding License.Open}"
+                    AutomationProperties.Name="Détails de la licence de l'établissement"
                     ToolTip.Tip="{Binding License.Details}"
                     Margin="0,0,7,0">
               <StackPanel Orientation="Horizontal" Spacing="5">
@@ -782,14 +783,14 @@
               </StackPanel>
             </Button>
             <!-- Bascule rapide du thème clair au thème sombre -->
-            <Button Classes="ghost" Padding="8,4" MinWidth="32" MinHeight="32" Click="OnThemeToggle" ToolTip.Tip="Thème clair ou sombre" Margin="0,0,10,0">
+            <Button x:Name="DesktopThemeToggle" Classes="ghost" Padding="8,4" MinWidth="32" MinHeight="32" Click="OnThemeToggle" AutomationProperties.Name="Changer le thème clair ou sombre" ToolTip.Tip="Thème clair ou sombre" Margin="0,0,10,0">
               <mi:MaterialIcon x:Name="ThemeIcon" Kind="WeatherNightOutline" Width="16" Height="16" />
             </Button>
-            <Button Classes="ghost" Padding="8,4" MinWidth="32" MinHeight="32" Click="OnZoomOut" ToolTip.Tip="Réduire (Ctrl+-)">
+            <Button x:Name="DesktopZoomOut" Classes="ghost" Padding="8,4" MinWidth="32" MinHeight="32" Click="OnZoomOut" AutomationProperties.Name="Réduire la taille du texte" ToolTip.Tip="Réduire (Ctrl+-)">
               <mi:MaterialIcon Kind="Minus" Width="16" Height="16" />
             </Button>
             <TextBlock Text="{Binding Prefs.ZoomLabel}" Classes="muted" VerticalAlignment="Center" MinWidth="48" TextAlignment="Center" />
-            <Button Classes="ghost" Padding="8,4" MinWidth="32" MinHeight="32" Click="OnZoomIn" ToolTip.Tip="Agrandir (Ctrl++)">
+            <Button x:Name="DesktopZoomIn" Classes="ghost" Padding="8,4" MinWidth="32" MinHeight="32" Click="OnZoomIn" AutomationProperties.Name="Agrandir la taille du texte" ToolTip.Tip="Agrandir (Ctrl++)">
               <mi:MaterialIcon Kind="Plus" Width="16" Height="16" />
             </Button>
           </StackPanel>

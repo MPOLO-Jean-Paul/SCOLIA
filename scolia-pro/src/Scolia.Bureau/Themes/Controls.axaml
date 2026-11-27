@@ -28,11 +28,10 @@
   <!-- Typographie homogène : une seule famille, texte courant en Medium (500) pour un trait plein et lisible,
        titres en SemiBold, textes secondaires en Regular dans la couleur atténuée. Rendu en niveaux de gris avec
        un lissage léger : le même trait doux sur Windows et Android, aligné avec les icônes. -->
-  <Style Selector="TemplatedControl">
+  <Style Selector=":is(TemplatedControl)">
     <Setter Property="FontFamily" Value="{DynamicResource UiFont}" />
     <Setter Property="FontSize" Value="{DynamicResource FsBase}" />
     <Setter Property="FontWeight" Value="{DynamicResource BodyWeight}" />
-    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
   </Style>
   <Style Selector="TextBlock">
     <Setter Property="FontFamily" Value="{DynamicResource UiFont}" />

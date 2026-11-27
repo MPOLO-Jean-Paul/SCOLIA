@@ -16,7 +16,7 @@
     <!-- Sur Android : présentation des configurations, sans minimum desktop ni débordement horizontal. -->
     <Style Selector="LayoutTransformControl.phone Border.sheet">
       <Setter Property="MinWidth" Value="0" />
-      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="CornerRadius" Value="16" />
       <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet Grid.formheader">
@@ -53,7 +53,7 @@
     <Style Selector="LayoutTransformControl.phone Border.sheet CheckBox">
       <Setter Property="MinHeight" Value="48" />
     </Style>
-    <Style Selector="LayoutTransformControl.phone Border.sheet CheckBox TextBlock">
+    <Style Selector="LayoutTransformControl.phone Border.sheet CheckBox :is(TextBlock)">
       <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
     <!-- Formulaires métier : le libellé et l'aide gardent toute leur largeur. -->

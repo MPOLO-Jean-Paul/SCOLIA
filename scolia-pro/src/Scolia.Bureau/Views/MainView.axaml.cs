@@ -105,6 +105,7 @@ public partial class MainView : UserControl
         shell.CopyHandler = copyHandler;
         WatchPage(shell.Current);
         ApplyPageTransition(shell.Prefs);
+        UpdateZoomControls(shell.Prefs);
         FitWindow(Bounds.Size);
         QueueFitPageActions();
     }
@@ -147,6 +148,7 @@ public partial class MainView : UserControl
         if (subscribedShell is not { } shell) return;
         if (args.PropertyName is nameof(Preferences.Animations) or nameof(Preferences.PageTransitions) or nameof(Preferences.Speed))
             ApplyPageTransition(shell.Prefs);
+        if (args.PropertyName == nameof(Preferences.Scale)) UpdateZoomControls(shell.Prefs);
         // Ne pas mesurer de nouveau l'en-tête quand un son, une animation ou
         // une préférence sans incidence géométrique est modifié.
         if (args.PropertyName is nameof(Preferences.Scale) or nameof(Preferences.Font)
@@ -466,8 +468,20 @@ public partial class MainView : UserControl
         }
     }
 
-    private void ShowThemeIcon() =>
-        ThemeIcon.Kind = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark ? MaterialIconKind.WeatherSunny : MaterialIconKind.WeatherNight;
+    private void ShowThemeIcon()
+    {
+        var dark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
+        ThemeIcon.Kind = dark ? MaterialIconKind.WeatherSunny : MaterialIconKind.WeatherNight;
+        var action = dark ? "Activer le thème clair" : "Activer le thème sombre";
+        ToolTip.SetTip(DesktopThemeToggle, action);
+        Avalonia.Automation.AutomationProperties.SetName(DesktopThemeToggle, action);
+    }
+
+    private void UpdateZoomControls(Preferences prefs)
+    {
+        DesktopZoomOut.IsEnabled = prefs.Scale > Preferences.MinimumTextScale;
+        DesktopZoomIn.IsEnabled = prefs.Scale < Preferences.MaximumTextScale;
+    }
 
     /// <summary>
     /// Met toute l'interface à l'échelle de la place disponible, replie le volet si la page manque de place,

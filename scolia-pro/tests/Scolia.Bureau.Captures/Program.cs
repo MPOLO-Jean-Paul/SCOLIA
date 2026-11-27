@@ -2681,9 +2681,17 @@ if (args.Length > 3 && args[3] == "finitions-roles")
         Save(window, $"{account}-{name}.png");
         VerifyFluentArtwork(window);
         if (!Preferences.MobileLayout) return;
+        var frame = window.GetVisualDescendants().OfType<Scolia.Bureau.Views.PhoneFrame>().FirstOrDefault(c => c.IsEffectivelyVisible);
+        if (frame is { Bounds.Height: < 520 })
+        {
+            var context = frame.GetVisualDescendants().OfType<Control>().First(c => c.Name == "PhoneContextLine");
+            CheckRole("Le paysage réserve la hauteur au contenu", !context.IsEffectivelyVisible);
+        }
         foreach (var button in window.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible &&
                      b.Classes.Any(c => c is "phoneicon" or "mobileactionrow" or "mobilecourse" or "phonemore" or "stickyaction")))
             CheckRole($"Cible tactile {button.Name ?? button.Classes.ToString()}", button.Bounds.Width >= 43.5 && button.Bounds.Height >= 43.5);
+        foreach (var button in window.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible && b.Classes.Contains("phonemore")))
+            CheckRole("Le menu des actions possède un nom accessible", !string.IsNullOrWhiteSpace(Avalonia.Automation.AutomationProperties.GetName(button)));
     }
     void ShowRole(Func<PageViewModel> create, string name)
     {
@@ -2707,6 +2715,17 @@ if (args.Length > 3 && args[3] == "finitions-roles")
         }
     }
 
+    if (!Preferences.MobileLayout)
+    {
+        var originalScale = prefs.Scale;
+        var zoomOut = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "DesktopZoomOut");
+        var zoomIn = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "DesktopZoomIn");
+        prefs.Scale = Preferences.MinimumTextScale;
+        CheckRole("Le zoom minimum désactive seulement Réduire", !zoomOut.IsEnabled && zoomIn.IsEnabled);
+        prefs.Scale = Preferences.MaximumTextScale;
+        CheckRole("Le zoom maximum désactive seulement Agrandir", zoomOut.IsEnabled && !zoomIn.IsEnabled);
+        prefs.Scale = originalScale;
+    }
     RenderRole("ouverture");
     if (roleSession.Role == "Enseignant")
     {
