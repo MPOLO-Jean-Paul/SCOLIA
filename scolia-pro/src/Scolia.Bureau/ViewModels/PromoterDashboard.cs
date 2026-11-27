@@ -15,7 +15,10 @@ public sealed record PromoterPromotionRowVm(string Code, string Name, string Stu
     string CollectedToday, string CollectedMonth, string CollectedYear, string Outstanding, string Overdue, bool HasOverdue,
     double YearShare, string YearShareText, IReadOnlyList<PromoterPeriodRowVm> Periods);
 
-public sealed record PromoterKpiVm(string Label, string Value, string Detail, MaterialIconKind Icon, IBrush Brush);
+public sealed record PromoterKpiVm(string Label, string Value, string Detail, MaterialIconKind Icon, IBrush Brush)
+{
+    public string Hint => Detail;
+}
 
 /// <summary>
 /// Pilotage réservé au Promoteur : aucun reçu, numéro de téléphone, nom d'apprenant,
@@ -114,24 +117,14 @@ public sealed class PromoterDashboardPage : PageViewModel
             ? string.Empty
             : $"{Money(data.Overdue)} déjà exigibles ne sont pas réglés. La promotion {worst.Code} en porte le plus : {Money(worst.Overdue)}.";
 
-        Replace(Kpis, nextKpis);
-        Replace(Promotions, nextPromotions);
-        Replace(SchoolPeriods, nextSchool);
+        CollectionSync.Apply(Kpis, nextKpis);
+        CollectionSync.Apply(Promotions, nextPromotions,
+            static (before, after) => (before with { Periods = after.Periods }) == after && before.Periods.SequenceEqual(after.Periods));
+        CollectionSync.Apply(SchoolPeriods, nextSchool);
         Raise(nameof(HasPromotions));
         subtitle = $"Année {data.AcademicYear}";
         Raise(nameof(Subtitle));
         AsOf = $"Situation au {data.AsOf:dd/MM/yyyy} à {DateTime.Now:HH:mm} · mise à jour automatique";
     }
 
-    /// <summary>Remplace le contenu d'une liste sans la vider quand rien n'a changé : pas de clignotement au rafraîchissement.</summary>
-    private static void Replace<T>(ObservableCollection<T> target, IReadOnlyList<T> items)
-    {
-        if (target.SequenceEqual(items)) return;
-        for (var i = 0; i < items.Count; i++)
-        {
-            if (i < target.Count) { if (!Equals(target[i], items[i])) target[i] = items[i]; }
-            else target.Add(items[i]);
-        }
-        while (target.Count > items.Count) target.RemoveAt(target.Count - 1);
-    }
 }

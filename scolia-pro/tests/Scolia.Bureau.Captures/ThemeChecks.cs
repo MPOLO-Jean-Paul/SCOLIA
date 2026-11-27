@@ -83,7 +83,7 @@ static class ThemeChecks
         var readOnly = new TextBox { Text = "TR-2026-00001", IsReadOnly = true, MinHeight = 44 };
         var choice = new ComboBox { ItemsSource = new[] { "Espèces", "Mobile Money" }, SelectedIndex = 0, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
         var table = new DataGrid { ItemsSource = new[] { new ThemeRow("SC-001", "Amina Kabeya"), new ThemeRow("SC-002", "Paul Mpolo") }, Height = 130, IsReadOnly = true, AutoGenerateColumns = false };
-        table.Columns.Add(new DataGridTextColumn { Header = "Matricule", Binding = new Binding("Number"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
+        table.Columns.Add(new DataGridTextColumn { Header = "Matricule", Binding = new Binding("Number"), MinWidth = 112, Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
         table.Columns.Add(new DataGridTextColumn { Header = "Apprenant", Binding = new Binding("Name"), Width = new DataGridLength(2, DataGridLengthUnitType.Star) });
         var stack = new StackPanel { Spacing = 10, Children = { ordinary, muted, error, input, placeholder, readOnly, choice, primary, neutral, danger, sheet, count, hero, table } };
         var card = new Border { Child = stack, Padding = new Thickness(16) };

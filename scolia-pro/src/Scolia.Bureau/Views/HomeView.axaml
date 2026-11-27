@@ -17,7 +17,7 @@
       <Setter Property="Padding" Value="11,9" />
     </Style>
     <Style Selector="TextBlock.pbiTitle">
-      <Setter Property="FontSize" Value="30" />
+      <Setter Property="FontSize" Value="{DynamicResource FsDisplay}" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     </Style>
@@ -37,7 +37,7 @@
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
       <Setter Property="Padding" Value="12,8" />
-      <Setter Property="MinHeight" Value="64" />
+      <Setter Property="MinHeight" Value="72" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -63,8 +63,8 @@
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
-      <Setter Property="Padding" Value="15,13" />
-      <Setter Property="MinHeight" Value="112" />
+      <Setter Property="Padding" Value="16" />
+      <Setter Property="MinHeight" Value="128" />
       <Setter Property="Margin" Value="5,4" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Stretch" />
@@ -212,17 +212,7 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
                     <Button Classes="pbiMetric" Command="{Binding Open}" ToolTip.Tip="Ouvrir l’indicateur" AutomationProperties.Name="{Binding Label}">
-                      <Grid RowDefinitions="Auto,*,Auto" RowSpacing="7">
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                          <TextBlock Text="{Binding Label}" Classes="pbiMuted" VerticalAlignment="Center" TextWrapping="Wrap" />
-                          <Border Grid.Column="1" Width="32" Height="32" CornerRadius="7" Background="{DynamicResource GroupBrush}">
-                            <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" Foreground="{Binding Brush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                          </Border>
-                        </Grid>
-                        <TextBlock Grid.Row="1" Text="{Binding Value}" FontSize="22" FontWeight="SemiBold"
-                                   TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" />
-                        <TextBlock Grid.Row="2" Text="{Binding Hint}" Classes="pbiMuted" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" ToolTip.Tip="{Binding Hint}" />
-                      </Grid>
+                      <ContentControl Content="{Binding}" ContentTemplate="{StaticResource DesktopMetricContent}" />
                     </Button>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>

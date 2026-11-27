@@ -30,12 +30,17 @@ public sealed class MobilePremiumWorkspaceTests
     [Fact]
     public void Teacher_phone_and_general_home_share_scalable_title()
     {
-        foreach (var path in new[] { "Views/Phone/HomeView.axaml", "Views/TeacherHomeView.axaml" })
+        foreach (var path in new[] { "Views/TeacherHomeView.axaml" })
         {
             var doc = Read(path);
             Assert.Contains(doc.Descendants(), x => Attr(x, "Text") == "{Binding Greeting}" &&
                 Attr(x, "FontSize") == "{DynamicResource FsTitle}" && Attr(x, "TextWrapping") == "Wrap");
         }
+        Assert.Contains(Read("Views/Phone/HomeView.axaml").Descendants(), x =>
+            Attr(x, "Text") == "{Binding Greeting}" && Attr(x, "Classes") == "mobilewelcome");
+        Assert.Contains(Read("Themes/PhonePremium.axaml").Descendants(), x =>
+            Attr(x, "Selector") == "LayoutTransformControl.phone TextBlock.mobilewelcome" &&
+            x.Elements().Any(s => Attr(s, "Property") == "FontSize" && Attr(s, "Value") == "{DynamicResource FsTitle}"));
     }
 
     [Fact]

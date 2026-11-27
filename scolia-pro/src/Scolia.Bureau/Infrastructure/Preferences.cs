@@ -352,12 +352,12 @@ public sealed class Preferences : Observable
         GridPriority.SetTextFactor(k);
         if (MobileLayout)
         {
-            // Téléphone : un demi-point de plus, la lecture à bout de bras reste confortable.
-            Resource("FsBase", 14.5 * k);
-            Resource("FsSmall", 12.5 * k);
-            Resource("FsCaption", 11.5 * k);
-            Resource("FsHeading", 15.0 * k);
-            Resource("FsTitle", 22.0 * k);
+            // Une même échelle pour tous les métiers : corps, précision, section et titre.
+            Resource("FsBase", 15.0 * k);
+            Resource("FsSmall", 13.0 * k);
+            Resource("FsCaption", 12.0 * k);
+            Resource("FsHeading", 17.0 * k);
+            Resource("FsTitle", 24.0 * k);
             Resource("FsDisplay", 28.0 * k);
         }
         else
@@ -371,7 +371,11 @@ public sealed class Preferences : Observable
             Resource("FsTitle", 24.0 * k);
             Resource("FsDisplay", 28.0 * k);
         }
-        Resource("FsPageHeading", 17.0 * k);
+        Resource("FsPageHeading", (MobileLayout ? 20.0 : 17.0) * k);
+        Resource("FsPhoneMetric", 22.0 * k);
+        Resource("LhPhoneBody", 22.0 * k);
+        Resource("LhPhoneDetail", 18.0 * k);
+        Resource("LhPhoneHeading", 26.0 * k);
         Resource("FsStickyValue", 20.0 * k);
         Resource("RowHeight", (compact ? 28.0 : 36.0) * k);
         Resource("CtlHeight", (compact ? 26.0 : 30.0) * k);

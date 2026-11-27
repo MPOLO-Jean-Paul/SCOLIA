@@ -4,19 +4,22 @@
         xmlns:mi="using:Material.Icons.Avalonia">
 
   <Styles.Resources>
-    <!-- Indicateur : libellé, chiffre et précision, avec l'icône de l'indicateur dans une tuile teintée de sa couleur. -->
+    <!-- Même composition pour les indicateurs des quatre métiers sur ordinateur. -->
+    <DataTemplate x:Key="DesktopMetricContent">
+      <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="7">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <TextBlock Text="{Binding Label}" Classes="metriclabel" VerticalAlignment="Center" TextWrapping="Wrap" />
+          <Border Grid.Column="1" Classes="metricicon">
+            <Image Source="{Binding Icon, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}" Width="24" Height="24" Stretch="Uniform" />
+          </Border>
+        </Grid>
+        <TextBlock Grid.Row="1" Text="{Binding Value}" Classes="metricvalue" TextWrapping="Wrap" ToolTip.Tip="{Binding Value}" />
+        <TextBlock Grid.Row="2" Text="{Binding Hint}" Classes="metricdetail" TextWrapping="Wrap" />
+      </Grid>
+    </DataTemplate>
     <DataTemplate x:Key="KpiTile">
       <Border Classes="tile" Margin="0,0,12,12">
-        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
-          <!-- L'icône partage la ligne du libellé : le montant garde toute la largeur de la tuile. -->
-          <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" VerticalAlignment="Center"
-                     TextWrapping="Wrap" ToolTip.Tip="{Binding Label}" Margin="0,0,8,0" />
-          <Border Grid.Column="1" Classes="kpiicon" Background="{Binding Soft}" VerticalAlignment="Top">
-            <mi:MaterialIcon Kind="{Binding Icon}" Foreground="{Binding Accent}" />
-          </Border>
-          <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Value}" Classes="kpi" Margin="0,4,0,0" TextWrapping="Wrap" ToolTip.Tip="{Binding Value}" />
-          <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" Margin="0,2,0,0" />
-        </Grid>
+        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource DesktopMetricContent}" />
       </Border>
     </DataTemplate>
   </Styles.Resources>

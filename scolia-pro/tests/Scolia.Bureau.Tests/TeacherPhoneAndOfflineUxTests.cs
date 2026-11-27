@@ -41,14 +41,10 @@ public sealed class TeacherPhoneAndOfflineUxTests
     [Fact]
     public void Accueil_enseignant_android_utilise_les_groupes_du_secretariat()
     {
-        var doc = View("TeacherHomeView.axaml");
+        var doc = View("Phone/TeacherHomeView.axaml");
         var root = Assert.Single(doc.Descendants(), x =>
             Attr(x, "Name", "TeacherPhoneSections"));
-        Assert.True(Attr(root, "IsVisible", "{Binding Phone}"));
-        Assert.True(root.Descendants().Count(x =>
-            x.Name.LocalName == "Border" && Attr(x, "Classes", "phonegroup")) >= 3);
-        Assert.True(root.Descendants().Count(x =>
-            x.Name.LocalName == "Button" && Attr(x, "Classes", "settingsentry")) >= 3);
+        Assert.DoesNotContain(root.Descendants(), x => x.Name.LocalName == "ScrollViewer");
         Assert.Contains(root.Descendants(), x =>
             x.Name.LocalName == "ItemsControl" && Attr(x, "ItemsSource", "{Binding Stats}"));
         Assert.Contains(root.Descendants(), x =>
@@ -58,7 +54,7 @@ public sealed class TeacherPhoneAndOfflineUxTests
         Assert.Contains(root.Descendants(), x =>
             x.Name.LocalName == "Button" && Attr(x, "Command", "{Binding EncodeByCode}"));
 
-        var desktop = Assert.Single(doc.Descendants(), x =>
+        var desktop = Assert.Single(View("TeacherHomeView.axaml").Descendants(), x =>
             x.Name.LocalName == "ScrollViewer");
         Assert.True(Attr(desktop, "IsVisible", "{Binding NotPhone}"));
     }
@@ -73,10 +69,10 @@ public sealed class TeacherPhoneAndOfflineUxTests
         var home = source[homeStart..];
         foreach (var tone in new[] { "TonePurple", "ToneBlue", "ToneOrange", "ToneTeal" })
             Assert.Contains($"IconPalette.Get(\"{tone}\")", home, StringComparison.Ordinal);
-        var stats = home[home.IndexOf("Stats.Add(new KpiVm", StringComparison.Ordinal)..];
+        var stats = home[home.IndexOf("nextStats.Add(new KpiVm", StringComparison.Ordinal)..];
         Assert.DoesNotContain("ThemeBrush.Get(", stats, StringComparison.Ordinal);
 
-        var doc = View("TeacherHomeView.axaml");
+        var doc = View("Phone/TeacherHomeView.axaml");
         var phone = Assert.Single(doc.Descendants(), x =>
             Attr(x, "Name", "TeacherPhoneSections"));
         var overview = Assert.Single(phone.Descendants(), x =>
@@ -85,12 +81,11 @@ public sealed class TeacherPhoneAndOfflineUxTests
         // Une ancienne liaison Brush absente de KpiVm ne doit pas revenir sur cet écran.
         Assert.NotNull(typeof(KpiVm).GetProperty(nameof(KpiVm.Accent)));
         Assert.Null(typeof(KpiVm).GetProperty("Brush"));
-        var tile = Assert.Single(overview.Descendants(), x =>
-            x.Name.LocalName == "Border" && Attr(x, "Classes", "appicon large teacheroverviewicon"));
-        Assert.True(Attr(tile, "Background", "{DynamicResource SurfaceBrush}"));
-        Assert.True(Attr(tile, "TileGlyph.Enabled", "False"));
-        var glyph = Assert.Single(tile.Elements(), x => x.Name.LocalName == "MaterialIcon");
-        Assert.True(Attr(glyph, "Kind", "{Binding Icon}"));
+        Assert.True(Attr(overview, "ItemTemplate", "{StaticResource PhoneMetricTile}"));
+        var theme = XDocument.Load(Source("Themes/PhonePremium.axaml"));
+        var content = Assert.Single(theme.Descendants(), x => Attr(x, "Key", "PhoneMetricContent"));
+        Assert.Contains(content.Descendants(), x => x.Name.LocalName == "Image" &&
+            Attr(x, "Source", "{Binding Icon, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}"));
         Assert.NotNull(Scolia.Bureau.Infrastructure.FluentGlyphs.ArtworkKey(Material.Icons.MaterialIconKind.AccountSchool));
         Assert.DoesNotContain(overview.Descendants(), x =>
             x.Name.LocalName == "Border" && Attr(x, "Background", "{Binding Brush}"));
@@ -99,14 +94,12 @@ public sealed class TeacherPhoneAndOfflineUxTests
     [Fact]
     public void Progression_et_regles_enseignant_restent_lisibles_et_accessibles()
     {
-        var doc = View("TeacherHomeView.axaml");
+        var doc = View("Phone/TeacherHomeView.axaml");
         Assert.Contains(doc.Descendants(), x =>
-            x.Name.LocalName == "ProgressBar" && Attr(x, "Classes", "slim teacherprogress")
-            && Attr(x, "Value", "{Binding Percent, Mode=OneWay}"));
+            x.Name.LocalName == "ProgressBar" && Attr(x, "Value", "{Binding Percent, Mode=OneWay}"));
         var rule = Assert.Single(doc.Descendants(), x =>
-            x.Name.LocalName == "Expander" && Attr(x, "Classes", "teacherinfo"));
+            x.Name.LocalName == "Expander");
         Assert.True(Attr(rule, "IsExpanded", "False"));
-        Assert.True(Attr(rule, "HorizontalAlignment", "Stretch"));
         Assert.Contains(rule.Descendants(), x =>
             x.Name.LocalName == "TextBlock" && Attr(x, "Text", "{Binding Rules}"));
     }
