@@ -2,8 +2,8 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
   <!-- Ordinateur : Fluent de Windows 11, comme l'application Paramètres. Fond Mica gris clair (#F3F3F3), cartes
-       #FBFBFB cernées d'un filet #E5E5E5, accent bleu Windows, texte presque noir, coins de 8 px (4 px pour les
-       commandes). Le bandeau perd son dégradé bleu : la barre de la page se pose sur le même fond que la fenêtre. -->
+       blanches cernées d'un filet #E5E5E5, accent bleu Windows, texte presque noir et cartes de 12 px.
+       La barre de la page se pose sur le même fond que la fenêtre. -->
   <ResourceDictionary.ThemeDictionaries>
     <ResourceDictionary x:Key="Light">
       <SolidColorBrush x:Key="AccentBrush" Color="#005FB8" />
@@ -105,7 +105,7 @@
   </ResourceDictionary.ThemeDictionaries>
 
   <BoxShadows x:Key="SidebarShadow">0 0 0 0 #00000000</BoxShadows>
-  <CornerRadius x:Key="RadiusCard">8</CornerRadius>
+  <CornerRadius x:Key="RadiusCard">12</CornerRadius>
   <CornerRadius x:Key="RadiusField">4</CornerRadius>
   <CornerRadius x:Key="RadiusPill">4</CornerRadius>
   <CornerRadius x:Key="RadiusSmall">4</CornerRadius>

@@ -157,17 +157,15 @@
     <!-- Barre du haut -->
     <Border Grid.Row="0" Classes="phonebar">
       <StackPanel>
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto" IsVisible="{Binding !HeaderSearch.IsOpen}">
+      <Grid x:Name="PhoneHeaderGrid" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto" IsVisible="{Binding !HeaderSearch.IsOpen}">
         <Button Classes="phoneicon" Command="{Binding BackCommand}" IsVisible="{Binding CanGoBack}" ToolTip.Tip="Retour">
           <mi:MaterialIcon Kind="ChevronLeft" />
         </Button>
         <Panel Width="44" Height="44" IsVisible="{Binding !CanGoBack}">
           <Image Source="{DynamicResource ScoliaMark}" Width="26" Height="26" />
         </Panel>
-        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0" IsVisible="{Binding !HeaderSearch.IsOpen}">
-          <!-- Le nom complet reste lisible, y compris avec le texte agrandi sur un petit téléphone. -->
-          <TextBlock Text="{Binding PhonePage.Heading}" FontSize="{DynamicResource FsPageHeading}" FontWeight="SemiBold" TextWrapping="Wrap" />
-        </StackPanel>
+        <TextBlock x:Name="PhonePageHeading" Text="{Binding PhonePage.Heading}"
+                   FontWeight="SemiBold" TextWrapping="Wrap" />
         <!-- Présence : les autres postes connectés ; le point vert bat quand l'un d'eux enregistre quelque chose -->
         <Button Grid.Column="2" Classes="phoneicon" Command="{Binding NetworkCommand}" ToolTip.Tip="Réseau et activité">
           <Panel>
@@ -195,9 +193,10 @@
           <mi:MaterialIcon Kind="DotsHorizontalCircleOutline" />
         </Button>
         <!-- Le contexte dispose de toute la largeur, même lorsque les commandes sont nombreuses. -->
-        <TextBlock Grid.Row="1" Grid.ColumnSpan="6" Text="{Binding PhonePage.Subtitle}"
-                   Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" Margin="12,0,12,6"
-                   IsVisible="{Binding PhonePage.Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <Border x:Name="PhoneContextLine" Grid.Row="2" Grid.ColumnSpan="6">
+          <TextBlock Text="{Binding PhonePage.Subtitle}" Classes="mobiledetail" Margin="12,4,12,8"
+                     IsVisible="{Binding PhonePage.Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </Border>
       </Grid>
       <!-- Filtre de la page active : la barre de la recherche de l'accueil, façon Google, à la place de l'en-tête.
            Retour pour fermer, champ, croix, micro. Aucun mélange avec la recherche du menu. -->
@@ -245,7 +244,7 @@
         <StackPanel VerticalAlignment="Center" Spacing="1">
           <TextBlock Text="{Binding PhonePage.Sticky.Title}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding PhonePage.Sticky.Value}" ToolTip.Tip="{Binding PhonePage.Sticky.Value}" FontSize="{DynamicResource FsStickyValue}" FontWeight="SemiBold" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding PhonePage.Sticky.Detail}" ToolTip.Tip="{Binding PhonePage.Sticky.Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2"
+          <TextBlock Text="{Binding PhonePage.Sticky.Detail}" ToolTip.Tip="{Binding PhonePage.Sticky.Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
                      IsVisible="{Binding PhonePage.Sticky.HasDetail, FallbackValue=False}" />
         </StackPanel>
         <Button x:Name="StickyAction" Grid.Column="1" Classes="primary stickyaction" MinWidth="0" MaxWidth="152" Padding="12,8" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding PhonePage.Sticky.Label}" Command="{Binding PhonePage.Sticky.Command}"

@@ -11,8 +11,8 @@
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="10" />
-      <Setter Property="Padding" Value="12" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="Padding" Value="16" />
     </Style>
     <Style Selector="TextBlock.worksection">
       <Setter Property="FontSize" Value="{DynamicResource FsHeading}" />
@@ -39,8 +39,8 @@
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="6" />
-      <Setter Property="Padding" Value="8,9" />
-      <Setter Property="MinHeight" Value="48" />
+      <Setter Property="Padding" Value="12" />
+      <Setter Property="MinHeight" Value="64" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     </Style>
@@ -58,67 +58,60 @@
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
   </UserControl.Styles>
-  <StackPanel x:Name="Sections" Spacing="16" Margin="0,0,0,12">
+  <StackPanel x:Name="Sections" Spacing="22" Margin="0,0,0,12">
     <Border x:Name="WelcomeCard" Classes="workpanel">
       <StackPanel Spacing="10">
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
           <StackPanel Spacing="4">
-            <TextBlock Text="{Binding Greeting}" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap" />
-            <TextBlock Text="{Binding HeaderSchoolLine}" Classes="muted" TextWrapping="Wrap" />
-            <TextBlock Text="{Binding DateLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Greeting}" Classes="mobilewelcome" />
+            <TextBlock Text="{Binding HeaderSchoolLine}" Classes="mobiledetail" />
+            <TextBlock Text="{Binding DateLine}" Classes="mobiledetail" />
           </StackPanel>
           <Border Grid.Column="1" Width="42" Height="42" CornerRadius="21" Background="{DynamicResource AccentSoftBrush}" VerticalAlignment="Top">
             <TextBlock Text="{Binding Initials}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
         </Grid>
         <Border Height="1" Background="{DynamicResource LineBrush}" />
-        <Button Classes="workrow" Command="{Binding Network}" ToolTip.Tip="{Binding Sync.StatusDetail}" AutomationProperties.Name="{Binding Sync.StatusText}">
-          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-            <mi:MaterialIcon Kind="{Binding Sync.StatusIcon}" Foreground="{Binding Sync.StatusBrush}" Width="21" Height="21" VerticalAlignment="Center" />
-            <StackPanel Grid.Column="1" Spacing="2">
-              <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold" TextWrapping="Wrap" />
-              <TextBlock Text="{Binding Sync.StatusHint}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
-            </StackPanel>
-            <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+          <Button Classes="workrow" Padding="0" MinHeight="44" Command="{Binding Network}" ToolTip.Tip="{Binding Sync.StatusDetail}" AutomationProperties.Name="{Binding Sync.StatusText}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <mi:MaterialIcon Kind="{Binding Sync.StatusIcon}" Foreground="{Binding Sync.StatusBrush}" Width="20" Height="20" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding Sync.StatusText}" Classes="mobiledetail" FontWeight="Medium" VerticalAlignment="Center" />
+            </Grid>
+          </Button>
+          <Grid Grid.Column="1" ColumnDefinitions="Auto,*" ColumnSpacing="8" IsVisible="{Binding HasCashLine}">
+            <PathIcon Data="{x:Static infra:HomeGlyphs.Payment}" Width="20" Height="20" Foreground="{Binding CashBrush}" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding CashLine}" Classes="mobiledetail" VerticalAlignment="Center" />
           </Grid>
-        </Button>
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" IsVisible="{Binding HasCashLine}">
-          <PathIcon Data="{x:Static infra:HomeGlyphs.Payment}" Width="20" Height="20" Foreground="{Binding CashBrush}" VerticalAlignment="Center" />
-          <TextBlock Grid.Column="1" Text="{Binding CashLine}" TextWrapping="Wrap" />
         </Grid>
       </StackPanel>
     </Border>
     <StackPanel Spacing="7" IsVisible="{Binding !!Tools.Count}">
       <TextBlock Text="Actions rapides" Classes="worksection" />
-      <ItemsControl x:Name="WelcomeQuickActions" ItemsSource="{Binding QuickActions}">
-        <ItemsControl.ItemsPanel><ItemsPanelTemplate><infra:AdaptiveTiles MaxColumns="2" MinItemWidth="150" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate><DataTemplate><Button Classes="workaction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding ShortTitle}">
-              <StackPanel Spacing="7">
-                <Border Classes="workspaceglyph" HorizontalAlignment="Left">
-                  <Grid>
-                    <Border CornerRadius="7" Background="{Binding Brush}" Opacity="0.14" IsHitTestVisible="False" />
-                    <Image Source="{Binding Icon, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
-                  </Grid>
-                </Border>
-                <TextBlock Text="{Binding ShortTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
-              </StackPanel>
-            </Button></DataTemplate></ItemsControl.ItemTemplate>
-      </ItemsControl>
+      <Border Classes="workpanel" Padding="4">
+        <ItemsControl x:Name="WelcomeQuickActions" ItemsSource="{Binding QuickActions}">
+          <ItemsControl.ItemTemplate><DataTemplate>
+            <Button Classes="mobileactionrow" Command="{Binding Open}" AutomationProperties.Name="{Binding ShortTitle}">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <Border Classes="mobileicon"><Image Source="{Binding Icon, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}" Width="24" Height="24" /></Border>
+                <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding ShortTitle}" Classes="mobilebody" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Description}" Classes="mobiledetail" />
+                </StackPanel>
+                <PathIcon Grid.Column="2" Classes="workspacechevron" Data="{x:Static infra:HomeGlyphs.Chevron}" />
+              </Grid>
+            </Button>
+          </DataTemplate></ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Border>
     </StackPanel>
     <StackPanel Spacing="8" IsVisible="{Binding HasKpis}">
       <TextBlock Text="Indicateurs de l'établissement" Classes="worksection" />
-      <ItemsControl ItemsSource="{Binding Kpis}">
-        <ItemsControl.ItemsPanel><ItemsPanelTemplate><infra:AdaptiveTiles MaxColumns="2" MinItemWidth="170" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+      <ItemsControl ItemsSource="{Binding Kpis}" Margin="-4,0,-4,0">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><infra:AdaptiveTiles MaxColumns="2" MinItemWidth="140" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate><DataTemplate>
-          <Button Classes="workaction" Command="{Binding Open}" AutomationProperties.Name="{Binding Label}" ToolTip.Tip="{Binding Hint}">
-            <StackPanel Spacing="6">
-              <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" Foreground="{Binding Brush}" HorizontalAlignment="Left" />
-              <TextBlock Text="{Binding Label}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
-              <TextBlock Text="{Binding Value}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" />
-              <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsCaption}" TextWrapping="Wrap" />
-            </StackPanel>
-          </Button>
+          <Button Classes="mobilemetriccard" Command="{Binding Open}" AutomationProperties.Name="{Binding Label}"
+                  Content="{Binding}" ContentTemplate="{StaticResource PhoneMetricContent}" />
         </DataTemplate></ItemsControl.ItemTemplate>
       </ItemsControl>
     </StackPanel>

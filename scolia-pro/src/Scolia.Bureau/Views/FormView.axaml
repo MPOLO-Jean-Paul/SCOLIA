@@ -33,11 +33,11 @@
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet TextBox.w11, LayoutTransformControl.phone Border.sheet ComboBox.w11, LayoutTransformControl.phone Border.sheet CalendarDatePicker.w11">
       <Setter Property="MinHeight" Value="48" />
-      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="CornerRadius" Value="10" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet Button.formaction">
       <Setter Property="MinHeight" Value="48" />
-      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="CornerRadius" Value="10" />
     </Style>
     <Style Selector="LayoutTransformControl.phone Border.sheet StackPanel.formentry">
       <Setter Property="Margin" Value="0,0,0,12" />

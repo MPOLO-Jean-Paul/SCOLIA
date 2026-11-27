@@ -247,7 +247,11 @@ public sealed class TeacherAccountsPage : PageViewModel
 
 /// <summary>Cours de l'enseignant, en carte : où il en est et ce qu'il lui reste à faire.</summary>
 public sealed record TeacherCourseCardVm(string Promotion, string Title, string Details, string Progress, double Percent,
-    string State, IBrush StateBrush, AsyncCommand Open);
+    string State, IBrush StateBrush, AsyncCommand Open)
+{
+    public Guid CourseId { get; init; }
+    public Guid PromotionId { get; init; }
+}
 
 public sealed record TeacherNoticeVm(string When, string Title, string Text);
 
@@ -295,11 +299,10 @@ public sealed class TeacherHomePage : PageViewModel
     {
         Raise(nameof(Greeting));
         Raise(nameof(Role));
-        Courses.Clear();
-        Notices.Clear();
-        Stats.Clear();
+        var nextCourses = new List<TeacherCourseCardVm>();
+        var nextStats = new List<KpiVm>();
         var settings = await Shell.Api.GetAsync<DeliberationSettingsDto>("api/deliberation/reglages");
-        Rules = string.Join(Environment.NewLine,
+        var nextRules = string.Join(Environment.NewLine,
             $"• Encodage du S1 : {(settings.EncodingS1Open ? "ouvert" : "fermé")} — du S2 : {(settings.EncodingS2Open ? "ouvert" : "fermé")}.",
             $"• Moyennes d'appui (sur 10) : {(settings.SupportEnabled ? "actives" : "désactivées")}.",
             $"• Cotes déjà enregistrées : {(settings.TeacherUpdates ? "vous pouvez les remplacer tant que la feuille n'est pas remise" : "le secrétariat les corrige")}.",
@@ -310,18 +313,21 @@ public sealed class TeacherHomePage : PageViewModel
         try
         {
             mine = await Shell.Api.GetAsync<List<TeacherCourseDto>>("api/deliberation/mes-cours");
-            Blocked = string.Empty;
         }
         catch (ApiException ex) when (ex.Status == 403)
         {
+            Courses.Clear();
+            Notices.Clear();
+            Stats.Clear();
+            Rules = nextRules;
             Blocked = ex.Message;
+            Raise(nameof(HasNotices));
             subtitle = "Code d'accès provisoire";
             Raise(nameof(Subtitle));
             return;
         }
-        foreach (var notice in (await Shell.Api.GetAsync<List<AnnouncementDto>>("api/deliberation/annonces")).Take(6))
-            Notices.Add(new TeacherNoticeVm(notice.AtUtc.ToLocalTime().ToString("dd/MM HH:mm", CultureInfo.CurrentCulture), notice.Title, notice.Text));
-        Raise(nameof(HasNotices));
+        var nextNotices = (await Shell.Api.GetAsync<List<AnnouncementDto>>("api/deliberation/annonces")).Take(6)
+            .Select(notice => new TeacherNoticeVm(notice.AtUtc.ToLocalTime().ToString("dd/MM HH:mm", CultureInfo.CurrentCulture), notice.Title, notice.Text));
 
         int expected = 0, graded = 0, sheets = 0, submitted = 0;
         foreach (var m in mine)
@@ -344,26 +350,35 @@ public sealed class TeacherHomePage : PageViewModel
                 : ("En cours", "ToneBlue");
             var promotionId = m.PromotionId;
             var courseId = c.Id;
-            Courses.Add(new TeacherCourseCardVm(m.Promotion, $"{c.Number}. {c.Name}",
+            var previous = Courses.FirstOrDefault(row => row.CourseId == courseId && row.PromotionId == promotionId);
+            nextCourses.Add(new TeacherCourseCardVm(m.Promotion, $"{c.Number}. {c.Name}",
                 $"{Labels.Semester(c.Semester)} · sur {c.MaxScore:0.##} · {Format.Count(c.Students, "copie", "copies")}",
                 $"{done}/{total} cotes · {percent:0} %", percent, state, ThemeBrush.Get(tone),
-                new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new MarksPage(Shell, promotionId, courseId))))));
+                previous?.Open ?? new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new MarksPage(Shell, promotionId, courseId)))))
+                { CourseId = courseId, PromotionId = promotionId });
         }
-        Raise(nameof(NoCourses));
         var share = expected == 0 ? 0 : 100.0 * graded / expected;
-        Stats.Add(new KpiVm("Mes cours", mine.Count.ToString("N0", CultureInfo.CurrentCulture),
+        nextStats.Add(new KpiVm("Mes cours", mine.Count.ToString("N0", CultureInfo.CurrentCulture),
             Format.Count(mine.Select(m => m.PromotionId).Distinct().Count(), "promotion", "promotions"), IconPalette.Get("TonePurple"), MaterialIconKind.BookOpenVariant));
-        Stats.Add(new KpiVm("Cotes encodées", $"{share:0} %", $"{graded.ToString("N0", CultureInfo.CurrentCulture)} sur {expected.ToString("N0", CultureInfo.CurrentCulture)}",
+        nextStats.Add(new KpiVm("Cotes encodées", $"{share:0} %", $"{graded.ToString("N0", CultureInfo.CurrentCulture)} sur {expected.ToString("N0", CultureInfo.CurrentCulture)}",
             IconPalette.Get("ToneBlue"), MaterialIconKind.Pen));
-        Stats.Add(new KpiVm("Feuilles remises", $"{submitted}/{sheets}", sheets == submitted && sheets > 0 ? "tout est remis" : "remettez chaque feuille complète",
+        nextStats.Add(new KpiVm("Feuilles remises", $"{submitted}/{sheets}", sheets == submitted && sheets > 0 ? "tout est remis" : "remettez chaque feuille complète",
             IconPalette.Get("ToneOrange"), MaterialIconKind.SendOutline));
-        Stats.Add(new KpiVm("Encodage", (settings.EncodingS1Open, settings.EncodingS2Open) switch
+        nextStats.Add(new KpiVm("Encodage", (settings.EncodingS1Open, settings.EncodingS2Open) switch
         {
             (true, true) => "S1 et S2",
             (true, false) => "S1 ouvert",
             (false, true) => "S2 ouvert",
             _ => "Fermé",
         }, "décidé par le secrétariat", IconPalette.Get("ToneTeal"), MaterialIconKind.LockOpenVariantOutline));
+        // Une actualisation conserve les cartes et leurs commandes quand les chiffres n'ont pas changé.
+        Rules = nextRules;
+        Blocked = string.Empty;
+        CollectionSync.Apply(Courses, nextCourses);
+        CollectionSync.Apply(Notices, nextNotices);
+        CollectionSync.Apply(Stats, nextStats);
+        Raise(nameof(NoCourses));
+        Raise(nameof(HasNotices));
         subtitle = mine.Count == 0 ? "Aucun cours ne vous est attribué cette année" : $"{Format.Count(mine.Count, "cours", "cours")} · {share:0} % encodé";
         Raise(nameof(Subtitle));
     }

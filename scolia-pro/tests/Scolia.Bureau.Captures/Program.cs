@@ -94,6 +94,32 @@ void Save(Window window, string name)
     if (Preferences.MobileLayout) Overflow(window, name);
 }
 
+static void VerifyFluentArtwork(Window window)
+{
+    foreach (var icon in window.GetVisualDescendants().OfType<Material.Icons.Avalonia.MaterialIcon>()
+                 .Where(i => i.IsEffectivelyVisible && i.Bounds.Width > 0 && i.Kind is not null))
+    {
+        var kind = icon.Kind!.Value;
+        if (!FluentGlyphs.HasPath(kind) && kind is not Material.Icons.MaterialIconKind.MicrosoftExcel
+            and not Material.Icons.MaterialIconKind.Whatsapp)
+            throw new InvalidOperationException($"Pictogramme hors catalogue Fluent : {kind}.");
+        if (icon.Drawing.Geometry is not { Bounds.Width: > 0, Bounds.Height: > 0 })
+            throw new InvalidOperationException($"Pictogramme vide : {kind}.");
+        if (!icon.GetVisualAncestors().OfType<Border>().Any(b => b.Classes.Contains("appicon"))) continue;
+        var image = icon.GetVisualDescendants().OfType<Image>().FirstOrDefault();
+        if (image?.Source is not { Size.Width: > 0, Size.Height: > 0 })
+            throw new InvalidOperationException($"Illustration Fluent absente : {kind}.");
+        if (FluentGlyphs.ArtworkKey(kind) is { } key &&
+            (!Avalonia.Application.Current!.Resources.TryGetResource(key, Avalonia.Application.Current.ActualThemeVariant, out var artwork)
+             || !ReferenceEquals(artwork, image.Source)))
+            throw new InvalidOperationException($"Illustration Fluent remplacée par un secours : {kind}.");
+    }
+    foreach (var image in window.GetVisualDescendants().OfType<Image>().Where(i => i.IsEffectivelyVisible &&
+                 i.GetVisualAncestors().OfType<Border>().Any(b => b.Classes.Contains("mobilemetricicon") || b.Classes.Contains("mobileicon") || b.Classes.Contains("metricicon"))))
+        if (image.Source is not { Size.Width: > 0, Size.Height: > 0 })
+            throw new InvalidOperationException("Illustration de carte absente.");
+}
+
 // Téléphone : relève ce qui sort de l'écran sur le côté et les textes coupés sans points de suspension.
 // Un tableau ou une zone qui défile en largeur compte aussi : sur un téléphone, rien ne doit défiler de côté.
 void Overflow(Window window, string name)
@@ -2342,29 +2368,7 @@ if (args.Length > 3 && args[3] is "visite" or "visite-fluent")
             Wait(shell.Open(() => (PageViewModel)constructor.Invoke(parameters)));
             Wait(Task.Delay(500));
             Save(window, $"visite-{type.Name}-{suffix}.png");
-            if (strict)
-            {
-                foreach (var icon in window.GetVisualDescendants().OfType<Material.Icons.Avalonia.MaterialIcon>()
-                             .Where(i => i.IsEffectivelyVisible && i.Bounds.Width > 0 && i.Kind is not null))
-                {
-                    var kind = icon.Kind!.Value;
-                    if (!FluentGlyphs.HasPath(kind) && kind is not Material.Icons.MaterialIconKind.MicrosoftExcel
-                        and not Material.Icons.MaterialIconKind.Whatsapp)
-                        throw new InvalidOperationException($"Pictogramme hors catalogue Fluent : {kind}.");
-                    if (icon.Drawing.Geometry is not { Bounds.Width: > 0, Bounds.Height: > 0 })
-                        throw new InvalidOperationException($"Pictogramme vide : {kind}.");
-                    if (icon.GetVisualAncestors().OfType<Border>().Any(b => b.Classes.Contains("appicon")))
-                    {
-                        var image = icon.GetVisualDescendants().OfType<Image>().FirstOrDefault();
-                        if (image?.Source is not { Size.Width: > 0, Size.Height: > 0 })
-                            throw new InvalidOperationException($"Illustration Fluent absente : {kind}.");
-                        if (FluentGlyphs.ArtworkKey(kind) is { } key &&
-                            (!Application.Current!.Resources.TryGetResource(key, Application.Current.ActualThemeVariant, out var artwork)
-                             || !ReferenceEquals(artwork, image.Source)))
-                            throw new InvalidOperationException($"Illustration Fluent remplacée par un secours : {kind}.");
-                    }
-                }
-            }
+            if (strict) VerifyFluentArtwork(window);
             visited.Add(type.Name);
         }
         catch (Exception ex)
@@ -2649,6 +2653,152 @@ if (args.Length > 3 && args[3] == "smoke")
 {
     Smoke(shell, api, window, password);
     window.Close();
+    return;
+}
+
+// Finitions par rôle : données réelles de démonstration, navigation et stabilité de l'actualisation.
+if (args.Length > 3 && args[3] == "finitions-roles")
+{
+    prefs.Animations = false;
+    prefs.Tips = false;
+    var account = Environment.GetEnvironmentVariable("SCOLIA_COMPTE") ?? "admin";
+    var roleSession = Result(api.LoginAsync(account, password));
+    Wait(shell.OpenSessionAsync(roleSession));
+    window.Width = int.Parse(taille[0]);
+    window.Height = int.Parse(taille[1]);
+    if (double.TryParse(Environment.GetEnvironmentVariable("SCOLIA_PREMIUM_TEXTE"), System.Globalization.NumberStyles.Float,
+        System.Globalization.CultureInfo.InvariantCulture, out var textScale)) prefs.Scale = textScale;
+    shell.Sync.Stop();
+    var failures = new List<string>();
+    var report = new List<string>();
+    void CheckRole(string label, bool valid)
+    {
+        report.Add($"{(valid ? "OK" : "ECHEC")} {label}");
+        if (!valid) failures.Add(label);
+    }
+    void RenderRole(string name)
+    {
+        Save(window, $"{account}-{name}.png");
+        VerifyFluentArtwork(window);
+        if (!Preferences.MobileLayout) return;
+        foreach (var button in window.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible &&
+                     b.Classes.Any(c => c is "phoneicon" or "mobileactionrow" or "mobilecourse" or "phonemore" or "stickyaction")))
+            CheckRole($"Cible tactile {button.Name ?? button.Classes.ToString()}", button.Bounds.Width >= 43.5 && button.Bounds.Height >= 43.5);
+    }
+    void ShowRole(Func<PageViewModel> create, string name)
+    {
+        Wait(shell.Open(create));
+        Wait(Task.Delay(150));
+        RenderRole(name);
+    }
+    void CheckForm(PageViewModel page, string name)
+    {
+        if (page.PrimaryAction is not { } action || !action.Command.CanExecute(null)) return;
+        action.Command.Execute(null);
+        var until = DateTime.UtcNow.AddSeconds(8);
+        while (shell.Dialog is not FormViewModel && DateTime.UtcNow < until) Wait(Task.Delay(25));
+        CheckRole($"Formulaire {name} ouvert", shell.Dialog is FormViewModel);
+        if (shell.Dialog is FormViewModel form)
+        {
+            RenderRole(name);
+            form.Cancel.Execute(null);
+            Wait(Task.Delay(150));
+            CheckRole($"Formulaire {name} refermé", !shell.HasDialog);
+        }
+    }
+
+    RenderRole("ouverture");
+    if (roleSession.Role == "Enseignant")
+    {
+        var teacher = new TeacherHomePage(shell);
+        ShowRole(() => teacher, "espace-enseignant");
+        Wait(teacher.LoadAsync());
+        var cards = teacher.Courses.ToArray();
+        CheckRole("Les cours de démonstration sont chargés", cards.Length == 4);
+        var reset = false;
+        System.Collections.Specialized.NotifyCollectionChangedEventHandler changed = (_, e) =>
+            reset |= e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset;
+        teacher.Courses.CollectionChanged += changed;
+        var refresh = teacher.LoadAsync();
+        CheckRole("Les cours restent affichés pendant le rafraîchissement", teacher.Courses.Count == cards.Length);
+        Wait(refresh);
+        teacher.Courses.CollectionChanged -= changed;
+        CheckRole("Les cartes de cours inchangées sont conservées", !reset && teacher.Courses.Count == cards.Length &&
+            teacher.Courses.Zip(cards).All(pair => ReferenceEquals(pair.First, pair.Second)));
+        if (cards.FirstOrDefault() is { } course)
+        {
+            var marks = new MarksPage(shell, course.PromotionId, course.CourseId);
+            ShowRole(() => marks, "cotes");
+            CheckRole("La feuille enseignant conserve l'anonymat", marks.Rows.Count > 0 && marks.Rows.All(r => r.FullName == "Anonyme"));
+        }
+    }
+    else if (roleSession.Role == "Promoteur")
+    {
+        var pilotage = new PromoterDashboardPage(shell);
+        ShowRole(() => pilotage, "pilotage");
+        Wait(pilotage.LoadAsync());
+        var cards = pilotage.Promotions.ToArray();
+        CheckRole("Les promotions de démonstration sont chargées", cards.Length > 0);
+        Wait(pilotage.LoadAsync());
+        CheckRole("Les promotions inchangées ne sont pas recréées", cards.Length == pilotage.Promotions.Count &&
+            pilotage.Promotions.Zip(cards).All(pair => ReferenceEquals(pair.First, pair.Second)));
+        var details = window.GetVisualDescendants().OfType<Expander>().FirstOrDefault(e => e.IsEffectivelyVisible);
+        if (details is not null)
+        {
+            details.IsExpanded = true;
+            details.BringIntoView();
+            RenderRole("pilotage-mois");
+            Wait(pilotage.LoadAsync());
+            CheckRole("Le détail mensuel reste ouvert à l'actualisation", details.IsExpanded);
+        }
+    }
+    else
+    {
+        var allowed = shell.Navigation.SelectMany(g => g.Items).Select(i => i.PageType).ToHashSet();
+        if (allowed.Contains(typeof(HomePage))) ShowRole(() => new HomePage(shell), "accueil");
+        if (allowed.Contains(typeof(StudentsPage)))
+        {
+            var roleStudents = new StudentsPage(shell);
+            ShowRole(() => roleStudents, "apprenants");
+            CheckForm(roleStudents, "inscription");
+        }
+        if (allowed.Contains(typeof(CashierPage)))
+        {
+            var cashier = new CashierPage(shell);
+            Wait(shell.Open(() => cashier));
+            cashier.Search = "ACC";
+            Wait(cashier.SearchAsync());
+            foreach (var candidate in cashier.Results)
+            {
+                Wait(cashier.ChooseAsync(candidate));
+                if (cashier.Months.Count > 0) break;
+            }
+            if (cashier.Months.FirstOrDefault() is { } month)
+            {
+                month.IsSelected = true;
+                Wait(cashier.PreviewAsync());
+            }
+            RenderRole("encaissement");
+        }
+        if (allowed.Contains(typeof(ReceiptsPage))) ShowRole(() => new ReceiptsPage(shell), "recus");
+        if (allowed.Contains(typeof(CashPage))) ShowRole(() => new CashPage(shell), "caisse");
+        if (allowed.Contains(typeof(ExpensesPage)))
+        {
+            var expenses = new ExpensesPage(shell);
+            ShowRole(() => expenses, "depenses");
+            CheckForm(expenses, "nouvelle-depense");
+        }
+    }
+    if (Preferences.MobileLayout)
+    {
+        shell.PhoneMenuOpen = true;
+        RenderRole("menu");
+    }
+    File.WriteAllLines(Path.Combine(output, "finitions-verifiees.txt"),
+        [$"{account} · {failures.Count} échec(s).", .. report]);
+    Console.WriteLine(string.Join(Environment.NewLine, report));
+    window.Close();
+    Environment.ExitCode = failures.Count == 0 ? 0 : 1;
     return;
 }
 

@@ -18,6 +18,9 @@ on:
       - 'scolia-pro/src/Scolia.Domain/**'
       - 'scolia-pro/src/Scolia.Infrastructure/**'
       - 'scolia-pro/tests/Scolia.Bureau.Tests/**'
+      - 'scolia-pro/tests/Scolia.Bureau.Captures/**'
+      - 'scolia-pro/scripts/verifier-finitions-roles.py'
+      - 'scolia-pro/scripts/audit/preparer-roles.mjs'
       - 'scolia-pro/tests/Scolia.Mobile.Tests/**'
       - 'scolia-pro/tests/Scolia.Tests/**'
       - 'scolia-pro/docs/RELEASE_*.md'
@@ -39,6 +42,9 @@ on:
       - 'scolia-pro/src/Scolia.Domain/**'
       - 'scolia-pro/src/Scolia.Infrastructure/**'
       - 'scolia-pro/tests/Scolia.Bureau.Tests/**'
+      - 'scolia-pro/tests/Scolia.Bureau.Captures/**'
+      - 'scolia-pro/scripts/verifier-finitions-roles.py'
+      - 'scolia-pro/scripts/audit/preparer-roles.mjs'
       - 'scolia-pro/tests/Scolia.Mobile.Tests/**'
       - 'scolia-pro/tests/Scolia.Tests/**'
       - 'scolia-pro/docs/RELEASE_*.md'
@@ -115,6 +121,18 @@ jobs:
           retention-days: 14
       - name: Compiler les services de l'annee scolaire et des paiements
         run: dotnet build src/Scolia.Api/Scolia.Api.csproj -c Release
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Vérifier les quatre métiers sur mobile et ordinateur, en clair, sombre et texte agrandi
+        run: python3 scripts/verifier-finitions-roles.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Finitions_Quatre_Metiers
+          path: scolia-pro/artifacts/finitions-roles/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Verifier les regles de retard, les comptes et les API avec une base de test
         run: dotnet test tests/Scolia.Tests/Scolia.Tests.csproj -c Release --logger "trx;LogFileName=metier.trx"
       - uses: actions/upload-artifact@v4

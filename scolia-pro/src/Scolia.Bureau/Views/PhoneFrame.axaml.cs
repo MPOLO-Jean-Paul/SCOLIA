@@ -15,7 +15,7 @@ public partial class PhoneFrame : UserControl
     public PhoneFrame()
     {
         InitializeComponent();
-        Infrastructure.StickyLayout.Track(PhoneStickyBar, PhoneHost, new Avalonia.Thickness(12, 12, 12, 20), 112);
+        Infrastructure.StickyLayout.Track(PhoneStickyBar, PhoneHost, new Avalonia.Thickness(16, 14, 16, 24), 120);
         // Choisir un outil, depuis le menu ou un onglet, referme le menu, même si l'outil est déjà à l'écran.
         MenuPanel.AddHandler(Button.ClickEvent, (_, e) =>
         {
@@ -30,7 +30,12 @@ public partial class PhoneFrame : UserControl
         DataContextChanged += (_, _) => AttachShell();
         AttachedToVisualTree += (_, _) => AttachShell();
         DetachedFromVisualTree += (_, _) => ReleaseShell();
-        SizeChanged += (_, e) => ActionSheet.MaxHeight = Math.Max(0, e.NewSize.Height - 24);
+        SizeChanged += (_, e) =>
+        {
+            ActionSheet.MaxHeight = Math.Max(0, e.NewSize.Height - 24);
+            // Le clavier et le paysage réservent la place à la saisie ; le titre redevient compact.
+            Classes.Set("shortphone", e.NewSize.Height < 520);
+        };
         // Le bouton Menu occupe la même largeur qu'un onglet ordinaire, quel que
         // soit le nombre d'outils visibles pour le rôle (enseignant/secrétariat).
         TabGrid.SizeChanged += (_, e) =>

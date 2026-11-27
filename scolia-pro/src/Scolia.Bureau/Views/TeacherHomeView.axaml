@@ -34,7 +34,7 @@
   </UserControl.Styles>
   <Grid>
   <ScrollViewer IsVisible="{Binding NotPhone}" HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Spacing="10" Margin="0,0,4,8">
+    <StackPanel Spacing="16" Margin="0,0,4,8">
 
       <!-- Même accueil natif que secrétariat et administration : bande d'accent,
            icône du kit SCOLIA, identité et actions alignées, sans style parallèle. -->
@@ -48,7 +48,7 @@
               <mi:MaterialIcon Kind="AccountSchool" />
             </Border>
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
-              <TextBlock Text="{Binding Greeting}" FontSize="20"
+              <TextBlock Text="{Binding Greeting}" FontSize="{DynamicResource FsTitle}"
                          FontWeight="SemiBold" TextWrapping="Wrap"
                          Foreground="{DynamicResource TextBrush}" />
               <TextBlock Text="{Binding Role}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
