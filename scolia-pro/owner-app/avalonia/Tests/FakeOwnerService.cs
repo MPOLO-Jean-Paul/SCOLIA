@@ -11,6 +11,7 @@ internal sealed class FakeOwnerService : HttpMessageHandler
 
     public List<(HttpMethod Method, string Path, Dictionary<string, string> Headers, string? Body)> Requests { get; } = [];
     public Func<HttpRequestMessage, HttpResponseMessage?>? Override { get; set; }
+    public Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage?>>? BeforeResponseAsync { get; set; }
 
     private static long Now => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
     private static long Days(int n) => Now + n * 86_400_000L;
@@ -20,6 +21,7 @@ internal sealed class FakeOwnerService : HttpMessageHandler
         var headers = request.Headers.ToDictionary(h => h.Key, h => string.Join(",", h.Value), StringComparer.OrdinalIgnoreCase);
         var body = request.Content is null ? null : await request.Content.ReadAsStringAsync(cancellationToken);
         Requests.Add((request.Method, request.RequestUri!.AbsolutePath, headers, body));
+        if (BeforeResponseAsync is { } delay && await delay(request, cancellationToken) is { } delayed) return delayed;
         if (Override?.Invoke(request) is { } custom) return custom;
         var path = request.RequestUri.AbsolutePath;
         var json = (request.Method.Method, path) switch

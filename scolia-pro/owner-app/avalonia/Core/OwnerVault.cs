@@ -58,7 +58,6 @@ public sealed class OwnerVault(ISecretProtector protector, string directory)
 
     public void Clear()
     {
-        try { if (File.Exists(FilePath)) File.Delete(FilePath); }
-        catch (IOException) { }
+        if (File.Exists(FilePath)) File.Delete(FilePath);
     }
 }

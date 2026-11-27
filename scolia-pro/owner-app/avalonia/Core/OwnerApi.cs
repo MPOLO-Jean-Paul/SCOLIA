@@ -73,6 +73,28 @@ public sealed class OwnerApi : IDisposable
     public Task<JsonElement> SetRelayStateAsync(string relayId, bool active, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Patch, $"api/v1/owner/relays/{CheckedId(relayId)}", new { state = active ? "active" : "disabled" }, ct);
 
+    public Task<JsonElement> CreateRelayAsync(string label, string endpoint, CancellationToken ct = default)
+    {
+        if (label.Trim().Length is < 3 or > 90 || !Uri.TryCreate(endpoint.Trim(), UriKind.Absolute, out var uri) ||
+            uri.Scheme != "wss" || uri.HostNameType != UriHostNameType.Dns || uri.UserInfo.Length != 0 ||
+            uri.Query.Length != 0 || uri.Fragment.Length != 0 || uri.AbsolutePath != "/")
+            throw new OwnerApiException("Indiquez un nom de relais et une adresse WSS publique valide.");
+        return SendAsync(HttpMethod.Post, "api/v1/owner/relays", new { label = label.Trim(), endpoint_wss = uri.AbsoluteUri }, ct);
+    }
+
+    /// <summary>Réutilise le fournisseur existant ; un relais déjà actif ne change pas de révision.</summary>
+    public async Task<JsonElement> UseCloudflarePrimaryAsync(CancellationToken ct = default)
+    {
+        const string endpoint = "wss://relay.jp-services.org/";
+        var catalog = await RelaysAsync(ct);
+        var chosen = OwnerText.Items(catalog, "relays").FirstOrDefault(r => OwnerText.Str(r, "url") == endpoint);
+        if (OwnerText.Str(chosen, "state") == "active")
+            return JsonSerializer.SerializeToElement(new { notice = "Cloudflare est déjà le relais principal. Les approbations des établissements sont conservées." });
+        var id = OwnerText.Str(chosen, "id");
+        if (id.Length == 0) id = OwnerText.Str(await CreateRelayAsync("SCOLIA Cloudflare (principal)", endpoint, ct), "id");
+        return await SetRelayStateAsync(id, active: true, ct);
+    }
+
     private static string CheckedId(string id) =>
         Guid.TryParse(id, out var guid) ? guid.ToString("D") : throw new OwnerApiException("Identifiant invalide.");
 
@@ -137,5 +159,5 @@ public sealed class OwnerApi : IDisposable
 
 public static class OwnerInfo
 {
-    public const string Version = "1.2.0";
+    public const string Version = "1.2.1";
 }
