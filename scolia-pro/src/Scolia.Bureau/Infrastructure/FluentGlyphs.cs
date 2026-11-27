@@ -34,7 +34,7 @@ public static partial class FluentGlyphs
     public static IImage? ArtworkFor(MaterialIconKind? kind)
     {
         if (kind is not { } icon) return null;
-        if (ArtworkKeys.TryGetValue(icon, out var key) && Application.Current is { } app &&
+        if (ArtworkKeys.TryGetValue(icon, out var key) && Avalonia.Application.Current is { } app &&
             app.Resources.TryGetResource(key, app.ActualThemeVariant, out var value) && value is IImage image)
             return image;
         // Les marques tierces gardent leur dessin ; un nouvel identifiant reste visible pendant son ajout au catalogue.
