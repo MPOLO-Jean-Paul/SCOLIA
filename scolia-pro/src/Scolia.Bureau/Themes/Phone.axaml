@@ -482,4 +482,25 @@
   <Style Selector="LayoutTransformControl.phone Button.phonerow:pressed /template/ ContentPresenter#PART_ContentPresenter, LayoutTransformControl.phone Button.settingsentry:pressed /template/ ContentPresenter#PART_ContentPresenter, LayoutTransformControl.phone Button.phonecategory:pressed /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
   </Style>
+
+  <!-- Cartes de listes métier : identité constante, libellés et montants lisibles. -->
+  <Style Selector="LayoutTransformControl.phone Border.phonecard">
+    <Setter Property="Padding" Value="12,12,10,12" />
+    <Setter Property="Margin" Value="0,0,0,10" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock.phonetitle">
+    <Setter Property="FontSize" Value="{DynamicResource FsHeading}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock.phonesub, LayoutTransformControl.phone TextBlock.phonelabel">
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.stickybar">
+    <Setter Property="Padding" Value="12,10,12,10" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.stickyaction">
+    <Setter Property="FontSize" Value="{DynamicResource FsBase}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
+  </Style>
 </Styles>
