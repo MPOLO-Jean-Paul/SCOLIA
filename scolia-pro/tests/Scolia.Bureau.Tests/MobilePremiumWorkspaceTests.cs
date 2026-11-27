@@ -65,7 +65,7 @@ public sealed class MobilePremiumWorkspaceTests
     {
         var frame = Read("Views/PhoneFrame.axaml");
         var sticky = Assert.Single(frame.Descendants(), x => Attr(x, "Name") == "PhoneStickyBar");
-        Assert.Contains(sticky.Elements(), x => Attr(x, "StackBelow") == "285");
+        Assert.Contains(sticky.Elements(), x => Attr(x, "Adaptive.StackBelow") == "285");
         Assert.Contains(sticky.Descendants(), x => Attr(x, "Command") == "{Binding PhonePage.Sticky.Command}");
     }
 }
