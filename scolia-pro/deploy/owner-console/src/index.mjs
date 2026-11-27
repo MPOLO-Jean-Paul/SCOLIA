@@ -7,6 +7,7 @@ import { evaluateLicense, validateLicensePatch, MAX_GRACE_DAYS, DAY_MS } from ".
 import { serverCloudRequest, deviceCloudRequest, ownerCloudOverview, cloudMaintenance } from "./cloud.mjs";
 import { ownerStorageRequest } from "./storage.mjs";
 import { ownerThemeCss } from "./owner-theme.mjs";
+import { ownerIcon } from "./owner-icons.mjs";
 
 // Stockage prêt : liaison R2 du déploiement, ou identifiants saisis dans la console.
 async function storageConfigured(env) {
@@ -356,7 +357,7 @@ async function heartbeat(request, env) {
 function htmlDashboard() {
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>JP-Services · Console propriétaire SCOLIA Pro</title>
+<title>SCOLIA Console · JP-Services</title>
 <style>
 :root{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:#18304e;background:#f5f7fb}
 *{box-sizing:border-box}body{margin:0;padding:0}header{background:#fff;border-bottom:1px solid #e4eaf2;padding:24px max(20px,calc((100vw - 1100px)/2))}
@@ -370,22 +371,22 @@ button.secondary{background:#eaf1fb;color:#204a80}input{width:100%;max-width:320
 table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #edf1f6;text-align:left;padding:14px 8px}th{font-size:12px;color:#637792}
 .info{font-size:13px;color:#688099}.error{color:#ac2844;font-size:13px}#details{white-space:pre-wrap;font-size:13px;overflow:auto}
 @media(max-width:640px){.wrap{margin:15px auto}table{display:block;overflow-x:auto}h1{font-size:21px}}
-</style><style>${ownerThemeCss}</style></head><body><header><div class="owner-brandline"><span class="owner-mark" aria-hidden="true">S</span><small>JP-SERVICES · ADMINISTRATION COMMERCIALE</small><small class="owner-tag">● Espace sécurisé</small></div>
-<h1>SCOLIA Pro — Console propriétaire</h1>
-<small>Établissements serveurs, licences et activité. Aucun dossier d'apprenant n'est accessible.</small></header>
+</style><style>${ownerThemeCss}</style></head><body><header><div class="owner-brandline"><span class="owner-mark" aria-hidden="true">${ownerIcon("security")}</span><small>JP-SERVICES · ADMINISTRATION COMMERCIALE</small><small class="owner-tag">${ownerIcon("security")} Accès protégé</small></div>
+<h1>SCOLIA Console</h1>
+<small>Établissements, serveurs, licences et activité. Aucun dossier d'apprenant n'est accessible.</small></header>
 <main class="wrap"><section class="panel" id="auth">
 <h2>Accès réservé</h2><p>La console requiert le jeton administrateur secret de JP-Services.
 Il n'est ni stocké dans le navigateur ni transmis à une autre origine.</p>
 <div class="toolbar"><input id="token" type="password" placeholder="Jeton propriétaire" autocomplete="off">
 <button id="connect">Ouvrir la console</button></div><p class="error" id="error"></p></section>
-<section id="workspace" hidden><nav class="owner-navigation" aria-label="Navigation de la console"><a href="#metrics">Vue d’ensemble</a><a href="#schoolsPanel">Établissements</a><a href="#serversPanel">Serveurs</a><a href="#storagePanel">Sauvegardes</a><a href="#relaysPanel">Relais Internet</a><a href="#auditPanel">Historique</a></nav>
-<div class="cards" id="metrics"><article class="card"><small>Établissements</small><div class="metric" id="schools">—</div></article>
-<article class="card"><small>Serveurs enregistrés</small><div class="metric" id="devices">—</div></article>
-<article class="card"><small>Écoles actives (30 j)</small><div class="metric" id="active">—</div></article>
-<article class="card"><small>Licences suspendues</small><div class="metric" id="suspended">—</div></article>
-<article class="card"><small>Sauvegarde en ligne active</small><div class="metric" id="cloudOnCount">—</div><small id="cloudLate"></small></article>
-<article class="card"><small>Copies chiffrées stockées</small><div class="metric" id="cloudBytes">—</div><small id="cloudPending"></small></article></div>
-<section class="panel" id="storagePanel"><h2>Sauvegarde en ligne des écoles — stockage Cloudflare R2</h2>
+<section id="workspace" hidden><nav class="owner-navigation" aria-label="Navigation de la console"><a href="#metrics">${ownerIcon("home")}<span>Vue d’ensemble</span></a><a href="#schoolsPanel">${ownerIcon("schools")}<span>Établissements</span></a><a href="#serversPanel">${ownerIcon("servers")}<span>Serveurs</span></a><a href="#storagePanel">${ownerIcon("backups")}<span>Sauvegardes</span></a><a href="#relaysPanel">${ownerIcon("relays")}<span>Relais Internet</span></a><a href="#auditPanel">${ownerIcon("activity")}<span>Historique</span></a></nav>
+<p id="workspaceStatus" role="status" aria-live="polite"></p><div class="cards" id="metrics"><article class="card"><span class="owner-metric-icon">${ownerIcon("schools")}</span><small>Établissements</small><div class="metric" id="schools">—</div></article>
+<article class="card"><span class="owner-metric-icon">${ownerIcon("servers")}</span><small>Serveurs enregistrés</small><div class="metric" id="devices">—</div></article>
+<article class="card"><span class="owner-metric-icon">${ownerIcon("schools")}</span><small>Écoles actives (30 j)</small><div class="metric" id="active">—</div></article>
+<article class="card"><span class="owner-metric-icon">${ownerIcon("licenses")}</span><small>Licences suspendues</small><div class="metric" id="suspended">—</div></article>
+<article class="card"><span class="owner-metric-icon">${ownerIcon("backups")}</span><small>Sauvegarde en ligne active</small><div class="metric" id="cloudOnCount">—</div><small id="cloudLate"></small></article>
+<article class="card"><span class="owner-metric-icon">${ownerIcon("storage")}</span><small>Copies chiffrées stockées</small><div class="metric" id="cloudBytes">—</div><small id="cloudPending"></small></article></div>
+<section class="panel" id="storagePanel"><h2>${ownerIcon("backups")}Sauvegarde en ligne des écoles — stockage Cloudflare R2</h2>
 <p class="info" id="storageStatus">État du stockage…</p>
 <p class="info">Une seule fois : dans Cloudflare › R2, créez le bucket (ex. <b>scolia-pro-backups</b>), puis « Gérer les jetons API R2 » ›
 jeton « Object Read &amp; Write » limité à ce bucket. Collez ici l'identifiant du compte, le nom du bucket, l'Access Key ID et la Secret Access Key.
@@ -401,20 +402,20 @@ La console écrit, relit et supprime un fichier témoin avant d'enregistrer ; la
 <button id="r2Remove" class="secondary">Supprimer les identifiants</button>
 <button id="cloudAll" class="secondary">Activer la sauvegarde en ligne pour toutes les écoles</button></div>
 <p class="info" id="storageNotice"></p></section>
-<section class="panel" id="schoolsPanel"><h2>Établissements</h2>
+<section class="panel" id="schoolsPanel"><h2>${ownerIcon("schools")}Établissements</h2>
 <div class="toolbar"><button id="refresh">Actualiser</button><button id="logout" class="secondary">Verrouiller la console</button><input id="newschool" placeholder="Nom d'un nouvel établissement">
 <button id="invite" class="secondary">Créer une invitation</button></div>
 <p class="info" id="inviteResult"></p><div style="overflow-x:auto"><table><thead><tr>
 <th>Établissement</th><th>Licence</th><th>Serveurs</th><th>Dernière activité</th><th>Sauvegarde en ligne</th><th>Gestion</th></tr></thead>
 <tbody id="rows"></tbody></table></div></section>
-<section class="panel" id="serversPanel"><h2>Serveurs détectés automatiquement</h2>
+<section class="panel" id="serversPanel"><h2>${ownerIcon("servers")}Serveurs détectés automatiquement</h2>
 <p class="info">Nom du serveur et établissement issus de l'inscription autorisée et des signaux périodiques.
 L'IP publique observée par Cloudflare peut être celle d'une box, d'un VPN ou d'un opérateur :
 elle ne donne pas une adresse physique. « Signal récent » signifie moins de 45 minutes.
 Les IP enregistrées sont effacées au bout de 30 jours.</p>
 <div style="overflow-x:auto"><table><thead><tr><th>Établissement</th><th>Serveur</th><th>IP publique observée</th><th>État</th><th>Dernier signal</th>
 </tr></thead><tbody id="serverRows"></tbody></table></div></section>
-<section class="panel" id="relaysPanel"><h2>Relais Internet — découverte automatique et secours manuel</h2>
+<section class="panel" id="relaysPanel"><h2>${ownerIcon("relays")}Relais Internet — découverte automatique et secours manuel</h2>
 <h3>Relais TURN Cloudflare Realtime</h3>
 <p class="info">Récupération des noms de relais configurés dans le compte Cloudflare par une API en lecture seule.
 Les services TURN/TURNS servent à WebRTC et ne sont pas interchangeables avec un relais WSS.
@@ -452,12 +453,12 @@ Le service doit rester désactivé jusqu'aux essais Android/Windows et à l'acco
 </div>
 <p class="info" id="netlifyNotice">Aucune adresse Netlify enregistrée. Le relais WSS reste inchangé.</p>
 </section>
-<section class="panel" id="auditPanel"><h2>Journal des interventions</h2>
+<section class="panel" id="auditPanel"><h2>${ownerIcon("activity")}Journal des interventions</h2>
 <p class="info">100 dernières opérations commerciales, sans données scolaires.</p>
 <div style="overflow-x:auto"><table><thead><tr>
 <th>Date</th><th>Établissement</th><th>Action</th>
 </tr></thead><tbody id="auditRows"></tbody></table></div></section>
-<section class="panel" id="detailsPanel" hidden><h2>Fiche établissement</h2>
+<section class="panel" id="detailsPanel" hidden><h2>${ownerIcon("schools")}Fiche établissement</h2>
 <div class="cards" id="cloudCards"></div>
 <p class="info">Copies et opérations chiffrées par l'école : JP-Services voit leur date et leur taille, jamais leur contenu.</p>
 <div class="toolbar"><button id="cloudOn">Activer la sauvegarde en ligne pour cette école</button>
@@ -486,13 +487,68 @@ Le service doit rester désactivé jusqu'aux essais Android/Windows et à l'acco
 Les comptes restent ouvrables et les archives consultables. La licence n'efface jamais les données.</p></section></section></main>
 <script>
 (() => {
-let secret="", selected=null;
+let secret="", selected=null, session=0, loadSequence=0, schoolSequence=0, mutationLease=null;
+let sessionController=new AbortController();
 const $=id=>document.getElementById(id);
+function beginSession(){sessionController.abort();sessionController=new AbortController();session++;}
+const sessionEnded=()=>new DOMException("Session terminée.","AbortError");
+function status(message,error=false){$("workspaceStatus").textContent=message;$("workspaceStatus").classList.toggle("error",error);}
+function report(error,target){
+ if(error.name==="AbortError")return;
+ if(target)$(target).textContent=error.message;else status(error.message,true);
+}
 const request=async (path,method="GET",body)=>{
- const r=await fetch(path,{method,headers:{"Authorization":"Bearer "+secret,
- "Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
- const value=await r.json();if(!r.ok)throw Error(value.error||"Opération refusée");return value;
+ const ticket=session,currentSecret=secret,parentSignal=sessionController.signal;
+ const controller=new AbortController();let timedOut=false;
+ const stop=()=>controller.abort();parentSignal.addEventListener("abort",stop,{once:true});
+ const timer=setTimeout(()=>{timedOut=true;controller.abort();},20000);
+ try{
+  const r=await fetch(path,{method,redirect:"error",cache:"no-store",credentials:"same-origin",signal:controller.signal,
+   headers:{"Authorization":"Bearer "+currentSecret,"Content-Type":"application/json","Accept":"application/json"},
+   body:body?JSON.stringify(body):undefined});
+  if(ticket!==session)throw sessionEnded();
+  if(!r.headers.get("Content-Type")?.includes("application/json"))
+   throw Error("Connexion Cloudflare Access à renouveler, ou réponse inattendue du service.");
+  const value=await r.json();
+  if(ticket!==session)throw sessionEnded();
+  if(!r.ok)throw Error(value.error||"Opération refusée (HTTP "+r.status+").");
+  return value;
+ }catch(error){
+  if(ticket!==session||parentSignal.aborted)throw sessionEnded();
+  if(timedOut)throw Error("Le service ne répond pas. Réessayez dans un instant.");
+  if(error instanceof TypeError)throw Error("Service injoignable ou accès Cloudflare à renouveler.");
+  throw error;
+ }finally{clearTimeout(timer);parentSignal.removeEventListener("abort",stop);}
 };
+function guarded(button,action,write=false){
+ return async function(event){
+  if(button.disabled||(write&&mutationLease))return;
+  const lease={};button.ownerLease=lease;if(write)mutationLease=lease;
+  button.disabled=true;button.setAttribute("aria-busy","true");
+  try{return await action.call(this,event);}
+  catch(error){if(error.name!=="AbortError")status(error.message,true);}
+  finally{
+   if(button.ownerLease===lease){button.disabled=false;button.removeAttribute("aria-busy");}
+   if(mutationLease===lease)mutationLease=null;
+  }
+ };
+}
+function decorateTables(){
+ for(const table of document.querySelectorAll("table")){
+  const labels=Array.from(table.querySelectorAll("thead th"),th=>th.textContent.trim());
+  for(const row of table.querySelectorAll("tbody tr"))Array.from(row.cells).forEach((cell,index)=>{
+   if(cell.colSpan===1&&labels[index])cell.dataset.label=labels[index];
+  });
+ }
+}
+for(const body of document.querySelectorAll("tbody"))new MutationObserver(decorateTables).observe(body,{childList:true});
+const fieldLabels={token:"Jeton propriétaire",newschool:"Nom du nouvel établissement",r2Account:"Identifiant du compte Cloudflare",r2Bucket:"Nom du bucket R2",r2Key:"Access Key ID",r2Secret:"Secret Access Key",relayLabel:"Nom du fournisseur WSS",relayUrl:"Adresse WSS publique",netlifyBase:"Adresse HTTPS Netlify"};
+for(const [id,caption] of Object.entries(fieldLabels)){
+ const input=$(id);if(!input||input.closest("label"))continue;
+ const label=document.createElement("label");label.htmlFor=id;label.textContent=caption;
+ input.before(label);label.append(input);input.addEventListener("input",()=>{input.dataset.dirty="1";});
+}
+$("token").addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();$("connect").click();}});
 function size(n){n=Number(n||0);return n>=1073741824?(n/1073741824).toFixed(2)+" Gio":n>=1048576?(n/1048576).toFixed(1)+" Mio":Math.round(n/1024)+" Kio";}
 function card(label,value,hint){const a=document.createElement("article");a.className="card";
  const s1=document.createElement("small");s1.textContent=label;const m=document.createElement("div");m.className="metric";m.textContent=value;
@@ -531,13 +587,15 @@ async function loadNetlifyProvider(){
  if(!secret)return;
  try{
   const info=await request("/api/v1/owner/relays/netlify");
-  $("netlifyBase").value=info.base_url||"";
+  if(!$("netlifyBase").dataset.dirty)$("netlifyBase").value=info.base_url||"";
   $("netlifyNotice").textContent=info.notice;
- }catch{
+ }catch(error){
+  if(error.name==="AbortError")return;
   $("netlifyNotice").textContent="Catalogue Netlify temporairement indisponible. Les relais WSS restent actifs.";
  }
 }
 async function reload(){
+ const ticket=++loadSequence,currentSession=session;
  void loadCloudflareRelays();
  void loadNetlifyProvider();
  const [stats,listing,servers,relays,history]=await Promise.all([
@@ -547,6 +605,7 @@ async function reload(){
    request("/api/v1/owner/relays"),
    request("/api/v1/owner/audit")
  ]);
+ if(ticket!==loadSequence||currentSession!==session)return;
  $("schools").textContent=stats.schools;$("devices").textContent=stats.server_devices;
  $("active").textContent=stats.active_schools_30d;$("suspended").textContent=stats.suspended;
  $("cloudOnCount").textContent=stats.cloud_enabled;
@@ -585,15 +644,15 @@ async function reload(){
    const activation=relay.state!=="active";
    btn.textContent=activation?"Activer":"Désactiver";
    btn.className="secondary";
-   btn.onclick=async()=>{
+   btn.onclick=guarded(btn,async()=>{
      const action=activation?"activer":"désactiver";
      if(!confirm("Voulez-vous "+action+" ce relais ? Chaque école devra approuver un nouveau fournisseur."))return;
      try {
        const r=await request("/api/v1/owner/relays/"+relay.id,"PATCH",
          {state:activation?"active":"disabled"});
        $("relayNotice").textContent=r.notice;await reload();
-     } catch(e){alert(e.message);}
-   };
+     } catch(e){report(e);}
+   },true);
    td.appendChild(btn);row.appendChild(td);$("relayRows").appendChild(row);
  }
  for(const s of listing.schools){
@@ -603,7 +662,7 @@ async function reload(){
      (s.last_backup_at?" · "+new Date(s.last_backup_at).toLocaleString("fr"):"")+
      (s.pending_operations?" · "+s.pending_operations+" en attente":""));
    const td=document.createElement("td"),btn=document.createElement("button");
-   btn.textContent="Consulter";btn.className="secondary";btn.onclick=()=>openSchool(s.id);
+   btn.textContent="Consulter";btn.className="secondary";btn.onclick=guarded(btn,()=>openSchool(s.id));
    td.appendChild(btn);tr.appendChild(td);$("rows").appendChild(tr);
  }
 }
@@ -612,11 +671,18 @@ async function storage(){
  $("storageStatus").textContent=(st.ready?"Stockage prêt":"Stockage non prêt")+" · "+
    (st.mode==="binding"?"liaison R2 du déploiement":st.mode==="credentials"?"identifiants saisis ("+st.bucket+", clé "+st.access_key_id+")":"aucun stockage configuré")+
    (st.error?" · "+st.error:"")+(st.unreadable?" · identifiants illisibles (jeton propriétaire changé) : ressaisissez-les":"");
- if(st.account_id)$("r2Account").value=st.account_id;if(st.bucket)$("r2Bucket").value=st.bucket;
- }catch(e){$("storageStatus").textContent=e.message;}
+ if(st.account_id&&!$("r2Account").dataset.dirty)$("r2Account").value=st.account_id;
+ if(st.bucket&&!$("r2Bucket").dataset.dirty)$("r2Bucket").value=st.bucket;
+ }catch(e){report(e,"storageStatus");}
 }
 async function openSchool(id){
- selected=id;const value=await request("/api/v1/owner/schools/"+id);
+ const ticket=++schoolSequence,currentSession=session;selected=null;
+ $("detailsPanel").inert=true;status("Chargement de l'établissement…");
+ let value;
+ try{value=await request("/api/v1/owner/schools/"+id);}
+ catch(error){if(ticket===schoolSequence&&currentSession===session){$("detailsPanel").inert=false;status(error.message,true);}return;}
+ if(ticket!==schoolSequence||currentSession!==session)return;
+ selected=id;$("detailsPanel").inert=false;status("");
  $("detailsPanel").hidden=false;
  $("details").textContent=JSON.stringify(value,null,2);
  const c=value.cloud;$("recoveryResult").textContent="";
@@ -633,10 +699,12 @@ async function openSchool(id){
  $("trialDays").value=value.school.trial_days??30;
  $("detailsPanel").scrollIntoView({behavior:"smooth"});
 }
-$("connect").onclick=async()=>{secret=$("token").value;$("token").value="";
- try{await reload();storage();$("auth").hidden=true;$("workspace").hidden=false;$("error").textContent="";}
- catch(e){secret="";$("error").textContent=e.message;}};
-$("refresh").onclick=()=>reload().catch(e=>alert(e.message));
+$("connect").onclick=async()=>{
+ beginSession();const ticket=session;secret=$("token").value.trim();$("token").value="";
+ try{await reload();if(ticket!==session)return;void storage();$("auth").hidden=true;$("workspace").hidden=false;$("error").textContent="";status("");}
+ catch(e){if(ticket!==session)return;secret="";$("error").textContent=e.message;}
+};
+$("refresh").onclick=()=>reload().catch(e=>report(e));
 $("turnRefresh").onclick=()=>loadCloudflareRelays(true);
 $("netlifySave").onclick=async()=>{
  if(!confirm("Enregistrer Netlify comme pilote HTTPS désactivé ? Aucun client scolaire ne sera redirigé."))return;
@@ -646,25 +714,29 @@ $("netlifySave").onclick=async()=>{
    enabled:false,confirm_experimental:true
   });
   $("netlifyNotice").textContent=info.notice;
- }catch(e){$("netlifyNotice").textContent=e.message;}
+ }catch(e){report(e,"netlifyNotice");}
 };
 $("netlifyTest").onclick=async()=>{
  $("netlifyNotice").textContent="Test HTTPS Netlify…";
  try{
   const info=await request("/api/v1/owner/relays/netlify/test","POST",{});
   $("netlifyNotice").textContent=info.notice;
- }catch(e){$("netlifyNotice").textContent=e.message;}
+ }catch(e){report(e,"netlifyNotice");}
 };
  $("logout").onclick=()=>{
    // Oubli explicite du secret en mémoire et fermeture de l'interface.
+   beginSession();loadSequence++;schoolSequence++;mutationLease=null;
    secret="";selected=null;$("token").value="";$("detailsPanel").hidden=true;
-   $("rows").replaceChildren();$("relayRows").replaceChildren();$("turnRows").replaceChildren();
-   $("auditRows").replaceChildren();$("details").textContent="";
+   $("rows").replaceChildren();$("serverRows").replaceChildren();$("relayRows").replaceChildren();$("turnRows").replaceChildren();
+   $("auditRows").replaceChildren();$("cloudCards").replaceChildren();$("details").textContent="";
+   for(const id of ["schools","devices","active","suspended","cloudOnCount","cloudBytes","cloudLate","cloudPending","recoveryResult","error"])$(id).textContent="";
+   for(const input of document.querySelectorAll("input")){input.value="";delete input.dataset.dirty;}
    $("inviteResult").textContent="";$("relayNotice").textContent="";$("turnNotice").textContent="";turnCatalogCheckedAt=0;$("netlifyBase").value="";$("netlifyNotice").textContent="";
    $("licenseSummary").textContent="";$("newschool").value="";
    $("trialDays").value=30;$("paidTo").value="";
    $("r2Secret").value="";$("r2Key").value="";$("storageNotice").textContent="";$("storageStatus").textContent="";
    $("workspace").hidden=true;$("auth").hidden=false;
+   status("");$("token").focus();
  };
 $("relayCloudflarePrimary").onclick=async()=>{
  const preferredUrl="wss://relay.jp-services.org/";
@@ -690,6 +762,7 @@ $("relayCloudflarePrimary").onclick=async()=>{
      "Les écoles doivent approuver cette révision avant le changement. "+active.notice;
    await reload();
  }catch(e){
+   if(e.name==="AbortError")return;
    $("relayNotice").textContent="Configuration Cloudflare non appliquée : "+e.message;
  }finally{button.disabled=false;}
 };
@@ -700,12 +773,12 @@ $("relayCreate").onclick=async()=>{
    });
    $("relayNotice").textContent="Relais ajouté (désactivé). "+created.notice;
    $("relayLabel").value="";$("relayUrl").value="";await reload();
- } catch(e){alert(e.message);}
+ } catch(e){report(e);}
 };
 $("invite").onclick=async()=>{
  try{const result=await request("/api/v1/owner/invitations","POST",{school_name:$("newschool").value});
  $("inviteResult").textContent="Invitation à transmettre au responsable (affichée une seule fois) : "+result.invite_code;}
- catch(e){alert(e.message);}
+ catch(e){report(e);}
 };
 async function updateLicense(patch,explanation){
  if(!selected)return;
@@ -714,39 +787,39 @@ async function updateLicense(patch,explanation){
    const result=await request("/api/v1/owner/schools/"+selected+"/license","PATCH",patch);
    $("licenseSummary").textContent=result.license.license_status+" · "+result.notice;
    await reload();await openSchool(selected);
- }catch(e){alert(e.message);}
+ }catch(e){report(e);}
 }
 $("r2Save").onclick=async()=>{
  try{const r=await request("/api/v1/owner/settings/storage","PUT",{account_id:$("r2Account").value,bucket:$("r2Bucket").value,
    access_key_id:$("r2Key").value,secret_access_key:$("r2Secret").value});
  $("r2Secret").value="";$("r2Key").value="";$("storageNotice").textContent=r.notice;await storage();}
- catch(e){$("storageNotice").textContent=e.message;}
+ catch(e){report(e,"storageNotice");}
 };
 $("r2Test").onclick=()=>storage();
 $("r2Remove").onclick=async()=>{
  if(!confirm("Supprimer les identifiants R2 ? Les envois des écoles s'arrêteront jusqu'à une nouvelle saisie (les copies existantes restent)."))return;
  try{const r=await request("/api/v1/owner/settings/storage","DELETE");$("storageNotice").textContent=r.notice;await storage();}
- catch(e){alert(e.message);}
+ catch(e){report(e);}
 };
 $("cloudAll").onclick=async()=>{
  if(!confirm("Activer la sauvegarde en ligne pour toutes les écoles ? Chaque serveur l'activera seul avec sa propre clé ; son responsable devra noter le code de secours."))return;
  try{const r=await request("/api/v1/owner/cloud/request-all","POST",{});$("storageNotice").textContent=r.updated+" école(s) : "+r.notice;await reload();}
- catch(e){alert(e.message);}
+ catch(e){report(e);}
 };
 async function cloudPolicy(requested){
  if(!selected)return;
  try{const r=await request("/api/v1/owner/schools/"+selected+"/cloud","PATCH",{requested});
  $("recoveryResult").textContent=r.notice;await reload();await openSchool(selected);}
- catch(e){alert(e.message);}
+ catch(e){report(e);}
 }
 $("cloudOn").onclick=()=>cloudPolicy(true);
-$("cloudOff").onclick=()=>{if(confirm("Retirer la sauvegarde en ligne de cette école ? Les copies existantes restent récupérables."))cloudPolicy(false);};
+$("cloudOff").onclick=()=>{if(confirm("Retirer la sauvegarde en ligne de cette école ? Les copies existantes restent récupérables."))return cloudPolicy(false);};
 $("recoveryInvite").onclick=async()=>{
  if(!selected)return;
  if(!confirm("Créer une invitation de reprise ? Son usage sur un nouveau serveur révoquera l'ancien serveur de cet établissement."))return;
  try{const r=await request("/api/v1/owner/schools/"+selected+"/recovery-invitation","POST",{});
  $("recoveryResult").textContent="Invitation de reprise (affichée une seule fois, valable 3 jours) : "+r.invite_code;}
- catch(e){alert(e.message);}
+ catch(e){report(e);}
 };
 $("billingOn").onclick=()=>updateLicense({billing_enabled:true},
  "Activer le calendrier de paiement pour cet établissement ? Les restrictions automatiques seront déterminées par les dates enregistrées.");
@@ -756,9 +829,9 @@ $("saveTrial").onclick=()=>updateLicense({trial_days:Number($("trialDays").value
  "Mettre à jour la durée de l'essai à partir de la date de création du serveur ?");
 $("savePayment").onclick=()=>{
  const date=$("paidTo").value;
- if(!date){alert("Choisissez une date d'échéance.");return;}
+ if(!date){status("Choisissez une date d'échéance.",true);$("paidTo").focus();return;}
  const timestamp=Date.parse(date+"T23:59:59Z");
- if(!Number.isSafeInteger(timestamp)){alert("Date incorrecte.");return;}
+ if(!Number.isSafeInteger(timestamp)){status("Date incorrecte.",true);return;}
  return updateLicense({billing_enabled:true,paid_until:timestamp,manual_override:"none"},
    "Confirmer le renouvellement de la licence de cet établissement ?");
 };
@@ -774,6 +847,15 @@ $("manualReadOnly").onclick=()=>updateLicense({manual_override:"read_only",
 $("removeOverride").onclick=()=>updateLicense({manual_override:"none",
  override_until:null,reason:"Mesure manuelle levee"},
  "Annuler la mesure manuelle et revenir au calcul automatique ?");
+const writing=new Set(["netlifySave","netlifyTest","relayCloudflarePrimary","relayCreate","invite","r2Save","r2Remove","cloudAll","cloudOn","cloudOff","recoveryInvite","billingOn","billingOff","saveTrial","savePayment","grace7","grace30","manualReadOnly","removeOverride"]);
+for(const button of document.querySelectorAll("button")){
+ if(button.onclick)button.onclick=guarded(button,button.onclick,writing.has(button.id));
+}
+for(const link of document.querySelectorAll(".owner-navigation a"))link.addEventListener("click",()=>{
+ for(const item of document.querySelectorAll(".owner-navigation a"))item.removeAttribute("aria-current");
+ link.setAttribute("aria-current","location");
+});
+decorateTables();
 })();
 </script></body></html>`;
 }

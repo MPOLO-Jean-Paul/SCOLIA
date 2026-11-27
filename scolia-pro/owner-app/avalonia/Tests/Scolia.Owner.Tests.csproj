@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Tests de SCOLIA Console : client de l'API propriétaire, coffre chiffré, libellés, et rendu hors écran
-       de chaque page sur un service simulé (aucun appel réseau réel). -->
+       de chaque page, et du vrai Worker sur SQLite local (aucun appel de production). -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>

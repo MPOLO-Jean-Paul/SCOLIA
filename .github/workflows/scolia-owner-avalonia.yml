@@ -46,8 +46,8 @@ concurrency:
   cancel-in-progress: ${{ inputs.publish_release != true }}
 
 env:
-  OWNER_VERSION: '1.2.0'
-  RELEASE_TAG: 'scolia-owner-v1.2.0'
+  OWNER_VERSION: '1.2.1'
+  RELEASE_TAG: 'scolia-owner-v1.2.1'
   ANDROID_PACKAGE: 'com.jpservices.scolia.owner'
   ANDROID_PREVIEW_PACKAGE: 'com.jpservices.scolia.owner.preview'
 
@@ -369,10 +369,13 @@ jobs:
         with:
           ref: ${{ inputs.source_sha || github.sha }}
           persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      - name: Tester le client propriétaire, le coffre et les écrans sur un service simulé
+      - name: Tester le client propriétaire, le coffre, les écrans et le Worker SQLite
         working-directory: scolia-pro/owner-app/avalonia/Tests
         env:
           SCOLIA_CONSOLE_CAPTURES: ${{ runner.temp }}/scolia-console-captures

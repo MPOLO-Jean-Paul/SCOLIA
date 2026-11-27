@@ -5,21 +5,43 @@ namespace JPServices.Owner;
 /// <summary>Un seul système visuel Avalonia, partagé bit pour bit sur Android et Windows.</summary>
 internal static class OwnerPalette
 {
-    internal static readonly IBrush Navy = Brush("#112440");
-    internal static readonly IBrush NavyLight = Brush("#1C3C67");
-    internal static readonly IBrush Blue = Brush("#286DE5");
-    internal static readonly IBrush BlueWash = Brush("#EAF1FF");
-    internal static readonly IBrush Background = Brush("#F5F7FC");
-    internal static readonly IBrush Paper = Brush("#FFFFFF");
-    internal static readonly IBrush Ink = Brush("#152C4D");
-    internal static readonly IBrush Muted = Brush("#6D7E98");
-    internal static readonly IBrush Border = Brush("#E3EAF3");
-    internal static readonly IBrush Teal = Brush("#128D86");
-    internal static readonly IBrush GreenWash = Brush("#E5F6F1");
-    internal static readonly IBrush Amber = Brush("#B77B1B");
-    internal static readonly IBrush AmberWash = Brush("#FFF5DE");
-    internal static readonly IBrush Red = Brush("#B34559");
-    internal static readonly IBrush RedWash = Brush("#FFF0F2");
+    internal static readonly SolidColorBrush Navy = Brush("#112440");
+    internal static readonly SolidColorBrush NavyLight = Brush("#1C3C67");
+    internal static readonly SolidColorBrush Blue = Brush("#005FB8");
+    internal static readonly SolidColorBrush BlueWash = Brush("#E5F0FF");
+    internal static readonly SolidColorBrush Background = Brush("#F4F6FA");
+    internal static readonly SolidColorBrush Paper = Brush("#FFFFFF");
+    internal static readonly SolidColorBrush Ink = Brush("#1D2735");
+    internal static readonly SolidColorBrush Muted = Brush("#536278");
+    internal static readonly SolidColorBrush Border = Brush("#DFE5EE");
+    internal static readonly SolidColorBrush Teal = Brush("#107C41");
+    internal static readonly SolidColorBrush GreenWash = Brush("#E8F5ED");
+    internal static readonly SolidColorBrush Amber = Brush("#9C4E00");
+    internal static readonly SolidColorBrush AmberWash = Brush("#FFF3DA");
+    internal static readonly SolidColorBrush Red = Brush("#B42335");
+    internal static readonly SolidColorBrush RedWash = Brush("#FFF0F2");
+    internal static readonly SolidColorBrush OnBlue = Brush("#FFFFFF");
 
-    private static IBrush Brush(string color) => new SolidColorBrush(Color.Parse(color));
+    internal static void Apply(bool dark)
+    {
+        Set(Background, dark ? "#10141C" : "#F4F6FA");
+        Set(Paper, dark ? "#1A202B" : "#FFFFFF");
+        Set(Ink, dark ? "#EEF3FA" : "#1D2735");
+        Set(Muted, dark ? "#AEBBCD" : "#536278");
+        Set(Border, dark ? "#303A4A" : "#DFE5EE");
+        Set(Blue, dark ? "#9ECAFF" : "#005FB8");
+        Set(BlueWash, dark ? "#173A58" : "#E5F0FF");
+        Set(NavyLight, dark ? "#BBD8FA" : "#1C3C67");
+        Set(OnBlue, dark ? "#062440" : "#FFFFFF");
+        Set(Teal, dark ? "#83DDA3" : "#107C41");
+        Set(GreenWash, dark ? "#183A2A" : "#E8F5ED");
+        Set(Amber, dark ? "#FFD28A" : "#9C4E00");
+        Set(AmberWash, dark ? "#443019" : "#FFF3DA");
+        Set(Red, dark ? "#FFACB6" : "#B42335");
+        Set(RedWash, dark ? "#48242F" : "#FFF0F2");
+    }
+
+    private static void Set(SolidColorBrush brush, string color) => brush.Color = Color.Parse(color);
+
+    private static SolidColorBrush Brush(string color) => new(Color.Parse(color));
 }

@@ -6,8 +6,8 @@
     <ApplicationId Condition="'$(Configuration)' != 'Release'">com.jpservices.scolia.owner.preview</ApplicationId>
     <ApplicationId Condition="'$(Configuration)' == 'Release'">com.jpservices.scolia.owner</ApplicationId>
     <ApplicationTitle>SCOLIA Console</ApplicationTitle>
-    <ApplicationVersion>4</ApplicationVersion>
-    <ApplicationDisplayVersion>1.2.0</ApplicationDisplayVersion>
+    <ApplicationVersion>5</ApplicationVersion>
+    <ApplicationDisplayVersion>1.2.1</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <RuntimeIdentifiers>android-arm64;android-arm</RuntimeIdentifiers>
     <Nullable>enable</Nullable>
