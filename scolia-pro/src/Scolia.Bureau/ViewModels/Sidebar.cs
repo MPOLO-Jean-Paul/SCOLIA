@@ -22,7 +22,10 @@ public sealed class NavItemVm : Observable
 
     public string Label { get; }
     /// <summary>Libellé court des onglets du téléphone, où la place manque : « Reçus » pour « Journal des reçus ».</summary>
-    public string TabLabel => Label switch
+    public string TabLabel => PageType == typeof(StartPage) ? "Outils"
+        : PageType == typeof(StudentsPage) ? "Dossiers"
+        : PageType == typeof(CashierPage) ? "Paiement"
+        : Label switch
     {
         "Journal des reçus" => "Reçus",
         "Suivi mensuel" => "Suivi",

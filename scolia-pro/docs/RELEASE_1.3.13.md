@@ -6,6 +6,7 @@
 - Le réseau utilise un schéma de connexion, distinct des personnes, des appareils et de l'état déconnecté.
 - Les illustrations et repères des fonctionnalités suivent les couleurs du logo SCOLIA : bleu, vert et blanc. Les couleurs d'erreur et d'avertissement restent réservées aux états qui les nécessitent.
 - Les illustrations génériques répétées de l'accueil sont remplacées par les symboles de chaque fonction.
+- Les libellés des principaux onglets mobiles sont raccourcis pour rester entiers avec le texte agrandi ; les noms complets restent présents dans les menus et les pages.
 - Le catalogue est reproductible depuis une révision fixe des sources Microsoft Fluent UI System Icons, avec la licence MIT et les empreintes des SVG originaux.
 
 Aucune migration de données. Même identité d'application et même signature Android pour mettre à jour le client existant.

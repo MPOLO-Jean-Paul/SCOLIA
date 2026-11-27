@@ -2698,6 +2698,10 @@ if (args.Length > 3 && args[3] == "finitions-roles")
             CheckRole($"Cible tactile {button.Name ?? button.Classes.ToString()}", button.Bounds.Width >= 43.5 && button.Bounds.Height >= 43.5);
         foreach (var button in window.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible && b.Classes.Contains("phonemore")))
             CheckRole("Le menu des actions possède un nom accessible", !string.IsNullOrWhiteSpace(Avalonia.Automation.AutomationProperties.GetName(button)));
+        foreach (var label in window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible &&
+                     t.Text is { Length: > 0 } text && !text.Contains(' ') &&
+                     t.GetVisualAncestors().OfType<Button>().Any(b => b.Classes.Contains("phonetab"))))
+            CheckRole($"L'onglet « {label.Text} » reste entier", label.TextLayout.TextLines.Count == 1 && !label.TextLayout.TextLines.Any(line => line.HasCollapsed));
     }
     void ShowRole(Func<PageViewModel> create, string name)
     {
