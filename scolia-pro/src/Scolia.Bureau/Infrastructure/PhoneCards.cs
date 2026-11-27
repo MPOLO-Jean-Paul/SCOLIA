@@ -73,7 +73,8 @@ public static class PhoneCards
         // Une longue liste s'ouvre ainsi vite même sur un téléphone modeste, sans liste virtualisée qui ferait sauter la page.
         var shown = new System.Collections.ObjectModel.ObservableCollection<object?>();
         list.ItemsSource = shown;
-        var more = new Button { HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 4, 0, 8), IsVisible = false };
+        var moreLabel = new TextBlock { TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, FontWeight = FontWeight.SemiBold };
+        var more = new Button { Content = moreLabel, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 4, 0, 8), IsVisible = false };
         more.Classes.Add("phoneshowmore");
         var limit = FirstCards;
         System.Collections.IEnumerable? source = null;
@@ -92,7 +93,8 @@ public static class PhoneCards
             if (shown.Count < target) Later();
             var left = all.Count - target;
             more.IsVisible = left > 0 && shown.Count >= target;
-            more.Content = $"Afficher {Math.Min(left, MoreCards)} de plus · {Format.Count(left, "restant", "restants")}";
+            moreLabel.Text = $"Afficher {Math.Min(left, MoreCards)} de plus · {Format.Count(left, "restant", "restants")}";
+            Avalonia.Automation.AutomationProperties.SetName(more, moreLabel.Text);
         }
         void Later() { if (pending) return; pending = true; Avalonia.Threading.Dispatcher.UIThread.Post(Fill, Avalonia.Threading.DispatcherPriority.Background); }
         void OnChanged(object? s, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) => Later();

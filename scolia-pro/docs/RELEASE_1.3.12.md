@@ -4,6 +4,7 @@
 - Les formulaires mobiles disposent de titres adaptatifs, de libellés espacés et de commandes tactiles homogènes. Les cases à cocher acceptent les libellés longs.
 - Les champs partagent une géométrie cohérente : coins de 10 px sur téléphone, 6 px sur ordinateur ; les cartes et formulaires mobiles gardent leurs coins de 16 px.
 - Les onglets mobiles peuvent présenter leur nom sur deux lignes. Le total et la validation se réorganisent sur les très petits écrans.
+- Les boutons de pagination des longues listes restent lisibles avec le texte agrandi et conservent une cible tactile de 48 px.
 - En paysage ou lorsque le clavier réduit la hauteur, l’en-tête mobile devient compact et laisse davantage de place au contenu.
 - Les libellés financiers, cartes de listes et groupes des espaces enseignant, promoteur, secrétariat et comptabilité sont harmonisés.
 - Sur ordinateur, les boutons de zoom indiquent les limites disponibles et la commande de thème annonce l’action proposée.

@@ -2688,7 +2688,7 @@ if (args.Length > 3 && args[3] == "finitions-roles")
             CheckRole("Le paysage réserve la hauteur au contenu", !context.IsEffectivelyVisible);
         }
         foreach (var button in window.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible &&
-                     b.Classes.Any(c => c is "phoneicon" or "mobileactionrow" or "mobilecourse" or "phonemore" or "stickyaction")))
+                     b.Classes.Any(c => c is "phoneicon" or "mobileactionrow" or "mobilecourse" or "phonemore" or "phoneshowmore" or "stickyaction")))
             CheckRole($"Cible tactile {button.Name ?? button.Classes.ToString()}", button.Bounds.Width >= 43.5 && button.Bounds.Height >= 43.5);
         foreach (var button in window.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible && b.Classes.Contains("phonemore")))
             CheckRole("Le menu des actions possède un nom accessible", !string.IsNullOrWhiteSpace(Avalonia.Automation.AutomationProperties.GetName(button)));
