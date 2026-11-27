@@ -28,6 +28,8 @@ Le client utilise une interface Fluent inspirée de Windows 11, adaptée à l'or
 regroupe la recherche (Ctrl+K), le compte et les outils par métier. Les pictogrammes Microsoft sont dessinés en
 vecteurs : en couleur pour les fonctionnalités, au trait pour les commandes. Les surfaces neutres, les champs et
 les dialogues partagent les mêmes finitions ; les contrôles mobiles gardent des cibles adaptées au toucher.
+Les espaces enseignant, promoteur, secrétariat et comptabilité utilisent une même hiérarchie de textes,
+d’icônes et d’indicateurs. Sur téléphone, les cours restent prioritaires et les cartes lisibles sur petit écran.
 Les flèches précédent et suivant (Alt+Gauche, Alt+Droite), le titre et les commandes restent en haut de la page.
 L'accueil présente les outils recommandés et les reçus récents.
 Clair, sombre, taille du texte, densité, zoom et volet latéral se règlent dans le menu, Affichage.
@@ -57,6 +59,9 @@ dotnet run --project tests/Scolia.Bureau.Captures -c Release -- <dossier_de_sort
 # Visite de tous les écrans avec leurs icônes Fluent, en clair/sombre et desktop/mobile.
 # Les projets API et Captures doivent être compilés ; le serveur et les données sont temporaires.
 python3 scripts/verifier-interfaces-fluent.py
+# Quatre comptes de démonstration, sept formats/thèmes, texte agrandi, formulaires et actualisation.
+# Nécessite aussi Node.js ; crée et supprime son propre serveur et sa base de démonstration.
+python3 scripts/verifier-finitions-roles.py
 ```
 
 Les tests de la logique du client (montants, dates, requêtes, validation des formulaires) sont dans

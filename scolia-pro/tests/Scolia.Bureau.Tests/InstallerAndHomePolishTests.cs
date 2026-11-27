@@ -110,7 +110,8 @@ public sealed class InstallerAndHomePolishTests
         Assert.Equal("{Binding SearchCommand}", (string?)search.Attribute("Command"));
         Assert.Equal("{Binding IsHomePage}", (string?)search.Attribute("IsVisible"));
         var actionStyle = Assert.Single(home.Descendants(), e => (string?)e.Attribute("Selector") == "Button.pbiAction");
-        Assert.Contains(actionStyle.Elements(), e => (string?)e.Attribute("Property") == "MinHeight" && (string?)e.Attribute("Value") == "64");
+        var minimumHeight = Assert.Single(actionStyle.Elements(), e => (string?)e.Attribute("Property") == "MinHeight");
+        Assert.True(double.Parse(minimumHeight.Attribute("Value")!.Value, System.Globalization.CultureInfo.InvariantCulture) >= 64);
         foreach (var title in panels.Descendants().Where(e => (string?)e.Attribute("Text") is "{Binding ShortTitle}" or "{Binding Title}"))
         {
             Assert.Equal("Wrap", (string?)title.Attribute("TextWrapping"));
@@ -141,9 +142,16 @@ public sealed class InstallerAndHomePolishTests
             (string?)e.Attribute("Command") == "{Binding Network}");
         Assert.Contains(elements, e => e.Name.LocalName == "Button" &&
             (string?)e.Attribute("Command") == "{Binding ShowAllTools}");
-        foreach (var value in new[] { "Greeting", "AccountContextLine", "ShortTitle", "Value", "Hint" })
+        foreach (var value in new[] { "Greeting", "AccountContextLine", "ShortTitle" })
             Assert.Contains(elements, e => e.Name.LocalName == "TextBlock" &&
                 e.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value.Contains(value)));
+        Assert.Contains(elements, e => e.Name.LocalName == "ContentControl" &&
+            (string?)e.Attribute("ContentTemplate") == "{StaticResource DesktopMetricContent}");
+        var controls = XDocument.Load(Source("src/Scolia.Bureau/Themes/Controls.axaml"));
+        var metric = Assert.Single(controls.Descendants(), e => e.Name.LocalName == "DataTemplate" &&
+            e.Attributes().Any(a => a.Name.LocalName == "Key" && a.Value == "DesktopMetricContent"));
+        foreach (var value in new[] { "Label", "Value", "Hint" })
+            Assert.Contains(metric.Descendants(), e => (string?)e.Attribute("Text") == "{Binding " + value + "}");
         var logic = File.ReadAllText(Source("src/Scolia.Bureau/Views/HomeView.axaml.cs"));
         Assert.Contains("InitializeComponent()", logic, StringComparison.Ordinal);
         Assert.DoesNotContain("WelcomeQuickActions.Width =", logic, StringComparison.Ordinal);

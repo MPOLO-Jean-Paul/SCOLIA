@@ -9,9 +9,9 @@
                  HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
         <StackPanel Grid.Column="1" Spacing="4">
-          <TextBlock Text="{Binding Greeting}" FontWeight="SemiBold" FontSize="23" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding School}" Classes="muted" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding Year}" Classes="muted" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Greeting}" Classes="mobilewelcome" />
+          <TextBlock Text="{Binding School}" Classes="mobiledetail" />
+          <TextBlock Text="{Binding Year}" Classes="mobiledetail" />
         </StackPanel>
       </Grid>
     </Border>

@@ -1,0 +1,114 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.Phone.TeacherHomeView">
+  <StackPanel x:Name="TeacherPhoneSections" Spacing="22" Margin="0,0,0,8">
+    <Border Classes="mobilecard">
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+        <Border Classes="mobileicon" VerticalAlignment="Top">
+          <Image Source="{Binding Glyph, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}" Width="28" Height="28" />
+        </Border>
+        <StackPanel Grid.Column="1" Spacing="6">
+          <TextBlock Text="{Binding Greeting}" Classes="mobilewelcome" />
+          <TextBlock Text="{Binding Role}" Classes="mobiledetail" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Border Classes="phonegroup" Padding="4">
+      <StackPanel>
+        <Button Classes="mobileactionrow" Command="{Binding EncodeByCode}" AutomationProperties.Name="Encoder mes cotes">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+            <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="Pen" /></Border>
+            <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+              <TextBlock Text="Encoder mes cotes" Classes="mobilebody" FontWeight="SemiBold" />
+              <TextBlock Text="Ouvrir une feuille avec son code." Classes="mobiledetail" />
+            </StackPanel>
+            <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+        <Border Height="1" Background="{DynamicResource LineBrush}" Margin="66,0,12,0" />
+        <Button Classes="mobileactionrow" Command="{Binding ChooseCode}" AutomationProperties.Name="Mon code d'accès">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+            <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="ShieldLockOutline" /></Border>
+            <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+              <TextBlock Text="Mon code d'accès" Classes="mobilebody" FontWeight="SemiBold" />
+              <TextBlock Text="Gérer la sécurité de mon compte." Classes="mobiledetail" />
+            </StackPanel>
+            <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+      </StackPanel>
+    </Border>
+
+    <Border Classes="mobilecard" Background="{DynamicResource OrangeSoftBrush}" IsVisible="{Binding IsBlocked}">
+      <StackPanel Spacing="12">
+        <TextBlock Text="{Binding Blocked}" Classes="mobilebody" />
+        <Button Classes="primary" Content="Choisir mon code" Command="{Binding ChooseCode}" MinHeight="48" HorizontalAlignment="Stretch" />
+      </StackPanel>
+    </Border>
+
+    <StackPanel Spacing="12" IsVisible="{Binding !IsBlocked}">
+      <TextBlock Text="Mes cours" Classes="mobilesection" />
+      <c:EmptyState Icon="BookOpenVariant" Title="Aucun cours attribué" Hint="Les cours attribués par le secrétariat apparaîtront ici." IsVisible="{Binding NoCourses}" />
+      <ItemsControl ItemsSource="{Binding Courses}">
+        <ItemsControl.ItemTemplate><DataTemplate>
+          <Button Classes="mobilecourse" Command="{Binding Open}" AutomationProperties.Name="{Binding Title}">
+            <StackPanel Spacing="12">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" VerticalAlignment="Top"><mi:MaterialIcon Kind="BookOpenVariant" /></Border>
+                <StackPanel Grid.Column="1" Spacing="4">
+                  <TextBlock Text="{Binding Title}" Classes="mobilebody" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Promotion}" Classes="mobiledetail" />
+                </StackPanel>
+                <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+              </Grid>
+              <TextBlock Text="{Binding Details}" Classes="mobiledetail" />
+              <Border Background="{DynamicResource NeutralSoftBrush}" CornerRadius="8" Padding="9,4" HorizontalAlignment="Left">
+                <TextBlock Text="{Binding State}" Foreground="{Binding StateBrush}" FontSize="{DynamicResource FsSmall}" FontWeight="Medium" TextWrapping="Wrap" />
+              </Border>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <ProgressBar Minimum="0" Maximum="100" Value="{Binding Percent, Mode=OneWay}" Height="6" MinHeight="6" MinWidth="0" CornerRadius="3" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding Progress}" Classes="mobiledetail" VerticalAlignment="Center" />
+              </Grid>
+            </StackPanel>
+          </Button>
+        </DataTemplate></ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+
+    <StackPanel Spacing="8" IsVisible="{Binding !IsBlocked}">
+      <TextBlock Text="En bref" Classes="mobilesection" />
+      <ItemsControl ItemsSource="{Binding Stats}" ItemTemplate="{StaticResource PhoneMetricTile}" Margin="-4,0,-4,0">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><infra:AdaptiveTiles MinItemWidth="140" MaxColumns="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+      </ItemsControl>
+    </StackPanel>
+
+    <StackPanel Spacing="10" IsVisible="{Binding HasNotices}">
+      <TextBlock Text="Annonces" Classes="mobilesection" />
+      <Border Classes="mobilecard">
+        <ItemsControl ItemsSource="{Binding Notices}">
+          <ItemsControl.ItemTemplate><DataTemplate>
+            <StackPanel Spacing="6" Margin="0,0,0,16">
+              <TextBlock Text="{Binding Title}" Classes="mobilebody" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding When}" Classes="mobiledetail" />
+              <TextBlock Text="{Binding Text}" Classes="mobilebody" />
+            </StackPanel>
+          </DataTemplate></ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Border>
+    </StackPanel>
+
+    <Expander Classes="mobileexpander" IsExpanded="False">
+      <Expander.Header>
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="4,8">
+          <mi:MaterialIcon Kind="ShieldCheckOutline" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Text="Règles de l'encodage" Classes="mobilebody" FontWeight="Medium" VerticalAlignment="Center" />
+        </Grid>
+      </Expander.Header>
+      <TextBlock Text="{Binding Rules}" Classes="mobilebody" Margin="16,4,16,16" />
+    </Expander>
+  </StackPanel>
+</UserControl>

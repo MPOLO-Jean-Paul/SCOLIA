@@ -75,7 +75,7 @@ public sealed class MacMotionTests
         // Le setter conditionnel préserve la taille de 14 points tout en évitant
         // les invalidations de ressources lorsque le zoom n'a pas changé.
         Assert.Contains("Resource(\"FsBase\", 14.0 * k);", prefs, StringComparison.Ordinal);
-        Assert.Contains("Resource(\"FsBase\", 14.5 * k);", prefs, StringComparison.Ordinal);
+        Assert.Contains("Resource(\"FsBase\", 15.0 * k);", prefs, StringComparison.Ordinal);
         Assert.Contains("!Equals(current, value)", prefs, StringComparison.Ordinal);
         Assert.Contains("NavSelectedBrush", prefs, StringComparison.Ordinal);
     }

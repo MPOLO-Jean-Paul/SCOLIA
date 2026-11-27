@@ -23,5 +23,7 @@
     <StyleInclude Source="avares://SCOLIA/Themes/Auth.axaml" />
     <StyleInclude Source="avares://SCOLIA/Themes/AuthAccess.axaml" />
     <StyleInclude Source="avares://SCOLIA/Themes/FluentWorkspace.axaml" />
+    <StyleInclude Source="avares://SCOLIA/Themes/DesktopPremium.axaml" />
+    <StyleInclude Source="avares://SCOLIA/Themes/PhonePremium.axaml" />
   </Application.Styles>
 </Application>
