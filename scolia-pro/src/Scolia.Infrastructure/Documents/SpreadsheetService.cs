@@ -121,7 +121,7 @@ public sealed class SpreadsheetService : ISpreadsheetService
             && decimal.TryParse(numeric.Replace(',', '.'), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var amount))
         {
             cell.Value = amount;
-            cell.Style.NumberFormat.Format = "#,##0";
+            cell.Style.NumberFormat.Format = amount == decimal.Truncate(amount) ? "#,##0" : "#,##0.00";
             return;
         }
         cell.Value = text;

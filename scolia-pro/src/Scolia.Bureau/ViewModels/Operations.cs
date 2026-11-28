@@ -57,9 +57,10 @@ public static class BackupText
         return $"il y a {(int)age.TotalDays} jours";
     }
 
-    /// <summary>Une copie de moins de 26 heures : la protection quotidienne est à jour.</summary>
+    /// <summary>Respecte la fréquence choisie, avec 10 % de tolérance, plafonnée à deux heures.</summary>
     public static bool IsFresh(DateTime? lastUtc, DateTime nowUtc, int intervalHours = 24) =>
-        lastUtc is { } last && nowUtc - last < TimeSpan.FromHours(intervalHours + 2);
+        lastUtc is { } last && last <= nowUtc.AddMinutes(5) && intervalHours > 0
+            && nowUtc - last < TimeSpan.FromHours(intervalHours + Math.Min(2, intervalHours * 0.1));
 }
 
 /// <summary>Données et sauvegardes : sauvegardes, restauration, contrôle d'intégrité et import du classeur V79.</summary>

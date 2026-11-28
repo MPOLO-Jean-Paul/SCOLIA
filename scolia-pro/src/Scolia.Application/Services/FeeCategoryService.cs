@@ -141,7 +141,7 @@ public sealed class FeeCategoryService(IAppDbContext db, IWriteGate gate, IAudit
     {
         var maxPaid = paidByItem.GetValueOrDefault(item.Id);
         if (newAmount < maxPaid)
-            throw new DomainException("montant", $"« {item.Label} » : un apprenant a déjà versé {maxPaid:N0}. Le montant ne peut pas être inférieur.");
+            throw new DomainException("montant", $"« {item.Label} » : un apprenant a déjà versé {Money.Number(maxPaid)}. Le montant ne peut pas être inférieur.");
     }
 
     /// <summary>Plus grand montant versé par une même inscription sur chaque rubrique.</summary>

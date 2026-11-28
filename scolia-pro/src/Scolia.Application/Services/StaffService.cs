@@ -10,7 +10,7 @@ using Scolia.Domain.Students;
 namespace Scolia.Application.Services;
 
 /// <summary>Personnel et paie mensuelle. Le paiement d'un bulletin crée la dépense correspondante.</summary>
-public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, ICurrentUser user)
+public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, ICurrentUser user, CashService cash)
 {
     public async Task<IReadOnlyList<StaffDto>> ListAsync(CancellationToken ct = default) =>
         (await db.Staff.AsNoTracking().OrderBy(s => s.LastName).ToListAsync(ct)).Select(ToDto).ToList();
@@ -28,6 +28,8 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
         string? phone = null;
         try { phone = IdentityRules.NormalizePhone(input.Phone); } catch (DomainException e) { v.Add("phone", e.Message); }
         v.ThrowIfInvalid();
+        var school = await YearContext.SchoolAsync(db, ct);
+        ValidateAmount(input.BaseSalary, school.WholeAmountsOnly, "baseSalary");
         StaffMember member;
         if (id is null)
         {
@@ -90,11 +92,16 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
     {
         var entry = await db.Payroll.FirstOrDefaultAsync(p => p.Id == id, ct) ?? throw new NotFoundException("Bulletin introuvable.");
         if (entry.Status == PayrollStatus.Paye) throw new DomainException("paie", "Un bulletin payé ne peut plus être modifié.");
+        var school = await YearContext.SchoolAsync(db, ct);
+        ValidateAmount(input.Allowances, school.WholeAmountsOnly, "allowances");
+        ValidateAmount(input.Deductions, school.WholeAmountsOnly, "deductions");
+        ValidateAmount(input.Advances, school.WholeAmountsOnly, "advances");
         entry.Allowances = input.Allowances; entry.Deductions = input.Deductions; entry.Advances = input.Advances; entry.Note = input.Note;
         entry.Recompute();
+        ValidateAmount(entry.Net, school.WholeAmountsOnly, "paie");
         entry.Status = PayrollStatus.Valide;
         var s = await db.Staff.AsNoTracking().FirstAsync(x => x.Id == entry.StaffMemberId, ct);
-        audit.Record("paie.modifiee", "Paie", entry.Id.ToString(), $"Bulletin de {s.FullName} modifié : net {entry.Net:N0} FC.");
+        audit.Record("paie.modifiee", "Paie", entry.Id.ToString(), $"Bulletin de {s.FullName} modifié : net {Money.Display(entry.Net, school.CurrencySymbol)}.");
         await db.SaveChangesAsync(ct);
         return ToDto(entry, s);
     }, ct);
@@ -107,6 +114,15 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
         var year = await YearContext.CurrentAsync(db, ct);
         var lastClosing = await CashLock.LastAsync(db, ct);
         if (CashLock.RefusesNew(lastClosing, clock.Today, clock.Today)) throw new DomainException("date", "La caisse du jour est déjà arrêtée.");
+        var school = await YearContext.SchoolAsync(db, ct);
+        ValidateAmount(entry.Net, school.WholeAmountsOnly, "paie");
+        var paymentMethod = PaymentService.ParseMethod(method);
+        if (entry.Net > 0 && paymentMethod == PaymentMethod.Especes)
+        {
+            var available = (await cash.SituationAsync(clock.Today, ct)).ExpectedCash;
+            if (entry.Net > available)
+                throw new DomainException("amount", $"Espèces disponibles insuffisantes : {Money.Display(available, school.CurrencySymbol)} en caisse.");
+        }
         entry.Status = PayrollStatus.Paye;
         entry.PaidOn = clock.Today;
         if (entry.Net > 0)
@@ -114,10 +130,16 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
             {
                 Number = await PaymentService.NextNumberAsync(db, "DP", year.FirstCalendarYear, ct), Date = clock.Today, AcademicYearId = year.Id,
                 Category = "Salaires", Beneficiary = s.FullName, Description = $"Salaire {entry.Period} ({s.Function})", Amount = entry.Net,
-                Method = PaymentService.ParseMethod(method), RecordedByName = user.Name,
+                Method = paymentMethod, RecordedByName = user.Name,
             });
-        audit.Record("paie.payee", "Paie", id.ToString(), $"Salaire {entry.Period} de {s.FullName} payé : {entry.Net:N0}.");
+        audit.Record("paie.payee", "Paie", id.ToString(), $"Salaire {entry.Period} de {s.FullName} payé : {Money.Display(entry.Net, school.CurrencySymbol)}.");
         await db.SaveChangesAsync(ct);
         return ToDto(entry, s);
     }, ct);
+
+    private static void ValidateAmount(decimal amount, bool wholeOnly, string field)
+    {
+        // Une rubrique de paie peut être nulle ; toute valeur non nulle suit les règles monétaires de l'école.
+        if (amount != 0) Money.EnsureValid(amount, wholeOnly, field);
+    }
 }

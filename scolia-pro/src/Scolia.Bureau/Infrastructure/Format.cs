@@ -23,7 +23,7 @@ public static class Format
     /// <summary>« Matricule CODE », ou rien tant que le code n'est pas attribué.</summary>
     public static string? CodeLabel(string? matricule) => HasCode(matricule) ? $"Matricule {matricule}" : null;
 
-    public static string Money(decimal value, string symbol) => $"{value.ToString("N0", Fr)} {symbol}";
+    public static string Money(decimal value, string symbol) => Scolia.Domain.Finance.Money.Display(value, symbol);
 
     public static string Amount(decimal value) => value.ToString("N0", Fr);
 

@@ -40,6 +40,20 @@ public sealed class DocumentTests
         [("Octobre 2026", 55000)], 330000, "https://scolia.local/verifier/51PV44XX6B", cancelled, cancelled ? "Erreur de saisie du montant" : null);
 
     [Fact]
+    public void Un_recu_decimal_est_generable_sur_telephone_et_ordinateur()
+    {
+        var receipt = Receipt(false) with
+        {
+            School = School with { CurrencySymbol = "$" }, Amount = 36.75m,
+            AmountInWords = "trente-six dollars et soixante-quinze cents",
+            Allocations = [("Octobre 2026", 36.75m)], BalanceAfter = 63.25m
+        };
+        var pdf = phone.Receipt(receipt);
+        AssertPdf(pdf, 1);
+        Keep("recu-centimes", pdf, () => new DocumentService().Receipt(receipt));
+    }
+
+    [Fact]
     public void Un_recu_tient_sur_une_page_A5_et_un_recu_annule_porte_son_filigrane()
     {
         var pdf = phone.Receipt(Receipt(false));

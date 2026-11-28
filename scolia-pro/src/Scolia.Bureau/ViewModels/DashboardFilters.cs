@@ -82,6 +82,7 @@ public sealed class DashboardFiltersVm : Observable
     private void RebuildPromotions()
     {
         var keep = promotion?.Value;
+        var wasUpdating = updatingChoices;
         updatingChoices = true;
         try
         {
@@ -94,25 +95,36 @@ public sealed class DashboardFiltersVm : Observable
             promotion = Promotions.FirstOrDefault(p => p.Value == keep) ?? Promotions[0];
             Raise(nameof(Promotion));
         }
-        finally { updatingChoices = false; }
+        finally { updatingChoices = wasUpdating; }
     }
 
     public async Task EnsureAsync(ScoliaClient api, bool promoter)
     {
-        if (initialized) return;
+        DashboardFilterOptions? next = null;
         try
         {
-            options = await api.GetAsync<DashboardFilterOptions>(promoter ? "api/pilotage/filtres" : "api/rapports/tableau-de-bord/filtres");
-            Supported = options.Version >= 1;
+            next = await api.GetAsync<DashboardFilterOptions>(promoter ? "api/pilotage/filtres" : "api/rapports/tableau-de-bord/filtres");
         }
-        catch (ApiException ex) when (ex.Status == 404) { Supported = false; }
-        Sections.Add(new ChoiceItem("", "Toutes les sections"));
-        foreach (var item in options?.Sections ?? []) Sections.Add(new ChoiceItem(item.Id.ToString(), item.Label));
-        section = Sections[0];
-        Raise(nameof(Section));
-        RebuildPromotions();
+        catch (ApiException ex) when (ex.Status == 404) { }
+        if (initialized && next?.Version == options?.Version
+            && (next?.Sections ?? []).SequenceEqual(options?.Sections ?? [])
+            && (next?.Promotions ?? []).SequenceEqual(options?.Promotions ?? [])) return;
+        var keepSection = section?.Value;
+        options = next;
+        updatingChoices = true;
+        try
+        {
+            Supported = options?.Version >= 1;
+            Sections.Clear();
+            Sections.Add(new ChoiceItem("", "Toutes les sections"));
+            foreach (var item in options?.Sections ?? []) Sections.Add(new ChoiceItem(item.Id.ToString(), item.Label));
+            section = Sections.FirstOrDefault(item => item.Value == keepSection) ?? Sections[0];
+            Raise(nameof(Section));
+            RebuildPromotions();
+        }
+        finally { updatingChoices = false; }
         initialized = true;
-        Raise(nameof(Summary)); Raise(nameof(HasSelection)); Raise(nameof(SupportMessage));
+        foreach (var property in new[] { nameof(Summary), nameof(HasScope), nameof(HasSelection), nameof(ActiveCount), nameof(SupportMessage) }) Raise(property);
     }
 
     public async Task ExportAsync(ShellViewModel shell, bool promoter, string? loadedQuery, string? selectionKey)

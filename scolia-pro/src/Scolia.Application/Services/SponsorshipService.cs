@@ -190,7 +190,7 @@ public sealed class SponsorshipService(IAppDbContext db, IWriteGate gate, IAudit
             if (alreadyCovered + proposed > Math.Max(0m, fee.Amount - paid))
             {
                 if (paid > 0m)
-                    throw new DomainException("lines", $"« {fee.Label} » a déjà été payé ({paid:N0}) : la prise en charge ne peut dépasser le reste non payé.");
+                    throw new DomainException("lines", $"« {fee.Label} » a déjà été payé ({Money.Number(paid)}) : la prise en charge ne peut dépasser le reste non payé.");
                 throw new DomainException("lines", $"« {fee.Label} » : prise en charge supérieure au montant restant non payé.");
             }
         }

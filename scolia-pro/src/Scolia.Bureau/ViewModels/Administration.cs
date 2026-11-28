@@ -228,9 +228,9 @@ public sealed class StaffPage : PageViewModel
             Shell.Notify("Bulletin mis à jour.");
             return true;
         });
-        form.Add("primes", "Primes et indemnités", FieldKind.Amount, p.Allowances.ToString("0"));
-        form.Add("retenues", "Retenues", FieldKind.Amount, p.Deductions.ToString("0"));
-        form.Add("avances", "Avances déjà versées", FieldKind.Amount, p.Advances.ToString("0"));
+        form.Add("primes", "Primes et indemnités", FieldKind.Amount, p.Allowances.ToString("0.##", CultureInfo.InvariantCulture));
+        form.Add("retenues", "Retenues", FieldKind.Amount, p.Deductions.ToString("0.##", CultureInfo.InvariantCulture));
+        form.Add("avances", "Avances déjà versées", FieldKind.Amount, p.Advances.ToString("0.##", CultureInfo.InvariantCulture));
         form.Add("note", "Observation", FieldKind.Multiline, p.Note);
         if (await Shell.Ask(form)) await RefreshAsync();
     }
@@ -270,7 +270,7 @@ public sealed class StaffPage : PageViewModel
         form.Add("email", "E-mail", value: s?.Email);
         form.AddDay("embauche", "Date d'embauche", s?.HireDate ?? DateOnly.FromDateTime(DateTime.Today), required: true);
         form.AddDay("sortie", "Fin d'activité (facultatif)", s?.ExitDate);
-        form.Add("salaire", "Salaire de base", FieldKind.Amount, s is null ? string.Empty : s.BaseSalary.ToString("0"), required: true);
+        form.Add("salaire", "Salaire de base", FieldKind.Amount, s is null ? string.Empty : s.BaseSalary.ToString("0.##", CultureInfo.InvariantCulture), required: true);
         form.AddFlag("actif", "Membre actif", s?.IsActive ?? true);
     }
 
@@ -871,7 +871,7 @@ public sealed class SettingsPage : PageViewModel
             return true;
         });
         form.Add("nom", "Nom de la catégorie", value: existing?.Name, required: true);
-        form.Add("montant", "Montant", FieldKind.Amount, existing?.Amount.ToString("0", CultureInfo.InvariantCulture), required: true);
+        form.Add("montant", "Montant", FieldKind.Amount, existing?.Amount.ToString("0.##", CultureInfo.InvariantCulture), required: true);
         form.AddDay("echeance", "Échéance (facultative)", existing?.DueDate);
         form.AddFlag("actif", "Catégorie active", existing?.IsActive ?? true);
         form.AddFlag("appliquer", existing is null ? "Appliquer à toutes les promotions de l'année courante" : "Mettre à jour le montant dans toutes les promotions de l'année courante",
@@ -1334,7 +1334,7 @@ public sealed class SettingsPage : PageViewModel
         else if (!university) form.Add("mensualite", schoolIsPublic ? "Mensualité (public : zéro)"
             : allowsZeroMonthly ? "Mensualité (0 si non appliquée)" : "Mensualité (obligatoire)",
             FieldKind.Amount,
-            existing is { MonthlyFee: > 0 } ? existing.MonthlyFee.ToString("0")
+            existing is { MonthlyFee: > 0 } ? existing.MonthlyFee.ToString("0.##", CultureInfo.InvariantCulture)
                 : allowsZeroMonthly ? "0" : null, required: true);
         form.AddFlag("actif", "Promotion active", existing?.IsActive ?? true);
         form.AddHeader("Autres frais", shown.Count == 0
@@ -1345,7 +1345,7 @@ public sealed class SettingsPage : PageViewModel
             var value = applied.TryGetValue(category.Id, out var item) ? item.Amount
                 : existing is null && category.IsActive ? category.Amount : (decimal?)null;
             form.Add($"categorie-{category.Id:N}", category.Name + (category.IsActive ? string.Empty : " (désactivée)"), FieldKind.Amount,
-                value?.ToString("0", CultureInfo.InvariantCulture), hint: $"Montant du catalogue : {Format.Money(category.Amount, shell.Session?.CurrencySymbol ?? string.Empty)}");
+                value?.ToString("0.##", CultureInfo.InvariantCulture), hint: $"Montant du catalogue : {Format.Money(category.Amount, shell.Session?.CurrencySymbol ?? string.Empty)}");
         }
         await PredictPromotionAsync(shell, form, sections, existing);
         if (university && !schoolIsPublic)

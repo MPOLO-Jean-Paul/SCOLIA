@@ -41,9 +41,7 @@ public sealed class PromoterDashboardPage : PageViewModel
         Action("Exporter la sélection", MaterialIconKind.FileExport, () => Filters.ExportAsync(Shell, true, loadedQuery, selectionKey));
         Filters.Changed += () =>
         {
-            loadedQuery = selectionKey = null;
-            SelectionTotal = "Actualisation de la sélection…";
-            Kpis.Clear(); Promotions.Clear(); SchoolPeriods.Clear(); Raise(nameof(HasPromotions));
+            ClearSelection("Actualisation de la sélection…");
             _ = Shell.Run(() => Filters.RefreshLatestAsync(RefreshAsync, () => loadedQuery == Filters.Query));
         };
         ActionRefresh();
@@ -66,14 +64,25 @@ public sealed class PromoterDashboardPage : PageViewModel
     public override async Task LoadAsync()
     {
         if (!Shell.Can(Ribbon.Perm.PilotageRead)) return;
-        await Filters.EnsureAsync(Shell.Api, promoter: true);
-        var query = Filters.Query;
-        var data = await Shell.Api.GetAsync<PromoterDashboardDto>("api/pilotage/synthese" + query);
+        loadedQuery = selectionKey = null;
+        string query;
+        PromoterDashboardDto data;
+        try
+        {
+            await Filters.EnsureAsync(Shell.Api, promoter: true);
+            query = Filters.Query;
+            data = await Shell.Api.GetAsync<PromoterDashboardDto>("api/pilotage/synthese" + query);
+        }
+        catch
+        {
+            ClearSelection("Sélection indisponible. Utilisez Actualiser pour réessayer.");
+            throw;
+        }
         if (query != Filters.Query) return;
         loadedQuery = query;
         selectionKey = data.SelectionKey;
         var currency = Shell.Session?.CurrencySymbol ?? "FC";
-        string Money(decimal amount) => amount.ToString("N0", French) + " " + currency;
+        string Money(decimal amount) => Format.Money(amount, currency);
         string Count(int count) => count.ToString("N0", French);
         SelectionTotal = $"Total de la sélection · {Format.Count(data.ActiveStudents, Shell.StudentTerms.Singular, Shell.StudentTerms.Plural)} · {Money(data.CollectedTotal)} encaissés · {Money(data.Outstanding)} à percevoir";
         var currentLabel = $"{French.TextInfo.ToTitleCase(data.AsOf.ToString("MMMM", French))} {data.AsOf.Year}";
@@ -145,4 +154,12 @@ public sealed class PromoterDashboardPage : PageViewModel
         AsOf = $"Situation au {data.AsOf:dd/MM/yyyy} à {DateTime.Now:HH:mm} · mise à jour automatique";
     }
 
+    private void ClearSelection(string message)
+    {
+        loadedQuery = selectionKey = null;
+        SelectionTotal = message;
+        Kpis.Clear(); Promotions.Clear(); SchoolPeriods.Clear();
+        Attention = AsOf = string.Empty;
+        Raise(nameof(HasPromotions));
+    }
 }

@@ -24,8 +24,10 @@ internal static class FunctionalClientChecks
         using var api = new ScoliaClient(server.Address);
         var shell = new ShellViewModel(api, new Preferences { Animations = false });
         // These transport tests exercise selections and writes, not authentication (covered by API tests).
-        void Role(string role) => typeof(ShellViewModel).GetField("session", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(shell,
-            new SessionDto(Guid.NewGuid(), "test", "Test", role, role, role == "Enseignant" ? [Perm.MarksEncode] : [Perm.AcademicsWrite], false, "Démonstration", "TEST", "2026-2027", "FC", "243"));
+        void Role(string role, params string[] extraPermissions) => typeof(ShellViewModel).GetField("session", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(shell,
+            new SessionDto(Guid.NewGuid(), "test", "Test", role, role,
+                (role == "Enseignant" ? new[] { Perm.MarksEncode } : new[] { Perm.AcademicsWrite }).Concat(extraPermissions).ToArray(),
+                false, "Démonstration", "TEST", "2026-2027", "FC", "243"));
         Role("Secretariat");
         var courseId = Guid.NewGuid();
         var a = new AssessmentDto(Guid.NewGuid(), courseId, "Évaluation A", "Examen", 1, DateOnly.FromDateTime(DateTime.Today), 20, 1, 0);
@@ -300,6 +302,66 @@ internal static class FunctionalClientChecks
         selectionGate.SetResult();
         Wait(slowSelection);
         Check("Tableau de bord : une rafale de sélections ne produit qu'un dernier chargement", refreshes == 2 && currentSelection);
+        filters.Reset.Execute(null);
+        filters.Section = filters.Sections[1];
+        filters.Promotion = filters.Promotions[1];
+        var beforeMetadata = changed;
+        Wait(filters.EnsureAsync(api, false));
+        Check("Filtres : actualiser conserve les choix valides sans recharge supplémentaire", filters.Promotion?.Value == promotionA.ToString() && changed == beforeMetadata);
+        server.Reply = _ => Task.FromResult<object>(new DashboardFilterOptions(
+            [new(sectionA, "Informatique renommée")],
+            [new(promotionB, "INF2", "Deuxième année", sectionA)], Version: 1));
+        Wait(filters.EnsureAsync(api, false));
+        Check("Filtres : une promotion retirée disparaît au rechargement", filters.Promotion?.Value == "" && filters.Promotions.Count == 2
+            && filters.Promotions[1].Value == promotionB.ToString() && filters.Section?.Label == "Informatique renommée" && changed == beforeMetadata);
+        var dashboardData = new DashboardDto("2026-2027", 1, 0, 36.75m, 36.75m, 36.75m, 100m, 63.25m, 63.25m,
+            36.75m, 0, 1, 0, [], [], [], [], 0, 1, PayingStudents: 1, SelectionKey: "test-selection");
+        var promoterData = new PromoterDashboardDto("2026-2027", DateOnly.FromDateTime(DateTime.Today), 1, 1, 1,
+            36.75m, 36.75m, 36.75m, 63.25m, 63.25m,
+            [new(promotionB, "INF2", "Deuxième année", 1, 1, 1, 36.75m, 36.75m, 36.75m, 63.25m, 63.25m, [])],
+            PayingStudents: 1, SelectionKey: "test-selection");
+        server.Reply = request => Task.FromResult<object>(request.Url!.AbsolutePath switch
+        {
+            var path when path.EndsWith("/filtres", StringComparison.Ordinal) => new DashboardFilterOptions([], [], Version: 1),
+            "/api/rapports/aujourdhui" => new TodayDto(DateOnly.FromDateTime(DateTime.Today), 1, 36.75m, 0, false, 0, 0, [], []),
+            "/api/pilotage/synthese" => promoterData,
+            _ => dashboardData
+        });
+        var dashboard = new DashboardPage(shell);
+        Wait(dashboard.RefreshAsync());
+        Check("Finances : le tableau de bord affiche les centimes", dashboard.SelectionTotal.Contains("36,75", StringComparison.Ordinal) && dashboard.HasToday);
+        server.StatusCode = 500;
+        Wait(dashboard.RefreshAsync());
+        Check("Tableau de bord : une erreur retire les chiffres et repères périmés", dashboard.Kpis.Count == 0 && dashboard.GenderText == ""
+            && !dashboard.HasToday && dashboard.SelectionTotal.Contains("Actualiser", StringComparison.Ordinal));
+        Wait(((AsyncCommand)dashboard.Actions.Single(action => action.Label == "Exporter la sélection").Command).ExecuteAsync());
+        Check("Tableau de bord : aucun export après un chargement échoué", shell.Dialog is null && shell.Notice?.Contains("chargement", StringComparison.Ordinal) == true);
+        server.StatusCode = 200;
+        Wait(dashboard.RefreshAsync());
+        Check("Tableau de bord : Actualiser rétablit les chiffres après une erreur", dashboard.Kpis.Count > 0 && dashboard.SelectionTotal.Contains("36,75", StringComparison.Ordinal));
+        Role("Promoteur", Perm.PilotageRead);
+        var promoterDashboard = new PromoterDashboardPage(shell);
+        Wait(promoterDashboard.RefreshAsync());
+        Check("Promoteur : les centimes sont visibles dans les cartes", promoterDashboard.Kpis.Any(kpi => kpi.Value.Contains("36,75", StringComparison.Ordinal)) && promoterDashboard.HasAttention);
+        server.StatusCode = 500;
+        Wait(promoterDashboard.RefreshAsync());
+        Check("Promoteur : une erreur retire les alertes et dates périmées", promoterDashboard.Kpis.Count == 0 && !promoterDashboard.HasAttention
+            && promoterDashboard.AsOf == "" && promoterDashboard.SelectionTotal.Contains("Actualiser", StringComparison.Ordinal));
+        server.StatusCode = 200;
+        Wait(promoterDashboard.RefreshAsync());
+        Check("Promoteur : le rechargement rétablit les cartes", promoterDashboard.Kpis.Count > 0 && promoterDashboard.HasAttention);
+        Role("Secretariat");
+        server.Reply = _ => Task.FromResult<object>(new { });
+        var category = new FeeCategoryDto(Guid.NewGuid(), "Frais précis", 36.75m, null, true, 1, 0);
+        var editingFee = SettingsPage.CategoryFormAsync(shell, category);
+        Until(() => shell.Dialog is FormViewModel);
+        var feeForm = (FormViewModel)shell.Dialog!;
+        Check("Frais : ouvrir Modifier conserve les centimes", feeForm.Amount("montant") == 36.75m);
+        var feeWrites = server.Writes.Count;
+        Wait(feeForm.Submit.ExecuteAsync());
+        Wait(editingFee);
+        using var feePayload = JsonDocument.Parse(server.Writes.Skip(feeWrites).Single().Body);
+        Check("Frais : enregistrer sans retoucher le montant conserve sa valeur", feePayload.RootElement.GetProperty("amount").GetDecimal() == 36.75m);
         server.StatusCode = 404;
         var legacyFilters = new DashboardFiltersVm();
         Wait(legacyFilters.EnsureAsync(api, true));
