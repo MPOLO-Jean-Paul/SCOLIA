@@ -2,13 +2,22 @@
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Scolia.Bureau.Views.StudentDetailView">
-  <ScrollViewer>
+  <UserControl.Styles>
+    <Style Selector="ScrollViewer#DetailScroll">
+      <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+    </Style>
+    <!-- Le cadre du téléphone possède déjà le défilement de la page. -->
+    <Style Selector="LayoutTransformControl.phone ScrollViewer#DetailScroll">
+      <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
+    </Style>
+  </UserControl.Styles>
+  <ScrollViewer x:Name="DetailScroll" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Spacing="16">
 
       <!-- Indicateurs du compte -->
       <ItemsControl ItemsSource="{Binding Totals}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
         <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
+          <ItemsPanelTemplate><infra:AdaptiveTiles MinItemWidth="170" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
       </ItemsControl>
 
@@ -20,8 +29,8 @@
             <ItemsControl ItemsSource="{Binding Details}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Grid ColumnDefinitions="180,*" Margin="0,3">
-                    <TextBlock Text="{Binding Label}" Classes="muted" />
+                  <Grid ColumnDefinitions="2*,3*" ColumnSpacing="10" Margin="0,3" infra:Adaptive.StackBelow="240">
+                    <TextBlock Text="{Binding Label}" Classes="muted" TextWrapping="Wrap" />
                     <TextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
                   </Grid>
                 </DataTemplate>
@@ -34,7 +43,7 @@
         <Border Classes="card" Grid.Column="1">
           <StackPanel Spacing="8">
             <TextBlock Text="Inscriptions" Classes="heading" />
-            <DataGrid ItemsSource="{Binding Enrollments}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="220">
+            <DataGrid AutomationProperties.Name="Historique des inscriptions" ItemsSource="{Binding Enrollments}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="220">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Année" Binding="{Binding Year}" Width="Auto" MinWidth="110" />
                 <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="170" />
@@ -61,7 +70,7 @@
         <Border Classes="card" Grid.Column="0" Margin="0,0,12,0">
           <StackPanel Spacing="8">
             <TextBlock Text="Compte de l'année" Classes="heading" />
-            <DataGrid ItemsSource="{Binding Lines}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="360">
+            <DataGrid AutomationProperties.Name="Échéances du compte annuel" ItemsSource="{Binding Lines}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="360">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" MinWidth="140" />
                 <DataGridTextColumn infra:GridPriority.Level="3" Header="Date" Binding="{Binding DueDate}" Width="Auto" MinWidth="105" />
@@ -97,7 +106,7 @@
                       <TextBlock Text="{Binding Date}" Classes="muted" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" HorizontalAlignment="Right">
-                      <TextBlock Text="{Binding Amount}" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                      <TextBlock Text="{Binding Amount}" FontWeight="SemiBold" HorizontalAlignment="Right" TextWrapping="Wrap" TextAlignment="Right" />
                       <TextBlock Text="{Binding Method}" Classes="muted" HorizontalAlignment="Right" />
                     </StackPanel>
                   </Grid>
@@ -111,14 +120,15 @@
       <!-- Prises en charge -->
       <Border Classes="card">
         <StackPanel Spacing="8">
-          <Grid ColumnDefinitions="*,Auto">
+          <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="340">
             <TextBlock Text="Prises en charge" Classes="heading" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="ghost" Content="Terminer la sélection" Command="{Binding EndSponsorship}" />
+            <Button infra:Icons.Lead="CheckAll" Grid.Column="1" Classes="ghost" Content="Terminer la sélection" Command="{Binding EndSponsorship}" IsVisible="{Binding CanManageSponsorships}" />
           </Grid>
-          <DataGrid ItemsSource="{Binding Sponsorships}" SelectedItem="{Binding SelectedSponsorship}"
+          <DataGrid AutomationProperties.Name="Prises en charge" ItemsSource="{Binding Sponsorships}" SelectedItem="{Binding SelectedSponsorship}"
                     AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="220">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Garant ou organisme" Binding="{Binding Sponsor}" Width="*" MinWidth="198" />
+              <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto" MinWidth="110" />
               <DataGridTextColumn Header="Motif" Binding="{Binding Reason}" Width="*" MinWidth="140" />
               <DataGridTextColumn Header="Effet" Binding="{Binding Since}" Width="Auto" MinWidth="110" />
               <DataGridTextColumn Header="Couvert" Binding="{Binding Covered}" Width="Auto" MinWidth="130" />

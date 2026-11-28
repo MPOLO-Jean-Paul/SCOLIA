@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -23,7 +24,22 @@ public sealed class PromotionDraftVm : Observable
 
     public string Code { get => code; set { if (Set(ref code, (value ?? string.Empty).ToUpperInvariant())) Refresh(); } }
     public string Name { get => name; set { if (Set(ref name, value ?? string.Empty)) Refresh(); } }
-    public string Fee { get => fee; set => Set(ref fee, value); }
+    public string Fee { get => fee; set { if (Set(ref fee, value)) Raise(nameof(InstallmentPreview)); } }
+    private bool isLmd;
+    public bool IsLmd { get => isLmd; set { if (Set(ref isLmd, value)) Raise(nameof(InstallmentPreview)); } }
+    private string trancheCount = "3";
+    public string TrancheCount { get => trancheCount; set { if (Set(ref trancheCount, value)) Raise(nameof(InstallmentPreview)); } }
+    public string InstallmentPreview
+    {
+        get
+        {
+            if (!decimal.TryParse(Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.NumberStyles.Number,
+                System.Globalization.CultureInfo.InvariantCulture, out var total) ||
+                !int.TryParse(TrancheCount, out var count) || total <= 0) return "Indiquez le total annuel et le nombre de tranches (1 à 6).";
+            try { return string.Join(" · ", LmdInstallmentPlan.Split(total, count).Select((amount, i) => $"T{i + 1} : {amount:0.##} $")); }
+            catch (ArgumentException ex) { return ex.Message; }
+        }
+    }
     public RelayCommand Remove { get; }
 
     /// <summary>Désignations prédites d'après le code et la saisie : « INF1 » donne « Première Infirmière »…</summary>
@@ -72,7 +88,7 @@ public sealed class PromotionDraftVm : Observable
 }
 
 /// <summary>
-/// Assistant de première installation, en deux étapes comme dans la version précédente :
+/// Assistant de première installation : choix explicite du profil, puis deux étapes de configuration :
 /// 1) établissement, logo, année scolaire et promotions, 2) comptes : le secrétariat, qui administre SCOLIA, et la comptabilité.
 /// </summary>
 public sealed class SetupViewModel : Observable
@@ -80,13 +96,15 @@ public sealed class SetupViewModel : Observable
     private static readonly Regex YearPattern = new(@"^\s*(\d{4})\s*-\s*(\d{4})\s*$");
 
     private readonly ShellViewModel shell;
-    private int step = 1;
+    private int step;
     private bool busy;
     private string error = string.Empty;
 
     public SetupViewModel(ShellViewModel shell)
     {
         this.shell = shell;
+        InstitutionType = InstitutionTypes[0];
+        Governance = GovernanceTypes[0];
         StartMonths = Months;
         EndMonths = Months;
         MonthCounts = [.. Enumerable.Range(1, 12).Select(n => new ChoiceItem(n.ToString(System.Globalization.CultureInfo.InvariantCulture), $"{n} mois"))];
@@ -97,11 +115,10 @@ public sealed class SetupViewModel : Observable
         MonthCount = MonthCounts.First(m => m.Value == "10");
         LastOnTimeDay = PaymentDeadlineDays.First(d => d.Value == "5");
         Next = new AsyncCommand(NextAsync);
-        Back = new RelayCommand(() => { Step = 1; Error = string.Empty; });
+        Back = new RelayCommand(() => { Step = Math.Max(0, Step - 1); Error = string.Empty; });
+        SelectInstitution = new RelayCommand<string>(ChooseInstitution);
         Finish = new AsyncCommand(FinishAsync);
         JoinExisting = new AsyncCommand(() => shell.ChooseServerAsync());
-        PrepareTailnet = new AsyncCommand(Installer.BeginAsync);
-        Installer.Refresh();
         AddPromotion = new RelayCommand(AddPromotionRow);
         PickLogo = new AsyncCommand(PickLogoAsync);
         ClearLogo = new RelayCommand(() => SetLogo(null, null));
@@ -114,13 +131,13 @@ public sealed class SetupViewModel : Observable
     /// </summary>
     private void AddPromotionRow()
     {
-        var row = new PromotionDraftVm(d => Promotions.Remove(d), DraftContext);
+        var row = new PromotionDraftVm(d => Promotions.Remove(d), DraftContext) { IsLmd = InstitutionType.Value == InstitutionProfiles.SuperieurLmd };
         if (Promotions.LastOrDefault() is { } previous && previous.Next() is { } next
             && Promotions.All(p => !p.Code.Equals(next.Code, StringComparison.OrdinalIgnoreCase)))
         {
             row.Code = next.Code;
             row.Name = next.Name;
-            row.Fee = previous.Fee;
+            if (!row.IsLmd) row.Fee = previous.Fee;
         }
         Promotions.Add(row);
         row.Refresh();
@@ -141,8 +158,6 @@ public sealed class SetupViewModel : Observable
     public string LogoLine => logoName ?? "Aucun logo choisi : le symbole neutre de SCOLIA sera affiché.";
 
     public System.Collections.ObjectModel.ObservableCollection<PromotionDraftVm> Promotions { get; } = [];
-    public TailscaleInstaller Installer { get; } = TailscaleInstaller.Instance;
-    public AsyncCommand PrepareTailnet { get; }
     public RelayCommand AddPromotion { get; }
     public AsyncCommand PickLogo { get; }
     public RelayCommand ClearLogo { get; }
@@ -177,6 +192,86 @@ public sealed class SetupViewModel : Observable
         Raise(nameof(LogoLine));
     }
 
+    // Tous les profils administratifs sont disponibles ; les documents imprimés
+    // n'acquièrent pas une valeur officielle par cette simple configuration.
+    public IReadOnlyList<ChoiceItem> InstitutionTypes { get; } =
+    [
+        new("ItmIm", "ITM / IEM"),
+        new("Maternelle", "École maternelle"),
+        new("Primaire", "École primaire"),
+        new("Secondaire", "École secondaire / technique"),
+        new("ComplexeScolaire", "Complexe scolaire"),
+        new("SuperieurLmd", "Université / institut supérieur LMD"),
+    ];
+    private ChoiceItem institutionType = null!;
+    public ChoiceItem InstitutionType
+    {
+        get => institutionType;
+        set
+        {
+            if (!Set(ref institutionType, value)) return;
+            if (!CanLoadDemo) LoadDemo = false;
+            Raise(nameof(CurrencyLine)); Raise(nameof(ProfileLabel)); Raise(nameof(ProfileHint));
+            foreach (var draft in Promotions) draft.IsLmd = InstitutionType.Value == InstitutionProfiles.SuperieurLmd;
+            Raise(nameof(PromotionHeading)); Raise(nameof(FeeHeading)); Raise(nameof(CanLoadDemo)); Raise(nameof(IsComplexSchool)); Raise(nameof(ShowPromotionEditor));
+        }
+    }
+
+    public RelayCommand<string> SelectInstitution { get; }
+    private void ChooseInstitution(string? value)
+    {
+        if (Busy || Step != 0) return;
+        var profile = InstitutionTypes.FirstOrDefault(p => p.Value == value);
+        if (profile is null || !InstitutionProfiles.IsEnabled(profile.Value)) return;
+        InstitutionType = profile;
+        Error = string.Empty;
+        Step = 1;
+    }
+    public string ProfileLabel => InstitutionType?.Label ?? "Type d'établissement";
+    public string ProfileHint => InstitutionType?.Value switch
+    {
+        InstitutionProfiles.ItmIm => "Apprenants, sections et promotions médicales. Calendrier annuel.",
+        InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire or InstitutionProfiles.Secondaire => "Élèves et classes du cycle choisi. Calendrier scolaire annuel.",
+        InstitutionProfiles.ComplexeScolaire => "Choisissez deux ou trois cycles ci-dessous. Les classes seront rattachées à leur cycle après installation.",
+        InstitutionProfiles.SuperieurLmd => "Étudiants et formations supérieures. Les paramètres pédagogiques LMD se définissent ensuite dans Paramètres.",
+        _ => string.Empty,
+    };
+    public bool IsComplexSchool => InstitutionType?.Value == InstitutionProfiles.ComplexeScolaire;
+    public bool ShowPromotionEditor => !IsComplexSchool || Promotions.Any(p => !p.IsBlank);
+    private bool includeMaternelle;
+    private bool includePrimaire;
+    private bool includeSecondaire;
+    public bool IncludeMaternelle { get => includeMaternelle; set => Set(ref includeMaternelle, value); }
+    public bool IncludePrimaire { get => includePrimaire; set => Set(ref includePrimaire, value); }
+    public bool IncludeSecondaire { get => includeSecondaire; set => Set(ref includeSecondaire, value); }
+    private IReadOnlyList<string> SelectedCycles() => new[]
+    {
+        IncludeMaternelle ? InstitutionProfiles.Maternelle : null,
+        IncludePrimaire ? InstitutionProfiles.Primaire : null,
+        IncludeSecondaire ? InstitutionProfiles.Secondaire : null,
+    }.OfType<string>().ToArray();
+    public string PromotionHeading => InstitutionType?.Value is InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire
+        or InstitutionProfiles.Secondaire or InstitutionProfiles.ComplexeScolaire ? "Classes" : "Promotions";
+    public string FeeHeading => InstitutionType?.Value == InstitutionProfiles.SuperieurLmd ? "Frais annuels (USD)" : "Mensualité (FC)";
+    public bool CanLoadDemo => InstitutionType?.Value == InstitutionProfiles.ItmIm && Governance?.Value == "Prive";
+
+    public IReadOnlyList<ChoiceItem> GovernanceTypes { get; } =
+    [
+        new("Prive", "Établissement privé"),
+        new("Public", "Établissement public (sans perception automatique)"),
+    ];
+    private ChoiceItem governance = null!;
+    public ChoiceItem Governance
+    {
+        get => governance;
+        set
+        {
+            if (!Set(ref governance, value)) return;
+            if (!CanLoadDemo) LoadDemo = false;
+            Raise(nameof(CanLoadDemo));
+        }
+    }
+
     public IReadOnlyList<ChoiceItem> StartMonths { get; }
     public IReadOnlyList<ChoiceItem> EndMonths { get; }
     public IReadOnlyList<ChoiceItem> MonthCounts { get; }
@@ -188,7 +283,7 @@ public sealed class SetupViewModel : Observable
         new("7", "Juillet"), new("8", "Août"), new("9", "Septembre"), new("10", "Octobre"), new("11", "Novembre"), new("12", "Décembre"),
     ];
 
-    /// <summary>Étape affichée : 1 ou 2.</summary>
+    /// <summary>Étape affichée : 0 (accueil), 1 (établissement) ou 2 (comptes).</summary>
     public int Step
     {
         get => step;
@@ -196,6 +291,8 @@ public sealed class SetupViewModel : Observable
         {
             if (Set(ref step, value))
             {
+                Raise(nameof(IsChoosingInstitution));
+                Raise(nameof(CanGoBack));
                 Raise(nameof(IsStepOne));
                 Raise(nameof(IsStepTwo));
                 Raise(nameof(StepLabel));
@@ -206,12 +303,18 @@ public sealed class SetupViewModel : Observable
     }
 
     /// <summary>Avancement de l'assistant, en pourcentage.</summary>
-    public double Progress => step * 50.0;
-
+    public double Progress => (step + 1) * 100.0 / 3;
+    public bool IsChoosingInstitution => step == 0;
+    public bool CanGoBack => step > 0;
     public bool IsStepOne => step == 1;
     public bool IsStepTwo => step == 2;
-    public string StepLabel => $"Étape {step} sur 2";
-    public string StepTitle => step == 1 ? "Établissement, logo, année et promotions" : "Comptes et sécurité";
+    public string StepLabel => $"Étape {step + 1} sur 3";
+    public string StepTitle => step switch
+    {
+        0 => "Choisissez votre type d'établissement",
+        1 => "Configurer l'établissement",
+        _ => "Comptes et sécurité",
+    };
 
     public bool Busy { get => busy; private set => Set(ref busy, value); }
     public string Error { get => error; private set { if (Set(ref error, value)) Raise(nameof(HasError)); } }
@@ -296,8 +399,10 @@ public sealed class SetupViewModel : Observable
         Raise(nameof(MonthRangeSummary));
     }
 
-    public string CurrencyLine => "Monnaie : franc congolais (FC)";
-    public bool LoadDemo { get; set; }
+    public string CurrencyLine => InstitutionType?.Value == InstitutionProfiles.SuperieurLmd
+        ? "Monnaie : dollar américain (USD)" : "Monnaie : franc congolais (FC)";
+    private bool loadDemo;
+    public bool LoadDemo { get => loadDemo; set => Set(ref loadDemo, value && CanLoadDemo); }
 
     // ---- Étape 2 : comptes ----
     // Le compte secrétariat est l'administrateur : ses fonctions, le paramétrage et les utilisateurs.
@@ -348,6 +453,7 @@ public sealed class SetupViewModel : Observable
 
     private Task NextAsync()
     {
+        if (!IsStepOne) return Task.CompletedTask;
         Error = ValidateStepOne() ?? string.Empty;
         if (HasError) return Task.CompletedTask;
         Step = 2;
@@ -356,7 +462,8 @@ public sealed class SetupViewModel : Observable
 
     private async Task FinishAsync()
     {
-        Error = ValidateStepTwo() ?? string.Empty;
+        if (!IsStepTwo || Busy) return;
+        Error = ValidateStepOne() ?? ValidateStepTwo() ?? string.Empty;
         if (HasError) return;
         Busy = true;
         try
@@ -374,6 +481,14 @@ public sealed class SetupViewModel : Observable
     /// <summary>Contrôles de l'étape 1, avant de passer aux comptes. Renvoie le premier problème, ou null.</summary>
     public string? ValidateStepOne()
     {
+        if (InstitutionType is null || !InstitutionProfiles.IsEnabled(InstitutionType.Value))
+            return "Choisissez un type d'établissement reconnu.";
+        if (IsComplexSchool && SelectedCycles().Count < 2)
+            return "Choisissez au moins deux cycles pour le complexe scolaire.";
+        if (Governance?.Value is not ("Prive" or "Public"))
+            return "Choisissez le régime privé ou public de l'établissement.";
+        if (LoadDemo && (InstitutionType.Value != InstitutionProfiles.ItmIm || Governance.Value != "Prive"))
+            return "Les exemples fictifs ITM sont réservés aux ITM/IM privés : désactivez-les.";
         if (string.IsNullOrWhiteSpace(SchoolName)) return "Indiquez le nom de l'établissement.";
         if (string.IsNullOrWhiteSpace(ShortName)) return "Indiquez le sigle de l'établissement.";
         if (Phone.Length > 0 && !(Phone.Length == PhoneInput.Length && Phone[0] == '0')) return "Le téléphone compte 10 chiffres commençant par 0, par exemple 0812345678.";
@@ -390,6 +505,9 @@ public sealed class SetupViewModel : Observable
     {
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var rank = 0;
+        if (InstitutionType.Value == InstitutionProfiles.ComplexeScolaire &&
+            Promotions.Any(p => !p.IsBlank))
+            return "Pour un complexe scolaire, retirez les promotions saisies avant le changement de profil. Les classes seront créées dans leur cycle après l'installation.";
         foreach (var p in Promotions)
         {
             rank++;
@@ -399,9 +517,20 @@ public sealed class SetupViewModel : Observable
                 return $"Promotion {rank} : le code compte 4 caractères, lettres ou chiffres, par exemple INF1.";
             if (!seen.Add(code)) return $"Promotion {rank} : le code {code} est déjà utilisé.";
             if (string.IsNullOrWhiteSpace(p.Name)) return $"Promotion {rank} : indiquez la désignation, par exemple « Première année ».";
+            if (InstitutionType.Value == InstitutionProfiles.SuperieurLmd && Governance.Value != "Public")
+            {
+                if (!decimal.TryParse(p.Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.NumberStyles.Number,
+                    System.Globalization.CultureInfo.InvariantCulture, out var annual) || !int.TryParse(p.TrancheCount, out var count))
+                    return $"Promotion {rank} : indiquez le total annuel et le nombre de tranches.";
+                try { _ = LmdInstallmentPlan.Split(annual, count); }
+                catch (ArgumentException ex) { return $"Promotion {rank} : {ex.Message}"; }
+                continue;
+            }
             if (!decimal.TryParse(p.Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var fee)
-                || fee <= 0 || fee != decimal.Truncate(fee))
-                return $"Promotion {rank} : la mensualité est un montant entier en francs, par exemple 55000.";
+                || (Governance.Value == "Public" ? fee != 0
+                    : InstitutionType.Value == InstitutionProfiles.ItmIm ? fee <= 0 : fee < 0)
+                || fee != decimal.Truncate(fee))
+                return $"Promotion {rank} : mensualité entière valide (zéro obligatoire au public ; montant positif pour ITM/IM privé).";
         }
         return null;
     }
@@ -448,6 +577,25 @@ public sealed class SetupViewModel : Observable
             try { await shell.Api.UploadAsync<object>(HttpMethod.Put, "api/etablissement/logo", [new UploadedFile("fichier", Path.ChangeExtension(logoName ?? "logo", ".png"), logoData)]); }
             catch (ApiException ex) { problems.Add($"Logo non enregistré : {ex.Message}"); }
         }
+        // Sur une école à cycle unique, toutes les classes appartiennent à ce cycle.
+        // Un complexe scolaire exige d'abord un choix explicite des cycles : aucun
+        // rattachement de classe n'est inventé ou déduit d'un code ambigu.
+        Guid? schoolCycleId = null;
+        if (InstitutionType.Value is InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire
+            or InstitutionProfiles.Secondaire)
+        {
+            try
+            {
+                var configured = await shell.Api.GetAsync<SchoolCycleConfigurationDto>("api/etablissement/cycles");
+                schoolCycleId = configured.Cycles.Single(c =>
+                    c.Kind == InstitutionType.Value && c.IsActive).Id;
+            }
+            catch (Exception ex) when (ex is ApiException or InvalidOperationException)
+            {
+                problems.Add("Impossible de retrouver le cycle scolaire de l'établissement. Configurez les classes dans Paramètres : " + ex.Message);
+                return problems;
+            }
+        }
         foreach (var p in Promotions.Where(p => !p.IsBlank))
         {
             var code = p.Code.Trim();
@@ -458,7 +606,9 @@ public sealed class SetupViewModel : Observable
                 {
                     code, name = p.Name.Trim(), sectionId = (Guid?)null, level = Math.Max(level, 1), capacity = (int?)null, isActive = true,
                     nextPromotionCode = (string?)null,
-                    monthlyFee = decimal.Parse(p.Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.CultureInfo.InvariantCulture),
+                    schoolCycleId,
+                    monthlyFee = p.IsLmd ? 0m : decimal.Parse(p.Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.CultureInfo.InvariantCulture),
+                    lmdAnnualFee = p.IsLmd && Governance.Value != "Public" ? new { annualTotal = decimal.Parse(p.Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.CultureInfo.InvariantCulture), count = int.Parse(p.TrancheCount, System.Globalization.CultureInfo.InvariantCulture) } : null,
                     oneTimeFees = Array.Empty<object>(),
                 });
             }
@@ -474,13 +624,17 @@ public sealed class SetupViewModel : Observable
         if (UseComptabilite) accounts.Add(new { role = "Comptabilite", userName = ComptabiliteUserName.Trim(), displayName = ComptabiliteDisplayName.Trim(), password = ComptabilitePassword });
         return new
         {
+            institutionType = InstitutionType.Value,
+            governance = Governance.Value,
+            initialSchoolCycles = IsComplexSchool ? SelectedCycles() : null,
             schoolName = SchoolName.Trim(),
             shortName = ShortName.Trim(),
             motto = Motto.Trim() is { Length: > 0 } motto ? motto : null,
             city = City.Trim() is { Length: > 0 } city ? city : null,
             phone = Phone.Trim() is { Length: > 0 } phone ? phone : null,
-            currencyCode = "CDF",
-            currencySymbol = "FC",
+            // Les universités facturent leurs frais académiques en dollars américains.
+            currencyCode = InstitutionType.Value == InstitutionProfiles.SuperieurLmd ? "USD" : "CDF",
+            currencySymbol = InstitutionType.Value == InstitutionProfiles.SuperieurLmd ? "$" : "FC",
             yearLabel = $"{match.Groups[1].Value}-{match.Groups[2].Value}",
             startMonth = int.Parse(StartMonth.Value, System.Globalization.CultureInfo.InvariantCulture),
             endMonth = int.Parse(EndMonth.Value, System.Globalization.CultureInfo.InvariantCulture),

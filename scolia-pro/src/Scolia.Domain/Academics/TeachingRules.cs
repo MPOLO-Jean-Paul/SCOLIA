@@ -33,9 +33,28 @@ public static class TeachingRules
         return value;
     }
 
+    /// <summary>Maxima d'un cours, comme dans ITMCD : de 1 à 2000 points.</summary>
+    public const decimal MaxMaxScore = 2000;
+
+    /// <summary>
+    /// Pondération (coefficient) : poids du cours dans la moyenne sur 20 des bulletins de « Cours et notes ».
+    /// La délibération ne l'utilise pas : elle additionne les points obtenus sur le maxima de chaque cours.
+    /// </summary>
     public static decimal Coefficient(decimal value)
     {
-        if (value is <= 0 or > 100) throw new DomainException("cours", "Le coefficient doit être compris entre 0 et 100.");
+        if (value is <= 0 or > 100) throw new DomainException("cours", "La pondération (coefficient) doit être comprise entre 0 et 100.");
+        if (decimal.Round(value, 2) != value) throw new DomainException("cours", "La pondération accepte au maximum deux décimales.");
+        return value;
+    }
+
+    /// <summary>
+    /// Maxima (cotation maximale) : total de points du cours. Les cotes de la délibération (S1, S2, jury) vont de 0 à ce
+    /// maxima et le cours est en échec sous sa moitié. Convention ITM : maxima = pondération × 10.
+    /// </summary>
+    public static decimal MaxScore(decimal value)
+    {
+        Positive(value, "Le maxima du cours");
+        if (value < 1 || value > MaxMaxScore) throw new DomainException("cours", $"Le maxima du cours doit être compris entre 1 et {MaxMaxScore:0} points.");
         return value;
     }
 

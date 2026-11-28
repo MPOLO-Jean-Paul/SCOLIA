@@ -2,35 +2,35 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.CashView">
-  <ScrollViewer>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="16">
       <Border Classes="filterbar">
         <WrapPanel>
           <StackPanel Classes="field">
             <TextBlock Text="Situation au" Classes="fieldlabel" />
-            <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="180" SelectedDate="{Binding Day}" />
+            <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="180" SelectedDate="{Binding Day}" AutomationProperties.Name="Date de l’opération" />
           </StackPanel>
         </WrapPanel>
       </Border>
 
       <ItemsControl ItemsSource="{Binding Figures}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
         <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
+          <ItemsPanelTemplate><infra:AdaptiveTiles MinItemWidth="170" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
       </ItemsControl>
 
       <Border Classes="card">
         <StackPanel Spacing="8">
           <TextBlock Text="Mouvements de la période" Classes="heading" />
-          <DataGrid ItemsSource="{Binding Movements}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="340">
+          <DataGrid AutomationProperties.Name="Mouvements de caisse" ItemsSource="{Binding Movements}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="340">
             <DataGrid.Columns>
-              <DataGridTextColumn infra:GridPriority.Level="2" Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="130" />
-              <DataGridTextColumn infra:GridPriority.Level="2" Header="Type" Binding="{Binding Type}" Width="Auto" MinWidth="120" />
-              <DataGridTextColumn infra:GridPriority.Level="3" Header="Numéro" Binding="{Binding Number}" Width="Auto" MinWidth="130" />
-              <DataGridTextColumn Header="Libellé" Binding="{Binding Label}" Width="*" MinWidth="140" />
-              <DataGridTextColumn infra:GridPriority.Level="3" Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="120" />
+              <DataGridTextColumn infra:GridPriority.Level="2" Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="120" />
+              <DataGridTextColumn infra:GridPriority.Level="2" Header="Type" Binding="{Binding Type}" Width="Auto" MinWidth="110" />
+              <DataGridTextColumn infra:GridPriority.Level="3" Header="Numéro" Binding="{Binding Number}" Width="Auto" MinWidth="150" />
+              <DataGridTextColumn Header="Libellé" Binding="{Binding Label}" Width="*" MinWidth="220" />
+              <DataGridTextColumn infra:GridPriority.Level="2" Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="140" />
               <DataGridTextColumn Header="Entrée" Binding="{Binding In}" Width="Auto" MinWidth="130" />
-              <DataGridTextColumn Header="Sortie" Binding="{Binding Out}" Width="Auto" MinWidth="130" />
+              <DataGridTextColumn Header="Sortie" Binding="{Binding Out}" Width="Auto" MinWidth="120" />
             </DataGrid.Columns>
           </DataGrid>
         </StackPanel>
@@ -39,7 +39,7 @@
       <Border Classes="card">
         <StackPanel Spacing="8">
           <TextBlock Text="Arrêtés de caisse" Classes="heading" />
-          <DataGrid ItemsSource="{Binding Closings}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260">
+          <DataGrid AutomationProperties.Name="Arrêtés de caisse" ItemsSource="{Binding Closings}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="130" />
               <DataGridTextColumn Header="Attendu" Binding="{Binding Expected}" Width="Auto" MinWidth="140" />
@@ -47,7 +47,7 @@
               <DataGridTemplateColumn Header="Écart" Width="Auto" MinWidth="140">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding Difference}" Foreground="{Binding DifferenceBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Difference}" ToolTip.Tip="{Binding Difference}" Foreground="{Binding DifferenceBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>

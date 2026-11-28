@@ -22,6 +22,20 @@ public sealed class RelayCommand<T>(Action<T?> execute) : ICommand
     public void Refresh() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
 }
 
+/// <summary>
+/// Commande vocale à deux états : contrairement aux commandes d'écriture,
+/// elle reste cliquable pendant l'écoute pour permettre le deuxième clic « Arrêter ».
+/// ExecuteAsync est conservée pour les tests et les parcours de capture de l'interface.
+/// </summary>
+public sealed class ToggleVoiceCommand(Func<Task> toggle) : ICommand
+{
+    public event EventHandler? CanExecuteChanged;
+    public bool CanExecute(object? parameter) => true;
+    public async void Execute(object? parameter) => await ExecuteAsync();
+    public Task ExecuteAsync() => toggle();
+    public void Refresh() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+}
+
 /// <summary>Commande asynchrone : désactivée pendant son exécution, pour éviter les doubles envois.</summary>
 public sealed class AsyncCommand(Func<Task> execute) : ICommand
 {

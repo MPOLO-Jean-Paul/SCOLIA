@@ -3,6 +3,7 @@
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:vm="using:Scolia.Bureau.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.PromoterDashboardView"
              x:DataType="vm:PromoterDashboardPage">
   <UserControl.Resources>
@@ -10,7 +11,7 @@
     <DataTemplate x:Key="PeriodRow" x:DataType="vm:PromoterPeriodRowVm">
       <Border Padding="10,8" CornerRadius="10" Margin="0,0,0,4" Background="{DynamicResource GroupBrush}">
         <StackPanel Spacing="5">
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" infra:Adaptive.StackBelow="300">
             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
               <TextBlock Text="{Binding Period}" FontWeight="SemiBold" />
               <Border IsVisible="{Binding IsCurrent}" Background="{DynamicResource AccentSoftBrush}" CornerRadius="8" Padding="6,1">
@@ -18,13 +19,13 @@
               </Border>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-              <mi:MaterialIcon Kind="CheckCircle" Width="15" Height="15" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding IsSettled}" />
+              <mi:MaterialIcon Kind="CheckCircleOutline" Width="16" Height="16" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding IsSettled}" />
               <TextBlock Text="Réglé" FontWeight="SemiBold" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding IsSettled}" />
               <TextBlock Text="Reste" Classes="muted" IsVisible="{Binding !IsSettled}" />
-              <TextBlock Text="{Binding Remaining}" FontWeight="SemiBold" IsVisible="{Binding !IsSettled}" />
+              <TextBlock Text="{Binding Remaining}" FontWeight="SemiBold" TextWrapping="Wrap" ToolTip.Tip="{Binding Remaining}" IsVisible="{Binding !IsSettled}" />
             </StackPanel>
           </Grid>
-          <ProgressBar Minimum="0" Maximum="1" Value="{Binding PaidShare, Mode=OneWay}" Height="5" MinHeight="5" CornerRadius="3" />
+          <ProgressBar AutomationProperties.Name="Part réglée" Minimum="0" Maximum="1" Value="{Binding PaidShare, Mode=OneWay}" Height="5" MinHeight="5" CornerRadius="3" />
           <WrapPanel>
             <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" Margin="0,0,12,0">
               <Run Text="Réglé" /> <Run Text="{Binding Paid, Mode=OneWay}" /> <Run Text="sur" /> <Run Text="{Binding Due, Mode=OneWay}" />
@@ -41,17 +42,17 @@
   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="14" Margin="4,6,4,18">
       <!-- En-tête : ce qu'est cet écran, et l'heure des chiffres -->
-      <Border Classes="card" Padding="16">
+      <Border Classes="card" Padding="16" Background="{DynamicResource WelcomeBrush}">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-          <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}" VerticalAlignment="Top">
+          <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" VerticalAlignment="Top">
             <mi:MaterialIcon Kind="ViewDashboardOutline" />
           </Border>
           <StackPanel Grid.Column="1" Spacing="4">
             <WrapPanel>
-              <TextBlock Text="Pilotage de l'établissement" FontWeight="SemiBold" FontSize="18" Margin="0,0,10,0" VerticalAlignment="Center" />
+              <TextBlock Text="Pilotage de l'établissement" TextWrapping="Wrap" FontWeight="SemiBold" FontSize="{DynamicResource FsTitle}" Margin="0,0,10,0" VerticalAlignment="Center" />
               <Border Background="{DynamicResource GroupBrush}" CornerRadius="9" Padding="8,2" VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                  <mi:MaterialIcon Kind="EyeOutline" Width="13" Height="13" />
+                  <mi:MaterialIcon Kind="EyeOutline" Width="14" Height="14" />
                   <TextBlock Text="Lecture seule" FontSize="{DynamicResource FsSmall}" />
                 </StackPanel>
               </Border>
@@ -63,8 +64,11 @@
         </Grid>
       </Border>
 
+      <c:DashboardFilters DataContext="{Binding Filters}" />
+      <Border Classes="band"><TextBlock Text="{Binding SelectionTotal}" FontWeight="SemiBold" TextWrapping="Wrap" /></Border>
+
       <!-- Point d'attention : l'argent exigible non réglé -->
-      <Border Classes="guide" IsVisible="{Binding HasAttention}">
+      <Border Classes="guide" Background="{DynamicResource OrangeSoftBrush}" IsVisible="{Binding HasAttention}">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
           <mi:MaterialIcon Kind="AlertCircleOutline" Width="20" Height="20" VerticalAlignment="Top" Foreground="{DynamicResource ToneOrange}" />
           <TextBlock Grid.Column="1" Text="{Binding Attention}" TextWrapping="Wrap" />
@@ -75,22 +79,13 @@
       <ItemsControl ItemsSource="{Binding Kpis}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
-            <UniformGrid Columns="3" infra:Adaptive.MinItemWidth="150" />
+            <infra:AdaptiveTiles MinItemWidth="170" MaxColumns="3" />
           </ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:PromoterKpiVm">
-            <Border Classes="card" Padding="14" Margin="0,0,10,10">
-              <StackPanel Spacing="6">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                  <TextBlock Text="{Binding Label}" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" />
-                  <Border Grid.Column="1" Classes="appicon" Background="{Binding Brush}" VerticalAlignment="Top">
-                    <mi:MaterialIcon Kind="{Binding Icon}" />
-                  </Border>
-                </Grid>
-                <TextBlock Text="{Binding Value}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
-              </StackPanel>
+            <Border Classes="tile" Margin="0,0,12,12">
+              <ContentControl Content="{Binding}" ContentTemplate="{StaticResource DesktopMetricContent}" />
             </Border>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
@@ -99,10 +94,10 @@
       <!-- Établissement, mois par mois : replié pour garder l'écran lisible -->
       <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" CornerRadius="14">
           <Expander.Header>
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="CalendarMonthOutline" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}" />
-              <TextBlock Text="Établissement · mois par mois" FontWeight="SemiBold" VerticalAlignment="Center" />
-            </StackPanel>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <mi:MaterialIcon Kind="CalendarMonthOutline" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="Établissement · mois par mois" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+            </Grid>
           </Expander.Header>
           <StackPanel Spacing="6">
             <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
@@ -119,7 +114,7 @@
               <StackPanel Spacing="10">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                   <StackPanel Spacing="2">
-                    <TextBlock Text="{Binding Code}" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Code}" FontSize="{DynamicResource FsPageHeading}" FontWeight="SemiBold" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Name}" Classes="muted" TextWrapping="Wrap" />
                   </StackPanel>
                   <Border Grid.Column="1" Background="{DynamicResource AccentSoftBrush}" CornerRadius="14" Padding="10,6" VerticalAlignment="Top">
@@ -132,7 +127,7 @@
 
                 <StackPanel Spacing="4">
                   <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Text="{Binding YearShareText}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding YearShareText}" FontWeight="SemiBold" TextWrapping="Wrap" />
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
                       <mi:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14" Foreground="{DynamicResource ToneOrange}" IsVisible="{Binding HasLate}" />
                       <TextBlock Text="{Binding LateDebtors}" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
@@ -143,19 +138,19 @@
 
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="8">
                   <StackPanel>
-                    <TextBlock Text="Encaissé aujourd'hui" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                    <TextBlock Text="Encaissé aujourd'hui" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding CollectedToday}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   </StackPanel>
                   <StackPanel Grid.Column="1">
-                    <TextBlock Text="Encaissé ce mois" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                    <TextBlock Text="Encaissé ce mois" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding CollectedMonth}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   </StackPanel>
                   <StackPanel Grid.Row="1">
-                    <TextBlock Text="Reste à percevoir" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                    <TextBlock Text="Reste à percevoir" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Outstanding}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   </StackPanel>
                   <StackPanel Grid.Row="1" Grid.Column="1">
-                    <TextBlock Text="Déjà exigible" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                    <TextBlock Text="Déjà exigible" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Overdue}" FontWeight="SemiBold" TextWrapping="Wrap"
                                Foreground="{DynamicResource ToneOrange}" IsVisible="{Binding HasOverdue}" />
                     <TextBlock Text="Rien" FontWeight="SemiBold" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding !HasOverdue}" />

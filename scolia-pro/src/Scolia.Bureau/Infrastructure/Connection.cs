@@ -7,7 +7,7 @@ namespace Scolia.Bureau.Infrastructure;
 /// d'un autre ordinateur (« distant »). L'établissement est mémorisé : si l'adresse du serveur change, il est retrouvé.
 /// </summary>
 public sealed record ConnectionSettings(string Mode, string? Url = null, string? SchoolId = null, string? School = null, string? Machine = null,
-    bool LanPromptDone = false)
+    bool LanPromptDone = false, string? CacheUrl = null)
 {
     public const string Local = "local";
     public const string Remote = "distant";
@@ -32,6 +32,13 @@ public static class ConnectionStore
     }
 
     public static void Save(ConnectionSettings settings) => _ = TrySave(settings);
+
+    /// <summary>Oublie seulement la connexion enregistrée sur ce poste ; ne détruit aucune base scolaire.</summary>
+    public static bool TryForget()
+    {
+        try { if (File.Exists(FilePath)) File.Delete(FilePath); return true; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
+    }
 
     /// <summary>
     /// Écriture atomique du serveur mémorisé : éviter qu'une coupure pendant l'écriture
@@ -62,8 +69,34 @@ public static class ConnectionStore
         }
     }
 
+    /// <summary>
+    /// Les clients historiques programment leur reprise en mode distant ou
+    /// Internet. En mode local (ou sans route héritée), seule une autorisation
+    /// centrale déjà vérifiée peut déclencher le travail de fond.
+    /// Un mode inconnu ne doit pas créer une nouvelle route réseau.
+    /// </summary>
+    /// <summary>
+    /// Une tâche locale peut être programmée sans PC principal lorsque
+    /// l'appareil possède soit une session D1 approuvée, soit des opérations
+    /// chiffrées et une délégation de dépôt cloud encore utilisable.
+    /// Une configuration inconnue ne déclenche jamais de trafic réseau.
+    /// </summary>
+    public static bool ShouldScheduleBackgroundSync(string? mode,
+        bool approvedCentralSession, bool delegatedMailboxPending = false) =>
+        mode is ConnectionSettings.Remote or ConnectionSettings.Internet ||
+        ((approvedCentralSession || delegatedMailboxPending) &&
+         (mode is null or ConnectionSettings.Local));
+
     /// <summary>Vrai si ce poste porte déjà la base d'un établissement : il en est le serveur.</summary>
     public static bool HasLocalData() => File.Exists(Path.Combine(PosteAdmin.DataFolder(), "scolia.db"));
+
+    /// <summary>Une IP peut changer ; l'identité du cache local reste celle du premier jumelage prouvé.</summary>
+    public static Uri CacheAddress(Uri current)
+    {
+        var saved = Load();
+        return saved is { IsRemote: true, CacheUrl: { Length: > 0 } url } &&
+               Uri.TryCreate(url, UriKind.Absolute, out var original) ? original : current;
+    }
 
     /// <summary>Adresse du serveur de ce poste.</summary>
     public static Uri LocalAddress => new($"http://localhost:{PosteAdmin.Port()}/");

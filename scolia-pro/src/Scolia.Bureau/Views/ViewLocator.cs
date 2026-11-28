@@ -13,18 +13,25 @@ public sealed class ViewLocator : IDataTemplate
 
     public bool Match(object? data) => ViewType(data) is not null;
 
+    /// <summary>Vues déjà trouvées : la recherche par nom (réflexion) n'est faite qu'une fois par écran et par disposition.</summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<(Type, bool), Type?> Found = new();
+
     private static Type? ViewType(object? data)
     {
-        if (ViewName(data) is not { } name) return null;
-        var assembly = typeof(ViewLocator).Assembly;
-        return (Infrastructure.PhoneLayout.Active ? assembly.GetType($"Scolia.Bureau.Views.Phone.{name}") : null)
-            ?? assembly.GetType($"Scolia.Bureau.Views.{name}");
+        if (data is null) return null;
+        return Found.GetOrAdd((data.GetType(), Infrastructure.PhoneLayout.Active), static key =>
+        {
+            if (ViewName(key.Item1) is not { } name) return null;
+            var assembly = typeof(ViewLocator).Assembly;
+            return (key.Item2 ? assembly.GetType($"Scolia.Bureau.Views.Phone.{name}") : null)
+                ?? assembly.GetType($"Scolia.Bureau.Views.{name}");
+        });
     }
 
-    private static string? ViewName(object? data)
+    private static string? ViewName(Type type)
     {
-        if (data is null || data.GetType().Namespace != "Scolia.Bureau.ViewModels") return null;
-        var name = data.GetType().Name;
+        if (type.Namespace != "Scolia.Bureau.ViewModels") return null;
+        var name = type.Name;
         if (name.EndsWith("ViewModel", StringComparison.Ordinal)) return name[..^"ViewModel".Length] + "View";
         if (name.EndsWith("Page", StringComparison.Ordinal)) return name[..^"Page".Length] + "View";
         return null;

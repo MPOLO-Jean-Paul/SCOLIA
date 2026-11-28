@@ -1,0 +1,27 @@
+name: SCOLIA Cloudflare Central Preview - securite API
+on:
+  push:
+    paths:
+      - 'scolia-pro/deploy/cloudflare-central/**'
+      - '.github/workflows/scolia-cloudflare-central-api.yml'
+  pull_request:
+    paths:
+      - 'scolia-pro/deploy/cloudflare-central/**'
+      - '.github/workflows/scolia-cloudflare-central-api.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-api-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Tester authentification et synchronisation sans secrets
+        working-directory: scolia-pro/deploy/cloudflare-central
+        run: npm test

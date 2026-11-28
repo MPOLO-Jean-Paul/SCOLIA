@@ -32,6 +32,9 @@ export function canOpenPath(pathname: string, permissions: readonly string[]): b
 }
 
 export function accountHome(permissions: readonly string[]): string {
+  // Enseignant (cotes.encoder) ou étudiant (resultats.consulter) : aucun tableau de bord de l'établissement.
+  if (!permissions.some((p) => p === 'rapports.lire' || p === 'pilotage.lire' || p === 'apprenants.lire' || p === 'paiements.lire'))
+    return '/espace';
   return permissions.includes('pilotage.lire') && !permissions.includes('rapports.lire')
     ? '/pilotage' : '/';
 }

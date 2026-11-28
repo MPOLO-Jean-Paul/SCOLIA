@@ -154,6 +154,16 @@ public sealed class MonthlyFollowUpTests : IDisposable
         var october = overview.GetProperty("periods")[1].GetProperty("id").GetString()!;
         var next = await admin.GetAsync($"/api/rapports/suivi-mensuel?periodeId={october}").Ok();
         Assert.Equal(0, next.GetProperty("paidCount").GetInt32());
+        Assert.NotEqual(Guid.Empty, row.GetProperty("feeItemId").GetGuid());
+        var emitted = await admin.GetAsync("/api/rapports/suivi-mensuel").Ok();
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        if (emitted.GetProperty("period").GetString()!.EndsWith(today.Year.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal) &&
+            emitted.GetProperty("period").GetString()!.StartsWith(today.ToString("MMMM", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")), StringComparison.OrdinalIgnoreCase))
+        {
+            Assert.Equal(1, emitted.GetProperty("receiptCount").GetInt32());
+            Assert.Equal(1, emitted.GetProperty("payingStudentsByReceiptDate").GetInt32());
+            Assert.Equal(40000m, emitted.GetProperty("cashReceived").GetDecimal());
+        }
 
         var xlsx = await admin.GetAsync($"/api/rapports/suivi-mensuel/export?periodeId={periodId}&etat=nonpaye&format=xlsx");
         Assert.True(xlsx.IsSuccessStatusCode);
@@ -162,4 +172,121 @@ public sealed class MonthlyFollowUpTests : IDisposable
         var pdf = await admin.GetAsync($"/api/rapports/suivi-mensuel/export?periodeId={periodId}");
         Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
     }
+    [Fact]
+    public async Task Monthly_strict_export_contains_only_selected_promotion_month_state_and_search()
+    {
+        var admin = await app.InstalledAdmin();
+        var first = await Promotion(admin, "INF1");
+        var second = await Promotion(admin, "INF2");
+        var payer = await Student(admin, first, "Mukendi", "0811111111");
+        await Student(admin, first, "Ilunga", "0822222222");
+        await Student(admin, second, "Kasongo", "0833333333");
+        await admin.PayMonths(payer, 1);
+        var overview = await admin.GetAsync("/api/rapports/suivi-mensuel").Ok();
+        var periods = overview.GetProperty("periods");
+        var sep = periods[0].GetProperty("id").GetString();
+        var oct = periods[1].GetProperty("id").GetString();
+        var endpoint = "/api/rapports/suivi-mensuel/export/selection";
+        async Task<string> Selection(string period, string promotion, string extra = "")
+        {
+            var data = await admin.GetAsync($"/api/rapports/suivi-mensuel?periodeId={period}&promotionId={promotion}{extra}").Ok();
+            var rows = data.GetProperty("rows").EnumerateArray().ToArray();
+            var fingerprint = Scolia.Domain.Common.MonthlyExportSelection.Fingerprint(rows.Select(r =>
+                (r.GetProperty("studentId").GetGuid(), (Guid?)r.GetProperty("feeItemId").GetGuid())));
+            return $"?periodeId={period}&promotionScope={promotion}{extra}&expectedCount={rows.Length}&expectedSelection={fingerprint}";
+        }
+        var selection = await Selection(sep!, first, "&etat=paye&q=Mukendi");
+        var xlsx = await admin.GetAsync(endpoint + selection + "&format=xlsx");
+        Assert.True(xlsx.IsSuccessStatusCode);
+        using var book = new ClosedXML.Excel.XLWorkbook(await xlsx.Content.ReadAsStreamAsync());
+        var sheet = book.Worksheet(1);
+        Assert.Equal("MUKENDI KABEYA Grâce", sheet.Cell(6, 2).GetString());
+        Assert.Equal("INF1", sheet.Cell(6, 3).GetString());
+        Assert.Equal("Payé", sheet.Cell(6, 7).GetString());
+        Assert.Equal("Total", sheet.Cell(7, 2).GetString());
+        Assert.DoesNotContain(sheet.CellsUsed(), c => c.GetString().Contains("KASONGO", StringComparison.Ordinal));
+        var wrongCount = await admin.GetAsync(endpoint + selection.Replace("expectedCount=1", "expectedCount=2", StringComparison.Ordinal) + "&format=xlsx");
+        Assert.Equal(System.Net.HttpStatusCode.Conflict, wrongCount.StatusCode);
+        var missingPromotion = await admin.GetAsync(endpoint + $"?periodeId={sep}&expectedCount=1&format=xlsx");
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, missingPromotion.StatusCode);
+        var wrongIdentity = await admin.GetAsync(endpoint + selection[..selection.IndexOf("&expectedSelection=", StringComparison.Ordinal)] +
+            "&expectedSelection=" + new string('0', 64) + "&format=xlsx");
+        Assert.Equal(System.Net.HttpStatusCode.Conflict, wrongIdentity.StatusCode);
+        var promotionOnly = await admin.GetAsync(endpoint + await Selection(sep!, first) + "&format=xlsx");
+        Assert.True(promotionOnly.IsSuccessStatusCode);
+        using var promotionBook = new ClosedXML.Excel.XLWorkbook(await promotionOnly.Content.ReadAsStreamAsync());
+        var promotionSheet = promotionBook.Worksheet(1);
+        Assert.Equal("INF1", promotionSheet.Cell(6, 3).GetString());
+        Assert.Equal("INF1", promotionSheet.Cell(7, 3).GetString());
+        Assert.Equal("Total", promotionSheet.Cell(8, 2).GetString());
+        var nextMonth = await admin.GetAsync(endpoint + await Selection(oct!, first) + "&format=xlsx");
+        Assert.True(nextMonth.IsSuccessStatusCode);
+        using var nextBook = new ClosedXML.Excel.XLWorkbook(await nextMonth.Content.ReadAsStreamAsync());
+        Assert.NotEqual("Payé", nextBook.Worksheet(1).Cell(6, 7).GetString());
+        Assert.NotEqual("Payé", nextBook.Worksheet(1).Cell(7, 7).GetString());
+        var october = await admin.GetAsync(endpoint + await Selection(oct!, first, "&etat=paye") + "&format=xlsx");
+        Assert.True(october.IsSuccessStatusCode);
+        using var octBook = new ClosedXML.Excel.XLWorkbook(await october.Content.ReadAsStreamAsync());
+        Assert.DoesNotContain(octBook.Worksheet(1).CellsUsed(), c => c.GetString().Contains("MUKENDI", StringComparison.Ordinal));
+        var pdf = await admin.GetAsync(endpoint + selection + "&format=pdf");
+        Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
+        var word = await admin.GetAsync(endpoint + selection + "&format=docx");
+        Assert.Equal("application/vnd.openxmlformats-officedocument.wordprocessingml.document", word.Content.Headers.ContentType?.MediaType);
+        using var zip = new System.IO.Compression.ZipArchive(await word.Content.ReadAsStreamAsync());
+        using var reader = new StreamReader(zip.GetEntry("word/document.xml")!.Open());
+        var xml = await reader.ReadToEndAsync();
+        Assert.Contains("MUKENDI", xml, StringComparison.Ordinal);
+        Assert.DoesNotContain("KASONGO", xml, StringComparison.Ordinal);
+        Assert.DoesNotContain("ILUNGA", xml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Monthly_reconciles_allocations_partial_payments_and_cancelled_receipts()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await Promotion(admin, "INF1");
+        var a = await Student(admin, promotion, "Mukendi", "0811111111");
+        var b = await Student(admin, promotion, "Ilunga", "0822222222");
+        var c = await Student(admin, promotion, "Kasongo", "0833333333");
+        var initial = await admin.GetAsync("/api/rapports/suivi-mensuel").Ok();
+        var periods = initial.GetProperty("periods");
+        var first = periods[0].GetProperty("id").GetString();
+        var second = periods[1].GetProperty("id").GetString();
+        var firstYear = int.Parse(periods[0].GetProperty("name").GetString()!.Split(' ')[^1],
+            System.Globalization.CultureInfo.InvariantCulture);
+        var date = new DateOnly(firstYear, 9, 1);
+        await admin.PayMonths(a, 2, date: date);
+        var (bFees, _) = await admin.OpenMonths(b, 2);
+        async Task<System.Text.Json.JsonElement> Partial(decimal amount) =>
+            await admin.Post("/api/paiements", new { enrollmentId = b, amount,
+                feeItemIds = new[] { bFees[1] }, method = "Especes", date }).Ok();
+        await Partial(15000m);
+        var cancelled = await admin.PayMonths(c, 2, date: date);
+        var cancelledId = cancelled.GetProperty("id").GetString();
+        await admin.Post($"/api/paiements/{cancelledId}/annulation", new { reason = "Erreur de saisie de test" }).Ok();
+
+        var month = await admin.GetAsync($"/api/rapports/suivi-mensuel?periodeId={second}").Ok();
+        Assert.Equal(1, month.GetProperty("paidCount").GetInt32());
+        Assert.Equal(2, month.GetProperty("unpaidCount").GetInt32());
+        Assert.Equal(55000m, month.GetProperty("collected").GetDecimal());
+        Assert.Equal(65000m, month.GetProperty("remaining").GetDecimal());
+        Assert.Equal(0, month.GetProperty("receiptCount").GetInt32());
+        Assert.Equal("Partiel", month.GetProperty("rows").EnumerateArray()
+            .Single(r => r.GetProperty("enrollmentId").GetString() == b).GetProperty("status").GetString());
+        var unpaid = month.GetProperty("rows").EnumerateArray().Single(r => r.GetProperty("enrollmentId").GetString() == c);
+        Assert.Equal(0m, unpaid.GetProperty("paid").GetDecimal());
+        Assert.Equal(JsonValueKind.Null, unpaid.GetProperty("receiptNumber").ValueKind);
+
+        await Partial(25000m);
+        var settled = await admin.GetAsync($"/api/rapports/suivi-mensuel?periodeId={second}&etat=paye").Ok();
+        Assert.Equal(2, settled.GetProperty("paidCount").GetInt32());
+        Assert.Equal(2, settled.GetProperty("rows").GetArrayLength());
+        Assert.Equal(80000m, settled.GetProperty("collected").GetDecimal());
+        var cash = await admin.GetAsync($"/api/rapports/suivi-mensuel?periodeId={first}").Ok();
+        Assert.Equal(3, cash.GetProperty("receiptCount").GetInt32());
+        Assert.Equal(2, cash.GetProperty("payingStudentsByReceiptDate").GetInt32());
+        Assert.Equal(120000m, cash.GetProperty("cashReceived").GetDecimal());
+        Assert.Equal(40000m, cash.GetProperty("collected").GetDecimal());
+    }
+
 }

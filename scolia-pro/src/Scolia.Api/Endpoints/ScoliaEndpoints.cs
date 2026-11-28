@@ -10,9 +10,11 @@ using Scolia.Application.Dtos;
 using Scolia.Application.Services;
 using Scolia.Domain.Common;
 using Scolia.Domain.Security;
+using Scolia.Domain.Students;
 using Scolia.Infrastructure.Backup;
 using Scolia.Infrastructure.Import;
 using Scolia.Infrastructure.Persistence;
+using Scolia.Infrastructure.Documents;
 
 namespace Scolia.Api.Endpoints;
 
@@ -26,13 +28,27 @@ public static class ScoliaEndpoints
             ? Results.File(reports.Excel(table), Xlsx, $"{baseName}.xlsx")
             : new InlineFileResult(reports.Pdf(table), Pdf, $"{baseName}.pdf");
 
+    private static async Task<IResult> DashboardExport(ReportService reports, DashboardQuery query, string expectedSelection,
+        string? format, bool promoter, CancellationToken ct)
+    {
+        var chosen = format ?? "xlsx";
+        var bytes = await reports.DashboardExportAsync(query, expectedSelection, chosen, promoter, ct);
+        return Results.File(bytes, chosen == "xlsx" ? Xlsx : Pdf,
+            (promoter ? "pilotage-selection" : "tableau-bord-selection") + "." + chosen);
+    }
+
+    // Les mots de passe des archives et les bases téléchargées ne doivent jamais
+    // transiter en clair depuis un autre appareil du réseau local.
+    private static bool TrustedBackupTransport(HttpContext http) =>
+        http.Request.IsHttps || IPAddress.IsLoopback(http.Connection.RemoteIpAddress ?? IPAddress.None);
+
     private static string PublicBase(HttpContext http, IConfiguration config) =>
         config["Scolia:UrlPublique"] is { Length: > 0 } configured ? configured : $"{http.Request.Scheme}://{http.Request.Host}";
 
     public static void MapScoliaEndpoints(this IEndpointRouteBuilder app)
     {
         var api = app.MapGroup("/api");
-        api.MapGet("/sante", async (BackupService backups, CancellationToken ct) => Results.Ok(new { statut = "ok", version = typeof(ScoliaEndpoints).Assembly.GetName().Version?.ToString(), heure = DateTime.Now }));
+        api.MapGet("/sante", (CancellationToken ct) => Results.Ok(new { statut = "ok", version = typeof(ScoliaEndpoints).Assembly.GetName().Version?.ToString(), cardGenerator = DocumentService.CardGeneratorId, heure = DateTime.Now }));
 
         // ---------- Installation et session ----------
         api.MapGet("/installation", (SetupService setup, CancellationToken ct) => setup.StatusAsync(ct));
@@ -63,6 +79,19 @@ public static class ScoliaEndpoints
             await SessionFactory.SignInAsync(http, user);
             return Results.Ok(await SessionFactory.DescribeAsync(db, user, ct));
         }).RequireRateLimiting("connexion");
+        api.MapGet("/organisation/gestion", async (ManagementModeService management, HttpContext http, CancellationToken ct) =>
+        {
+            http.Response.Headers.CacheControl = "no-store";
+            return await management.ReadAsync(ct);
+        }).RequireAuthorization(Permissions.SettingsWrite);
+        api.MapPut("/organisation/gestion", async (ManagementModeChange input, ManagementModeService management,
+            ScoliaDbContext db, HttpContext http, CancellationToken ct) =>
+        {
+            var user = await management.ChangeAsync(input, ct);
+            await SessionFactory.SignInAsync(http, user);
+            http.Response.Headers.CacheControl = "no-store";
+            return await SessionFactory.DescribeAsync(db, user, ct);
+        }).RequireAuthorization(Permissions.SettingsWrite).RequireRateLimiting("connexion");
         // Restauration depuis la connexion : code confidentiel détenu par le responsable du serveur.
         api.MapPost("/session/recuperation", async Task<IResult> (RecoveryInput input, RecoveryKeyStore codes,
             UserService users, CancellationToken ct) =>
@@ -94,7 +123,7 @@ public static class ScoliaEndpoints
         api.MapPost("/jumelage/inviter", async Task<IResult> (HttpContext http, ICurrentUser current,
             ScoliaDbContext db, DevicePairingRegistry registry, IHostEnvironment host, CancellationToken ct) =>
         {
-            // Seul le responsable présent sur le serveur peut générer une invitation donnant accès à son compte.
+            // L'invitation n'autorise que l'appareil et le serveur : jamais les droits du responsable.
             if (!IPAddress.IsLoopback(http.Connection.RemoteIpAddress ?? IPAddress.None)
                 && !(host.IsEnvironment("Testing") && http.Connection.RemoteIpAddress is null))
                 return Results.Forbid();
@@ -114,50 +143,95 @@ public static class ScoliaEndpoints
             var account = await db.Users.AsNoTracking().FirstOrDefaultAsync(
                 u => u.Id == a.Owner && u.IsActive && u.SecurityStamp == a.Stamp, ct);
             if (account is null) { registry.Revoke(a.GrantId, a.Owner); return Results.Unauthorized(); }
-            await SessionFactory.SignInDeviceAsync(http, account, a.GrantId, request.DeviceId);
-            return Results.Ok(new PairingAccepted(await SessionFactory.DescribeAsync(db, account, ct),
-                a.GrantId, a.Secret, a.ExpiresUtc));
+            // AUCUN cookie de session émis ici. Chaque utilisateur doit fournir
+            // son identifiant et son mot de passe sur l'écran de connexion.
+            var school = await db.Schools.AsNoTracking().OrderBy(s => s.CreatedAtUtc)
+                .Select(s => s.Name).FirstOrDefaultAsync(ct);
+            return Results.Ok(new PairingAccepted(a.GrantId, a.Secret, a.ExpiresUtc,
+                school ?? "SCOLIA"));
         }).RequireRateLimiting("connexion");
 
-        api.MapPost("/session/appareil", async Task<IResult> (DeviceLoginRequest request, HttpContext http,
-            DevicePairingRegistry registry, ScoliaDbContext db, CancellationToken ct) =>
+        // Découverte UDP seule = non fiable ; ce défi permet de reconnaître
+        // le serveur autorisé si son adresse change, sans exposer le secret client.
+        api.MapPost("/jumelage/preuve-serveur", (DeviceProofRequest request, HttpContext http,
+            DevicePairingRegistry registry) =>
         {
             if (request.DeviceId != LiveHeaders.DeviceId(http)) return Results.Unauthorized();
-            var granted = registry.Authorize(request.GrantId, request.DeviceId, request.Secret);
-            if (granted is null) return Results.Unauthorized();
-            var a = granted.Value;
-            var account = await db.Users.AsNoTracking().FirstOrDefaultAsync(
-                u => u.Id == a.Owner && u.IsActive && u.SecurityStamp == a.Stamp, ct);
-            if (account is null) return Results.Unauthorized();
-            await SessionFactory.SignInDeviceAsync(http, account, request.GrantId, request.DeviceId);
-            return Results.Ok(await SessionFactory.DescribeAsync(db, account, ct));
+            var proof = registry.ProveIdentity(request.GrantId, request.DeviceId, request.Nonce);
+            return proof is null ? Results.Unauthorized() : Results.Ok(new DeviceProofReply(proof));
         }).RequireRateLimiting("connexion");
 
-        api.MapGet("/jumelage/appareils", (ICurrentUser current, DevicePairingRegistry registry) =>
-            Results.Ok(registry.List(current.Id!.Value))).RequireAuthorization(Permissions.UsersManage);
+        // Les anciennes versions pouvaient transformer un QR en session administrateur.
+        // Fermer explicitement ce chemin : une clé d'appareil n'est PAS un mot de passe.
+        api.MapPost("/session/appareil", () => Results.Unauthorized())
+            .RequireRateLimiting("connexion");
+        api.MapPost("/session/appareil/renouveler", () => Results.Unauthorized())
+            .RequireRateLimiting("connexion");
+
+        // Reconnaître le poste déjà lié sans ouvrir de session utilisateur.
+        // La preuve reste limitée à ce poste ; elle sert à la reconnexion LAN/WSS.
+        api.MapPost("/jumelage/appareil/verifier", (DeviceLoginRequest request, HttpContext http,
+            DevicePairingRegistry registry) =>
+        {
+            if (request.DeviceId != LiveHeaders.DeviceId(http)) return Results.Unauthorized();
+            var linked = registry.AuthorizeAndRefresh(request.GrantId, request.DeviceId, request.Secret);
+            return linked is null ? Results.Unauthorized()
+                : Results.Ok(new DeviceLinkVerified(linked.Value.ExpiresUtc));
+        }).RequireRateLimiting("connexion");
+
+        // Première connexion du Promoteur : mémoriser uniquement l'appareil
+        // authentifié et son compte en lecture seule, sans privilèges administratifs.
+        api.MapPost("/jumelage/mon-appareil", async Task<IResult> (HttpContext http,
+            ICurrentUser current, DevicePairingRegistry registry, ScoliaDbContext db,
+            CancellationToken ct) =>
+        {
+            var deviceId = LiveHeaders.DeviceId(http);
+            if (string.IsNullOrWhiteSpace(deviceId)) return Results.Unauthorized();
+            var account = await db.Users.AsNoTracking().FirstOrDefaultAsync(
+                u => u.Id == current.Id && u.IsActive, ct);
+            if (account is null) return Results.Unauthorized();
+            if (account.Role != Role.Promoteur) return Results.Forbid();
+            var issued = registry.EnrollOwnDevice(account.Id, account.SecurityStamp,
+                deviceId, LiveHeaders.Device(http));
+            return issued is null ? Results.BadRequest()
+                : Results.Ok(new DeviceSelfRegistration(issued.Value.GrantId,
+                    issued.Value.Secret, issued.Value.ExpiresUtc));
+        }).RequireAuthorization(Permissions.PilotageRead).RequireRateLimiting("connexion");
+
+        api.MapGet("/jumelage/appareils", (DevicePairingRegistry registry) =>
+            Results.Ok(registry.ListAll())).RequireAuthorization(Permissions.UsersManage);
 
         api.MapPost("/jumelage/appareils/{grantId:guid}/revoquer", (Guid grantId,
-            ICurrentUser current, DevicePairingRegistry registry) =>
-            registry.Revoke(grantId, current.Id!.Value) ? Results.NoContent() : Results.NotFound())
+            DevicePairingRegistry registry) =>
+            registry.RevokeAny(grantId) ? Results.NoContent() : Results.NotFound())
             .RequireAuthorization(Permissions.UsersManage);
 
         // ---------- Vérification publique des reçus (QR code) ----------
         api.MapGet("/verifier/{code}", (string code, PaymentService payments, CancellationToken ct) => payments.VerifyAsync(code, ct)).RequireRateLimiting("connexion");
+        // Vérification publique des bulletins de délibération officiels (QR code) : nom masqué, résultat figé.
+        api.MapGet("/verifier-bulletin/{code}", (string code, DeliberationService s, CancellationToken ct) => s.VerifyBulletinAsync(code, ct)).RequireRateLimiting("connexion");
 
         var secured = api.MapGroup("").RequireAuthorization();
         secured.MapGet("/recherche", (string? q, SearchService search, CancellationToken ct) => search.SearchAsync(q, ct)).RequireAuthorization(Permissions.StudentsRead);
         // Révision des données : les postes la comparent pour recharger l'écran après une écriture faite ailleurs.
-        secured.MapGet("/revision", (DataRevision revision) => Results.Ok(new { revision = revision.Value }));
+        secured.MapGet("/revision", (DataRevision revision) => Results.Ok(new { revision = revision.Value, epoch = revision.Epoch }));
 
         MapCards(secured);
         MapSchool(secured);
         MapStudents(secured);
         MapFinance(secured);
         MapReports(secured);
-        // Endpoint de pilotage séparé : aucun rapport nominatif ni fichier téléchargeable avec ce droit.
-        secured.MapGet("/pilotage/synthese", (ReportService reports, CancellationToken ct) =>
-            reports.PromoterDashboardAsync(ct)).RequireAuthorization(Permissions.PilotageRead);
+        // Pilotage séparé : tableaux et exports exclusivement agrégés, sans dossier ni reçu nominatif.
+        secured.MapGet("/pilotage/synthese", ([AsParameters] DashboardQuery query, ReportService reports, CancellationToken ct) =>
+            reports.FilteredPromoterDashboardAsync(query, ct)).RequireAuthorization(Permissions.PilotageRead);
+        secured.MapGet("/pilotage/filtres", (ReportService reports, CancellationToken ct) =>
+            reports.DashboardFiltersAsync(ct)).RequireAuthorization(Permissions.PilotageRead);
+        secured.MapGet("/pilotage/export", async ([AsParameters] DashboardQuery query, string expectedSelection, string? format,
+            ReportService reports, CancellationToken ct) =>
+            await DashboardExport(reports, query, expectedSelection, format, true, ct))
+            .RequireAuthorization(Permissions.PilotageRead);
         MapAcademics(secured);
+        MapDeliberation(secured);
         MapStaff(secured);
         MapAdministration(secured);
     }
@@ -191,9 +265,225 @@ public static class ScoliaEndpoints
         })
             .RequireAuthorization(Permissions.SettingsWrite);
 
+        // Même administration / établissement : les cycles sont un sous-module
+        // de configuration protégé, sans accès à la caisse ou aux données ITM.
+        g.MapGet("/cycles", (SchoolCycleConfigurationService s, CancellationToken ct) =>
+            s.GetAsync(ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPut("/cycles", (SchoolCycleConfigurationInput input, SchoolCycleConfigurationService s,
+            CancellationToken ct) => s.ConfigureAsync(input, ct))
+            .RequireAuthorization(Permissions.SettingsWrite);
+        g.MapGet("/cycles/{cycleId:guid}/periodes",
+            (Guid cycleId, SchoolPlanningService s, CancellationToken ct) =>
+                s.PeriodsAsync(cycleId, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/cycles/{cycleId:guid}/periodes",
+            (Guid cycleId, SchoolPeriodCreate input, SchoolPlanningService s, CancellationToken ct) =>
+                s.AddPeriodAsync(cycleId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapGet("/cycles/promotions/{promotionId:guid}/matieres",
+            (Guid promotionId, SchoolPlanningService s, CancellationToken ct) =>
+                s.SubjectsAsync(promotionId, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/cycles/promotions/{promotionId:guid}/matieres",
+            (Guid promotionId, AnnualSubjectCreate input, SchoolPlanningService s, CancellationToken ct) =>
+                s.AddSubjectAsync(promotionId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+
+        // Règlement pédagogique EPST / LMD par année : proposition SCOLIA, modification,
+        // validation tracée puis réouverture motivée. ITM/IM n'est pas concerné.
+        g.MapGet("/reglements", (AcademicRegulationService s, CancellationToken ct) =>
+            s.ListAsync(ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPut("/reglements/{scope}", (string scope, AcademicRegulationInput input,
+            AcademicRegulationService s, CancellationToken ct) => s.SaveAsync(scope, input, ct))
+            .RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/reglements/{scope}/validation", (string scope, AcademicRegulationService s,
+            CancellationToken ct) => s.ValidateAsync(scope, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/reglements/{scope}/reouverture", (string scope, AcademicRegulationReopen input,
+            AcademicRegulationService s, CancellationToken ct) => s.ReopenAsync(scope, input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+
+        g.MapPut("/cycles/matieres/{subjectId:guid}/maximum",
+            (Guid subjectId, AnnualSubjectMaxUpdate input, SchoolPlanningService s, CancellationToken ct) =>
+                s.SetSubjectMaxAsync(subjectId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+
+        // Résultats officiels du primaire et du secondaire (règlement validé exigé).
+        g.MapGet("/cycles/promotions/{promotionId:guid}/resultats",
+            (Guid promotionId, EpstResultsService s, CancellationToken ct) =>
+                s.ClassAsync(promotionId, ct)).RequireAuthorization(Permissions.AcademicsRead);
+
+        // Bulletins officiels de l'établissement : toute la classe, ou un seul élève.
+        g.MapGet("/cycles/promotions/{promotionId:guid}/bulletins.pdf",
+            async (Guid promotionId, Guid? inscription, EpstResultsService s, IAcademicDocumentService docs, HttpContext http, CancellationToken ct) =>
+            {
+                // Documents nominatifs de mineurs : interdits aux caches partagés.
+                http.Response.Headers.CacheControl = "private, no-store, max-age=0";
+                http.Response.Headers.Pragma = "no-cache";
+                var print = await s.PrintAsync(promotionId, inscription, ct);
+                return new InlineFileResult(docs.EpstBulletins(print), Pdf,
+                    inscription is null ? "bulletins-classe.pdf" : "bulletin-eleve.pdf");
+            })
+            .RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPut("/cycles/promotions/{promotionId:guid}/conduite",
+            (Guid promotionId, EpstConductInput input, EpstConductService s, CancellationToken ct) =>
+                s.SaveAsync(promotionId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+
+        // Délibération de fin d'année EPST : jury, première session, repêchage, clôture.
+        g.MapGet("/cycles/promotions/{promotionId:guid}/deliberation",
+            (Guid promotionId, EpstDeliberationService s, CancellationToken ct) =>
+                s.GetAsync(promotionId, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPut("/cycles/promotions/{promotionId:guid}/deliberation/eleves/{enrollmentId:guid}/jury",
+            (Guid promotionId, Guid enrollmentId, EpstJuryInput input, EpstDeliberationService s, CancellationToken ct) =>
+                s.SetJuryAsync(promotionId, enrollmentId, input, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/cycles/promotions/{promotionId:guid}/deliberation/premiere-session",
+            (Guid promotionId, EpstDeliberationService s, CancellationToken ct) =>
+                s.CloseFirstSessionAsync(promotionId, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPut("/cycles/promotions/{promotionId:guid}/deliberation/eleves/{enrollmentId:guid}/repechage",
+            (Guid promotionId, Guid enrollmentId, EpstRepechageInput input, EpstDeliberationService s, CancellationToken ct) =>
+                s.SaveRepechageAsync(promotionId, enrollmentId, input, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapGet("/cycles/promotions/{promotionId:guid}/palmares.pdf",
+            async (Guid promotionId, EpstDeliberationService s, IAcademicDocumentService docs, HttpContext http, CancellationToken ct) =>
+            {
+                http.Response.Headers.CacheControl = "private, no-store, max-age=0";
+                http.Response.Headers.Pragma = "no-cache";
+                return new InlineFileResult(docs.EpstPalmares(await s.PalmaresAsync(promotionId, ct)), Pdf,
+                    "proces-verbal-palmares.pdf");
+            })
+            .RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPost("/cycles/promotions/{promotionId:guid}/deliberation/cloture",
+            (Guid promotionId, EpstDeliberationService s, CancellationToken ct) =>
+                s.CloseAsync(promotionId, ct)).RequireAuthorization(Permissions.DeliberationManage);
+
+        // Examens nationaux : finalistes, export pour l'inscription, résultats saisis.
+        g.MapGet("/examens-nationaux/{exam}", (string exam, NationalExamService s, CancellationToken ct) =>
+            s.CandidatesAsync(exam, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapGet("/examens-nationaux/{exam}/liste", async (string exam, string? format, NationalExamService s,
+            ReportService reports, CancellationToken ct) =>
+                Table(await s.TableAsync(exam, ct), format, $"candidats-{exam.ToLowerInvariant()}", reports))
+            .RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPut("/examens-nationaux/{exam}/eleves/{enrollmentId:guid}",
+            (string exam, Guid enrollmentId, NationalExamResultInput input, NationalExamService s, CancellationToken ct) =>
+                s.SaveAsync(exam, enrollmentId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+
+        // LMD : structures, calendrier semestriel et maquettes de cours séparés
+        // des délibérations ITM. Tous les changements exigent SettingsWrite.
+        g.MapGet("/lmd/structures", (LmdPlanningService s, CancellationToken ct) =>
+            s.StructuresAsync(ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/lmd/structures", (LmdStructureInput input, LmdPlanningService s, CancellationToken ct) =>
+            s.AddStructureAsync(input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapGet("/lmd/semestres", (LmdPlanningService s, CancellationToken ct) =>
+            s.SemestersAsync(ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPut("/lmd/semestres", (LmdSemesterCalendarInput input, LmdPlanningService s, CancellationToken ct) =>
+            s.SaveSemestersAsync(input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapGet("/lmd/promotions/{promotionId:guid}/programme",
+            (Guid promotionId, LmdPlanningService s, CancellationToken ct) =>
+                s.ProgramAsync(promotionId, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/lmd/promotions/{promotionId:guid}/ues",
+            (Guid promotionId, LmdTeachingUnitInput input, LmdPlanningService s, CancellationToken ct) =>
+                s.AddTeachingUnitAsync(promotionId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/lmd/promotions/{promotionId:guid}/ecs",
+            (Guid promotionId, LmdTeachingElementInput input, LmdPlanningService s, CancellationToken ct) =>
+                s.AddTeachingElementAsync(promotionId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+
+        // Université LMD : notes des EC, résultats partiels du S1, première et deuxième session, dettes, tranches.
+        g.MapGet("/lmd/promotions/{promotionId:guid}/resultats",
+            (Guid promotionId, string? etape, LmdResultsService s, CancellationToken ct) =>
+                s.ResultsAsync(promotionId, etape, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapGet("/lmd/promotions/{promotionId:guid}/ecs/{elementId:guid}/notes",
+            (Guid promotionId, Guid elementId, int? session, LmdResultsService s, CancellationToken ct) =>
+                s.SheetAsync(promotionId, elementId, session ?? 1, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPut("/lmd/promotions/{promotionId:guid}/ecs/{elementId:guid}/notes",
+            (Guid promotionId, Guid elementId, LmdMarkSheetInput input, LmdResultsService s, CancellationToken ct) =>
+                s.SaveMarksAsync(promotionId, elementId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapPost("/lmd/promotions/{promotionId:guid}/publication-s1",
+            (Guid promotionId, LmdResultsService s, CancellationToken ct) =>
+                s.PublishS1Async(promotionId, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPut("/lmd/promotions/{promotionId:guid}/etudiants/{enrollmentId:guid}/jury",
+            (Guid promotionId, Guid enrollmentId, LmdJuryInput input, LmdResultsService s, CancellationToken ct) =>
+                s.SetJuryAsync(promotionId, enrollmentId, input, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/lmd/promotions/{promotionId:guid}/premiere-session",
+            (Guid promotionId, LmdResultsService s, CancellationToken ct) =>
+                s.CloseFirstSessionAsync(promotionId, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/lmd/promotions/{promotionId:guid}/cloture",
+            (Guid promotionId, LmdResultsService s, CancellationToken ct) =>
+                s.CloseAsync(promotionId, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapGet("/lmd/promotions/{promotionId:guid}/releves.pdf",
+            async (Guid promotionId, string? etape, Guid? inscription, LmdResultsService s, IAcademicDocumentService docs, HttpContext http, CancellationToken ct) =>
+            {
+                http.Response.Headers.CacheControl = "private, no-store, max-age=0";
+                http.Response.Headers.Pragma = "no-cache";
+                var print = await s.TranscriptAsync(promotionId, etape, inscription, ct);
+                return new InlineFileResult(docs.LmdTranscripts(print), Pdf,
+                    inscription is null ? "releves-promotion.pdf" : "releve-etudiant.pdf");
+            })
+            .RequireAuthorization(Permissions.AcademicsRead);
+        g.MapGet("/lmd/promotions/{promotionId:guid}/proces-verbal.pdf",
+            async (Guid promotionId, string? etape, LmdResultsService s, IAcademicDocumentService docs, HttpContext http, CancellationToken ct) =>
+            {
+                http.Response.Headers.CacheControl = "private, no-store, max-age=0";
+                http.Response.Headers.Pragma = "no-cache";
+                var print = await s.TranscriptAsync(promotionId, etape, null, ct);
+                return new InlineFileResult(docs.LmdMinutes(print), Pdf, "proces-verbal-lmd.pdf");
+            })
+            .RequireAuthorization(Permissions.AcademicsRead);
+        g.MapGet("/lmd/dettes", (Guid? etudiant, LmdResultsService s, CancellationToken ct) =>
+            s.DebtsAsync(etudiant, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPut("/lmd/dettes/{debtId:guid}/apurement",
+            (Guid debtId, LmdDebtClearInput input, LmdResultsService s, CancellationToken ct) =>
+                s.ClearDebtAsync(debtId, input, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPut("/lmd/promotions/{promotionId:guid}/tranches",
+            (Guid promotionId, LmdInstallmentsInput input, LmdFeesService s, CancellationToken ct) =>
+                s.SetInstallmentsAsync(promotionId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+
+        // Attribution des branches EPST et des EC LMD aux enseignants (le secrétariat).
+        g.MapGet("/programme/attributions", (Guid? enseignant, CurriculumTeachingService s, CancellationToken ct) =>
+            s.ItemsAsync(enseignant, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapGet("/programme/enseignants", (CurriculumTeachingService s, CancellationToken ct) =>
+            s.TeachersAsync(ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPut("/programme/{itemId:guid}/attribution",
+            (Guid itemId, CurriculumAssignInput input, CurriculumTeachingService s, CancellationToken ct) =>
+                s.AssignAsync(itemId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapPut("/programme/classes/{promotionId:guid}/titulaire",
+            (Guid promotionId, CurriculumAssignInput input, CurriculumTeachingService s, CancellationToken ct) =>
+                s.AssignClassAsync(promotionId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapPost("/programme/{itemId:guid}/retrait-attribution",
+            (Guid itemId, CurriculumUnassignInput input, CurriculumTeachingService s, CancellationToken ct) =>
+                s.UnassignAsync(itemId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+
+        // Registre scolaire distinct de l'ITM : aucun seuil, moyenne ou décision
+        // inventés dans un aperçu. L'écriture est interdite aux profils non activés.
+        g.MapGet("/cycles/evaluations/{enrollmentId:guid}/apercu",
+            (Guid enrollmentId, SchoolCycleAssessmentService s, CancellationToken ct) =>
+                s.PreviewAsync(enrollmentId, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPost("/cycles/evaluations/{enrollmentId:guid}",
+            (Guid enrollmentId, SchoolCycleAssessmentInput input, SchoolCycleAssessmentService s, CancellationToken ct) =>
+                s.SaveAsync(enrollmentId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        // Document de consultation distinct du bulletin officiel et des
+        // délibérations ITM. Les droits sont ceux de la lecture pédagogique.
+        g.MapGet("/cycles/evaluations/{enrollmentId:guid}/apercu.pdf",
+            async (Guid enrollmentId, SchoolCycleAssessmentService s,
+                HttpContext http, CancellationToken ct) =>
+            {
+                // Document nominatif d'un mineur : interdit aux caches partagés.
+                http.Response.Headers.CacheControl = "private, no-store, max-age=0";
+                http.Response.Headers.Pragma = "no-cache";
+                var preview = await s.PrintPreviewAsync(enrollmentId, ct);
+                return new InlineFileResult(
+                    SchoolCycleBulletinPdf.Build(preview),
+                    Pdf, "apercu-pedagogique-non-officiel.pdf");
+            })
+            .RequireAuthorization(Permissions.AcademicsRead);
+
+
         g.MapGet("/sections", (SchoolService s, CancellationToken ct) => s.SectionsAsync(ct));
         g.MapPost("/sections", (SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(null, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
         g.MapPut("/sections/{id:guid}", (Guid id, SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(id, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapDelete("/sections/{id:guid}", async (Guid id, SchoolService s, CancellationToken ct) => { await s.DeleteSectionAsync(id, ct); return Results.NoContent(); })
+            .RequireAuthorization(Permissions.SettingsWrite);
+
+        g.MapGet("/categories-frais", (FeeCategoryService s, CancellationToken ct) => s.ListAsync(ct));
+        g.MapPost("/categories-frais", (FeeCategoryUpsert input, FeeCategoryService s, CancellationToken ct) => s.UpsertAsync(null, input, ct))
+            .RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPut("/categories-frais/{id:guid}", (Guid id, FeeCategoryUpsert input, FeeCategoryService s, CancellationToken ct) => s.UpsertAsync(id, input, ct))
+            .RequireAuthorization(Permissions.SettingsWrite);
+        g.MapDelete("/categories-frais/{id:guid}", async (Guid id, FeeCategoryService s, CancellationToken ct) => { await s.DeleteAsync(id, ct); return Results.NoContent(); })
+            .RequireAuthorization(Permissions.SettingsWrite);
 
         g.MapGet("/promotions", (Guid? anneeId, SchoolService s, CancellationToken ct) => s.PromotionsAsync(anneeId, ct));
         g.MapPost("/promotions", (PromotionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertPromotionAsync(null, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
@@ -205,8 +495,9 @@ public static class ScoliaEndpoints
     private static void MapStudents(RouteGroupBuilder api)
     {
         var g = api.MapGroup("/apprenants").RequireAuthorization(Permissions.StudentsRead);
-        g.MapGet("", (string? q, Guid? promotionId, string? statut, Guid? anneeId, int? page, int? taille, StudentService s, CancellationToken ct) =>
-            s.SearchAsync(q, promotionId, statut, anneeId, page ?? 1, taille ?? 50, ct));
+        g.MapGet("", (string? q, Guid? promotionId, string? statut, Guid? anneeId, int? page, int? taille, Guid? sectionId,
+                string? sexe, string? paiement, Guid? periodeId, StudentService s, CancellationToken ct) =>
+            s.SearchAsync(q, promotionId, statut, anneeId, page ?? 1, taille ?? 50, sectionId, sexe, paiement, periodeId, ct));
         g.MapGet("/{id:guid}", (Guid id, StudentService s, CancellationToken ct) => s.GetAsync(id, ct));
         g.MapGet("/doublons", (string? nom, string? postNom, string? prenom, Guid? exclure, StudentService s, CancellationToken ct) =>
             s.FindDuplicatesAsync(nom ?? string.Empty, postNom ?? string.Empty, prenom ?? string.Empty, exclure, ct));
@@ -238,19 +529,19 @@ public static class ScoliaEndpoints
             .RequireAuthorization(Permissions.StudentsWrite);
         e.MapPut("/{id:guid}/promotion", async (Guid id, [FromBody] EnrollRequest input, StudentService s, CancellationToken ct) => { await s.ChangePromotionAsync(id, input.PromotionId, ct); return Results.NoContent(); })
             .RequireAuthorization(Permissions.StudentsWrite);
-        e.MapGet("/{id:guid}/compte", (Guid id, AccountService a, CancellationToken ct) => a.AccountDtoAsync(id, ct)).RequireAuthorization(Permissions.PaymentsRead);
+        e.MapGet("/{id:guid}/compte", (Guid id, AccountService a, CancellationToken ct) => a.AccountDtoAsync(id, ct)).RequireAuthorization(Permissions.StudentFinanceRead);
         e.MapGet("/{id:guid}/releve.pdf", async (Guid id, PaymentService p, CancellationToken ct) => new InlineFileResult(await p.StatementPdfAsync(id, ct), Pdf, "releve.pdf"))
-            .RequireAuthorization(Permissions.PaymentsRead);
-        e.MapGet("/{id:guid}/prises-en-charge", (Guid id, SponsorshipService s, CancellationToken ct) => s.ListAsync(id, ct)).RequireAuthorization(Permissions.PaymentsRead);
+            .RequireAuthorization(Permissions.StudentFinanceRead);
+        e.MapGet("/{id:guid}/prises-en-charge", (Guid id, SponsorshipService s, CancellationToken ct) => s.ListAsync(id, ct)).RequireAuthorization(Permissions.StudentFinanceRead);
         e.MapPost("/{id:guid}/prises-en-charge", (Guid id, SponsorshipUpsert input, SponsorshipService s, CancellationToken ct) => s.UpsertAsync(id, null, input, ct))
-            .RequireAuthorization(Permissions.StudentsWrite);
+            .RequireAuthorization(Permissions.SponsorshipManage);
         e.MapPut("/{id:guid}/prises-en-charge/{sid:guid}", (Guid id, Guid sid, SponsorshipUpsert input, SponsorshipService s, CancellationToken ct) => s.UpsertAsync(id, sid, input, ct))
-            .RequireAuthorization(Permissions.StudentsWrite);
+            .RequireAuthorization(Permissions.SponsorshipManage);
         e.MapPost("/{id:guid}/prises-en-charge/{sid:guid}/fin", async (Guid id, Guid sid, CancelRequest input, SponsorshipService s, CancellationToken ct) =>
         {
             await s.EndAsync(id, sid, input.Reason, ct);
             return Results.NoContent();
-        }).RequireAuthorization(Permissions.StudentsWrite);
+        }).RequireAuthorization(Permissions.SponsorshipManage);
 
         api.MapGet("/prises-en-charge", (SponsorshipService s, CancellationToken ct) => s.AllAsync(ct)).RequireAuthorization(Permissions.PaymentsRead);
         api.MapGet("/reinscriptions/plan", (Guid anneeId, StudentService s, CancellationToken ct) => s.ReEnrollmentPlanAsync(anneeId, ct)).RequireAuthorization(Permissions.StudentsWrite);
@@ -263,7 +554,7 @@ public static class ScoliaEndpoints
         g.MapGet("", ([AsParameters] ReceiptQuery q, PaymentService p, CancellationToken ct) => p.ListAsync(q, ct));
         g.MapGet("/export", async ([AsParameters] ReceiptQuery q, string? format, PaymentService p, ReportService r, CancellationToken ct) =>
             Table(await r.ReceiptsTableAsync(p, q, ct), format, "journal-encaissements", r));
-        g.MapPost("/apercu", (PaymentRequest input, PaymentService p, CancellationToken ct) => p.PreviewAsync(input.EnrollmentId, input.FeeItemIds, ct))
+        g.MapPost("/apercu", (PaymentRequest input, PaymentService p, CancellationToken ct) => p.PreviewAsync(input.EnrollmentId, input.FeeItemIds, input.Amount == 0m ? null : input.Amount, ct))
             .RequireAuthorization(Permissions.PaymentsCreate);
         g.MapPost("", (PaymentRequest input, PaymentService p, CancellationToken ct) => p.CreateAsync(input, ct)).RequireAuthorization(Permissions.PaymentsCreate);
         // Encaissement par lot : un reçu par apprenant, contrôle avant écriture, résultat ligne par ligne.
@@ -286,7 +577,7 @@ public static class ScoliaEndpoints
             Table(await r.ExpensesTableAsync(du, au, ct), format, "registre-des-depenses", r));
         d.MapPost("", (ExpenseCreate input, CashService c, CancellationToken ct) => c.CreateExpenseAsync(input, ct)).RequireAuthorization(Permissions.ExpensesWrite);
         d.MapPost("/{id:guid}/annulation", (Guid id, CancelRequest input, CashService c, CancellationToken ct) => c.CancelExpenseAsync(id, input.Reason, ct))
-            .RequireAuthorization(Permissions.ExpensesWrite);
+            .RequireAuthorization(Permissions.PaymentsCancel); // Annuler n'est pas saisir : même droit que l'annulation d'un reçu.
 
         var k = api.MapGroup("/caisse").RequireAuthorization(Permissions.PaymentsRead);
         k.MapGet("/situation", (DateOnly? date, CashService c, CancellationToken ct) => c.SituationAsync(date, ct));
@@ -297,7 +588,11 @@ public static class ScoliaEndpoints
     private static void MapReports(RouteGroupBuilder api)
     {
         var g = api.MapGroup("/rapports").RequireAuthorization(Permissions.ReportsRead);
-        g.MapGet("/tableau-de-bord", (Guid? promotionId, ReportService r, CancellationToken ct) => r.DashboardAsync(promotionId, ct));
+        g.MapGet("/tableau-de-bord", ([AsParameters] DashboardQuery query, ReportService r, CancellationToken ct) => r.FilteredDashboardAsync(query, ct));
+        g.MapGet("/tableau-de-bord/filtres", (ReportService r, CancellationToken ct) => r.DashboardFiltersAsync(ct));
+        g.MapGet("/tableau-de-bord/export", async ([AsParameters] DashboardQuery query, string expectedSelection, string? format,
+            ReportService r, CancellationToken ct) =>
+            await DashboardExport(r, query, expectedSelection, format, false, ct));
         g.MapGet("/aujourdhui", (ReportService r, CancellationToken ct) => r.TodayAsync(ct));
         g.MapGet("/debiteurs", ([AsParameters] DebtorQuery q, ReportService r, CancellationToken ct) => r.DebtorsAsync(q, ct));
         g.MapGet("/debiteurs/export", async ([AsParameters] DebtorQuery q, string? format, ReportService r, CancellationToken ct) =>
@@ -305,6 +600,29 @@ public static class ScoliaEndpoints
         g.MapGet("/suivi-mensuel", ([AsParameters] MonthlyQuery q, ReportService r, CancellationToken ct) => r.MonthlyAsync(q, ct));
         g.MapGet("/suivi-mensuel/export", async ([AsParameters] MonthlyQuery q, string? format, ReportService r, CancellationToken ct) =>
             Table(await r.MonthlyTableAsync(q, ct), format, "suivi-mensuel-paiements", r));
+        // Le client natif transmet une sélection explicite : aucun repli silencieux sur toutes les promotions.
+        g.MapGet("/suivi-mensuel/export/selection", async (Guid periodeId, string promotionScope, int expectedCount, string expectedSelection,
+            string? etat, string? q, string? format, ReportService r, CancellationToken ct) =>
+        {
+            Guid? promotionId = null;
+            if (!string.Equals(promotionScope, "all", StringComparison.Ordinal))
+            {
+                if (!Guid.TryParse(promotionScope, out var id) || id == Guid.Empty)
+                    return Results.BadRequest(new { title = "Promotion invalide : sélectionnez une promotion ou Toutes." });
+                promotionId = id;
+            }
+            if (periodeId == Guid.Empty || expectedCount < 0 || expectedSelection.Length != 64 || format is not ("xlsx" or "pdf" or "docx"))
+                return Results.BadRequest(new { title = "Sélection d’export invalide." });
+            if (!string.IsNullOrEmpty(etat) && etat is not ("nonpaye" or "retard" or "paye" or "couvert"))
+                return Results.BadRequest(new { title = "État de paiement invalide." });
+            var table = await r.MonthlyTableAsync(new MonthlyQuery(periodeId, promotionId, etat, q), expectedSelection, ct);
+            if (table.Rows.Count != expectedCount)
+                return Results.Conflict(new { title = "La liste a changé. Actualisez le suivi mensuel avant d’exporter." });
+            if (format == "docx")
+                return Results.File(TableWordWriter.Write(table), "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "suivi-mensuel-paiements.docx");
+            return Table(table, format, "suivi-mensuel-paiements", r);
+        });
         g.MapGet("/promotions/export", async (string? format, ReportService r, CancellationToken ct) =>
             Table(await r.PromotionsTableAsync(ct), format, "situation-par-promotion", r));
         g.MapGet("/apprenants/export", async (string? format, ReportService r, CancellationToken ct) =>
@@ -409,6 +727,135 @@ public static class ScoliaEndpoints
         g.MapGet("/lots", (CardService s, CancellationToken ct) => s.BatchesAsync(ct));
     }
 
+    /// <summary>Délibération (fusion d'ITMCD) : codes anonymes, encodage des cotes, jury, clôture et documents officiels.</summary>
+    private static void MapDeliberation(RouteGroupBuilder api)
+    {
+        var g = api.MapGroup("/deliberation").RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPut("/reglages", (DeliberationSettingsDto input, DeliberationService s, CancellationToken ct) => s.UpdateSettingsAsync(input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+
+        // Autorités et épreuves du jury (projet Délibération).
+        g.MapGet("/autorites", (DeliberationService s, CancellationToken ct) => s.AuthoritiesAsync(ct));
+        g.MapPut("/autorites", (AuthoritiesDto input, DeliberationService s, CancellationToken ct) => s.UpdateAuthoritiesAsync(input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/epreuves-jury", (Guid promotionId, DeliberationService s, CancellationToken ct) => s.CreateJuryEvaluationsAsync(promotionId, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+
+        // Codes anonymes : les apprenants déjà inscrits reçoivent un code officiel reconnu par la délibération.
+        g.MapGet("/codes", (Guid? promotionId, DeliberationService s, CancellationToken ct) => s.CodesAsync(promotionId, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/codes/attribution", (CodeAssignmentRequest input, DeliberationService s, CancellationToken ct) => s.AssignCodesAsync(input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPut("/codes/{enrollmentId:guid}", (Guid enrollmentId, CodeChangeRequest input, DeliberationService s, CancellationToken ct) => s.SetCodeAsync(enrollmentId, input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+        g.MapGet("/codes/liste", async (Guid? promotionId, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
+            Table(await s.CodesTableAsync(promotionId, ct), format, "codes-anonymes", reports)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/codes/import", (CodeImportRequest input, DeliberationService s, CancellationToken ct) => s.ImportCodesAsync(input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+        g.MapGet("/codes/resolution", (string code, DeliberationService s, CancellationToken ct) => s.LookupAsync(code, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+
+        // Encodage : feuille par cours, ou saisie anonyme par code.
+        g.MapGet("/cours", (Guid promotionId, DeliberationService s, CancellationToken ct) => s.CoursesAsync(promotionId, ct));
+        // Remise officielle des cotes (ITMCD) : feuille complète, puis seul le jury la corrige ou la renvoie avec un motif.
+        g.MapPost("/renvoi", async (Guid coursId, string nature, MarkReturnRequest input, DeliberationService s, CancellationToken ct) =>
+        {
+            await s.ReturnAsync(coursId, nature, input, ct);
+            return Results.NoContent();
+        }).RequireAuthorization(Permissions.DeliberationManage);
+        // Suivi de l'encodage et relevés par cours (moniteur et export d'ITMCD).
+        g.MapGet("/suivi", (Guid? promotionId, string? periode, DeliberationService s, CancellationToken ct) => s.ProgressAsync(promotionId, periode, ct));
+        g.MapGet("/suivi/export", async (Guid? promotionId, string? periode, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
+            Table(await s.ProgressTableAsync(promotionId, periode, ct), format, "suivi-encodage", reports));
+
+        // Jury.
+        g.MapGet("/resultats", (Guid promotionId, string periode, DeliberationService s, CancellationToken ct) => s.BoardAsync(promotionId, periode, ct));
+        g.MapGet("/resultats/{enrollmentId:guid}", (Guid enrollmentId, Guid promotionId, string periode, DeliberationService s, CancellationToken ct) =>
+            s.StudentAsync(promotionId, periode, enrollmentId, ct));
+        g.MapPut("/decisions", (JuryDecisionRequest input, DeliberationService s, CancellationToken ct) => s.DecideAsync(input, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/cloture", (SessionCloseRequest input, DeliberationService s, CancellationToken ct) => s.CloseAsync(input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage).RequireRateLimiting("connexion");
+        g.MapPost("/reouverture", (SessionReopenRequest input, DeliberationService s, CancellationToken ct) => s.ReopenAsync(input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage).RequireRateLimiting("connexion");
+
+        // Feuilles de cotes : le secrétariat (scolarite.lire / scolarite.ecrire) ou l'enseignant sur ses seuls cours
+        // attribués (cotes.encoder) ; le service vérifie l'attribution à chaque appel et masque les noms à l'enseignant.
+        var sheets = api.MapGroup("/deliberation");
+        // Les règles de l'encodage sont lisibles par tout compte qui encode : l'enseignant sait ce qui lui est permis.
+        sheets.MapGet("/reglages", (DeliberationService s, CancellationToken ct) => s.SettingsAsync(ct));
+        sheets.MapGet("/annonces", (DeliberationService s, CancellationToken ct) => s.AnnouncementsAsync(ct));
+        sheets.MapGet("/mes-cours", (DeliberationService s, CancellationToken ct) => s.MyCoursesAsync(ct)).RequireAuthorization(Permissions.MarksEncode);
+        // Accès étudiants (universités) : le secrétariat les crée ; l'étudiant ne lit que ses résultats publiés.
+        var studentAccounts = api.MapGroup("/comptes-etudiants").RequireAuthorization(Permissions.UsersManage);
+        studentAccounts.MapGet("", (Guid? promotionId, StudentAccountService s, CancellationToken ct) => s.ListAsync(promotionId, ct));
+        studentAccounts.MapPost("/{studentId:guid}", (Guid studentId, StudentAccountService s, CancellationToken ct) => s.IssueAsync(studentId, ct));
+        studentAccounts.MapPost("/promotions/{promotionId:guid}", (Guid promotionId, StudentAccountService s, CancellationToken ct) =>
+            s.IssuePromotionAsync(promotionId, ct));
+        studentAccounts.MapPost("/acces/{userId:guid}/code-provisoire", (Guid userId, StudentAccountService s, CancellationToken ct) =>
+            s.ResetAsync(userId, ct));
+        studentAccounts.MapPut("/acces/{userId:guid}/statut", (Guid userId, StudentAccountStatusInput input, StudentAccountService s, CancellationToken ct) =>
+            s.SetActiveAsync(userId, input, ct));
+        var portal = api.MapGroup("/etudiant").RequireAuthorization(Permissions.OwnResultsRead);
+        portal.MapGet("/mes-resultats", (StudentPortalService s, CancellationToken ct) => s.MineAsync(ct));
+        portal.MapGet("/releve.pdf", async (Guid inscription, StudentPortalService s, IAcademicDocumentService docs, HttpContext http, CancellationToken ct) =>
+        {
+            http.Response.Headers.CacheControl = "private, no-store, max-age=0";
+            http.Response.Headers.Pragma = "no-cache";
+            return new InlineFileResult(docs.LmdTranscripts(await s.TranscriptAsync(inscription, ct)), Pdf, "mon-releve.pdf");
+        });
+
+        // Enseignants des écoles et universités : seulement les branches et EC qui leur sont attribués.
+        var teacher = api.MapGroup("/enseignant").RequireAuthorization();
+        teacher.MapGet("/mes-elements", (CurriculumTeachingService s, CancellationToken ct) => s.MineAsync(ct))
+            .RequireAuthorization(Permissions.MarksEncode);
+        teacher.MapGet("/branches/{subjectId:guid}/periodes",
+            (Guid subjectId, CurriculumTeachingService s, CancellationToken ct) => s.EpstPeriodsAsync(subjectId, ct));
+        teacher.MapGet("/branches/{subjectId:guid}/feuille",
+            (Guid subjectId, Guid periode, string? code, CurriculumTeachingService s, CancellationToken ct) =>
+                s.EpstSheetAsync(subjectId, periode, code, ct));
+        teacher.MapPut("/branches/{subjectId:guid}/feuille",
+            (Guid subjectId, EpstMarkSheetInput input, CurriculumTeachingService s, CancellationToken ct) =>
+                s.SaveEpstSheetAsync(subjectId, input, ct));
+        teacher.MapGet("/lmd/promotions/{promotionId:guid}/ecs/{elementId:guid}/notes",
+            async (Guid promotionId, Guid elementId, int? session, CurriculumTeachingService t, LmdResultsService s, CancellationToken ct) =>
+            {
+                await t.EnsureCanEncodeAsync(elementId, ct);
+                return await s.SheetAsync(promotionId, elementId, session ?? 1, ct);
+            });
+        teacher.MapPut("/lmd/promotions/{promotionId:guid}/ecs/{elementId:guid}/notes",
+            async (Guid promotionId, Guid elementId, LmdMarkSheetInput input, CurriculumTeachingService t, LmdResultsService s, CancellationToken ct) =>
+            {
+                await t.EnsureCanEncodeAsync(elementId, ct);
+                return await s.SaveMarksAsync(promotionId, elementId, input, ct);
+            });
+        sheets.MapGet("/feuille", (Guid coursId, string nature, bool? anonyme, DeliberationService s, CancellationToken ct) => s.SheetAsync(coursId, nature, anonyme ?? false, ct));
+        sheets.MapPut("/feuille", async (Guid coursId, string nature, List<MarkInput> input, DeliberationService s, CancellationToken ct) =>
+            Results.Ok(new { enregistrees = await s.SaveSheetAsync(coursId, nature, input, ct) }));
+        sheets.MapGet("/codes/verifier-promotion", (Guid coursId, string code, DeliberationService s, CancellationToken ct) =>
+            s.CheckCodeInCourseAsync(coursId, code, ct)).RequireRateLimiting("connexion");
+        sheets.MapPost("/cotes-par-code", (MarkByCodeRequest input, DeliberationService s, CancellationToken ct) => s.SaveByCodeAsync(input, ct));
+        sheets.MapPost("/cotes/import", (MarkImportRequest input, DeliberationService s, CancellationToken ct) => s.ImportMarksAsync(input, ct));
+        sheets.MapPost("/remise", (Guid coursId, string nature, DeliberationService s, CancellationToken ct) => s.SubmitAsync(coursId, nature, ct));
+        sheets.MapGet("/feuille/export", async (Guid coursId, string nature, bool? echecs, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
+            Table(await s.SheetTableAsync(coursId, nature, echecs ?? false, ct), format, echecs == true ? "liste-des-echecs" : "releve-des-cotes", reports));
+
+        // Documents officiels.
+        g.MapGet("/proces-verbal.pdf", async (Guid promotionId, string periode, DeliberationService s, CancellationToken ct) =>
+            new InlineFileResult(await s.MinutesPdfAsync(promotionId, periode, ct), Pdf, "proces-verbal.pdf"));
+        g.MapGet("/grille", async (Guid promotionId, string periode, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
+            Table(await s.GridAsync(promotionId, periode, ct), format, "grille-des-cotes", reports));
+        // Export global : un onglet par promotion réellement configurée dans l'année courante.
+        // Les codes et identités ne sont visibles qu'aux responsables de la délibération.
+        g.MapGet("/grilles.xlsx", async (string periode, DeliberationService s, ISpreadsheetService excel, CancellationToken ct) =>
+            Results.File(excel.ExportGrids(await s.GridsAsync(periode, ct)), Xlsx, "grilles-deliberation-toutes-promotions.xlsx"))
+            .RequireAuthorization(Permissions.DeliberationManage);
+
+        g.MapGet("/palmares", async (Guid promotionId, string periode, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
+            Table(await s.RankingAsync(promotionId, periode, ct), format, "palmares", reports));
+        g.MapGet("/bulletin.pdf", async (Guid promotionId, string periode, Guid inscriptionId, HttpContext http, IConfiguration config, DeliberationService s, CancellationToken ct) =>
+            new InlineFileResult(await s.BulletinPdfAsync(promotionId, periode, inscriptionId, PublicBase(http, config), ct), Pdf, "bulletin-deliberation.pdf"));
+        g.MapGet("/bulletins.pdf", async (Guid promotionId, string periode, HttpContext http, IConfiguration config, DeliberationService s, CancellationToken ct) =>
+            new InlineFileResult(await s.BulletinsPdfAsync(promotionId, periode, PublicBase(http, config), ct), Pdf, "bulletins-deliberation.pdf"));
+    }
+
     private static void MapAcademics(RouteGroupBuilder api)
     {
         var g = api.MapGroup("/scolarite").RequireAuthorization(Permissions.AcademicsRead);
@@ -467,21 +914,22 @@ public static class ScoliaEndpoints
 
     private static void MapStaff(RouteGroupBuilder api)
     {
-        var g = api.MapGroup("/personnel").RequireAuthorization(Permissions.StaffManage);
+        var g = api.MapGroup("/personnel").RequireAuthorization(Permissions.StaffRead);
         // Pointage : signatures d'entrée et de sortie, justifications, statut des journées et bilan pour la paie.
-        g.MapPost("/{id:guid}/signature/{kind}", (Guid id, string kind, StaffAttendanceService s, CancellationToken ct) => s.MarkAsync(id, kind, ct));
+        g.MapPost("/{id:guid}/signature/{kind}", (Guid id, string kind, StaffAttendanceService s, CancellationToken ct) => s.MarkAsync(id, kind, ct)).RequireAuthorization(Permissions.StaffManage);
         g.MapGet("/{id:guid}/pointage", (Guid id, DateOnly du, DateOnly au, StaffAttendanceService s, CancellationToken ct) => s.DaysAsync(id, du, au, ct));
-        g.MapPost("/{id:guid}/justifications", (Guid id, StaffJustifyRequest input, StaffAttendanceService s, CancellationToken ct) => s.JustifyAsync(id, input.Date, input.Reason, ct));
-        g.MapPost("/justifications/{id:guid}/annulation", (Guid id, StaffCancelRequest input, StaffAttendanceService s, CancellationToken ct) => s.CancelJustificationAsync(id, input.Reason, ct));
+        g.MapPost("/{id:guid}/justifications", (Guid id, StaffJustifyRequest input, StaffAttendanceService s, CancellationToken ct) => s.JustifyAsync(id, input.Date, input.Reason, ct)).RequireAuthorization(Permissions.StaffManage);
+        g.MapPost("/justifications/{id:guid}/annulation", (Guid id, StaffCancelRequest input, StaffAttendanceService s, CancellationToken ct) => s.CancelJustificationAsync(id, input.Reason, ct)).RequireAuthorization(Permissions.StaffManage);
         g.MapGet("/pointage/bilan", (DateOnly du, DateOnly au, StaffAttendanceService s, CancellationToken ct) => s.BilanAsync(du, au, ct));
         g.MapGet("/pointage/jour", (DateOnly date, StaffAttendanceService s, CancellationToken ct) => s.DayOfAllAsync(date, ct));
         g.MapGet("", (StaffService s, CancellationToken ct) => s.ListAsync(ct));
-        g.MapPost("", (StaffUpsert input, StaffService s, CancellationToken ct) => s.UpsertAsync(null, input, ct));
-        g.MapPut("/{id:guid}", (Guid id, StaffUpsert input, StaffService s, CancellationToken ct) => s.UpsertAsync(id, input, ct));
-        g.MapGet("/paie/{periode}", (string periode, StaffService s, CancellationToken ct) => s.PayrollAsync(periode, ct));
-        g.MapPost("/paie/{periode}/preparation", async (string periode, StaffService s, CancellationToken ct) => Results.Ok(new { crees = await s.GenerateAsync(periode, ct) }));
-        g.MapPut("/paie/bulletins/{id:guid}", (Guid id, PayrollUpdate input, StaffService s, CancellationToken ct) => s.UpdateEntryAsync(id, input, ct));
-        g.MapPost("/paie/bulletins/{id:guid}/paiement", (Guid id, string? mode, StaffService s, CancellationToken ct) => s.PayAsync(id, mode ?? "Especes", ct));
+        g.MapPost("", (StaffUpsert input, StaffService s, CancellationToken ct) => s.UpsertAsync(null, input, ct)).RequireAuthorization(Permissions.StaffManage);
+        g.MapPut("/{id:guid}", (Guid id, StaffUpsert input, StaffService s, CancellationToken ct) => s.UpsertAsync(id, input, ct)).RequireAuthorization(Permissions.StaffManage);
+        g.MapPut("/{id:guid}/salaire", (Guid id, StaffSalaryUpdate input, StaffService s, CancellationToken ct) => s.ChangeSalaryAsync(id, input, ct)).RequireAuthorization(Permissions.PayrollManage);
+        g.MapGet("/paie/{periode}", (string periode, StaffService s, CancellationToken ct) => s.PayrollAsync(periode, ct)).RequireAuthorization(Permissions.PayrollManage);
+        g.MapPost("/paie/{periode}/preparation", async (string periode, StaffService s, CancellationToken ct) => Results.Ok(new { crees = await s.GenerateAsync(periode, ct) })).RequireAuthorization(Permissions.PayrollManage);
+        g.MapPut("/paie/bulletins/{id:guid}", (Guid id, PayrollUpdate input, StaffService s, CancellationToken ct) => s.UpdateEntryAsync(id, input, ct)).RequireAuthorization(Permissions.PayrollManage);
+        g.MapPost("/paie/bulletins/{id:guid}/paiement", (Guid id, string? mode, StaffService s, CancellationToken ct) => s.PayAsync(id, mode ?? "Especes", ct)).RequireAuthorization(Permissions.PayrollManage);
         api.MapGet("/enseignants", (TeachingService s, CancellationToken ct) => s.AvailableTeachersAsync(ct))
             .RequireAuthorization(Permissions.AcademicsRead);
     }
@@ -493,6 +941,15 @@ public static class ScoliaEndpoints
         users.MapPost("", (UserCreate input, UserService u, CancellationToken ct) => u.CreateAsync(input, ct));
         users.MapPut("/{id:guid}", (Guid id, UserUpdate input, UserService u, CancellationToken ct) => u.UpdateAsync(id, input, ct));
         users.MapPost("/{id:guid}/mot-de-passe", async (Guid id, PasswordReset input, UserService u, CancellationToken ct) => { await u.ResetPasswordAsync(id, input.NewPassword, ct); return Results.NoContent(); });
+
+        // Comptes enseignants (gestion des délibérations) : identifiants et codes provisoires générés par le secrétariat.
+        var teachers = api.MapGroup("/comptes-enseignants").RequireAuthorization(Permissions.UsersManage);
+        teachers.MapGet("", (TeacherAccountService t, CancellationToken ct) => t.ListAsync(ct));
+        teachers.MapPost("", (TeacherAccountRequest input, TeacherAccountService t, CancellationToken ct) => t.IssueAsync(input, ct));
+        teachers.MapPost("/nouvel-enseignant", (NewTeacherRequest input, TeacherAccountService t, CancellationToken ct) => t.CreateTeacherAsync(input, ct))
+            .RequireAuthorization(Permissions.StaffManage);
+        teachers.MapPost("/{id:guid}/code-provisoire", (Guid id, TeacherAccountService t, CancellationToken ct) => t.ResetAsync(id, ct));
+        teachers.MapPut("/{id:guid}", (Guid id, TeacherAccountUpdate input, TeacherAccountService t, CancellationToken ct) => t.UpdateAsync(id, input, ct));
 
         var audit = api.MapGroup("/audit").RequireAuthorization(Permissions.AuditRead);
         audit.MapGet("", (string? q, string? type, DateOnly? du, DateOnly? au, int? page, int? taille, AuditService a, CancellationToken ct) => a.ListAsync(q, type, du, au, page ?? 1, taille ?? 100, ct));
@@ -510,6 +967,16 @@ public static class ScoliaEndpoints
 
         var backups = api.MapGroup("/sauvegardes").RequireAuthorization(Permissions.BackupManage);
         backups.MapGet("", (BackupService b) => b.List());
+        backups.MapGet("/parametres", (Scolia.Infrastructure.Backup.BackupScheduleStore schedule) => schedule.Read());
+        backups.MapPut("/parametres", async (Scolia.Infrastructure.Backup.BackupSchedule input,
+            Scolia.Infrastructure.Backup.BackupScheduleStore schedule, IAuditLog audit, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            var saved = schedule.Save(input);
+            audit.Record("sauvegarde.planification", "Sauvegarde", null,
+                $"Automatique {(saved.Enabled ? "active" : "désactivée")} ; locale {saved.LocalIntervalHours} h ; en ligne {saved.CloudIntervalHours} h ; nettoyage manuel après {saved.CleanupAfterDays} jours, {saved.KeepLatest} copies récentes gardées.");
+            await db.SaveChangesAsync(ct);
+            return saved;
+        }).RequireAuthorization(Permissions.SettingsWrite);
         backups.MapPost("", async (BackupService b, IAuditLog log, ScoliaDbContext db, ICurrentUser user,
             Scolia.Infrastructure.Live.LiveHub live, DataRevision revision, CancellationToken ct) =>
         {
@@ -521,6 +988,36 @@ public static class ScoliaEndpoints
             return info;
         });
         backups.MapGet("/{name}", (string name, BackupService b) => Results.File(b.PathOf(name), "application/vnd.sqlite3", name));
+        // Export portable chiffré, réservé à une liaison HTTPS vérifiée ou au serveur lui-même.
+        backups.MapPost("/{name}/export-chiffre", async Task<IResult> (
+            string name, EncryptedBackupRequest input, BackupService b, HttpContext http,
+            IAuditLog log, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            if (!TrustedBackupTransport(http)) return Results.StatusCode(StatusCodes.Status403Forbidden);
+            var data = await b.ExportEncryptedAsync(name, input.Passphrase, ct);
+            log.Record("sauvegarde.export-chiffre", "Sauvegarde", name, $"Export protégé de {name}.");
+            await db.SaveChangesAsync(ct);
+            return Results.File(data, "application/octet-stream", name + ".scolia-enc");
+        });
+        // Déchiffrement dans une NOUVELLE copie contrôlée : aucune restauration immédiate.
+        backups.MapPost("/import-chiffre", async Task<IResult> (
+            HttpContext http, BackupService b, IAuditLog log, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            if (!TrustedBackupTransport(http)) return Results.StatusCode(StatusCodes.Status403Forbidden);
+            if (!http.Request.HasFormContentType)
+                throw new DomainException("sauvegardes", "Envoyez un formulaire avec archive et passphrase.");
+            var form = await http.Request.ReadFormAsync(ct);
+            var upload = form.Files.GetFile("archive");
+            if (upload is null || upload.Length is 0 or > BackupProtection.MaximumPlainBytes + 256)
+                throw new DomainException("sauvegardes", "Archive absente ou supérieure à 48 Mio.");
+            await using var data = new MemoryStream();
+            await upload.CopyToAsync(data, ct);
+            var info = await b.ImportEncryptedAsync(data.ToArray(), form["passphrase"].ToString(), ct);
+            log.Record("sauvegarde.import-chiffre", "Sauvegarde", info.Name,
+                $"Archive chiffrée importée sous {info.Name} après vérification d'intégrité.");
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(info);
+        }).DisableAntiforgery();
         backups.MapPost("/{name}/restauration", async (string name, BackupService b, IAuditLog log, ScoliaDbContext db, CancellationToken ct) =>
         {
             await b.RestoreAsync(name, ct);
@@ -549,13 +1046,13 @@ public static class ScoliaEndpoints
             if (!await s.ConfirmAsync(input.Password, "paiements", ct)) throw new DomainException("motDePasse", motDePasseRefuse);
             await backups.CreateAsync("avant-effacement-paiements", ct);
             return await s.ErasePaymentsAsync(input, ct);
-        });
+        }).RequireAuthorization(Permissions.PaymentsCancel);
         erase.MapPost("/apprenants", async (ErasureRequest input, DataErasureService s, BackupService backups, CancellationToken ct) =>
         {
             if (!await s.ConfirmAsync(input.Password, "apprenants", ct)) throw new DomainException("motDePasse", motDePasseRefuse);
             await backups.CreateAsync("avant-effacement-apprenants", ct);
             return await s.EraseStudentsAsync(input, ct);
-        });
+        }).RequireAuthorization(Permissions.StudentsWrite);
 
         api.MapGet("/import/modele", () => Results.File(LegacyImportService.Template(), Xlsx, "modele-import-scolia.xlsx"))
             .RequireAuthorization(Permissions.SettingsWrite);
@@ -585,6 +1082,9 @@ public static class ScoliaEndpoints
         }).RequireAuthorization(Permissions.SettingsWrite).DisableAntiforgery();
     }
 }
+
+/// <summary>Phrase secrète jamais persistée et non acceptée sur une liaison HTTP distante.</summary>
+public sealed record EncryptedBackupRequest(string Passphrase);
 
 /// <summary>Fichier affiché dans le navigateur (PDF) avec un nom proposé à l'enregistrement.</summary>
 public sealed class InlineFileResult(byte[] content, string contentType, string fileName) : IResult

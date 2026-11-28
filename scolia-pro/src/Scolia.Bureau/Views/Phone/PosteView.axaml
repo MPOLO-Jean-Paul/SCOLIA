@@ -1,17 +1,18 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.Phone.PosteView">
   <!-- Réseau sur le mobile : le serveur auquel l'appareil est relié, ou ce téléphone lui-même quand il est le serveur -->
-  <StackPanel Spacing="14">
+  <StackPanel Spacing="14" infra:LiveRefresh.Enabled="True">
     <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding IsPhoneClient}"
-               Text="Le téléphone travaille sur la base du serveur de l'établissement, par le Wi-Fi. Les dernières pages lues sont gardées pour travailler hors ligne." />
+               Text="Le téléphone travaille sur la base du serveur de l'établissement, par le Wi-Fi ou par Internet. Les dernières pages lues sont gardées pour travailler hors ligne." />
     <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding IsPhoneServer}"
                Text="Gardez ce téléphone allumé, branché et sur le Wi-Fi de l'établissement : les autres postes travaillent sur ses données. SCOLIA reste actif en arrière-plan, signalé par une notification." />
 
     <Border Classes="card">
       <Grid ColumnDefinitions="Auto,*">
-        <Border Classes="appicon large" Background="{DynamicResource ToneGreen}" Margin="0,0,14,0" VerticalAlignment="Top"><mi:MaterialIcon Kind="LanConnect" /></Border>
+        <Border Classes="appicon large" Background="{DynamicResource SurfaceBrush}" Margin="0,0,14,0" VerticalAlignment="Top"><mi:MaterialIcon Kind="LanConnect" /></Border>
         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
           <TextBlock Text="{Binding ConnectionTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
           <TextBlock Text="{Binding ConnectionLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
@@ -23,14 +24,15 @@
       <StackPanel Spacing="10">
         <Grid ColumnDefinitions="Auto,*">
           <Panel Margin="0,0,12,0" VerticalAlignment="Top">
-            <Border Classes="appicon medium" Background="{DynamicResource ToneGreen}" IsVisible="{Binding BackgroundHealthy}"><mi:MaterialIcon Kind="ShieldCheckOutline" /></Border>
-            <Border Classes="appicon medium" Background="{DynamicResource ToneOrange}" IsVisible="{Binding BackgroundNeedsAttention}"><mi:MaterialIcon Kind="BatteryAlertVariantOutline" /></Border>
+            <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" IsVisible="{Binding BackgroundHealthy}"><mi:MaterialIcon Kind="ShieldCheckOutline" /></Border>
+            <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" IsVisible="{Binding BackgroundNeedsAttention}"><mi:MaterialIcon Kind="BatteryAlertVariantOutline" /></Border>
           </Panel>
           <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
             <TextBlock Text="{Binding BackgroundTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
             <TextBlock Text="{Binding BackgroundLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
           </StackPanel>
         </Grid>
+        <TextBlock Text="{Binding BackgroundDiagnostic}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
         <Button Classes="primary" Command="{Binding VerifyBackgroundServer}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46"
                 Content="Vérifier et relancer le serveur local" />
@@ -42,16 +44,69 @@
       </StackPanel>
     </Border>
 
+    <!-- Téléphone serveur : accès des appareils distants par Internet -->
+    <Border Classes="card" IsVisible="{Binding Remote.CanManage}">
+      <StackPanel Spacing="8">
+        <Grid ColumnDefinitions="Auto,*">
+          <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" Margin="0,0,12,0" VerticalAlignment="Top"><mi:MaterialIcon Kind="CloudLockOutline" /></Border>
+          <StackPanel Grid.Column="1" Spacing="2">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="Accès par Internet" FontWeight="SemiBold" />
+              <Ellipse Width="8" Height="8" Fill="{Binding Remote.StatusBrush}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Remote.StatusTitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Text="{Binding Remote.StatusLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+          </StackPanel>
+        </Grid>
+        <Button infra:Icons.Lead="CloudCheckOutline" Classes="primary" Content="Activer l’accès Internet" Command="{Binding Remote.Enable}" IsVisible="{Binding Remote.IsInactive}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46" />
+        <Button infra:Icons.Lead="CloudOffOutline" Classes="ghost" Content="Désactiver l'accès par Internet" Command="{Binding Remote.Disable}" IsVisible="{Binding Remote.IsActive}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="44" />
+        <TextBlock Text="{Binding Remote.Message}" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+        <TextBlock Text="Fournisseur de relais sécurisé administré par JP-Services. Le Wi-Fi local fonctionne indépendamment."
+                   Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+
+    <!-- Téléphone serveur : appareils autorisés à ouvrir le compte, avec retrait de l'accès -->
+    <Border Classes="card" IsVisible="{Binding CanManageDevices}">
+      <StackPanel Spacing="6">
+        <TextBlock Text="Appareils autorisés" FontWeight="SemiBold" />
+        <TextBlock Text="{Binding DevicesLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+        <ItemsControl ItemsSource="{Binding Devices}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Spacing="4" Margin="0,8,0,0">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+                <Button infra:Icons.Lead="CellphoneRemove" Classes="danger" Content="Retirer l'accès" Command="{Binding Revoke}" IsVisible="{Binding Active}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="42" />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+
+    <Border Classes="card" IsVisible="{Binding CanCheckMobileUpdates}">
+      <StackPanel Spacing="8">
+        <TextBlock Text="Mises à jour de SCOLIA Pro" FontWeight="SemiBold" />
+        <TextBlock Text="Une nouvelle version est recherchée automatiquement à l'ouverture. Vous pouvez aussi vérifier maintenant, sans attendre le contrôle périodique." Classes="muted" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding MobileUpdateStatus}" Classes="muted" TextWrapping="Wrap" />
+        <Button infra:Icons.Lead="Update" Classes="primary" Command="{Binding CheckMobileUpdates}" Content="Vérifier les mises à jour" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46" />
+      </StackPanel>
+    </Border>
+
     <Border Classes="card" IsVisible="{Binding HasAddress}">
       <Grid ColumnDefinitions="Auto,*">
-        <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" Margin="0,0,12,0" VerticalAlignment="Top"><mi:MaterialIcon Kind="IpNetworkOutline" /></Border>
+        <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" Margin="0,0,12,0" VerticalAlignment="Top"><mi:MaterialIcon Kind="IpNetworkOutline" /></Border>
         <TextBlock Grid.Column="1" Text="{Binding AddressLine}" TextWrapping="Wrap" VerticalAlignment="Center" />
       </Grid>
     </Border>
 
-    <Button Content="Rechercher SCOLIA sur le réseau" Command="{Binding Search}" IsEnabled="{Binding NotSearching}"
+    <Button infra:Icons.Lead="Magnify" Content="Rechercher SCOLIA sur le réseau" Command="{Binding Search}" IsEnabled="{Binding NotSearching}"
             HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" />
-    <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" />
+    <ProgressBar AutomationProperties.Name="Recherche des serveurs" IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" />
     <TextBlock Text="{Binding SearchLine}" IsVisible="{Binding HasSearchLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
 
     <Border Classes="phonegroup">
@@ -59,12 +114,12 @@
         <ItemsControl.ItemTemplate>
           <DataTemplate>
             <Grid ColumnDefinitions="Auto,*,Auto" Margin="14,10">
-              <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" Margin="0,0,12,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+              <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}" Margin="0,0,12,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
               <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                 <TextBlock Text="{Binding School}" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
               </StackPanel>
-              <Button Grid.Column="2" Classes="primary" Content="Rejoindre" Command="{Binding Join}" VerticalAlignment="Center" Margin="8,0,0,0" />
+              <Button infra:Icons.Lead="LoginVariant" Grid.Column="2" Classes="primary" Content="Rejoindre" Command="{Binding Join}" VerticalAlignment="Center" Margin="8,0,0,0" />
             </Grid>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
@@ -75,15 +130,17 @@
     <Button x:Name="ShowCodeButton" Classes="primary" Command="{Binding ShowCode}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" IsVisible="{Binding IsPhoneServer}">
       <StackPanel Orientation="Horizontal" Spacing="8">
         <mi:MaterialIcon Kind="QrcodeScan" Width="18" Height="18" />
-        <TextBlock Text="Relier un autre appareil : code QR" />
+        <TextBlock Text="Relier un autre appareil : code QR" TextWrapping="Wrap" />
       </StackPanel>
     </Button>
     <Button Classes="primary" Command="{Binding ScanCode}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" IsVisible="{Binding IsPhoneClient}">
       <StackPanel Orientation="Horizontal" Spacing="8">
         <mi:MaterialIcon Kind="QrcodeScan" Width="18" Height="18" />
-        <TextBlock Text="{Binding ScanLabel}" />
+        <TextBlock Text="{Binding ScanLabel}" TextWrapping="Wrap" />
       </StackPanel>
     </Button>
+    <Button infra:Icons.Lead="ImageSearchOutline" Classes="ghost" Command="{Binding ImportQrImage}" Content="Lire un QR depuis une photo" Height="46"
+            IsVisible="{Binding IsPhoneClient}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
     <Button Classes="ghost" Command="{Binding ChangeServer}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" IsVisible="{Binding IsPhoneClient}">
       <StackPanel Orientation="Horizontal" Spacing="8">
         <mi:MaterialIcon Kind="SwapHorizontal" Width="18" Height="18" />
@@ -93,7 +150,7 @@
     <Button Classes="ghost" Command="{Binding UseThisComputer}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" IsVisible="{Binding CanBecomeServer}">
       <StackPanel Orientation="Horizontal" Spacing="8">
         <mi:MaterialIcon Kind="CellphoneLink" Width="18" Height="18" />
-        <TextBlock Text="Faire de ce téléphone le serveur" />
+        <TextBlock Text="Faire de ce téléphone le serveur" TextWrapping="Wrap" />
       </StackPanel>
     </Button>
     <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding IsPhoneClient}"

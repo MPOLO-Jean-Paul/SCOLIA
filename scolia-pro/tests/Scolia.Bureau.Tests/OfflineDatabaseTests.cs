@@ -6,6 +6,8 @@ namespace Scolia.Bureau.Tests;
 
 public sealed class OfflineDatabaseTests : IDisposable
 {
+    private static readonly JsonSerializerOptions MailboxJsonOptions =
+        new(JsonSerializerDefaults.Web);
     private readonly string folder = Path.Combine(Path.GetTempPath(), "scolia-journal", Guid.NewGuid().ToString("N"));
     private readonly Uri server = new("http://journal-test:5080/");
     private OfflineStore Store(string user = "secretariat") => new(server, folder) { User = user };
@@ -28,6 +30,26 @@ public sealed class OfflineDatabaseTests : IDisposable
         Assert.Empty(Store("comptabilite").Outbox());
         foreach (var file in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
             Assert.DoesNotContain("DONNEES-PRIVEES-782", Encoding.UTF8.GetString(File.ReadAllBytes(file)), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Discard_ne_supprime_que_les_conflits_et_preserve_les_paiements_en_attente()
+    {
+        var store = Store();
+        var pending = new OutboxItem { Key = "operation-en-attente", Path = "api/paiements", Body = "{}" };
+        var refused = new OutboxItem { Key = "operation-refusee", Path = "api/paiements", Body = "{}" };
+        store.Enqueue(pending);
+        store.Enqueue(refused);
+        store.Refused(refused.Id, "Ce mois est déjà réglé");
+
+        // Une action d'abandon ne doit jamais effacer une opération en cours d'envoi.
+        store.Discard(pending.Id);
+        Assert.Equal(pending.Id, Assert.Single(store.Outbox()).Id);
+        Assert.Equal(refused.Id, Assert.Single(store.Conflicts()).Id);
+
+        store.Discard(refused.Id);
+        Assert.Empty(store.Conflicts());
+        Assert.Equal(pending.Id, Assert.Single(store.Outbox()).Id);
     }
 
     [Fact]
@@ -76,6 +98,232 @@ public sealed class OfflineDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void Registre_local_recherche_sans_serveur_et_signale_si_la_liste_est_incomplete()
+    {
+        var school = Store();
+        var records = new[]
+        {
+            new Scolia.Bureau.Api.StudentListItem(Guid.NewGuid(), null, "INF001", "MPOLO", "LONO",
+                "Jean", "M", "INF1", "Actif", "0977000001", 15000m, 0m),
+            new Scolia.Bureau.Api.StudentListItem(Guid.NewGuid(), null, "INF002", "KABUYA", "LUNGU",
+                "Alice", "F", "INF1", "Actif", "0977000002", 25000m, 5000m),
+            new Scolia.Bureau.Api.StudentListItem(Guid.NewGuid(), null, "ACC003", "BANDA", "KASI",
+                "Ruth", "F", "ACC1", "Sorti", "0977000003", 0m, 0m)
+        };
+        var page = new Scolia.Bureau.Api.PagedResult<Scolia.Bureau.Api.StudentListItem>(records, 4, 1, 50, null);
+        school.SavePage("api/apprenants?page=1&taille=50",
+            JsonSerializer.Serialize(page, Scolia.Bureau.Api.Json.Options));
+
+        var result = OfflineStudentSearch.Search(school, "mPoLo", "INF1", "Actif", 1);
+        Assert.NotNull(result);
+        Assert.Equal("INF001", Assert.Single(result.Page.Items).Matricule);
+        Assert.Equal(1, result.Page.Total);
+        Assert.Equal(3, result.Loaded);
+        Assert.Equal(4, result.Registered);
+        Assert.False(result.Complete);
+
+        var byPhone = OfflineStudentSearch.Search(school, "0977000002", null, null, 20);
+        Assert.NotNull(byPhone);
+        Assert.Equal("INF002", Assert.Single(byPhone.Page.Items).Matricule);
+        Assert.Equal(1, byPhone.Page.Page); // la pagination reste utilisable même hors ligne
+
+        // Les autres comptes n'ont pas accès à l'index de l'utilisateur.
+        Assert.Null(OfflineStudentSearch.Search(Store("comptabilite"), "MPOLO", null, null, 1));
+    }
+
+    [Fact]
+    public void Accuse_de_reception_d_un_ancien_compte_ne_supprime_pas_les_operations_d_un_autre()
+    {
+        var store = Store("secretariat");
+        var a = new OutboxItem { Key = "secretariat-operation", User = "secretariat", Path = "api/paiements" };
+        store.Enqueue(a);
+        store.User = "comptabilite";
+        var b = new OutboxItem { Key = "comptabilite-operation", User = "comptabilite", Path = "api/paiements" };
+        store.Enqueue(b);
+        store.SentFor("secretariat", a.Id);
+
+        Assert.Equal(b.Id, Assert.Single(store.Outbox()).Id);
+        store.User = "secretariat";
+        Assert.Empty(store.Outbox());
+        store.User = "comptabilite";
+        store.RefusedFor("secretariat", b.Id, "Ne doit pas modifier ce compte");
+        Assert.Single(store.Outbox());
+        Assert.Empty(store.Conflicts());
+    }
+
+    [Fact]
+    public void Reponse_en_retard_est_enregistree_uniquement_pour_le_compte_a_l_origine()
+    {
+        var store = Store("secretariat");
+        const string path = "api/rapports/tableau-de-bord";
+        store.User = "comptabilite"; // Un autre compte ouvre sa session avant la fin de la requête.
+        store.SavePageFor("secretariat", path, """{"nombre":131}""");
+
+        Assert.Null(store.ReadPage(path));
+        store.User = "secretariat";
+        Assert.Contains("131", store.ReadPage(path)?.Json);
+        store.User = "comptabilite";
+        store.SavePage(path, """{"nombre":42}""");
+        Assert.Contains("42", store.ReadPage(path)?.Json);
+        store.User = "secretariat";
+        Assert.Contains("131", store.ReadPage(path)?.Json);
+    }
+
+    [Theory]
+    [InlineData(null, false, false)]
+    [InlineData(null, true, true)]
+    [InlineData(ConnectionSettings.Local, false, false)]
+    [InlineData(ConnectionSettings.Local, true, true)]
+    [InlineData(ConnectionSettings.Remote, false, true)]
+    [InlineData(ConnectionSettings.Remote, true, true)]
+    [InlineData(ConnectionSettings.Internet, false, true)]
+    [InlineData(ConnectionSettings.Internet, true, true)]
+    [InlineData("inconnu", false, false)]
+    [InlineData("inconnu", true, false)]
+    public void La_reprise_cloud_locale_exige_un_jumelage_et_un_compte_autorise(
+        string? mode, bool approved, bool expected)
+    {
+        Assert.Equal(expected,
+            ConnectionStore.ShouldScheduleBackgroundSync(mode, approved));
+    }
+
+    [Theory]
+    [InlineData(null, true, true)]
+    [InlineData(ConnectionSettings.Local, true, true)]
+    [InlineData(ConnectionSettings.Local, false, false)]
+    [InlineData("inconnu", true, false)]
+    [InlineData(ConnectionSettings.Remote, false, true)]
+    [InlineData(ConnectionSettings.Internet, false, true)]
+    public void La_reprise_d_un_depot_delegue_fonctionne_sans_PC_mais_pas_en_mode_inconnu(
+        string? mode, bool pendingDelegated, bool expected)
+    {
+        Assert.Equal(expected, ConnectionStore.ShouldScheduleBackgroundSync(
+            mode, approvedCentralSession: false,
+            delegatedMailboxPending: pendingDelegated));
+    }
+
+    [Fact]
+    public void Le_depot_chiffre_differe_exige_une_delegation_active_et_une_operation_en_attente()
+    {
+        var store = Store("secretariat");
+        store.Enqueue(new OutboxItem
+        {
+            User = "secretariat", Key = "frais-scolaires-a-valider",
+            Path = "api/paiements", Body = "{}",
+        });
+        store.Enqueue(new OutboxItem
+        {
+            User = "enseignant", Key = "autre-compte-expire",
+            Path = "api/notes", Body = "{}",
+        });
+        Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+
+        var valid = new Scolia.Domain.Cloud.CloudDepositAccess(
+            true, "https://mailbox.example/", "jeton-delegue",
+            Convert.ToBase64String(new byte[32]), "preuve-deleguee",
+            DateTime.UtcNow.AddDays(3));
+        var expired = valid with { ExpiresUtc = DateTime.UtcNow.AddMinutes(-2) };
+        store.SaveCloudAccessFor("secretariat",
+            JsonSerializer.Serialize(valid, MailboxJsonOptions));
+        store.SaveCloudAccessFor("enseignant",
+            JsonSerializer.Serialize(expired, MailboxJsonOptions));
+
+        Assert.True(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+        var pending = Assert.Single(store.Outbox());
+        // Un dépôt cloud n'est pas un encaissement validé :
+        // le paiement reste dans la file après l'accusé de stockage.
+        store.MarkDepositedFor("secretariat", pending.Id);
+        Assert.Equal(pending.Id, Assert.Single(store.Outbox()).Id);
+        Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+        Assert.Equal("secretariat",
+            Assert.Single(Store("secretariat").AccountsAwaitingCloudOutcome()));
+        // Au retour du téléphone, même sans nouvelle saisie, la boîte peut
+        // annoncer l'issue de l'ancienne opération, sans connecter le PC.
+        Assert.True(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedMailboxWork(store));
+        Assert.Single(Store("enseignant").Outbox());
+
+        store.SaveCloudAccessFor("enseignant",
+            JsonSerializer.Serialize(valid with
+            {
+                Enabled = false,
+                ExpiresUtc = DateTime.UtcNow.AddDays(3)
+            }, MailboxJsonOptions));
+        Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+        // Une délégation illisible ne peut pas autoriser de réseau, mais
+        // les opérations chiffrées locales continuent d'exister.
+        store.SaveCloudAccessFor("enseignant", "{jeton-invalide");
+        Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedDeposits(store));
+        Assert.Single(Store("enseignant").Outbox());
+
+        store.SaveCloudAccessFor("secretariat",
+            JsonSerializer.Serialize(expired,
+                MailboxJsonOptions));
+        Assert.False(Scolia.Bureau.Api.ScoliaClient.HasPendingDelegatedMailboxWork(store));
+        // La suppression d'une délégation ne fait pas disparaître un reçu
+        // provisoire ni les opérations de paiement non validées.
+        Assert.Single(Store("secretariat").Outbox());
+    }
+
+    [Fact]
+    public void Ancien_journal_central_v1_empeche_le_retrait_du_compte()
+    {
+        var store = Store("secretariat");
+        store.RememberAccount("secretariat");
+        const string oldPath = "central:sections:v1:school-a";
+        store.SavePage(oldPath,
+            """{"Revision":0,"Sections":[],"Pending":[{"OperationId":"op-v1"}]}""");
+        Assert.False(store.ForgetKnownAccount("secretariat"));
+        store.SavePage(oldPath,
+            """{"Revision":0,"Sections":[],"Pending":[]}""");
+        Assert.True(store.ForgetKnownAccount("secretariat"));
+    }
+
+    [Fact]
+    public void Retrait_de_compte_verifie_aussi_les_operations_avec_casse_differente()
+    {
+        var store = Store("secretariat");
+        store.RememberAccount("secretariat");
+        store.Enqueue(new OutboxItem
+        {
+            Key = "secretariat-important",
+            User = "secretariat",
+            Path = "api/paiements",
+        });
+        Assert.False(store.ForgetKnownAccount("SECRETARIAT"));
+        Assert.Single(Store("secretariat").Outbox());
+    }
+
+    [Fact]
+    public void Reprise_centrale_est_interdite_sans_session_puis_suspendue_a_la_deconnexion()
+    {
+        var store = Store("secretariat");
+        var item = new OutboxItem
+        {
+            Key = "operation-a-conserver",
+            Path = "api/apprenants",
+            User = "secretariat",
+        };
+        store.Enqueue(item);
+        Assert.False(store.CanSyncCentralInBackgroundFor("secretariat"));
+        Assert.False(Store("enseignant").CanSyncCentralInBackgroundFor("enseignant"));
+
+        store.SetCentralBackgroundAllowedFor("secretariat", true);
+        Assert.True(Store("secretariat").CanSyncCentralInBackgroundFor("SECRETARIAT"));
+        Assert.False(Store("enseignant").CanSyncCentralInBackgroundFor("enseignant"));
+
+        store.SetCentralBackgroundAllowedFor("secretariat", false);
+        Assert.False(Store("secretariat").CanSyncCentralInBackgroundFor("secretariat"));
+        Assert.Equal(item.Key, Assert.Single(Store("secretariat").Outbox()).Key);
+
+        // La récupération des identifiants révoque également la permission
+        // de reprise, sans effacer les opérations en cours.
+        store.SetCentralBackgroundAllowedFor("secretariat", true);
+        store.ForgetCredential("secretariat");
+        Assert.False(Store("secretariat").CanSyncCentralInBackgroundFor("secretariat"));
+        Assert.Equal(item.Key, Assert.Single(Store("secretariat").Outbox()).Key);
+    }
+
+    [Fact]
     public void Logging_out_clears_background_session_but_preserves_pending_operations()
     {
         var store = Store();
@@ -87,6 +335,51 @@ public sealed class OfflineDatabaseTests : IDisposable
         Assert.Equal(string.Empty, Store().SavedCredential?.SessionCookie);
         Assert.Single(Store().Outbox());
         Assert.NotNull(Store().OfflineLogin("SECRETARIAT", "Secretariat1"));
+    }
+
+    [Fact]
+    public void Deconnexion_ciblee_revoque_cookie_et_D1_sans_effacer_fichiers_ni_autre_compte()
+    {
+        var store = Store("secretariat");
+        var secretariat = new Scolia.Bureau.Api.SessionDto(Guid.NewGuid(),
+            "secretariat", "Secrétariat", "Secretariat", "Secrétariat",
+            [], false, "Institut", null, null, "FC", "243");
+        var teacher = new Scolia.Bureau.Api.SessionDto(Guid.NewGuid(),
+            "enseignant", "Enseignant", "Enseignant", "Enseignant",
+            [], false, "Institut", null, null, "FC", "243");
+
+        store.SaveCredential("secretariat", "Secretariat1", secretariat,
+            "scolia.session=secretariat-cookie");
+        store.SetCentralBackgroundAllowedFor("secretariat", true);
+        store.Enqueue(new OutboxItem
+        {
+            User = "secretariat",
+            Key = "paiement-a-preserver",
+            Path = "api/paiements",
+        });
+        store.SaveCredential("enseignant", "Enseignant1", teacher,
+            "scolia.session=teacher-cookie");
+        store.SetCentralBackgroundAllowedFor("enseignant", true);
+        store.RememberAccount("enseignant");
+
+        // Pendant un changement de compte, User pointe déjà vers le
+        // nouveau titulaire : la révocation porte sur le compte sortant.
+        store.User = "enseignant";
+        store.SuspendBackgroundAccessFor("secretariat");
+
+        Assert.False(Store("secretariat").CanSyncCentralInBackgroundFor("secretariat"));
+        Assert.True(Store("enseignant").CanSyncCentralInBackgroundFor("enseignant"));
+        Assert.Equal("scolia.session=teacher-cookie",
+            Store("enseignant").SavedCredential?.SessionCookie);
+        Assert.Single(Store("secretariat").Outbox());
+        Assert.NotNull(Store("secretariat").OfflineLogin("secretariat", "Secretariat1"));
+        Assert.NotNull(Store("enseignant").OfflineLogin("enseignant", "Enseignant1"));
+
+        store.RememberAccount("secretariat");
+        Assert.Equal(string.Empty,
+            Store("secretariat").SavedCredential?.SessionCookie);
+        Assert.Throws<ArgumentException>(() =>
+            store.SuspendBackgroundAccessFor(" "));
     }
 
     public void Dispose() { if (Directory.Exists(folder)) Directory.Delete(folder, true); }

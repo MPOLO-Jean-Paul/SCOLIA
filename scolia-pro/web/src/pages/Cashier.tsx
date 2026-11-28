@@ -69,8 +69,10 @@ function newReference(now = new Date()) {
 function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receipt) => void }) {
   const { session } = useSession();
   const [method, setMethod] = useState('Especes');
-  // Remplis par SCOLIA : la référence, la personne connectée (« Visé par ») et le téléphone du tuteur.
+  // La référence interne appartient aux espèces ; la confirmation externe doit être saisie par le caissier.
   const [reference] = useState(() => newReference());
+  const [operatorReference, setOperatorReference] = useState('');
+  const [amountInput, setAmountInput] = useState('');
   const payerPhone = account.guardianPhone ?? '';
   const [paidOn, setPaidOn] = useState(today());
   const [note, setNote] = useState('');
@@ -83,10 +85,15 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
   const [error, setError] = useState<unknown>();
   const [idempotencyKey, setIdempotencyKey] = useState(newKey);
   const qc = useQueryClient();
-  // Un paiement se fait par mois complet : seules les mensualités de scolarité se cochent, à leur montant dû.
+  // Versements complets ou partiels, exclusivement sur les mensualités encore dues.
   const months = account.lines.filter((l) => l.remaining > 0 && l.kind === 'Mensualite');
   const chosen = months.filter((l) => selected.includes(l.feeItemId));
   const total = chosen.reduce((sum, l) => sum + l.remaining, 0);
+  const amount = amountInput.trim() === '' ? total : Number(amountInput);
+  const validAmount = Number.isFinite(amount) && amount > 0 && amount <= total;
+  const externalReference = method !== 'Especes';
+  const paymentReference = externalReference ? operatorReference.trim() : reference;
+  const validReference = !externalReference || paymentReference.length > 0;
   const hasSelection = chosen.length > 0;
   // Le sélecteur principal fixe un mois ; les cases permettent ensuite de payer plusieurs mois.
   // Dans les deux cas, le montant provient uniquement du compte réel de l'apprenant.
@@ -96,23 +103,23 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
 
   useEffect(() => {
     setIdempotencyKey(newKey());
-    if (!hasSelection) { setPreview(null); setPreviewError(undefined); setPreviewing(false); return; }
+    if (!hasSelection || !validAmount) { setPreview(null); setPreviewError(undefined); setPreviewing(false); return; }
     setPreviewing(true);
     let cancelled = false;
-    api.post<PaymentPreview>('/api/paiements/apercu', { enrollmentId: account.enrollmentId, amount: total, method, feeItemIds: selected })
+    api.post<PaymentPreview>('/api/paiements/apercu', { enrollmentId: account.enrollmentId, amount, method, feeItemIds: selected })
       .then((p) => { if (!cancelled) { setPreview(p); setPreviewError(undefined); } })
       .catch((e) => { if (!cancelled) { setPreview(null); setPreviewError(e); } })
       .finally(() => { if (!cancelled) setPreviewing(false); });
     return () => { cancelled = true; };
-  }, [total, account.enrollmentId, selected, method, hasSelection]);
+  }, [amount, account.enrollmentId, selected, method, hasSelection, validAmount]);
 
   const submit = async () => {
-    if (submitting.current || previewing || !preview || !hasSelection) return;
+    if (submitting.current || previewing || !preview || !hasSelection || !validAmount || !validReference) return;
     submitting.current = true;
     setBusy(true); setError(undefined);
     try {
       const receipt = await api.post<Receipt>('/api/paiements', {
-        enrollmentId: account.enrollmentId, amount: total, date: paidOn, method, reference,
+        enrollmentId: account.enrollmentId, amount, date: paidOn, method, reference: paymentReference,
         payerPhone: payerPhone || null, note: note.trim() || 'OK', feeItemIds: selected, idempotencyKey,
       });
       await Promise.all([qc.invalidateQueries({ queryKey: ['account'] }), qc.invalidateQueries({ queryKey: ['dashboard'] }), qc.invalidateQueries({ queryKey: ['students'] })]);
@@ -147,7 +154,7 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
             Sélectionnez un mois pour afficher automatiquement son montant. Pour régler plusieurs mois, cochez-les ci-dessous.
           </p>
           <span className="label">Autres mois à régler (sélection multiple)</span>
-          <p className="small muted" style={{ margin: '2px 0 8px' }}>Chaque mois est réglé à hauteur de son solde dû. Aucun montant arbitraire n'est saisi.</p>
+          <p className="small muted" style={{ margin: '2px 0 8px' }}>Choisissez les mois : vous pouvez régler tout ou partie du solde, imputé aux mois les plus anciens en premier.</p>
           {months.length === 0 ? <Empty text="Aucun mois à payer pour cet apprenant." /> : (
             <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
               {months.map((l) => (
@@ -159,17 +166,29 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
             </div>
           )}
           <div className="small" style={{ marginTop: 8 }}>{hasSelection ? `${chosen.length} mois · total ${money(total)}` : 'Aucun mois choisi'}</div>
-          <div className="row" style={{ alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 0 4px' }}>
-            <span className="label">Montant à encaisser</span>
-            <output data-testid="cashier-amount" htmlFor="cashier-month" aria-live="polite" style={{ fontWeight: 750, fontSize: 'clamp(18px, 3vw, 24px)', fontVariantNumeric: 'tabular-nums' }}>
-              {hasSelection ? money(total) : '—'}
+          <div className="field" style={{ marginTop: 10 }}>
+            <label className="label" htmlFor="cashier-paid">Montant réellement reçu</label>
+            <input id="cashier-paid" className="input" type="number" min="0.01" step="any"
+              max={total} value={amountInput} placeholder={String(total)}
+              disabled={!hasSelection || busy} onChange={(e) => setAmountInput(e.target.value)}
+              aria-describedby="cashier-amount-info" />
+            <p id="cashier-amount-info" className="small muted">
+              {hasSelection ? `Total des mois choisis : ${money(total)}. Laissez vide pour solder tous les mois.` : 'Choisissez d’abord un mois.'}
+            </p>
+            {hasSelection && !validAmount && <p className="small" role="alert">Le montant doit être positif et ne pas dépasser le solde des mois sélectionnés.</p>}
+            <output data-testid="cashier-amount" htmlFor="cashier-paid" aria-live="polite" style={{ fontWeight: 750, fontSize: 20 }}>
+              {hasSelection && validAmount ? money(amount) : '—'}
             </output>
           </div>
         </div>
         <div className="grid cols-2" style={{ marginTop: 14 }}>
           <div className="field span-2"><span className="label">Mode de paiement</span><Segmented value={method} onChange={(value) => { if (!busy) setMethod(value); }} items={METHODS} /></div>
           <TextField label="Date du reçu" type="date" value={paidOn} max={today()} onChange={(e) => setPaidOn(e.target.value)} />
-          <TextField label="Référence de la transaction" value={reference} readOnly help="Donnée par SCOLIA" />
+          <TextField label={externalReference ? 'Référence de confirmation opérateur / banque' : 'Référence interne SCOLIA'}
+            value={externalReference ? operatorReference : reference}
+            readOnly={!externalReference}
+            onChange={externalReference ? (e) => setOperatorReference(e.target.value) : undefined}
+            help={externalReference ? 'Saisissez la référence exacte figurant sur la confirmation du paiement.' : 'Générée par SCOLIA pour les espèces.'} />
           <TextField label="Visé par" value={session?.displayName ?? ''} readOnly help="La personne connectée" />
           <TextField label="Téléphone du payeur" value={payerPhone || 'Aucun numéro au dossier'} readOnly help="Repris du dossier de l’apprenant" />
           <TextField className="span-2" label="Observation (facultative)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Laissée vide, le reçu portera « OK »" />
@@ -177,20 +196,20 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
       </div>
       <div className="card card-pad">
         <SectionTitle num="03">Répartition du paiement</SectionTitle>
-        {!hasSelection ? <p className="muted small">Cochez les mois payés : la répartition s’affiche avant validation.</p>
+        {!hasSelection || !validAmount ? <p className="muted small">Choisissez les mois et un montant valide pour voir la répartition avant validation.</p>
           : previewError ? <ErrorAlert error={previewError} />
           : !preview ? <Loading rows={2} /> : (
             <div className="payment-allocation">
               <table className="data">
                 <thead><tr><th>Rubrique</th><th className="num">Affecté</th><th className="num">Reste après</th></tr></thead>
                 <tbody>{preview.allocations.map((a) => <tr key={a.feeItemId}><td>{a.label}</td><td className="num" style={{ fontWeight: 700 }}>{money(a.amount)}</td><td className="num">{a.remainingAfter === 0 ? <Badge tone="green">Soldé</Badge> : money(a.remainingAfter)}</td></tr>)}</tbody>
-                <tfoot><tr><td>Reste de l’année après ce reçu</td><td className="num">{money(total)}</td><td className="num">{money(preview.balanceAfter)}</td></tr></tfoot>
+                <tfoot><tr><td>Reste de l’année après ce reçu</td><td className="num">{money(amount)}</td><td className="num">{money(preview.balanceAfter)}</td></tr></tfoot>
               </table>
             </div>
           )}
         <div style={{ marginTop: 14 }}><ErrorAlert error={error instanceof ApiError && error.status === 409 ? new Error(error.message) : error} /></div>
         <div className="row" style={{ justifyContent: 'flex-end', marginTop: 14 }}>
-          <Button variant="primary" className="payment-submit" icon={<HandCoins />} loading={busy} disabled={!preview || !hasSelection || previewing} onClick={submit}>Valider le paiement · {money(total)}</Button>
+          <Button variant="primary" className="payment-submit" icon={<HandCoins />} loading={busy} disabled={!preview || !hasSelection || !validAmount || !validReference || previewing} onClick={submit}>Valider le paiement · {validAmount ? money(amount) : '—'}</Button>
         </div>
       </div>
     </div>

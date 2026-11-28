@@ -151,4 +151,160 @@ public sealed class PaymentBatchTests : IDisposable
         var account = await admin.GetAsync($"/api/inscriptions/{student}/compte").Ok();
         Assert.Equal(0m, account.GetProperty("totalPaid").GetDecimal());
     }
+
+    [Fact]
+    public async Task Same_student_cannot_be_collected_twice_in_one_batch()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await PromotionAsync(admin);
+        var enrollment = await EnrollmentAsync(admin, promotion, "MUKENDI");
+        var months = await MonthIdsAsync(admin, enrollment, 1);
+        var items = new[] { Item(enrollment, months), Item(enrollment, months) };
+
+        var preview = await admin.Post("/api/paiements/lot/apercu", new { items }).Ok();
+        Assert.Equal(1, preview.GetProperty("count").GetInt32());
+        Assert.Equal(1, preview.GetProperty("errors").GetInt32());
+
+        var result = await admin.Post("/api/paiements/lot", new { items }).Ok();
+        Assert.Equal(1, result.GetProperty("succeeded").GetInt32());
+        Assert.Equal(1, result.GetProperty("failed").GetInt32());
+        Assert.Contains("déjà", result.GetProperty("lines")[1].GetProperty("error").GetString(), StringComparison.OrdinalIgnoreCase);
+        var account = await admin.GetAsync($"/api/inscriptions/{enrollment}/compte").Ok();
+        Assert.Equal(55000m, account.GetProperty("totalPaid").GetDecimal());
+    }
+
+    [Fact]
+    public async Task A_payment_key_cannot_be_reused_for_a_different_student()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await PromotionAsync(admin);
+        var first = await EnrollmentAsync(admin, promotion, "MUKENDI");
+        var second = await EnrollmentAsync(admin, promotion, "NGANDU");
+        var firstMonth = await MonthIdsAsync(admin, first, 1);
+        var secondMonth = await MonthIdsAsync(admin, second, 1);
+
+        var original = new
+        {
+            enrollmentId = first, amount = 55000m, method = "Especes",
+            feeItemIds = firstMonth, idempotencyKey = "transaction-tiers-unique-001"
+        };
+        await admin.Post("/api/paiements", original).Ok();
+
+        var (status, _) = await admin.Post("/api/paiements", new
+        {
+            enrollmentId = second, amount = 55000m, method = "Especes",
+            feeItemIds = secondMonth, idempotencyKey = "transaction-tiers-unique-001"
+        }).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, status);
+        var account = await admin.GetAsync($"/api/inscriptions/{second}/compte").Ok();
+        Assert.Equal(0m, account.GetProperty("totalPaid").GetDecimal());
+    }
+
+    [Fact]
+    public async Task Reordered_batch_does_not_assign_a_receipt_to_the_wrong_student()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await PromotionAsync(admin);
+        var first = await EnrollmentAsync(admin, promotion, "MUKENDI");
+        var second = await EnrollmentAsync(admin, promotion, "NGANDU");
+        var firstMonths = await MonthIdsAsync(admin, first, 1);
+        var secondMonths = await MonthIdsAsync(admin, second, 1);
+        const string key = "batch-ordered-audit-001";
+
+        var original = await admin.Post("/api/paiements/lot", new
+        {
+            items = new[] { Item(first, firstMonths), Item(second, secondMonths) }, idempotencyKey = key
+        }).Ok();
+        Assert.Equal(2, original.GetProperty("succeeded").GetInt32());
+
+        var swapped = await admin.Post("/api/paiements/lot", new
+        {
+            items = new[] { Item(second, secondMonths), Item(first, firstMonths) }, idempotencyKey = key
+        }).Ok();
+        Assert.Equal(0, swapped.GetProperty("succeeded").GetInt32());
+        Assert.Equal(2, swapped.GetProperty("failed").GetInt32());
+        Assert.All(swapped.GetProperty("lines").EnumerateArray(),
+            line => Assert.Contains("changé", line.GetProperty("error").GetString(), StringComparison.OrdinalIgnoreCase));
+
+        var paidFirst = await admin.GetAsync($"/api/inscriptions/{first}/compte").Ok();
+        var paidSecond = await admin.GetAsync($"/api/inscriptions/{second}/compte").Ok();
+        Assert.Equal(55000m, paidFirst.GetProperty("totalPaid").GetDecimal());
+        Assert.Equal(55000m, paidSecond.GetProperty("totalPaid").GetDecimal());
+    }
+
+    [Fact]
+    public async Task Replayed_batch_cannot_silently_replace_the_selected_month()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await PromotionAsync(admin);
+        var enrollment = await EnrollmentAsync(admin, promotion, "MUKENDI");
+        var months = await MonthIdsAsync(admin, enrollment, 2);
+        const string key = "batch-months-must-match";
+
+        var original = await admin.Post("/api/paiements/lot", new
+        {
+            items = new[] { Item(enrollment, months.Take(1)) }, idempotencyKey = key
+        }).Ok();
+        Assert.Equal(1, original.GetProperty("succeeded").GetInt32());
+
+        var changed = await admin.Post("/api/paiements/lot", new
+        {
+            items = new[] { Item(enrollment, months.Skip(1)) }, idempotencyKey = key
+        }).Ok();
+        Assert.Equal(0, changed.GetProperty("succeeded").GetInt32());
+        Assert.Equal(1, changed.GetProperty("failed").GetInt32());
+        var account = await admin.GetAsync($"/api/inscriptions/{enrollment}/compte").Ok();
+        Assert.Equal(55000m, account.GetProperty("totalPaid").GetDecimal());
+    }
+
+    [Fact]
+    public async Task Cancelled_receipt_is_not_reported_as_a_successful_idempotent_payment()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await PromotionAsync(admin);
+        var enrollment = await EnrollmentAsync(admin, promotion, "MUKENDI");
+        var months = await MonthIdsAsync(admin, enrollment, 1);
+        var request = new
+        {
+            enrollmentId = enrollment, amount = 55000m, method = "Especes",
+            feeItemIds = months, idempotencyKey = "cancelled-payment-retry"
+        };
+
+        var receipt = await admin.Post("/api/paiements", request).Ok();
+        await admin.Post($"/api/paiements/{receipt.GetProperty("id").GetString()}/annulation",
+            new { reason = "Erreur d'encaissement" }).Ok();
+
+        var (status, _) = await admin.Post("/api/paiements", request).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, status);
+        var account = await admin.GetAsync($"/api/inscriptions/{enrollment}/compte").Ok();
+        Assert.Equal(0m, account.GetProperty("totalPaid").GetDecimal());
+    }
+
+    [Fact]
+    public async Task Receipt_payer_remains_the_original_guardian_after_the_student_profile_changes()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await PromotionAsync(admin);
+        var enrollment = await EnrollmentAsync(admin, promotion, "MUKENDI");
+        var month = await MonthIdsAsync(admin, enrollment, 1);
+        var created = await admin.Post("/api/paiements", new
+        {
+            enrollmentId = enrollment, amount = 55000m, method = "Especes", feeItemIds = month,
+            idempotencyKey = "receipt-payer-snapshot"
+        }).Ok();
+        var receiptId = created.GetProperty("id").GetString();
+        Assert.Equal("Parent", created.GetProperty("payerName").GetString());
+
+        var students = await admin.GetAsync("/api/apprenants?q=MUKENDI").Ok();
+        var studentId = students.GetProperty("items")[0].GetProperty("id").GetString();
+        await admin.Put($"/api/apprenants/{studentId}", new
+        {
+            lastName = "MUKENDI", middleName = "KABEYA", firstName = "Grace",
+            gender = "F", birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14),
+            guardianPhone = "0812345678", guardianName = "Autre parent"
+        }).Ok();
+
+        var saved = await admin.GetAsync($"/api/paiements/{receiptId}").Ok();
+        Assert.Equal("Parent", saved.GetProperty("payerName").GetString());
+    }
 }

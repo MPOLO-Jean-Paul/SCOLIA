@@ -1,0 +1,3 @@
+# Deuxième passe — tableaux et commandes
+
+Regrouper les recalculs de colonnes sur le dispatcher, suivre les tableaux attachés par références faibles et recalculer après un changement de zoom même si la largeur ne change pas. Retirer les anciens gestionnaires de menus lors d'un changement de style ; cibler la ligne réellement visée. Mesurer au plus trois actions d'en-tête, sans mesure desktop en mode téléphone. Les actions métier et leur ordre restent inchangés. Sept cas de tests ajoutés pour le calcul d'en-tête, non exécutés. Vérifier ultérieurement le zoom, la virtualisation des lignes, la sélection, les menus, les raccourcis et le rendu. Aucun lancement de compilation.

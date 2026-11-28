@@ -1,0 +1,16 @@
+{
+  "name": "scolia-netlify-https-backup",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "check": "node --check src/mailbox.mjs && node --check netlify/functions/scolia-backup.mjs && node --check netlify/functions/scolia-backup-cleanup.mjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^11.1.8"
+  }
+}

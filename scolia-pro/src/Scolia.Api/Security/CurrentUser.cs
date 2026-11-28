@@ -9,6 +9,8 @@ public static class ScoliaClaims
     public const string Stamp = "scolia:stamp";
     public const string Role = "scolia:role";
     public const string UserName = "scolia:login";
+    public const string PermissionVersion = "scolia:permission-version";
+    public const string ManagementMode = "scolia:management-mode";
 }
 
 public sealed class HttpCurrentUser(IHttpContextAccessor accessor) : ICurrentUser
@@ -18,6 +20,7 @@ public sealed class HttpCurrentUser(IHttpContextAccessor accessor) : ICurrentUse
     public Guid? Id => Guid.TryParse(Principal?.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
 
     public string Name => Principal?.Identity?.IsAuthenticated == true ? Principal.FindFirstValue(ClaimTypes.Name) ?? "?" : "système";
+    public string? SecurityStamp => Principal?.FindFirstValue(ScoliaClaims.Stamp);
 
     public bool HasPermission(string permission) => Principal?.HasClaim(ScoliaClaims.Permission, permission) == true;
 

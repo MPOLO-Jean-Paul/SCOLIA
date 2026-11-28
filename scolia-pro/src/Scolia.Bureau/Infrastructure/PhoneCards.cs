@@ -17,7 +17,7 @@ namespace Scolia.Bureau.Infrastructure;
 
 /// <summary>
 /// Tableaux du téléphone : chaque ligne devient une carte, lisible en entier sans défiler de côté. Le titre de la carte
-/// est la colonne principale du tableau, le montant se place à sa droite, les autres colonnes suivent en lignes
+/// est la colonne principale du tableau, le montant occupe la ligne suivante, les autres colonnes suivent en lignes
 /// « libellé : valeur ». Toucher une carte choisit la ligne ; le bouton « … » ou l'appui long ouvre ses actions,
 /// le double appui lance l'action principale, comme le double-clic sur l'ordinateur.
 /// Le tableau reste le même contrôle : ses liaisons, sa sélection et ses actions de page ne changent pas.
@@ -31,7 +31,8 @@ public static class PhoneCards
 
     public static void SetEnabled(DataGrid grid, bool value) => grid.SetValue(EnabledProperty, value);
 
-    /// <summary>En-têtes de colonnes qui portent un montant : il se place à droite du titre, en gras.</summary>
+    /// <summary>Colonnes de rang et de montant mises en évidence dans l'en-tête de la carte.</summary>
+    private static readonly string[] RankHeaders = ["Place", "Rang", "N°", "#"];
     private static readonly string[] AmountHeaders = ["Montant", "Solde", "Reste", "Total", "Net", "Payé", "Encaissé", "Salaire"];
 
     static PhoneCards()
@@ -56,16 +57,24 @@ public static class PhoneCards
         var list = new ItemsControl { ItemTemplate = new FuncDataTemplate<object>((_, _) => Card(grid)) };
         UseColumns(list, 1);
         // Une tablette range les cartes sur deux ou trois colonnes ; un téléphone les garde sur une seule.
+        var resizePending = false;
         list.SizeChanged += (_, e) =>
         {
-            var columns = e.NewSize.Width >= ThreeColumnsFrom ? 3 : e.NewSize.Width >= TwoColumnsFrom ? 2 : 1;
-            if (columns != (list.Tag as int? ?? 1)) Avalonia.Threading.Dispatcher.UIThread.Post(() => UseColumns(list, columns));
+            if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) < 0.5 || resizePending) return;
+            resizePending = true;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                resizePending = false;
+                var columns = ColumnsForWidth(list.Bounds.Width);
+                if (columns != (list.Tag as int? ?? 1)) UseColumns(list, columns);
+            });
         };
         // Les cartes s'affichent par paquets : les premières tout de suite, les suivantes à la demande, en bas de la liste.
         // Une longue liste s'ouvre ainsi vite même sur un téléphone modeste, sans liste virtualisée qui ferait sauter la page.
         var shown = new System.Collections.ObjectModel.ObservableCollection<object?>();
         list.ItemsSource = shown;
-        var more = new Button { HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 4, 0, 8), IsVisible = false };
+        var moreLabel = new TextBlock { TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, FontWeight = FontWeight.SemiBold };
+        var more = new Button { Content = moreLabel, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 4, 0, 8), IsVisible = false };
         more.Classes.Add("phoneshowmore");
         var limit = FirstCards;
         System.Collections.IEnumerable? source = null;
@@ -84,7 +93,8 @@ public static class PhoneCards
             if (shown.Count < target) Later();
             var left = all.Count - target;
             more.IsVisible = left > 0 && shown.Count >= target;
-            more.Content = $"Afficher {Math.Min(left, MoreCards)} de plus · {Format.Count(left, "restant", "restants")}";
+            moreLabel.Text = $"Afficher {Math.Min(left, MoreCards)} de plus · {Format.Count(left, "restant", "restants")}";
+            Avalonia.Automation.AutomationProperties.SetName(more, moreLabel.Text);
         }
         void Later() { if (pending) return; pending = true; Avalonia.Threading.Dispatcher.UIThread.Post(Fill, Avalonia.Threading.DispatcherPriority.Background); }
         void OnChanged(object? s, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) => Later();
@@ -110,6 +120,8 @@ public static class PhoneCards
     private const int QuickCards = 8;
     private const int StepCards = 8;
 
+    public static int ColumnsForWidth(double width) => width >= ThreeColumnsFrom ? 3 : width >= TwoColumnsFrom ? 2 : 1;
+
     private static void UseColumns(ItemsControl list, int columns)
     {
         list.Tag = columns;
@@ -130,23 +142,19 @@ public static class PhoneCards
         var others = columns.Where(c => !IsCheck(c)).ToList();
         var title = others.FirstOrDefault(c => c.Width.IsStar) ?? others.FirstOrDefault();
         var amount = others.FirstOrDefault(c => c != title && IsAmount(c));
-        var subtitle = title is null ? null : others.Take(others.IndexOf(title)).OfType<DataGridTextColumn>().FirstOrDefault();
+        // Sous-titre : le matricule ou le code, jamais un rang ou un numéro d'ordre, qui seul sous un nom ne dit rien.
+        // Ceux-là restent des lignes à libellé (« Place : 2 »).
+        var subtitle = title is null ? null : others.Take(others.IndexOf(title)).OfType<DataGridTextColumn>()
+            .FirstOrDefault(c => !RankHeaders.Contains(HeaderText(c), StringComparer.OrdinalIgnoreCase));
         var fields = others.Where(c => c != title && c != amount && c != subtitle).ToList();
 
-        var body = new StackPanel { Spacing = 3 };
-        var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        var body = new StackPanel { Spacing = 6 };
+        var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), MinWidth = 0 };
         if (title is not null)
         {
             var main = Value(grid, title, emphasis: true);
+            if (main is TextBlock) main.MinWidth = 0;
             head.Children.Add(main);
-        }
-        if (amount is not null)
-        {
-            var money = Value(grid, amount, emphasis: true);
-            money.Margin = new Thickness(10, 0, 0, 0);
-            money.HorizontalAlignment = HorizontalAlignment.Right;
-            Grid.SetColumn(money, 1);
-            head.Children.Add(money);
         }
         body.Children.Add(head);
         if (subtitle is not null)
@@ -155,10 +163,17 @@ public static class PhoneCards
             sub.Classes.Add("phonesub");
             body.Children.Add(sub);
         }
+        if (amount is not null)
+        {
+            var money = Value(grid, amount, emphasis: true);
+            money.Classes.Add("phonemoney");
+            money.Margin = new Thickness(0, 2, 0, 2);
+            body.Children.Add(money);
+        }
         foreach (var column in fields)
         {
-            var line = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), RowDefinitions = new RowDefinitions("Auto,Auto"), Margin = new Thickness(0, 2, 0, 0) };
-            var label = new TextBlock { Text = HeaderText(column), TextWrapping = TextWrapping.Wrap, MaxWidth = 150, VerticalAlignment = VerticalAlignment.Top };
+            var line = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), RowDefinitions = new RowDefinitions("Auto,Auto") };
+            var label = new TextBlock { Text = HeaderText(column), TextWrapping = TextWrapping.Wrap, MinWidth = 0, MaxWidth = 150, VerticalAlignment = VerticalAlignment.Top };
             label.Classes.Add("phonelabel");
             var value = Value(grid, column, emphasis: false);
             value.HorizontalAlignment = HorizontalAlignment.Right;
@@ -168,6 +183,18 @@ public static class PhoneCards
             line.Children.Add(label);
             line.Children.Add(value);
             body.Children.Add(line);
+            // Une saisie doit disposer de toute la largeur, pas du reste après son étiquette.
+            // Cela concerne notamment les promotions cibles, les notes et les formulaires éditables.
+            if (value is TextBox or ComboBox or CalendarDatePicker ||
+                value.GetLogicalDescendants().Any(c => c is TextBox or ComboBox or CalendarDatePicker))
+            {
+                Grid.SetRow(value, 1);
+                Grid.SetColumn(value, 0);
+                Grid.SetColumnSpan(value, 2);
+                value.HorizontalAlignment = HorizontalAlignment.Stretch;
+                value.Margin = new Thickness(0, 4, 0, 2);
+                continue;
+            }
             // Une barre de progression (recouvrement…) se lit sous son étiquette, sur toute la largeur de la carte :
             // à droite de l'étiquette, elle n'aurait pas la place et chevaucherait le texte.
             if (value.GetLogicalDescendants().Prepend(value).OfType<ProgressBar>().Any())
@@ -184,7 +211,7 @@ public static class PhoneCards
             if (shown is not null) FitLine(line, value, shown);
         }
 
-        var layout = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
+        var layout = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
         if (checks.Count > 0)
         {
             var boxes = new StackPanel { Spacing = 2, Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Top };
@@ -201,7 +228,9 @@ public static class PhoneCards
         var page = PageOf(grid);
         if (page is { RowActions.Count: > 0 })
         {
-            var more = new Button { Content = new MaterialIcon { Kind = MaterialIconKind.DotsHorizontal, Width = 20, Height = 20 }, VerticalAlignment = VerticalAlignment.Top };
+            var more = new Button { Content = new MaterialIcon { Kind = MaterialIconKind.DotsHorizontal, Width = 20, Height = 20, IsHitTestVisible = false }, VerticalAlignment = VerticalAlignment.Top };
+            ToolTip.SetTip(more, "Actions de la ligne");
+            Avalonia.Automation.AutomationProperties.SetName(more, "Actions de la ligne");
             more.Classes.Add("phonemore");
             more.Click += (_, e) =>
             {
@@ -209,8 +238,9 @@ public static class PhoneCards
                 ShowRowSheet(grid, card);
                 e.Handled = true;
             };
-            Grid.SetColumn(more, 2);
-            layout.Children.Add(more);
+            // L'action appartient à l'en-tête ; les données gardent toute la largeur en dessous.
+            Grid.SetColumn(more, 1);
+            head.Children.Add(more);
         }
 
         card.Tapped += (_, e) =>
@@ -252,11 +282,19 @@ public static class PhoneCards
     private static void FitLine(Grid line, Control value, TextBlock text)
     {
         const int LongText = 28;
+        bool? previousStacked = null;
         void Apply()
         {
             var content = text.Text ?? string.Empty;
-            line.IsVisible = !string.IsNullOrWhiteSpace(content);
-            var stacked = content.Length > LongText;
+            var visible = !string.IsNullOrWhiteSpace(content);
+            if (line.IsVisible != visible) line.IsVisible = visible;
+            // Sur un petit écran ou avec le texte agrandi, même une valeur
+            // courte peut manquer de place. Utiliser la largeur logique réelle.
+            var width = line.Bounds.Width;
+            var textScale = Math.Max(1, text.FontSize / 15);
+            var stacked = content.Length > LongText || (width > 0 && width < 224 * textScale);
+            if (previousStacked == stacked) return;
+            previousStacked = stacked;
             Grid.SetRow(value, stacked ? 1 : 0);
             Grid.SetColumn(value, stacked ? 0 : 1);
             Grid.SetColumnSpan(value, stacked ? 2 : 1);
@@ -264,7 +302,14 @@ public static class PhoneCards
             value.Margin = stacked ? new Thickness(0, 2, 0, 0) : new Thickness(12, 0, 0, 0);
             text.TextAlignment = stacked ? TextAlignment.Left : TextAlignment.Right;
         }
-        text.PropertyChanged += (_, e) => { if (e.Property == TextBlock.TextProperty) Apply(); };
+        text.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextBlock.TextProperty || e.Property == TextBlock.FontSizeProperty) Apply();
+        };
+        line.SizeChanged += (_, e) =>
+        {
+            if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 0.5) Apply();
+        };
         Apply();
     }
 
@@ -280,7 +325,7 @@ public static class PhoneCards
             }
             case DataGridTextColumn text:
             {
-                var block = new TextBlock { TextWrapping = TextWrapping.Wrap };
+                var block = new TextBlock { TextWrapping = TextWrapping.Wrap, MinWidth = 0 };
                 if (emphasis) block.Classes.Add("phonetitle");
                 if (text.Binding is { } b) block.Bind(TextBlock.TextProperty, b);
                 return block;

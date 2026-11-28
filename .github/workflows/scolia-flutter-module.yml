@@ -1,0 +1,59 @@
+name: SCOLIA Flutter - module Android
+on:
+  pull_request:
+    paths:
+      - 'scolia-pro/src/Scolia.Flutter/**'
+      - '.github/workflows/scolia-flutter-module.yml'
+      - 'scolia-pro/src/Scolia.Flutter.AndroidBinding/**'
+      - 'scolia-pro/src/Scolia.Mobile/FlutterIntegration.cs'
+      - 'scolia-pro/src/Scolia.Mobile/FlutterActivityHost.cs'
+      - 'scolia-pro/src/Scolia.Mobile/MainActivity.cs'
+      - 'scolia-pro/src/Scolia.Mobile/Scolia.Mobile.csproj'
+      - 'scolia-pro/src/Scolia.Bureau/Infrastructure/Flutter*'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scolia-pro/src/Scolia.Flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.44.0'
+      - run: flutter pub get
+      - run: flutter analyze
+      - name: Tester le contrôle de compatibilité des mises à jour
+        run: python3 -m unittest discover -s android_bridge -p 'test_verify_release_upgrade.py'
+      - run: flutter test
+      - run: flutter build aar --no-debug --no-profile
+      - name: Compiler le pont Java contre le moteur Flutter réel
+        run: python3 android_bridge/build_bridge.py
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Installer le workload Android pour la liaison .NET
+        run: dotnet workload install android
+      - name: Compiler la liaison .NET Android (bibliothèque de validation)
+        run: dotnet build ../Scolia.Flutter.AndroidBinding/Scolia.Flutter.AndroidBinding.csproj -c Release
+      - name: Générer un APK expérimental isolé (signature de validation)
+        run: dotnet publish ../Scolia.Mobile/Scolia.Mobile.csproj -c Release -p:ScoliaFlutterExperiment=true -p:AndroidKeyStore=false -p:AndroidPackageFormat=apk
+      - name: Contrôler le contenu et l'identité de l'APK
+        run: python3 android_bridge/verify_apk.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: scolia-flutter-module-aar-validation
+          path: |
+            scolia-pro/src/Scolia.Flutter/build/host/outputs/repo/
+            scolia-pro/src/Scolia.Flutter/build/bridge/scolia-flutter-bridge.jar
+            scolia-pro/src/Scolia.Flutter.AndroidBinding/bin/Release/net10.0-android/
+            scolia-pro/src/Scolia.Flutter/build/validation/
+          if-no-files-found: error

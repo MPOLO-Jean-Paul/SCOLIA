@@ -1,0 +1,226 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:infra="using:Scolia.Bureau.Infrastructure">
+  <Styles.Resources>
+    <x:Double x:Key="FsPhoneMetric">22</x:Double>
+    <x:Double x:Key="LhPhoneBody">22</x:Double>
+    <x:Double x:Key="LhPhoneDetail">18</x:Double>
+    <x:Double x:Key="LhPhoneHeading">26</x:Double>
+    <!-- Le même contenu d'indicateur dans les quatre espaces ; le conteneur décide s'il est actionnable. -->
+    <DataTemplate x:Key="PhoneMetricContent">
+      <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <TextBlock Text="{Binding Label}" Classes="mobiledetail" FontWeight="Medium"
+                     Foreground="{DynamicResource Text2Brush}" VerticalAlignment="Center" />
+          <Border Grid.Column="1" Classes="mobilemetricicon">
+            <Image Source="{Binding Icon, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}"
+                   Width="24" Height="24" Stretch="Uniform" />
+          </Border>
+        </Grid>
+        <TextBlock Grid.Row="1" Text="{Binding Value}" Classes="mobilemetricvalue" />
+        <TextBlock Grid.Row="2" Text="{Binding Hint}" Classes="mobiledetail" />
+      </Grid>
+    </DataTemplate>
+    <DataTemplate x:Key="PhoneMetricTile">
+      <Border Classes="mobilemetriccard">
+        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource PhoneMetricContent}" />
+      </Border>
+    </DataTemplate>
+  </Styles.Resources>
+
+  <!-- Ces finitions concernent uniquement le cadre mobile, y compris sur tablette. -->
+  <Style Selector="LayoutTransformControl.phone TextBlock.mobilebody">
+    <Setter Property="FontSize" Value="{DynamicResource FsBase}" />
+    <Setter Property="LineHeight" Value="{DynamicResource LhPhoneBody}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock.mobiledetail">
+    <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+    <Setter Property="LineHeight" Value="{DynamicResource LhPhoneDetail}" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock.mobilesection">
+    <Setter Property="FontSize" Value="{DynamicResource FsHeading}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock.mobilemetricvalue">
+    <Setter Property="FontSize" Value="{DynamicResource FsPhoneMetric}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock.mobilewelcome">
+    <Setter Property="FontSize" Value="{DynamicResource FsTitle}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TransitioningContentControl#PhoneHost">
+    <Setter Property="Margin" Value="16,14,16,24" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TransitioningContentControl#PhoneHost.withsticky">
+    <Setter Property="Margin" Value="16,14,16,120" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.phonebar">
+    <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="4,2,4,6" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.phoneicon">
+    <Setter Property="Width" Value="44" /><Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.phoneicon.primaryaction">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock#PhonePageHeading">
+    <Setter Property="Grid.Row" Value="1" />
+    <Setter Property="Grid.Column" Value="0" />
+    <Setter Property="Grid.ColumnSpan" Value="6" />
+    <Setter Property="Margin" Value="12,4,12,0" />
+    <Setter Property="FontSize" Value="{DynamicResource FsPageHeading}" />
+    <Setter Property="LineHeight" Value="{DynamicResource LhPhoneHeading}" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone :is(UserControl).shortphone TextBlock#PhonePageHeading">
+    <Setter Property="Grid.Row" Value="0" />
+    <Setter Property="Grid.Column" Value="1" />
+    <Setter Property="Grid.ColumnSpan" Value="1" />
+    <Setter Property="Margin" Value="4,0" />
+    <Setter Property="FontSize" Value="{DynamicResource FsHeading}" />
+    <Setter Property="LineHeight" Value="{DynamicResource LhPhoneBody}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone :is(UserControl).shortphone Border#PhoneContextLine">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.phonegroup, LayoutTransformControl.phone Border.phoneblockcard, LayoutTransformControl.phone Border.workpanel, LayoutTransformControl.phone Border.mobilecard, LayoutTransformControl.phone Border.card, LayoutTransformControl.phone Border.tile">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="infra:Reveal.Enabled" Value="False" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.mobilecard">
+    <Setter Property="Padding" Value="16" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.phonecard">
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="16,14" />
+    <Setter Property="Margin" Value="0,0,0,12" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.mobilemetriccard">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="14" />
+    <Setter Property="Margin" Value="4" />
+    <Setter Property="MinHeight" Value="136" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.mobilemetriccard">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="14" />
+    <Setter Property="Margin" Value="4" />
+    <Setter Property="MinHeight" Value="136" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Top" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.mobileicon">
+    <Setter Property="Width" Value="40" /><Setter Property="Height" Value="40" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.workspaceglyph, LayoutTransformControl.phone Border.appicon.medium">
+    <Setter Property="Width" Value="40" /><Setter Property="Height" Value="40" />
+    <Setter Property="CornerRadius" Value="10" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.mobilemetricicon">
+    <Setter Property="Width" Value="32" /><Setter Property="Height" Value="32" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.mobileactionrow, LayoutTransformControl.phone Button.workspacerow">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="12" />
+    <Setter Property="MinHeight" Value="72" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.mobileactionrow:pressed /template/ ContentPresenter#PART_ContentPresenter, LayoutTransformControl.phone Button.mobilemetriccard:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.mobilecourse">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="16" />
+    <Setter Property="Margin" Value="0,0,0,12" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Expander.mobileexpander">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.settingsentry, LayoutTransformControl.phone Button.phonerow">
+    <Setter Property="MinHeight" Value="64" />
+    <Setter Property="Padding" Value="14,10" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock.phonetitle">
+    <Setter Property="FontSize" Value="{DynamicResource FsBase}" />
+    <Setter Property="LineHeight" Value="{DynamicResource LhPhoneBody}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock.phonemoney">
+    <Setter Property="FontSize" Value="{DynamicResource FsStickyValue}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock.phonelabel, LayoutTransformControl.phone TextBlock.phonesub">
+    <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+    <Setter Property="LineHeight" Value="{DynamicResource LhPhoneDetail}" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.phonemore">
+    <Setter Property="MinWidth" Value="44" /><Setter Property="MinHeight" Value="44" />
+    <Setter Property="Margin" Value="4,-8,-6,-4" />
+    <Setter Property="CornerRadius" Value="10" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBox.field, LayoutTransformControl.phone TextBox.w11, LayoutTransformControl.phone ComboBox, LayoutTransformControl.phone CalendarDatePicker, LayoutTransformControl.phone NumericUpDown">
+    <Setter Property="MinHeight" Value="48" />
+    <Setter Property="CornerRadius" Value="10" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBlock.fieldlabel">
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Margin" Value="0,0,0,3" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone TextBox.field /template/ Border#PART_BorderElement, LayoutTransformControl.phone TextBox.w11 /template/ Border#PART_BorderElement">
+    <Setter Property="CornerRadius" Value="10" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.tabicon">
+    <Setter Property="Width" Value="48" /><Setter Property="Height" Value="30" />
+    <Setter Property="CornerRadius" Value="10" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Button.phonetab TextBlock">
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+</Styles>

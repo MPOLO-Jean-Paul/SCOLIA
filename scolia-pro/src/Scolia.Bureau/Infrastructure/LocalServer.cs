@@ -14,4 +14,7 @@ public interface ILocalServer
 
     /// <summary>Arrête le serveur lancé par cette application.</summary>
     void Stop();
+
+    /// <summary>Dernier état connu du serveur (erreur de démarrage comprise), affiché si le démarrage échoue.</summary>
+    string? Diagnostic => null;
 }

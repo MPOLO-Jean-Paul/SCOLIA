@@ -1,0 +1,122 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mi="using:Material.Icons.Avalonia"
+        xmlns:infra="using:Scolia.Bureau.Infrastructure"
+        xmlns:ctl="using:Scolia.Bureau.Controls">
+  <!-- Langage commun des écrans métier : mêmes surfaces, contrôles et repères que les pages de compte.
+       La disposition et les cibles tactiles restent adaptées à la taille réelle de chaque appareil. -->
+  <Style Selector="mi|MaterialIcon">
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="UseLayoutRounding" Value="True" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <ctl:FluentIcon Kind="{TemplateBinding Kind}" Foreground="{TemplateBinding Foreground}" />
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="PathIcon">
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="UseLayoutRounding" Value="True" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <ctl:FluentIcon Data="{TemplateBinding Data}" Foreground="{TemplateBinding Foreground}" />
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
+  <!-- Repères en couleur pour les fonctionnalités, vecteurs au trait pour les commandes.
+       Le type et Kind sont conservés pour les liaisons, les menus et les actions créées en C#. -->
+  <Style Selector="Border.appicon">
+    <Setter Property="infra:TileGlyph.Enabled" Value="False" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="Border.appicon > mi|MaterialIcon">
+    <Setter Property="Width" Value="24" /><Setter Property="Height" Value="24" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Image Source="{TemplateBinding Kind, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}"
+               Stretch="Uniform" IsHitTestVisible="False" />
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="Border.appicon.medium > mi|MaterialIcon">
+    <Setter Property="Width" Value="24" /><Setter Property="Height" Value="24" />
+  </Style>
+  <Style Selector="Border.appicon.large > mi|MaterialIcon, Border.appicon.avatar > mi|MaterialIcon">
+    <Setter Property="Width" Value="32" /><Setter Property="Height" Value="32" />
+  </Style>
+  <Style Selector="Grid.featureavatar > Border.appicon.avatar > mi|MaterialIcon">
+    <Setter Property="Width" Value="32" /><Setter Property="Height" Value="32" />
+  </Style>
+  <Style Selector="Grid.featureavatar.mini > Border.appicon.avatar > mi|MaterialIcon">
+    <Setter Property="Width" Value="24" /><Setter Property="Height" Value="24" />
+  </Style>
+  <Style Selector="Grid.featureavatar.small > Border.appicon.avatar > mi|MaterialIcon">
+    <Setter Property="Width" Value="28" /><Setter Property="Height" Value="28" />
+  </Style>
+  <Style Selector="Grid.featureavatar > Ellipse.sheen">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+
+  <!-- Contrôles WinUI sobres : coins de 6 px, contour fin et état de focus déjà fourni par FluentTheme. -->
+  <Style Selector="Button, ToggleButton">
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="Button.primary, Button.outline, Button.quiet, Button.ghost">
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="TextBox.field, TextBox.w11:not(.onbrand), ComboBox, CalendarDatePicker, NumericUpDown">
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="TextBox.field /template/ Border#PART_BorderElement, TextBox.w11:not(.onbrand) /template/ Border#PART_BorderElement">
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="TextBlock.fieldlabel">
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+  <Style Selector="Border.card, Border.desktopgroup, Border.tile, Border.phonegroup">
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+  </Style>
+  <Style Selector="Border.band">
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+  <Style Selector="Border.dialogsurface">
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+  </Style>
+  <Style Selector="DataGrid">
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+  </Style>
+  <Style Selector="DataGridColumnHeader">
+    <Setter Property="Background" Value="{DynamicResource TableHeadBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Expander, TabItem">
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+
+  <!-- Réponse brève à l'appui, uniquement lorsque les animations sont activées. -->
+  <Style Selector="LayoutTransformControl.anim Button mi|MaterialIcon:not(.spin)">
+    <Setter Property="RenderTransform" Value="scale(1)" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" Easing="{x:Static infra:Motion.Smooth}" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="LayoutTransformControl.anim Button:pressed mi|MaterialIcon:not(.spin)">
+    <Setter Property="RenderTransform" Value="scale(0.94)" />
+  </Style>
+</Styles>

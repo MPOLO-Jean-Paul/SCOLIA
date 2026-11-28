@@ -2,7 +2,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
-             xmlns:views="using:Scolia.Bureau.Views"
              x:Class="Scolia.Bureau.Views.SetupView">
   <UserControl.Styles>
     <!-- Champ de l'assistant : libellé court au-dessus, champ dessous, peu d'espace entre les deux -->
@@ -10,8 +9,14 @@
     <Style Selector="StackPanel.field > TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
       <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
+    <!-- Fenêtre moyenne : bandeau plus étroit, le formulaire garde la place utile. -->
+    <Style Selector="Border.setupband"><Setter Property="Width" Value="290" /></Style>
+    <Style Selector="Grid.medium Border.setupband"><Setter Property="Width" Value="225" /></Style>
+    <Style Selector="Grid.medium Grid.setupform"><Setter Property="Margin" Value="22,22,22,18" /></Style>
     <Style Selector="TextBlock.section">
+      <Setter Property="TextWrapping" Value="Wrap" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="FontSize" Value="{DynamicResource FsHeading}" />
     </Style>
@@ -21,103 +26,271 @@
       <Setter Property="Height" Value="28" />
       <Setter Property="CornerRadius" Value="14" />
       <Setter Property="BorderThickness" Value="1.5" />
-      <Setter Property="BorderBrush" Value="#80FFFFFF" />
-      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     </Style>
     <Style Selector="Border.stepdot.on">
-      <Setter Property="Background" Value="White" />
-      <Setter Property="BorderBrush" Value="White" />
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     </Style>
     <Style Selector="Border.stepdot > TextBlock">
-      <Setter Property="Foreground" Value="White" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
-    <Style Selector="Border.stepdot.on > TextBlock"><Setter Property="Foreground" Value="#0B4FC4" /></Style>
+    <Style Selector="Border.stepdot.on > TextBlock"><Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" /></Style>
+    <!-- Champs et boutons arrondis du style iOS, comme la page de connexion. -->
+    <Style Selector="TextBox.w11"><Setter Property="MinHeight" Value="40" /><Setter Property="CornerRadius" Value="4" /></Style>
+    <Style Selector="ComboBox"><Setter Property="MinHeight" Value="40" /><Setter Property="CornerRadius" Value="4" /></Style>
+    <Style Selector="Button.primary"><Setter Property="CornerRadius" Value="4" /></Style>
+    <Style Selector="CheckBox TextBlock"><Setter Property="TextWrapping" Value="Wrap" /></Style>
+    <Style Selector="Button.profileChoice">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Padding" Value="14,12" />
+      <Setter Property="MinHeight" Value="174" />
+      <Setter Property="Margin" Value="5" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.profileChoice:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="Border.setupstartpane"><Setter Property="Width" Value="176" /></Style>
+    <Style Selector="Grid.medium Border.setupstartpane"><Setter Property="Width" Value="156" /></Style>
+    <Style Selector="Button.setupentry">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="MinHeight" Value="96" />
+      <Setter Property="Height" Value="96" />
+      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.setupentry:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.profileChoice:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
   </UserControl.Styles>
 
-  <!-- Première installation : un bandeau aux couleurs de SCOLIA à gauche, le formulaire à droite.
+  <!-- Première installation, style iOS clair comme la connexion : un bandeau doux à gauche, le formulaire à droite.
        Tout tient sur un écran de 1366 × 768 sans défiler ; une fenêtre plus petite garde le défilement. -->
-  <Grid Background="{DynamicResource BgBrush}">
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-      <Border Margin="20" MaxWidth="1180" MinHeight="620" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="18" ClipToBounds="True"
-              Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" BoxShadow="0 18 50 0 #22000000">
-        <Grid ColumnDefinitions="290,*">
+  <Grid x:Name="SetupRoot" Background="{DynamicResource SurfaceBrush}">
+    
+    <!-- Accueil de première utilisation : langage visuel de l'espace de travail Power BI. -->
+    <Grid IsVisible="{Binding IsChoosingInstitution}" Background="{DynamicResource SurfaceBrush}" ColumnDefinitions="Auto,*">
+      <Border Classes="setupstartpane" Background="{DynamicResource GroupBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,1,0">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="0" Margin="0,16,0,12">
+            <StackPanel Spacing="7" Margin="12,0,12,18">
+              <Image Source="{DynamicResource ScoliaMark}" Width="42" Height="42" HorizontalAlignment="Center" />
+              <TextBlock Text="SCOLIA Pro" FontSize="18" FontWeight="SemiBold" TextAlignment="Center" />
+              <TextBlock Text="Première utilisation" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
+            </StackPanel>
+            <Grid Height="96" Background="{DynamicResource AccentSoftBrush}">
+              <Border Width="3" HorizontalAlignment="Left" Background="{DynamicResource AccentBrush}" />
+              <StackPanel Spacing="7" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0">
+                <PathIcon Data="{x:Static infra:HomeGlyphs.School}" Width="28" Height="28" Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock Text="Créer un établissement" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
+            <Button Classes="setupentry" Command="{Binding JoinExisting}" AutomationProperties.Name="Rejoindre un établissement">
+              <StackPanel Spacing="7" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="LanConnect" Width="28" Height="28" Foreground="{DynamicResource TextBrush}" />
+                <TextBlock Text="Rejoindre un établissement" TextAlignment="Center" TextWrapping="Wrap" />
+              </StackPanel>
+            </Button>
+            <Border Height="1" Background="{DynamicResource LineBrush}" Margin="16,12" />
+            <TextBlock Text="Déjà configuré sur un autre poste ? Rejoignez son serveur." Classes="muted" TextWrapping="Wrap" Margin="14,0" />
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+      <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="22,24,22,24" Spacing="16" MaxWidth="1060" HorizontalAlignment="Stretch">
+          <TextBlock Text="ACCUEIL / PREMIÈRE CONFIGURATION" Classes="muted" FontSize="11" FontWeight="SemiBold" />
+          <TextBlock Text="Bienvenue dans SCOLIA Pro" FontSize="28" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <TextBlock Text="Choisissez le type de votre établissement pour commencer. SCOLIA adapte ensuite les paramètres et le vocabulaire à votre activité." Classes="muted" TextWrapping="Wrap" />
+          <TextBlock Text="Créer un établissement" FontSize="18" FontWeight="SemiBold" />
+          <UniformGrid x:Name="SetupProfiles" Columns="3" infra:Adaptive.MinItemWidth="230">
+            <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="ItmIm" AutomationProperties.Name="ITM / IEM">
+              <Grid RowDefinitions="68,Auto,*" RowSpacing="7">
+                <Grid ClipToBounds="True">
+                  <Border Background="{DynamicResource ToneBlue}" Opacity="0.12" CornerRadius="2" />
+                  <Ellipse Fill="{DynamicResource ToneBlue}" Width="46" Height="46" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <PathIcon Data="{x:Static infra:AuthGlyphs.Shield}" Width="27" Height="27" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Grid>
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                  <TextBlock Text="ITM / IEM" FontWeight="SemiBold" FontSize="14" TextWrapping="Wrap" />
+                  <PathIcon Grid.Column="1" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                </Grid>
+                <TextBlock Grid.Row="2" Text="Instituts techniques médicaux et d'enseignement médical" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+              </Grid>
+            </Button>
+            <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="Maternelle" AutomationProperties.Name="École maternelle">
+              <Grid RowDefinitions="68,Auto,*" RowSpacing="7">
+                <Grid ClipToBounds="True">
+                  <Border Background="{DynamicResource TonePurple}" Opacity="0.12" CornerRadius="2" />
+                  <Ellipse Fill="{DynamicResource TonePurple}" Width="46" Height="46" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <mi:MaterialIcon Kind="AccountSchool" Width="27" Height="27" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Grid>
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                  <TextBlock Text="École maternelle" FontWeight="SemiBold" FontSize="14" TextWrapping="Wrap" />
+                  <PathIcon Grid.Column="1" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                </Grid>
+                <TextBlock Grid.Row="2" Text="Enseignement préscolaire" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+              </Grid>
+            </Button>
+            <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="Primaire" AutomationProperties.Name="École primaire">
+              <Grid RowDefinitions="68,Auto,*" RowSpacing="7">
+                <Grid ClipToBounds="True">
+                  <Border Background="{DynamicResource ToneGreen}" Opacity="0.12" CornerRadius="2" />
+                  <Ellipse Fill="{DynamicResource ToneGreen}" Width="46" Height="46" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <mi:MaterialIcon Kind="BookOpenVariant" Width="27" Height="27" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Grid>
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                  <TextBlock Text="École primaire" FontWeight="SemiBold" FontSize="14" TextWrapping="Wrap" />
+                  <PathIcon Grid.Column="1" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                </Grid>
+                <TextBlock Grid.Row="2" Text="Classes et suivi des élèves" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+              </Grid>
+            </Button>
+            <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="Secondaire" AutomationProperties.Name="École secondaire / technique">
+              <Grid RowDefinitions="68,Auto,*" RowSpacing="7">
+                <Grid ClipToBounds="True">
+                  <Border Background="{DynamicResource ToneOrange}" Opacity="0.12" CornerRadius="2" />
+                  <Ellipse Fill="{DynamicResource ToneOrange}" Width="46" Height="46" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <mi:MaterialIcon Kind="Pen" Width="27" Height="27" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Grid>
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                  <TextBlock Text="École secondaire / technique" FontWeight="SemiBold" FontSize="14" TextWrapping="Wrap" />
+                  <PathIcon Grid.Column="1" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                </Grid>
+                <TextBlock Grid.Row="2" Text="Humanités, options et filières techniques" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+              </Grid>
+            </Button>
+            <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="ComplexeScolaire" AutomationProperties.Name="Complexe scolaire">
+              <Grid RowDefinitions="68,Auto,*" RowSpacing="7">
+                <Grid ClipToBounds="True">
+                  <Border Background="{DynamicResource ToneTeal}" Opacity="0.12" CornerRadius="2" />
+                  <Ellipse Fill="{DynamicResource ToneTeal}" Width="46" Height="46" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <mi:MaterialIcon Kind="AccountMultiplePlusOutline" Width="27" Height="27" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Grid>
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                  <TextBlock Text="Complexe scolaire" FontWeight="SemiBold" FontSize="14" TextWrapping="Wrap" />
+                  <PathIcon Grid.Column="1" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                </Grid>
+                <TextBlock Grid.Row="2" Text="Plusieurs cycles dans un même établissement" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+              </Grid>
+            </Button>
+            <Button Classes="profileChoice" Command="{Binding SelectInstitution}" CommandParameter="SuperieurLmd" AutomationProperties.Name="Université / institut supérieur">
+              <Grid RowDefinitions="68,Auto,*" RowSpacing="7">
+                <Grid ClipToBounds="True">
+                  <Border Background="{DynamicResource ToneIndigo}" Opacity="0.12" CornerRadius="2" />
+                  <Ellipse Fill="{DynamicResource ToneIndigo}" Width="46" Height="46" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <PathIcon Data="{x:Static infra:HomeGlyphs.School}" Width="27" Height="27" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Grid>
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                  <TextBlock Text="Université / institut supérieur" FontWeight="SemiBold" FontSize="14" TextWrapping="Wrap" />
+                  <PathIcon Grid.Column="1" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                </Grid>
+                <TextBlock Grid.Row="2" Text="Enseignement supérieur et système LMD" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+              </Grid>
+            </Button>
+          </UniformGrid>
+          <Border Height="1" Background="{DynamicResource LineBrush}" Margin="5,0" />
+          <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14" infra:Adaptive.StackBelow="540" Margin="5,0">
+            <Grid Grid.Column="0" ColumnDefinitions="Auto,*" ColumnSpacing="9">
+              <Border Classes="stepdot on"><TextBlock Text="1" /></Border>
+              <TextBlock Grid.Column="1" Text="Choix du type" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </Grid>
+            <Grid Grid.Column="1" ColumnDefinitions="Auto,*" ColumnSpacing="9">
+              <Border Classes="stepdot"><TextBlock Text="2" /></Border>
+              <TextBlock Grid.Column="1" Text="Établissement et calendrier" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </Grid>
+            <Grid Grid.Column="2" ColumnDefinitions="Auto,*" ColumnSpacing="9">
+              <Border Classes="stepdot"><TextBlock Text="3" /></Border>
+              <TextBlock Grid.Column="1" Text="Comptes et sécurité" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </Grid>
+          </Grid>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+    <Grid IsVisible="{Binding !IsChoosingInstitution}" ColumnDefinitions="Auto,*">
 
-          <!-- Bandeau : marque, étapes, aide -->
-          <Border>
-            <Border.Background>
-              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                <GradientStop Offset="0" Color="#1565E0" />
-                <GradientStop Offset="0.55" Color="#0B4FC4" />
-                <GradientStop Offset="1" Color="#0E2A5C" />
-              </LinearGradientBrush>
-            </Border.Background>
+          <!-- Bandeau : marque, étapes, aide, sur un fond bleu très clair -->
+          <Border Classes="setupband" Background="{DynamicResource GroupBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,1,0">
+            
             <Grid RowDefinitions="Auto,*,Auto" Margin="26,28,24,22">
               <StackPanel Spacing="14">
-                <Border Width="54" Height="54" CornerRadius="14" Background="White" HorizontalAlignment="Left">
+                <Border Width="58" Height="58" CornerRadius="6" Background="{DynamicResource SurfaceBrush}" HorizontalAlignment="Left"
+                        BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" >
                   <Image Source="{DynamicResource ScoliaMark}" Width="36" Height="36" />
                 </Border>
                 <StackPanel Spacing="4">
-                  <TextBlock Text="Bienvenue dans SCOLIA Pro" Foreground="White" FontSize="21" FontWeight="Bold" TextWrapping="Wrap" />
-                  <TextBlock Text="Deux étapes pour préparer votre établissement sur ce poste." Foreground="#D6E4FF" TextWrapping="Wrap" />
+                  <TextBlock Text="Bienvenue dans SCOLIA Pro" Foreground="{DynamicResource TextBrush}" FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="Trois étapes pour préparer votre établissement sur ce poste." Foreground="{DynamicResource Text2Brush}" TextWrapping="Wrap" />
                 </StackPanel>
               </StackPanel>
 
               <StackPanel Grid.Row="1" Spacing="18" Margin="0,34,0,0">
+                <StackPanel Spacing="4"><TextBlock Text="1 · Type choisi" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" /><TextBlock Text="{Binding ProfileLabel}" Foreground="{DynamicResource Text2Brush}" TextWrapping="Wrap" /></StackPanel>
                 <Grid ColumnDefinitions="Auto,*">
-                  <Border Classes="stepdot" Classes.on="{Binding IsStepOne}"><TextBlock Text="1" /></Border>
+                  <Border Classes="stepdot" Classes.on="{Binding IsStepOne}"><TextBlock Text="2" /></Border>
                   <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="1">
-                    <TextBlock Text="Établissement" Foreground="White" FontWeight="SemiBold" />
-                    <TextBlock Text="Nom, logo, année, promotions" Foreground="#BFD3FF" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                    <TextBlock Text="Établissement" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" />
+                    <TextBlock Text="Nom, logo, année, promotions" Foreground="{DynamicResource Text2Brush}" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
                 <Grid ColumnDefinitions="Auto,*">
-                  <Border Classes="stepdot" Classes.on="{Binding IsStepTwo}"><TextBlock Text="2" /></Border>
+                  <Border Classes="stepdot" Classes.on="{Binding IsStepTwo}"><TextBlock Text="3" /></Border>
                   <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="1">
-                    <TextBlock Text="Comptes" Foreground="White" FontWeight="SemiBold" />
-                    <TextBlock Text="Secrétariat et comptabilité" Foreground="#BFD3FF" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                    <TextBlock Text="Comptes" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" />
+                    <TextBlock Text="Secrétariat et comptabilité" Foreground="{DynamicResource Text2Brush}" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
               </StackPanel>
 
-              <Border Grid.Row="2" Background="#1FFFFFFF" CornerRadius="12" Padding="14,12">
+              <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="4" Padding="14,12">
                 <StackPanel Spacing="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <mi:MaterialIcon Kind="InformationOutline" Width="16" Height="16" Foreground="White" />
-                    <TextBlock Text="Rien n'est définitif" Foreground="White" FontWeight="SemiBold" />
+                    <PathIcon Data="{x:Static infra:AuthGlyphs.Info}" Width="16" Height="16" Foreground="{DynamicResource AccentBrush}" />
+                    <TextBlock Text="Paramètres modifiables" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" />
                   </StackPanel>
-                  <TextBlock Foreground="#D6E4FF" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
-                             Text="Tout se modifie ensuite dans Paramètres, depuis le compte secrétariat." />
+                  <TextBlock Foreground="{DynamicResource Text2Brush}" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
+                             Text="Le profil pédagogique est fixé lors de l’installation. Les autres paramètres restent modifiables ensuite." />
                 </StackPanel>
               </Border>
             </Grid>
           </Border>
 
           <!-- Formulaire -->
-          <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto" Margin="30,26,30,20">
+          <Grid Grid.Column="1" Classes="setupform" RowDefinitions="Auto,*,Auto" Margin="30,26,30,20">
             <StackPanel Spacing="8">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="2">
                   <TextBlock Text="{Binding StepLabel}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" />
-                  <TextBlock Text="{Binding StepTitle}" Classes="title" />
+                  <TextBlock Text="{Binding StepTitle}" Classes="title" TextWrapping="Wrap" />
                 </StackPanel>
               </Grid>
-              <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Height="4" MinHeight="4" />
+              <ProgressBar AutomationProperties.Name="{Binding StepLabel}" Value="{Binding Progress, Mode=OneWay}" Maximum="100" Height="4" MinHeight="4" />
             </StackPanel>
 
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" Margin="0,12,0,0">
+              <Panel>
             <!-- Étape 1 : établissement, année, promotions -->
-            <StackPanel Grid.Row="1" IsVisible="{Binding IsStepOne}" Spacing="14" Margin="0,16,0,0">
-              <Border Background="{DynamicResource Surface2Brush}" CornerRadius="12" Padding="12">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                  <StackPanel Spacing="3">
-                    <TextBlock Text="Réseau privé Tailscale (facultatif)" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding Installer.NetworkSummary}" Classes="muted" TextWrapping="Wrap" />
-                  </StackPanel>
-                  <Button Grid.Column="1" Classes="ghost" Command="{Binding PrepareTailnet}" Content="{Binding Installer.ActionText}" VerticalAlignment="Center" />
-                </Grid>
-              </Border>
+            <StackPanel IsVisible="{Binding IsStepOne}" Spacing="12" Margin="0,0,12,8">
               <Grid ColumnDefinitions="Auto,*">
                 <!-- Logo : une vignette cliquable à côté de l'identité de l'établissement -->
                 <StackPanel Spacing="6" Margin="0,0,18,0" Width="112">
@@ -132,41 +305,64 @@
                       </StackPanel>
                     </Panel>
                   </Button>
-                  <TextBlock Text="{Binding LogoLine}" Classes="muted" FontSize="{DynamicResource FsCaption}" TextWrapping="Wrap" TextAlignment="Center" MaxHeight="44" />
-                  <Button Classes="ghost small" Content="Retirer le logo" Command="{Binding ClearLogo}" IsVisible="{Binding HasLogo}" HorizontalAlignment="Center" />
+                  <TextBlock Text="{Binding LogoLine}" Classes="muted" FontSize="{DynamicResource FsCaption}" TextWrapping="Wrap" TextAlignment="Center" />
+                  <Button infra:Icons.Lead="ImageOff" Classes="ghost small" Content="Retirer le logo" Command="{Binding ClearLogo}" IsVisible="{Binding HasLogo}" HorizontalAlignment="Center" />
                 </StackPanel>
 
                 <Grid Grid.Column="1" ColumnDefinitions="2*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="10">
                   <StackPanel Classes="field" Grid.ColumnSpan="2">
                     <TextBlock Text="Nom de l'établissement" />
-                    <TextBox Classes="w11" Text="{Binding SchoolName}" PlaceholderText="Institut technique médical" />
+                    <TextBox Classes="w11" Text="{Binding SchoolName}" PlaceholderText="Nom officiel" AutomationProperties.Name="Nom officiel de l’établissement" />
                   </StackPanel>
                   <StackPanel Classes="field" Grid.Column="2">
                     <TextBlock Text="Sigle" />
-                    <TextBox Classes="w11" Text="{Binding ShortName}" PlaceholderText="ITM" />
+                    <TextBox Classes="w11" Text="{Binding ShortName}" PlaceholderText="Sigle" AutomationProperties.Name="Sigle de l’établissement" />
                   </StackPanel>
                   <StackPanel Classes="field" Grid.Row="1">
                     <TextBlock Text="Devise (facultatif)" />
-                    <TextBox Classes="w11" Text="{Binding Motto}" PlaceholderText="Savoir, discipline, service" />
+                    <TextBox Classes="w11" Text="{Binding Motto}" PlaceholderText="Savoir, discipline, service" AutomationProperties.Name="Devise facultative" />
                   </StackPanel>
                   <StackPanel Classes="field" Grid.Row="1" Grid.Column="1">
                     <TextBlock Text="Ville" />
-                    <TextBox Classes="w11" Text="{Binding City}" PlaceholderText="Kinshasa" />
+                    <TextBox Classes="w11" Text="{Binding City}" PlaceholderText="Kinshasa" AutomationProperties.Name="Ville" />
                   </StackPanel>
                   <StackPanel Classes="field" Grid.Row="1" Grid.Column="2">
                     <TextBlock Text="Téléphone" />
-                    <TextBox Classes="w11" Text="{Binding Phone}" infra:PhoneInput.Digits="True" PlaceholderText="0812345678" />
+                    <TextBox Classes="w11" Text="{Binding Phone}" infra:PhoneInput.Digits="True" PlaceholderText="0812345678" AutomationProperties.Name="Téléphone de l’établissement" />
                   </StackPanel>
                 </Grid>
               </Grid>
 
+              <!-- Profil pédagogique et régime juridique : deux choix indépendants. -->
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="12" infra:Adaptive.StackBelow="640">
+                <StackPanel Classes="field" Spacing="4">
+                  <TextBlock Text="Type d'établissement" />
+                  <TextBlock Text="{Binding ProfileLabel}" FontWeight="SemiBold" TextWrapping="Wrap" /><TextBlock Text="{Binding ProfileHint}" Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Classes="field" Spacing="4">
+                  <TextBlock Text="Régime de l'établissement" />
+                  <ComboBox ItemsSource="{Binding GovernanceTypes}" SelectedItem="{Binding Governance}" HorizontalAlignment="Stretch" />
+                </StackPanel>
+              </Grid>
+              <TextBlock Text="Public : les frais ne sont pas activés sans base réglementaire vérifiée. Les bulletins pédagogiques demeurent non officiels jusqu'à validation des modèles applicables."
+                         Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+
+              <Border IsVisible="{Binding IsComplexSchool}" Background="{DynamicResource Surface2Brush}" CornerRadius="8" Padding="12">
+  <StackPanel Spacing="6">
+    <TextBlock Text="Cycles du complexe scolaire" FontWeight="SemiBold" TextWrapping="Wrap" />
+    <TextBlock Text="Sélectionnez au moins deux cycles. Aucun tarif n'est créé automatiquement." Classes="muted" TextWrapping="Wrap" />
+    <CheckBox IsChecked="{Binding IncludeMaternelle}" Content="Maternelle" />
+    <CheckBox IsChecked="{Binding IncludePrimaire}" Content="Primaire" />
+    <CheckBox IsChecked="{Binding IncludeSecondaire}" Content="Secondaire" />
+  </StackPanel>
+</Border>
               <!-- Calendrier scolaire : choix explicites du début, de la fin et du dernier jour autorisé. -->
               <StackPanel Spacing="10">
                 <TextBlock Text="Année scolaire et paiements" Classes="section" />
                 <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12" infra:Adaptive.StackBelow="700">
                   <StackPanel Classes="field">
                     <TextBlock Text="Année" />
-                    <TextBox Classes="w11" Text="{Binding YearLabel}" PlaceholderText="2026-2027" />
+                    <TextBox Classes="w11" Text="{Binding YearLabel}" PlaceholderText="2026-2027" AutomationProperties.Name="Année scolaire" />
                   </StackPanel>
                   <StackPanel Classes="field" Grid.Column="1">
                     <TextBlock Text="Premier mois à encaisser" />
@@ -192,11 +388,11 @@
               </StackPanel>
 
               <!-- Promotions : un code de 4 caractères et la mensualité ; la liste défile au-delà de trois -->
-              <StackPanel Spacing="8">
+              <StackPanel Spacing="8" IsVisible="{Binding ShowPromotionEditor}">
                 <Grid ColumnDefinitions="*,Auto">
                   <StackPanel Spacing="1">
-                    <TextBlock Text="Promotions" Classes="section" />
-                    <TextBlock Text="Le code, par exemple INF1, commence chaque matricule." Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding PromotionHeading}" Classes="section" />
+                    <TextBlock Text="Le code identifie la classe ou la promotion. Le matricule affiché reste le code anonyme." Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                   </StackPanel>
                   <Button Grid.Column="1" VerticalAlignment="Bottom" Command="{Binding AddPromotion}" Margin="12,0,0,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
@@ -210,7 +406,7 @@
                     <Grid ColumnDefinitions="96,*,150,36" ColumnSpacing="10">
                       <TextBlock Text="Code" Classes="muted" FontSize="{DynamicResource FsSmall}" />
                       <TextBlock Grid.Column="1" Text="Désignation" Classes="muted" FontSize="{DynamicResource FsSmall}" />
-                      <TextBlock Grid.Column="2" Text="Mensualité (FC)" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                      <TextBlock Grid.Column="2" Text="{Binding FeeHeading}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
                     </Grid>
                     <ScrollViewer MaxHeight="200" HorizontalScrollBarVisibility="Disabled">
                       <ItemsControl ItemsSource="{Binding Promotions}">
@@ -218,13 +414,20 @@
                           <DataTemplate>
                             <StackPanel Margin="0,0,0,6" Spacing="4">
                               <Grid ColumnDefinitions="96,*,150,36" ColumnSpacing="10">
-                                <TextBox Classes="w11" Text="{Binding Code}" PlaceholderText="INF1" MaxLength="4" />
-                                <TextBox Classes="w11" Grid.Column="1" Text="{Binding Name}" PlaceholderText="Première Infirmière" />
-                                <TextBox Classes="w11" Grid.Column="2" Text="{Binding Fee}" PlaceholderText="55000" />
+                                <TextBox Classes="w11" Text="{Binding Code}" PlaceholderText="INF1" MaxLength="4" AutomationProperties.Name="Code de la promotion" />
+                                <TextBox Classes="w11" Grid.Column="1" Text="{Binding Name}" PlaceholderText="Désignation" AutomationProperties.Name="Désignation de la promotion" />
+                                <TextBox Classes="w11" Grid.Column="2" Text="{Binding Fee}" PlaceholderText="55000" AutomationProperties.Name="Montant des frais" />
                                 <Button Grid.Column="3" Classes="toolicon" Command="{Binding Remove}" ToolTip.Tip="Retirer cette promotion" HorizontalAlignment="Right">
-                                  <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
+                                  <PathIcon Data="{x:Static infra:HomeGlyphs.Dismiss}" Width="16" Height="16" />
                                 </Button>
                               </Grid>
+                              <StackPanel IsVisible="{Binding IsLmd}" Spacing="4">
+                                <Grid ColumnDefinitions="*,100" ColumnSpacing="8">
+                                  <TextBlock Text="Nombre de tranches (1 à 6)" Classes="muted" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                  <TextBox Grid.Column="1" Classes="w11" Text="{Binding TrancheCount}" MaxLength="1" AutomationProperties.Name="Nombre de tranches" />
+                                </Grid>
+                                <TextBlock Text="{Binding InstallmentPreview}" Classes="muted" TextWrapping="Wrap" />
+                              </StackPanel>
                               <!-- Désignations prédites d'après le code : un toucher remplit la ligne -->
                               <ItemsControl ItemsSource="{Binding Suggestions}" IsVisible="{Binding HasSuggestions}" Margin="106,0,46,0">
                                 <ItemsControl.ItemsPanel>
@@ -249,97 +452,104 @@
                   </StackPanel>
                 </Border>
                 <Grid ColumnDefinitions="*,Auto">
-                  <CheckBox IsChecked="{Binding LoadDemo}" Content="Charger des données de démonstration fictives, pour découvrir SCOLIA" />
+                  <CheckBox IsChecked="{Binding LoadDemo}" IsVisible="{Binding CanLoadDemo}"><TextBlock Text="Charger des données de démonstration fictives, pour découvrir SCOLIA" TextWrapping="Wrap" /></CheckBox>
                   <TextBlock Grid.Column="1" Text="{Binding CurrencyLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" Margin="12,0,0,0" />
                 </Grid>
               </StackPanel>
             </StackPanel>
 
             <!-- Étape 2 : les deux comptes, côte à côte -->
-            <Grid Grid.Row="1" IsVisible="{Binding IsStepTwo}" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" Margin="0,16,0,0" VerticalAlignment="Top">
-              <Border Background="{DynamicResource Surface2Brush}" CornerRadius="14" Padding="18,16">
+            <Grid IsVisible="{Binding IsStepTwo}" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="16" Margin="0,0,12,8" VerticalAlignment="Top" infra:Adaptive.StackBelow="640">
+              <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="4" Padding="18,16">
                 <StackPanel Spacing="10">
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="ShieldAccountOutline" /></Border>
+                    <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="ShieldAccountOutline" /></Border>
                     <TextBlock Text="Secrétariat" Classes="section" VerticalAlignment="Center" />
                   </StackPanel>
                   <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
                              Text="Compte administrateur : apprenants, encaissements, scolarité, paramétrage, utilisateurs et sauvegardes. Gardez son mot de passe en lieu sûr." />
-                  <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
-                    <StackPanel Classes="field"><TextBlock Text="Identifiant" /><TextBox Classes="w11" Text="{Binding AdminUserName}" /></StackPanel>
-                    <StackPanel Classes="field" Grid.Column="1"><TextBlock Text="Nom de la personne" /><TextBox Classes="w11" Text="{Binding AdminDisplayName}" /></StackPanel>
-                    <StackPanel Classes="field" Grid.Row="1"><TextBlock Text="Mot de passe" /><TextBox Classes="w11" Text="{Binding AdminPassword}" PasswordChar="•" /></StackPanel>
-                    <StackPanel Classes="field" Grid.Row="1" Grid.Column="1"><TextBlock Text="Confirmer" /><TextBox Classes="w11" Text="{Binding AdminConfirm}" PasswordChar="•" /></StackPanel>
+                  <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10" infra:Adaptive.StackBelow="300">
+                    <StackPanel Classes="field"><TextBlock Text="Identifiant" /><TextBox Classes="w11" Text="{Binding AdminUserName}" AutomationProperties.Name="Identifiant du secrétariat" /></StackPanel>
+                    <StackPanel Classes="field" Grid.Column="1"><TextBlock Text="Nom de la personne" /><TextBox Classes="w11" Text="{Binding AdminDisplayName}" AutomationProperties.Name="Nom du responsable du secrétariat" /></StackPanel>
+                    <StackPanel Classes="field" Grid.Row="1"><TextBlock Text="Mot de passe" /><TextBox Classes="w11" Text="{Binding AdminPassword}" PasswordChar="•" AutomationProperties.Name="Mot de passe du secrétariat" TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" /></StackPanel>
+                    <StackPanel Classes="field" Grid.Row="1" Grid.Column="1"><TextBlock Text="Confirmer" /><TextBox Classes="w11" Text="{Binding AdminConfirm}" PasswordChar="•" AutomationProperties.Name="Confirmer le mot de passe du secrétariat" TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" /></StackPanel>
                   </Grid>
                 </StackPanel>
               </Border>
-              <Border Grid.Column="1" Background="{DynamicResource Surface2Brush}" CornerRadius="14" Padding="18,16">
+              <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="4" Padding="18,16">
                 <StackPanel Spacing="10">
                   <Grid ColumnDefinitions="Auto,*,Auto">
-                    <Border Classes="appicon medium" Background="{DynamicResource ToneGreen}"><mi:MaterialIcon Kind="CashRegister" /></Border>
-                    <TextBlock Grid.Column="1" Text="Comptabilité" Classes="section" VerticalAlignment="Center" Margin="10,0,0,0" />
+                    <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="CashRegister" /></Border>
+                    <TextBlock Grid.Column="1" Text="Comptabilité" Classes="section" VerticalAlignment="Center" Margin="10,0,8,0" />
                     <ToggleSwitch Grid.Column="2" IsChecked="{Binding UseComptabilite}" OnContent="" OffContent="" ToolTip.Tip="Créer le compte comptabilité" />
                   </Grid>
                   <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
                              Text="Facultatif. Encaisse, tient la caisse, enregistre les dépenses, consulte le journal et les rapports. Ne touche pas au paramétrage." />
-                  <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10" IsEnabled="{Binding UseComptabilite}">
-                    <StackPanel Classes="field"><TextBlock Text="Identifiant" /><TextBox Classes="w11" Text="{Binding ComptabiliteUserName}" /></StackPanel>
-                    <StackPanel Classes="field" Grid.Column="1"><TextBlock Text="Nom de la personne" /><TextBox Classes="w11" Text="{Binding ComptabiliteDisplayName}" /></StackPanel>
-                    <StackPanel Classes="field" Grid.Row="1"><TextBlock Text="Mot de passe" /><TextBox Classes="w11" Text="{Binding ComptabilitePassword}" PasswordChar="•" /></StackPanel>
-                    <StackPanel Classes="field" Grid.Row="1" Grid.Column="1"><TextBlock Text="Confirmer" /><TextBox Classes="w11" Text="{Binding ComptabiliteConfirm}" PasswordChar="•" /></StackPanel>
+                  <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10" IsEnabled="{Binding UseComptabilite}" infra:Adaptive.StackBelow="300">
+                    <StackPanel Classes="field"><TextBlock Text="Identifiant" /><TextBox Classes="w11" Text="{Binding ComptabiliteUserName}" AutomationProperties.Name="Identifiant de la comptabilité" /></StackPanel>
+                    <StackPanel Classes="field" Grid.Column="1"><TextBlock Text="Nom de la personne" /><TextBox Classes="w11" Text="{Binding ComptabiliteDisplayName}" AutomationProperties.Name="Nom du responsable de la comptabilité" /></StackPanel>
+                    <StackPanel Classes="field" Grid.Row="1"><TextBlock Text="Mot de passe" /><TextBox Classes="w11" Text="{Binding ComptabilitePassword}" PasswordChar="•" AutomationProperties.Name="Mot de passe de la comptabilité" TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" /></StackPanel>
+                    <StackPanel Classes="field" Grid.Row="1" Grid.Column="1"><TextBlock Text="Confirmer" /><TextBox Classes="w11" Text="{Binding ComptabiliteConfirm}" PasswordChar="•" AutomationProperties.Name="Confirmer le mot de passe de la comptabilité" TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" /></StackPanel>
                   </Grid>
                 </StackPanel>
               </Border>
               <!-- Conseils : ce qui se passe à la connexion et comment choisir les mots de passe -->
-              <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="*,*,*" ColumnSpacing="16" Margin="0,16,0,0">
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                  <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}"><mi:MaterialIcon Kind="FormTextboxPassword" /></Border>
-                  <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" MaxWidth="220" VerticalAlignment="Center"
+              <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="*,*,*" ColumnSpacing="16" RowSpacing="10" Margin="0,16,0,0" infra:Adaptive.StackBelow="760">
+                <DockPanel>
+                  <Border DockPanel.Dock="Left" Margin="0,0,10,0" Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="FormTextboxPassword" /></Border>
+                  <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" VerticalAlignment="Center"
                              Text="Code PIN de 6 chiffres ou plus, ou mot de passe de 8 caractères ou plus." />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                  <Border Classes="appicon medium" Background="{DynamicResource ToneOrange}"><mi:MaterialIcon Kind="LockClock" /></Border>
-                  <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" MaxWidth="220" VerticalAlignment="Center"
+                </DockPanel>
+                <DockPanel Grid.Column="1">
+                  <Border DockPanel.Dock="Left" Margin="0,0,10,0" Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="LockClock" /></Border>
+                  <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" VerticalAlignment="Center"
                              Text="Après 5 erreurs, la connexion est bloquée 2 minutes." />
-                </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
-                  <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}"><mi:MaterialIcon Kind="AccountMultiplePlusOutline" /></Border>
-                  <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" MaxWidth="220" VerticalAlignment="Center"
+                </DockPanel>
+                <DockPanel Grid.Column="2">
+                  <Border DockPanel.Dock="Left" Margin="0,0,10,0" Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="AccountMultiplePlusOutline" /></Border>
+                  <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" VerticalAlignment="Center"
                              Text="D'autres comptes s'ajoutent ensuite dans Paramètres." />
-                </StackPanel>
+                </DockPanel>
               </Grid>
             </Grid>
 
-            <!-- Pied : erreur éventuelle, puis les boutons -->
-            <StackPanel Grid.Row="2" Spacing="10" Margin="0,16,0,0">
-              <TextBlock Text="{Binding Error}" IsVisible="{Binding HasError}" Foreground="{DynamicResource ToneRed}" TextWrapping="Wrap" />
-              <Grid ColumnDefinitions="Auto,*,Auto">
-                <Button Grid.Column="0" Classes="ghost" Content="Retour" Command="{Binding Back}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}" />
-                <Button Grid.Column="0" Classes="ghost" Command="{Binding JoinExisting}" IsVisible="{Binding IsStepOne}">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <mi:MaterialIcon Kind="LanConnect" Width="16" Height="16" />
-                    <TextBlock Text="Rejoindre un SCOLIA existant sur le réseau" VerticalAlignment="Center" />
-                  </StackPanel>
+              </Panel>
+            </ScrollViewer>
+            <!-- Navigation fixe : seul le formulaire défile, pas ses commandes. -->
+            <StackPanel Grid.Row="2" Spacing="8" Margin="0,10,0,0">
+              <Border Height="1" Background="{DynamicResource LineBrush}" />
+              <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="10,8" IsVisible="{Binding HasError}">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <PathIcon Data="{x:Static infra:AuthGlyphs.Error}" Width="18" Height="18" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Top" />
+            <TextBlock Grid.Column="1" Text="{Binding Error}" Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" />
+          </Grid>
+        </Border>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <Button Grid.Column="0" Classes="ghost" Content="Retour" HorizontalAlignment="Left" Command="{Binding Back}" IsVisible="{Binding CanGoBack}" IsEnabled="{Binding !Busy}" />
+                <Button Grid.Column="0" Classes="ghost" Command="{Binding JoinExisting}" IsVisible="{Binding IsChoosingInstitution}" HorizontalAlignment="Left">
+                  <DockPanel>
+                    <mi:MaterialIcon DockPanel.Dock="Left" Kind="LanConnect" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center" />
+                    <TextBlock Text="Rejoindre un SCOLIA existant sur le réseau" VerticalAlignment="Center" TextWrapping="Wrap" />
+                  </DockPanel>
                 </Button>
-                <Button Grid.Column="2" Classes="primary" Command="{Binding Next}" IsVisible="{Binding IsStepOne}" MinWidth="140" Height="38">
+                <Button x:Name="SetupNextButton" Grid.Column="1" Classes="primary" Command="{Binding Next}" IsVisible="{Binding IsStepOne}" MinWidth="140" Height="38">
                   <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
                     <TextBlock Text="Suivant" />
                     <mi:MaterialIcon Kind="ArrowRight" Width="18" Height="18" Foreground="{DynamicResource OnAccentBrush}" />
                   </StackPanel>
                 </Button>
-                <Button Grid.Column="2" Classes="primary" Command="{Binding Finish}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}" Height="38">
+                <Button x:Name="SetupFinishButton" AutomationProperties.Name="Terminer la configuration" Grid.Column="1" Classes="primary" Command="{Binding Finish}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}" Height="38">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <mi:MaterialIcon Kind="CheckCircleOutline" Width="18" Height="18" Foreground="{DynamicResource OnAccentBrush}" />
-                    <TextBlock Text="Terminer la configuration" />
+                    <PathIcon Data="{x:Static infra:AuthGlyphs.Check}" Width="18" Height="18" Foreground="{DynamicResource OnAccentBrush}" />
+                    <Panel>
+                    <TextBlock Text="Terminer la configuration" IsVisible="{Binding !Busy}" />
+                    <TextBlock Text="Configuration en cours…" IsVisible="{Binding Busy}" />
+                  </Panel>
                   </StackPanel>
                 </Button>
               </Grid>
             </StackPanel>
           </Grid>
-        </Grid>
-      </Border>
-    </ScrollViewer>
-    <!-- Assistant Tailscale commun (téléchargement et installation depuis SCOLIA). -->
-    <views:TailscaleWizardView Grid.RowSpan="3" />
+    </Grid>
   </Grid>
 </UserControl>

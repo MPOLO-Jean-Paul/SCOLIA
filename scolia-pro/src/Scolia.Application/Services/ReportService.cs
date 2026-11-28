@@ -10,7 +10,7 @@ using Scolia.Domain.Students;
 namespace Scolia.Application.Services;
 
 /// <summary>Tableau de bord, liste des débiteurs, balance âgée et exports.</summary>
-public sealed class ReportService(IAppDbContext db, IClock clock, AccountService accounts, IDocumentService documents, ISpreadsheetService spreadsheets)
+public sealed partial class ReportService(IAppDbContext db, IClock clock, AccountService accounts, IDocumentService documents, ISpreadsheetService spreadsheets)
 {
     /// <summary>
     /// Vue exclusivement agrégée du promoteur : aucune ligne nominative n'est renvoyée.
@@ -18,23 +18,28 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
     /// La dette par mois suit la PÉRIODE de frais et son solde net (comptabilité scolaire).
     /// Ces deux dimensions ne doivent jamais être confondues pour les paiements en retard.
     /// </summary>
-    public async Task<PromoterDashboardDto> PromoterDashboardAsync(CancellationToken ct = default)
+    public Task<PromoterDashboardDto> PromoterDashboardAsync(CancellationToken ct = default) =>
+        FilteredPromoterDashboardAsync(new DashboardQuery(), ct);
+
+    public async Task<PromoterDashboardDto> FilteredPromoterDashboardAsync(DashboardQuery query, CancellationToken ct = default)
     {
         var year = await YearContext.CurrentAsync(db, ct);
         var today = clock.Today;
         var monthStart = new DateOnly(today.Year, today.Month, 1);
         var accountsByEnrollment = await accounts.ComputeAsync(year.Id, null, today, ct);
-        var accountRows = accountsByEnrollment.Values.ToList();
+        var accountRows = SelectDashboardAccounts(accountsByEnrollment.Values, query);
+        var enrollmentIds = accountRows.Select(a => a.Enrollment.Id).ToArray();
         var active = accountRows.Where(a => a.Enrollment.Status == EnrollmentStatus.Actif).ToList();
         var periods = year.Periods.OrderBy(p => p.Order).ToList();
         var promotions = await db.Promotions.AsNoTracking().Where(p => p.AcademicYearId == year.Id)
             .OrderBy(p => p.Code).ToListAsync(ct);
+        promotions = promotions.Where(p => MatchesDashboardPromotion(p, query)).ToList();
 
         // Ne sélectionner ni les noms ni les contacts, mais seulement les montants nécessaires.
         var receipts = await (from receipt in db.Receipts.AsNoTracking()
                               join enrollment in db.Enrollments.AsNoTracking()
                                   on receipt.EnrollmentId equals enrollment.Id
-                              where receipt.AcademicYearId == year.Id && receipt.Status == OperationStatus.Valide
+                              where receipt.AcademicYearId == year.Id && receipt.Status == OperationStatus.Valide && enrollmentIds.Contains(enrollment.Id)
                               select new { enrollment.PromotionId, receipt.Date, receipt.Amount }).ToListAsync(ct);
 
         var summaries = promotions.Select(p =>
@@ -53,35 +58,49 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
                     lines.Sum(l => l.Net), lines.Sum(l => l.Paid), lines.Sum(l => l.Remaining));
             }).ToList();
 
+            // Les apprenants totalement pris en charge sont comptés à part : ni payants, ni en ordre, ni débiteurs.
+            var paying = members.Where(a => a.IsPaying).ToList();
             return new PromoterPromotionDto(p.Id, p.Code, p.Name, currentMembers.Count,
-                members.Count(a => a.Account.Balance > 0), members.Count(a => a.Account.Overdue > 0),
+                paying.Count(a => a.Account.Balance > 0), paying.Count(a => a.Account.Overdue > 0),
                 money.Where(r => r.Date == today).Sum(r => r.Amount),
                 money.Where(r => r.Date >= monthStart && r.Date <= today).Sum(r => r.Amount),
-                money.Sum(r => r.Amount), members.Sum(a => a.Account.Balance),
-                members.Sum(a => a.Account.Overdue), periodsStats);
+                money.Sum(r => r.Amount), paying.Sum(a => a.Account.Balance),
+                paying.Sum(a => a.Account.Overdue), periodsStats,
+                currentMembers.Count(a => a.IsPaying), currentMembers.Count(a => a.IsSponsored),
+                currentMembers.Count(a => a.Coverage == Coverage.Partielle), members.Sum(a => a.Account.TotalCovered),
+                currentMembers.Count(a => a.IsPaying && a.Account.Overdue == 0));
         }).ToList();
 
         // Toujours calculer la synthèse globale à partir des mêmes groupes : pas de divergence entre écran et totaux.
-        return new PromoterDashboardDto(year.Label, today, active.Count,
+        summaries = OrderDashboardRows(summaries, query, p => p.Code, p => p.ActiveStudents, p => p.CollectedTotal, p => p.Outstanding, p => p.Overdue);
+        var dashboard = new PromoterDashboardDto(year.Label, today, active.Count,
             summaries.Sum(p => p.StudentsWithBalance), summaries.Sum(p => p.StudentsOverdue),
             summaries.Sum(p => p.CollectedToday), summaries.Sum(p => p.CollectedThisMonth),
             summaries.Sum(p => p.CollectedTotal), summaries.Sum(p => p.Outstanding),
-            summaries.Sum(p => p.Overdue), summaries);
+            summaries.Sum(p => p.Overdue), summaries,
+            summaries.Sum(p => p.PayingStudents), summaries.Sum(p => p.SponsoredStudents),
+            summaries.Sum(p => p.PartiallySponsoredStudents), summaries.Sum(p => p.SponsoredAmount),
+            summaries.Sum(p => p.StudentsUpToDate));
+        return dashboard with { SelectionKey = DashboardStamp(query, dashboard) };
     }
 
-    public async Task<DashboardDto> DashboardAsync(Guid? promotionId, CancellationToken ct = default)
+    public Task<DashboardDto> DashboardAsync(Guid? promotionId, CancellationToken ct = default) =>
+        FilteredDashboardAsync(new DashboardQuery(PromotionId: promotionId), ct);
+
+    public async Task<DashboardDto> FilteredDashboardAsync(DashboardQuery query, CancellationToken ct = default)
     {
         var year = await YearContext.CurrentAsync(db, ct);
         var today = clock.Today;
         var monthStart = new DateOnly(today.Year, today.Month, 1);
         var map = await accounts.ComputeAsync(year.Id, null, today, ct);
-        var all = map.Values.Where(x => promotionId is null || x.Promotion.Id == promotionId).ToList();
+        var all = SelectDashboardAccounts(map.Values, query);
+        var enrollmentIds = all.Select(a => a.Enrollment.Id).ToArray();
         var active = all.Where(x => x.Enrollment.Status == EnrollmentStatus.Actif).ToList();
 
         var receipts = await (from r in db.Receipts.AsNoTracking()
                               join e in db.Enrollments.AsNoTracking() on r.EnrollmentId equals e.Id
-                              where r.AcademicYearId == year.Id && r.Status == OperationStatus.Valide && (promotionId == null || e.PromotionId == promotionId)
-                              select new { r.Date, r.Amount }).ToListAsync(ct);
+                              where r.AcademicYearId == year.Id && r.Status == OperationStatus.Valide && enrollmentIds.Contains(e.Id)
+                              select new { r.Date, r.Amount, e.PromotionId }).ToListAsync(ct);
         var expensesMonth = (await db.Expenses.AsNoTracking().Where(e => e.Status == OperationStatus.Valide && e.Date >= monthStart && e.Date <= today)
             .Select(e => e.Amount).ToListAsync(ct)).Sum();
 
@@ -99,10 +118,14 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
         var promotions = all.GroupBy(x => x.Promotion).OrderBy(g => g.Key.Code).Select(g =>
         {
             var expected = g.Sum(x => x.Account.Lines.Where(l => l.DueDate <= today).Sum(l => l.Net));
-            var collected = g.Sum(x => x.Account.TotalPaid);
+            var collected = receipts.Where(r => r.PromotionId == g.Key.Id).Sum(r => r.Amount);
             var paid = g.Sum(x => x.Account.Lines.Where(l => l.DueDate <= today).Sum(l => Math.Min(l.Paid, l.Net)));
-            return new PromotionStat(g.Key.Id, g.Key.Code, g.Key.Name, g.Count(x => x.Enrollment.Status == EnrollmentStatus.Actif), expected, collected,
-                g.Sum(x => x.Account.Balance), g.Sum(x => x.Account.Overdue), expected == 0 ? 100 : decimal.Round(paid * 100 / expected, 1));
+            var current = g.Where(x => x.Enrollment.Status == EnrollmentStatus.Actif).ToList();
+            return new PromotionStat(g.Key.Id, g.Key.Code, g.Key.Name, current.Count, expected, collected,
+                g.Sum(x => x.Account.Balance), g.Sum(x => x.Account.Overdue), expected == 0 ? 100 : decimal.Round(paid * 100 / expected, 1),
+                current.Count(x => x.IsPaying), current.Count(x => x.IsSponsored), current.Count(x => x.Coverage == Coverage.Partielle),
+                current.Count(x => x.IsPaying && x.Account.Overdue == 0), current.Count(x => x.IsPaying && x.Account.Overdue > 0),
+                g.Sum(x => x.Account.TotalCovered));
         }).ToList();
 
         var aging = new[] { "0-30 jours", "31-60 jours", "61-90 jours", "Plus de 90 jours" }
@@ -110,20 +133,28 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
                 all.Count(x => Aging.Bucket(x.Account.OldestOverdueDate, today) == b)))
             .ToList();
 
-        var latest = await (from r in db.Receipts.AsNoTracking()
+        var latestRows = await (from r in db.Receipts.AsNoTracking()
                             join s in db.Students.AsNoTracking() on r.StudentId equals s.Id
-                            where r.AcademicYearId == year.Id
-                            orderby r.CreatedAtUtc descending
-                            select new ReceiptSummaryDto(r.Id, r.Number, r.Date, r.Amount, r.Method.ToString(), r.Status == OperationStatus.Valide ? "Valide" : "Annulé",
-                                r.CashierName, s.Matricule + " · " + s.LastName + " " + s.FirstName)).Take(8).ToListAsync(ct);
+                            where r.AcademicYearId == year.Id && enrollmentIds.Contains(r.EnrollmentId)
+                            // Les plus récents par date du reçu : une reprise de données saisie après coup ne passe pas devant.
+                            orderby r.Date descending, r.CreatedAtUtc descending, r.Number descending
+                            select new { Row = new ReceiptSummaryDto(r.Id, r.Number, r.Date, r.Amount, r.Method.ToString(), r.Status == OperationStatus.Valide ? "Valide" : "Annulé",
+                                r.CashierName, s.LastName + " " + s.FirstName), r.EnrollmentId }).Take(8).ToListAsync(ct);
+        var latestCodes = await AnonymousDisplay.CodesAsync(db, latestRows.Select(x => x.EnrollmentId), ct);
+        var latest = latestRows.Select(x => x.Row with { Allocations = AnonymousDisplay.Label(latestCodes, x.EnrollmentId, x.Row.Allocations ?? string.Empty) }).ToList();
         latest = latest.Select(r => r with { Method = Labels.Of(Enum.Parse<PaymentMethod>(r.Method)) }).ToList();
 
-        return new DashboardDto(year.Label, active.Count, active.Count(x => x.Enrollment.EnrolledOn >= monthStart),
+        promotions = OrderDashboardRows(promotions, query, p => p.Code, p => p.Students, p => p.Collected, p => p.Outstanding, p => p.Overdue);
+        var dashboard = new DashboardDto(year.Label, active.Count, active.Count(x => x.Enrollment.EnrolledOn >= monthStart),
             receipts.Sum(r => r.Amount), receipts.Where(r => r.Date >= monthStart).Sum(r => r.Amount), receipts.Where(r => r.Date == today).Sum(r => r.Amount),
             expectedToDate, all.Sum(x => x.Account.Balance), all.Sum(x => x.Account.Overdue),
             expectedToDate == 0 ? 100 : decimal.Round(paidOnDue * 100 / expectedToDate, 1),
-            active.Count(x => x.Account.Overdue == 0), active.Count(x => x.Account.Overdue > 0), expensesMonth, monthly, promotions, aging, latest,
-            active.Count(x => x.Enrollment.Student!.Gender == Gender.M), active.Count(x => x.Enrollment.Student!.Gender == Gender.F));
+            // « En ordre » et « en retard » ne portent que sur les payants : les pris en charge ont leur propre total.
+            active.Count(x => x.IsPaying && x.Account.Overdue == 0), active.Count(x => x.IsPaying && x.Account.Overdue > 0), expensesMonth, monthly, promotions, aging, latest,
+            active.Count(x => x.Enrollment.Student!.Gender == Gender.M), active.Count(x => x.Enrollment.Student!.Gender == Gender.F),
+            active.Count(x => x.IsPaying), active.Count(x => x.IsSponsored), active.Count(x => x.Coverage == Coverage.Partielle),
+            all.Sum(x => x.Account.TotalCovered));
+        return dashboard with { SelectionKey = DashboardStamp(query, dashboard) };
     }
 
     /// <summary>
@@ -189,9 +220,10 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
         var today = clock.Today;
         var map = await accounts.ComputeAsync(year.Id, null, today, ct);
         var terms = TextKey.Normalize(q.Search).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var codes = await AnonymousDisplay.CodesAsync(db, map.Values.Select(x => x.Enrollment.Id), ct);
         return map.Values
             .Where(x => x.Enrollment.Status is EnrollmentStatus.Actif or EnrollmentStatus.Suspendu)
-            .Where(x => x.Account.Overdue > 0)
+            .Where(x => x.IsPaying && x.Account.Overdue > 0)
             .Where(x => q.PromotionId is null || x.Promotion.Id == q.PromotionId)
             .Where(x => q.MinOverdueMonths is null || x.Account.OverdueCount >= q.MinOverdueMonths)
             .Where(x => string.IsNullOrWhiteSpace(q.Bucket) || Aging.Bucket(x.Account.OldestOverdueDate, today) == q.Bucket)
@@ -200,48 +232,85 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
             .Select(x =>
             {
                 var s = x.Enrollment.Student!;
-                return new DebtorDto(s.Id, x.Enrollment.Id, s.Matricule, s.FullName, x.Promotion.Code, x.Account.Balance, x.Account.Overdue, x.Account.OverdueCount,
+                return new DebtorDto(s.Id, x.Enrollment.Id, AnonymousDisplay.Of(codes, x.Enrollment.Id), s.FullName, x.Promotion.Code, x.Account.Balance, x.Account.Overdue, x.Account.OverdueCount,
                     string.Join(", ", x.Account.Lines.Where(l => l.IsOverdue).Select(l => l.Label)), Aging.Bucket(x.Account.OldestOverdueDate, today),
-                    s.GuardianName, s.ParentPhone, Reminders.WhatsApp(school, s, x.Account), Reminders.Sms(school, s, x.Account));
+                    s.GuardianName, s.ParentPhone, Reminders.WhatsApp(school, s, x.Account, AnonymousDisplay.Of(codes, x.Enrollment.Id)), Reminders.Sms(school, s, x.Account, AnonymousDisplay.Of(codes, x.Enrollment.Id)),
+                    CoverageText.Of(x.Coverage));
             }).ToList();
     }
 
     // ---------- Exports (PDF ou Excel) ----------
+    /// <summary>
+    /// Liste d'une promotion : d'abord les payants, puis, à part, les apprenants pris en charge (signalés avec leur organisme).
+    /// Les totaux distinguent payants et pris en charge.
+    /// </summary>
     public async Task<TableDocument> ClassListAsync(Guid promotionId, CancellationToken ct = default)
     {
         var school = await YearContext.SchoolAsync(db, ct);
         var promotion = await db.Promotions.AsNoTracking().FirstOrDefaultAsync(p => p.Id == promotionId, ct) ?? throw new NotFoundException("Promotion introuvable.");
         var year = await db.AcademicYears.AsNoTracking().FirstAsync(y => y.Id == promotion.AcademicYearId, ct);
-        var rows = await (from e in db.Enrollments.AsNoTracking()
-                          join s in db.Students.AsNoTracking() on e.StudentId equals s.Id
-                          where e.PromotionId == promotionId && e.Status == EnrollmentStatus.Actif
-                          orderby s.LastName, s.MiddleName, s.FirstName
-                          select s).ToListAsync(ct);
+        var ids = await db.Enrollments.AsNoTracking().Where(e => e.PromotionId == promotionId && e.Status == EnrollmentStatus.Actif)
+            .Select(e => e.Id).ToListAsync(ct);
+        var map = await accounts.ComputeAsync(year.Id, ids, clock.Today, ct);
+        var registerCodes = await AnonymousDisplay.CodesAsync(db, map.Values.Select(x => x.Enrollment.Id), ct);
+        var rows = map.Values
+            .OrderBy(x => x.IsSponsored).ThenBy(x => x.Enrollment.Student!.LastName).ThenBy(x => x.Enrollment.Student!.MiddleName)
+            .ThenBy(x => x.Enrollment.Student!.FirstName).ToList();
+        var paying = rows.Count(x => x.IsPaying);
+        var sponsored = rows.Count - paying;
+        var partial = rows.Count(x => x.Coverage == Coverage.Partielle);
         var n = 0;
-        return new TableDocument(PaymentService.Header(school), $"LISTE D'ENREGISTREMENT — {promotion.Code} {promotion.Name}", $"Année scolaire {year.Label} · {rows.Count} apprenant(s)",
-            ["N°", "Matricule", "Nom", "Post-nom", "Prénom", "Sexe", "Naissance", "Contact parent"],
-            rows.Select(s => (IReadOnlyList<string>)[(++n).ToString(), s.Matricule, s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(),
-                s.BirthDate?.ToString("dd/MM/yyyy") ?? "", s.ParentPhone ?? ""]).ToList());
+        return new TableDocument(PaymentService.Header(school), $"LISTE D'ENREGISTREMENT — {promotion.Code} {promotion.Name}",
+            $"Année scolaire {year.Label} · {rows.Count} apprenant(s) : {paying} payant(s)" + (partial > 0 ? $" dont {partial} pris en charge en partie" : string.Empty)
+                + $", {sponsored} pris en charge",
+            ["N°", "Matricule", "Nom", "Post-nom", "Prénom", "Sexe", "Naissance", "Contact parent", "Prise en charge"],
+            rows.Select(x =>
+            {
+                var s = x.Enrollment.Student!;
+                return (IReadOnlyList<string>)[(++n).ToString(), AnonymousDisplay.Of(registerCodes, x.Enrollment.Id), s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(),
+                    s.BirthDate?.ToString("dd/MM/yyyy") ?? "", s.ParentPhone ?? "", SponsorshipCell(x)];
+            }).ToList(),
+            ["", "Total", $"{paying} payant(s)", $"{sponsored} pris en charge", "", "", "", "", ""], Landscape: true);
     }
+
+    /// <summary>Mention d'une prise en charge dans une liste : nature et organisme.</summary>
+    private static string SponsorshipCell(AccountService.EnrollmentAccount x) => x.Coverage switch
+    {
+        Coverage.Totale => "Totale" + (x.Sponsor is { Length: > 0 } s ? $" · {s}" : string.Empty),
+        Coverage.Partielle => "Partielle" + (x.Sponsor is { Length: > 0 } p ? $" · {p}" : string.Empty),
+        _ => string.Empty,
+    };
 
     public async Task<TableDocument> DebtorsTableAsync(DebtorQuery q, CancellationToken ct = default)
     {
         var school = await YearContext.SchoolAsync(db, ct);
         var list = await DebtorsAsync(q, ct);
         return new TableDocument(PaymentService.Header(school), "Apprenants en retard de paiement", $"Situation au {clock.Today:dd/MM/yyyy} · {list.Count} dossier(s)",
-            ["Matricule", "Nom complet", "Promotion", "Périodes en retard", "Ancienneté", "Reste exigible", "Contact"],
-            list.Select(d => (IReadOnlyList<string>)[d.Matricule, d.FullName, d.PromotionCode, d.Periods, d.AgingBucket, Money.Display(d.Overdue, school.CurrencySymbol), d.GuardianPhone ?? ""]).ToList(),
-            ["", "Total", "", "", "", Money.Display(list.Sum(d => d.Overdue), school.CurrencySymbol), ""], Landscape: true);
+            ["Matricule", "Nom complet", "Promotion", "Périodes en retard", "Ancienneté", "Prise en charge", "Reste exigible", "Contact"],
+            list.Select(d => (IReadOnlyList<string>)[d.Matricule, d.FullName, d.PromotionCode, d.Periods, d.AgingBucket, d.Sponsorship ?? "",
+                Money.Display(d.Overdue, school.CurrencySymbol), d.GuardianPhone ?? ""]).ToList(),
+            ["", "Total", "", "", "", "", Money.Display(list.Sum(d => d.Overdue), school.CurrencySymbol), ""], Landscape: true);
     }
 
     public async Task<TableDocument> ReceiptsTableAsync(PaymentService payments, ReceiptQuery q, CancellationToken ct = default)
     {
         var school = await YearContext.SchoolAsync(db, ct);
-        var page = await payments.ListAsync(q with { Page = 1, PageSize = 1000 }, ct);
+        const int pageSize = 1000;
+        var page = await payments.ListAsync(q with { Page = 1, PageSize = pageSize }, ct);
+        var receipts = new List<ReceiptSummaryRow>(page.Items);
+        // L'écran est paginé, mais son export doit contenir TOUS les reçus filtrés :
+        // l'ancienne implémentation perdait silencieusement les lignes après 1 000.
+        for (var number = 2; receipts.Count < page.Total; number++)
+        {
+            ct.ThrowIfCancellationRequested();
+            var next = await payments.ListAsync(q with { Page = number, PageSize = pageSize }, ct);
+            if (next.Items.Count == 0) break;
+            receipts.AddRange(next.Items);
+        }
         var period = q.From is null && q.To is null ? "Toutes dates" : $"Du {q.From:dd/MM/yyyy} au {q.To:dd/MM/yyyy}";
-        return new TableDocument(PaymentService.Header(school), "Journal des encaissements", $"{period} · {page.Total} reçu(s)",
+        return new TableDocument(PaymentService.Header(school), "Journal des encaissements", $"{period} · {receipts.Count} reçu(s)",
             ["Date", "N° reçu", "Matricule", "Apprenant", "Promotion", "Mode", "Référence", "Statut", "Montant"],
-            page.Items.Select(r => (IReadOnlyList<string>)[r.Date.ToString("dd/MM/yyyy"), r.Number, r.Matricule, r.StudentName, r.PromotionCode, r.Method, r.Reference ?? "", r.Status,
+            receipts.Select(r => (IReadOnlyList<string>)[r.Date.ToString("dd/MM/yyyy"), r.Number, r.Matricule, r.StudentName, r.PromotionCode, r.Method, r.Reference ?? "", r.Status,
                 Money.Display(r.Amount, school.CurrencySymbol)]).ToList(),
             ["", "", "", "", "", "", "", "Total valide", Money.Display(page.Sum ?? 0, school.CurrencySymbol)], Landscape: true);
     }
@@ -253,10 +322,14 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
         var d = await DashboardAsync(null, ct);
         string M(decimal v) => Money.Display(v, school.CurrencySymbol);
         return new TableDocument(PaymentService.Header(school), "Situation financière par promotion", $"Année scolaire {d.AcademicYear} · situation au {clock.Today:dd/MM/yyyy}",
-            ["Promotion", "Nom", "Effectif", "Attendu à ce jour", "Encaissé", "Reste à percevoir", "Reste exigible", "Recouvrement"],
-            d.Promotions.Select(p => (IReadOnlyList<string>)[p.Code, p.Name, p.Students.ToString(), M(p.Expected), M(p.Collected), M(p.Outstanding), M(p.Overdue),
+            ["Promotion", "Nom", "Effectif", "Payants", "En ordre", "En retard", "Pris en charge", "Montant pris en charge", "Attendu à ce jour", "Encaissé",
+                "Reste à percevoir", "Reste exigible", "Recouvrement"],
+            d.Promotions.Select(p => (IReadOnlyList<string>)[p.Code, p.Name, p.Students.ToString(), p.Paying.ToString(), p.UpToDate.ToString(), p.Late.ToString(),
+                p.Sponsored.ToString(), M(p.SponsoredAmount), M(p.Expected), M(p.Collected), M(p.Outstanding), M(p.Overdue),
                 p.RecoveryRate.ToString("0.0") + " %"]).ToList(),
-            ["Total", "", d.Promotions.Sum(p => p.Students).ToString(), M(d.Promotions.Sum(p => p.Expected)), M(d.Promotions.Sum(p => p.Collected)),
+            ["Total", "", d.Promotions.Sum(p => p.Students).ToString(), d.Promotions.Sum(p => p.Paying).ToString(), d.Promotions.Sum(p => p.UpToDate).ToString(),
+                d.Promotions.Sum(p => p.Late).ToString(), d.Promotions.Sum(p => p.Sponsored).ToString(), M(d.Promotions.Sum(p => p.SponsoredAmount)),
+                M(d.Promotions.Sum(p => p.Expected)), M(d.Promotions.Sum(p => p.Collected)),
                 M(d.Promotions.Sum(p => p.Outstanding)), M(d.Promotions.Sum(p => p.Overdue)), d.RecoveryRate.ToString("0.0") + " %"], Landscape: true);
     }
 
@@ -267,14 +340,20 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
         var year = await YearContext.CurrentAsync(db, ct);
         var map = await accounts.ComputeAsync(year.Id, null, clock.Today, ct);
         var rows = map.Values
-            .OrderBy(x => x.Promotion.Code).ThenBy(x => x.Enrollment.Student!.LastName).ThenBy(x => x.Enrollment.Student!.FirstName)
+            // Par promotion : les payants, puis les pris en charge, signalés dans leur colonne.
+            .OrderBy(x => x.Promotion.Code).ThenBy(x => x.IsSponsored).ThenBy(x => x.Enrollment.Student!.LastName).ThenBy(x => x.Enrollment.Student!.FirstName)
             .ToList();
         string M(decimal v) => Money.Display(v, school.CurrencySymbol);
-        return new TableDocument(PaymentService.Header(school), "Liste générale des apprenants", $"Année scolaire {year.Label} · {rows.Count} apprenant(s)",
-            ["Matricule", "Nom complet", "Sexe", "Promotion", "Statut", "Contact parent", "Payé", "Solde", "Reste exigible"],
-            rows.Select(x => (IReadOnlyList<string>)[x.Enrollment.Student!.Matricule, x.Enrollment.Student!.FullName, x.Enrollment.Student!.Gender.ToString(),
-                x.Promotion.Code, x.Enrollment.Status.ToString(), x.Enrollment.Student!.ParentPhone ?? "", M(x.Account.TotalPaid), M(x.Account.Balance), M(x.Account.Overdue)]).ToList(),
-            ["", "Total", "", "", "", "", M(rows.Sum(x => x.Account.TotalPaid)), M(rows.Sum(x => x.Account.Balance)), M(rows.Sum(x => x.Account.Overdue))], Landscape: true);
+        var sponsored = rows.Count(x => x.IsSponsored);
+        var generalCodes = await AnonymousDisplay.CodesAsync(db, rows.Select(x => x.Enrollment.Id), ct);
+        return new TableDocument(PaymentService.Header(school), "Liste générale des apprenants",
+            $"Année scolaire {year.Label} · {rows.Count} apprenant(s) : {rows.Count - sponsored} payant(s), {sponsored} pris en charge",
+            ["Matricule", "Nom complet", "Sexe", "Promotion", "Statut", "Contact parent", "Prise en charge", "Payé", "Pris en charge (montant)", "Solde", "Reste exigible"],
+            rows.Select(x => (IReadOnlyList<string>)[AnonymousDisplay.Of(generalCodes, x.Enrollment.Id), x.Enrollment.Student!.FullName, x.Enrollment.Student!.Gender.ToString(),
+                x.Promotion.Code, x.Enrollment.Status.ToString(), x.Enrollment.Student!.ParentPhone ?? "", SponsorshipCell(x), M(x.Account.TotalPaid),
+                M(x.Account.TotalCovered), M(x.Account.Balance), M(x.Account.Overdue)]).ToList(),
+            ["", "Total", "", "", "", "", $"{sponsored} pris en charge", M(rows.Sum(x => x.Account.TotalPaid)), M(rows.Sum(x => x.Account.TotalCovered)),
+                M(rows.Sum(x => x.Account.Balance)), M(rows.Sum(x => x.Account.Overdue))], Landscape: true);
     }
 
     /// <summary>Registre des dépenses de la période, annulées comprises, avec le total des dépenses valides.</summary>
@@ -324,7 +403,7 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
         var map = await accounts.ComputeAsync(year.Id, null, today, ct);
         var rows = map.Values
             .Where(x => x.Enrollment.Status != EnrollmentStatus.Sorti && (q.PromotionId is null || x.Promotion.Id == q.PromotionId))
-            .Select(x => (Entry: x, Line: x.Account.Lines.FirstOrDefault(l => l.PeriodId == period.Id)))
+            .Select(x => (Entry: x, Line: x.Account.Lines.FirstOrDefault(l => l.PeriodId == period.Id && l.Kind == FeeKind.Mensualite)))
             .Where(x => x.Line is not null)
             .ToList();
 
@@ -345,15 +424,20 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
             _ => line.IsOverdue ? "En retard" : "Non payé",
         };
 
+        var monthlyCodes = await AnonymousDisplay.CodesAsync(db, rows.Select(x => x.Entry.Enrollment.Id), ct);
         var all = rows.Select(x =>
         {
             var s = x.Entry.Enrollment.Student!;
             var line = x.Line!;
             var receipt = lastReceipt.GetValueOrDefault(x.Entry.Enrollment.Id);
-            return new MonthlyRowDto(s.Id, x.Entry.Enrollment.Id, s.Matricule, s.FullName, x.Entry.Promotion.Code, line.Net, line.Paid, line.Remaining,
-                Status(line), receipt?.Number, receipt?.Date, s.ParentPhone,
-                Reminders.MonthWhatsApp(school, s, Name(period), line.Remaining), Reminders.MonthSms(school, s, Name(period), line.Remaining));
-        }).OrderBy(r => r.PromotionCode).ThenBy(r => r.FullName).ToList();
+            // Un apprenant totalement pris en charge n'est jamais compté parmi les payants du mois.
+            var status = x.Entry.IsSponsored ? "Pris en charge" : Status(line);
+            return new MonthlyRowDto(s.Id, x.Entry.Enrollment.Id, AnonymousDisplay.Of(monthlyCodes, x.Entry.Enrollment.Id), s.FullName, x.Entry.Promotion.Code, line.Net, line.Paid, line.Remaining,
+                status, receipt?.Number, receipt?.Date, s.ParentPhone,
+                Reminders.MonthWhatsApp(school, s, Name(period), line.Remaining, AnonymousDisplay.Of(monthlyCodes, x.Entry.Enrollment.Id)),
+                Reminders.MonthSms(school, s, Name(period), line.Remaining, AnonymousDisplay.Of(monthlyCodes, x.Entry.Enrollment.Id)),
+                CoverageText.Of(x.Entry.Coverage), line.FeeItemId);
+        }).OrderBy(r => r.PromotionCode).ThenBy(r => r.Status == "Pris en charge").ThenBy(r => r.FullName).ToList();
 
         var wanted = StatusFilter(q.Etat);
         var search = TextKey.Normalize(q.Q ?? string.Empty);
@@ -362,26 +446,46 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
             .Where(r => search.Length == 0 || TextKey.Normalize($"{r.Matricule} {r.FullName}").Contains(search, StringComparison.Ordinal))
             .ToList();
 
+        // La date d'encaissement ne détermine pas le mois scolaire réglé.
+        var start = new DateOnly(period.CalendarYear, period.Month, 1);
+        var end = start.AddMonths(1);
+        var scopeIds = map.Values.Where(x => q.PromotionId is null || x.Promotion.Id == q.PromotionId)
+            .Select(x => x.Enrollment.Id).ToList();
+        var cashReceipts = await db.Receipts.AsNoTracking()
+            .Where(r => r.Status == OperationStatus.Valide && scopeIds.Contains(r.EnrollmentId) && r.Date >= start && r.Date < end)
+            .Select(r => new { r.StudentId, r.Amount }).ToListAsync(ct);
         return new MonthlyFollowUpDto(period.Id, Name(period), periods.Select(p => new PeriodChoiceDto(p.Id, Name(p), p.Id == current.Id)).ToList(),
             all.Count(r => r.Status == "Payé"), all.Count(r => r.Status is "Non payé" or "En retard" or "Partiel"), all.Count(r => r.Status == "En retard"),
-            all.Count(r => r.Status == "Pris en charge"), all.Sum(r => r.Amount), all.Sum(r => r.Paid), all.Sum(r => r.Remaining), list);
+            all.Count(r => r.Status == "Pris en charge"), all.Sum(r => r.Amount), all.Sum(r => r.Paid), all.Sum(r => r.Remaining), list,
+            cashReceipts.Count, cashReceipts.Select(r => r.StudentId).Distinct().Count(), cashReceipts.Sum(r => r.Amount));
     }
 
     /// <summary>Le suivi d'un mois en document : liste filtrée et totaux.</summary>
-    public async Task<TableDocument> MonthlyTableAsync(MonthlyQuery q, CancellationToken ct = default)
+    public Task<TableDocument> MonthlyTableAsync(MonthlyQuery q, CancellationToken ct = default) => MonthlyTableAsync(q, null, ct);
+
+    public async Task<TableDocument> MonthlyTableAsync(MonthlyQuery q, string? expectedSelection, CancellationToken ct = default)
     {
         var school = await YearContext.SchoolAsync(db, ct);
         var d = await MonthlyAsync(q, ct);
+        if (expectedSelection is not null && !string.Equals(expectedSelection,
+            MonthlyExportSelection.Fingerprint(d.Rows.Select(r => (r.StudentId, r.FeeItemId))), StringComparison.Ordinal))
+            throw new ConflictException("La sélection a changé. Actualisez le suivi mensuel avant d’exporter.");
         string M(decimal v) => Money.Display(v, school.CurrencySymbol);
         var scope = q.PromotionId is { } promotionId
             ? $"promotion {await db.Promotions.AsNoTracking().Where(p => p.Id == promotionId).Select(p => p.Code).FirstOrDefaultAsync(ct)}"
             : "toutes les promotions";
+        var paid = d.Rows.Count(r => r.Status == "Payé");
+        var unpaid = d.Rows.Count(r => r.Status is "Non payé" or "En retard" or "Partiel");
+        var late = d.Rows.Count(r => r.Status == "En retard");
+        var covered = d.Rows.Count(r => r.Status == "Pris en charge");
+        var filter = string.IsNullOrWhiteSpace(q.Etat) ? "tous les états" : StatusFilter(q.Etat) ?? "tous les états";
+        var search = string.IsNullOrWhiteSpace(q.Q) ? string.Empty : $" · recherche : {q.Q.Trim()}";
         return new TableDocument(PaymentService.Header(school), $"Suivi des paiements · {d.Period}",
-            $"{scope} · {d.PaidCount} payé(s), {d.UnpaidCount} non payé(s) dont {d.LateCount} en retard · situation au {clock.Today:dd/MM/yyyy}",
-            ["Matricule", "Nom complet", "Promotion", "Montant du mois", "Payé", "Reste", "État", "Reçu", "Payé le", "Contact"],
+            $"{scope} · {filter}{search} · {d.Rows.Count} ligne(s) · {paid} payé(s), {unpaid} non payé(s) dont {late} en retard, {covered} pris en charge · situation au {clock.Today:dd/MM/yyyy}",
+            ["Matricule", "Nom complet", "Promotion", "Montant du mois", "Payé", "Reste", "État", "Prise en charge", "Reçu", "Payé le", "Contact"],
             d.Rows.Select(r => (IReadOnlyList<string>)[r.Matricule, r.FullName, r.PromotionCode, M(r.Amount), M(r.Paid), M(r.Remaining), r.Status,
-                r.ReceiptNumber ?? "", r.PaidOn?.ToString("dd/MM/yyyy") ?? "", r.GuardianPhone ?? ""]).ToList(),
-            ["", "Total", "", M(d.Rows.Sum(r => r.Amount)), M(d.Rows.Sum(r => r.Paid)), M(d.Rows.Sum(r => r.Remaining)), "", "", "", ""], Landscape: true);
+                r.Sponsorship ?? "", r.ReceiptNumber ?? "", r.PaidOn?.ToString("dd/MM/yyyy") ?? "", r.GuardianPhone ?? ""]).ToList(),
+            ["", "Total", "", M(d.Rows.Sum(r => r.Amount)), M(d.Rows.Sum(r => r.Paid)), M(d.Rows.Sum(r => r.Remaining)), "", $"{covered} pris en charge", "", "", ""], Landscape: true);
     }
 
     public byte[] Pdf(TableDocument table) => documents.Table(table);

@@ -7,24 +7,24 @@
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
       <WrapPanel>
         <StackPanel Classes="field pagesearch">
-          <TextBlock Text="Rechercher" Classes="fieldlabel" />
-          <TextBox Classes="search clearButton" Width="260" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
+          <TextBlock Text="Rechercher" Classes="fieldlabel" TextWrapping="Wrap" />
+          <TextBox Classes="search clearButton" Width="260" Text="{Binding Search}" PlaceholderText="Nom ou matricule" AutomationProperties.Name="Rechercher par nom ou matricule" />
         </StackPanel>
         <StackPanel Classes="field">
-          <TextBlock Text="Promotion" Classes="fieldlabel" />
-          <ComboBox Width="220" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+          <TextBlock Text="Promotion" Classes="fieldlabel" TextWrapping="Wrap" />
+          <ComboBox Width="220" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" AutomationProperties.Name="Promotion" />
         </StackPanel>
         <StackPanel Classes="field">
-          <TextBlock Text="Ancienneté" Classes="fieldlabel" />
-          <ComboBox Width="210" ItemsSource="{Binding Buckets}" SelectedItem="{Binding Bucket}" />
+          <TextBlock Text="Ancienneté" Classes="fieldlabel" TextWrapping="Wrap" />
+          <ComboBox Width="210" ItemsSource="{Binding Buckets}" SelectedItem="{Binding Bucket}" AutomationProperties.Name="Ancienneté du retard" />
         </StackPanel>
         <StackPanel Classes="field">
-          <TextBlock Text="Retard minimum, en mois" Classes="fieldlabel" />
-          <TextBox Width="190" Text="{Binding MinMonths}" PlaceholderText="Tous" />
+          <TextBlock Text="Retard minimum, en mois" Classes="fieldlabel" TextWrapping="Wrap" />
+          <TextBox Width="190" Text="{Binding MinMonths}" PlaceholderText="Tous" AutomationProperties.Name="Retard minimum en mois" />
         </StackPanel>
       </WrapPanel>
     </Border>
-    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" AutomationProperties.Name="Échéances en retard">
       <DataGrid.Columns>
         <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />
         <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="2*" MinWidth="270" />
@@ -37,6 +37,6 @@
         <DataGridTextColumn infra:GridPriority.Level="3" Header="Téléphone" Binding="{Binding Phone}" Width="Auto" MinWidth="130" />
       </DataGrid.Columns>
     </DataGrid>
-    <c:EmptyState Grid.Row="1" Icon="CheckDecagramOutline" Title="Aucun retard de paiement" Hint="Tous les apprenants de ces critères sont à jour : rien à relancer." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <c:EmptyState Grid.Row="1" Icon="CheckDecagramOutline" Title="Aucun retard de paiement" Hint="{infra:Terms 'Tous les apprenants de ces critères sont à jour : rien à relancer.'}" IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

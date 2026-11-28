@@ -2,9 +2,18 @@ using Scolia.Domain.Common;
 
 namespace Scolia.Domain.School;
 
+/// <summary>Organisation des responsabilités : conserver les valeurs persistées et le mode historique par défaut.</summary>
+public enum SchoolManagementMode { Mixte = 0, Separee = 1 }
+
 /// <summary>Établissement (une seule instance par base).</summary>
 public sealed class SchoolProfile : Entity
 {
+    /// <summary>Mixte : secrétariat polyvalent ; séparée : opérations comptables confiées à la comptabilité.</summary>
+    public SchoolManagementMode ManagementMode { get; set; } = SchoolManagementMode.Mixte;
+    /// <summary>Profil pédagogique immuable après installation ; les anciennes écoles restent ITM/IM.</summary>
+    public string InstitutionType { get; set; } = InstitutionProfiles.ItmIm;
+    /// <summary>Statut administratif, distinct des cycles et des tarifs ; privé par défaut.</summary>
+    public SchoolGovernanceKind Governance { get; set; } = SchoolGovernanceKind.Prive;
     public string Name { get; set; } = string.Empty;
     public string ShortName { get; set; } = string.Empty;
     public string? Motto { get; set; }
@@ -22,6 +31,10 @@ public sealed class SchoolProfile : Entity
     /// <summary>Nom de l'institut et adresse tels qu'ils figurent sur les cartes ; à défaut, les mentions officielles.</summary>
     public string? CardInstitute { get; set; }
     public string? CardAddress { get; set; }
+    /// <summary>Identification de l'école sur les bulletins EPST : province, commune ou territoire, code officiel.</summary>
+    public string? Province { get; set; }
+    public string? Commune { get; set; }
+    public string? OfficialCode { get; set; }
     /// <summary>Code ISO 4217 de la monnaie (CDF par défaut).</summary>
     public string CurrencyCode { get; set; } = "CDF";
     public string CurrencySymbol { get; set; } = "FC";
@@ -124,6 +137,10 @@ public sealed class Section : Entity
 public sealed class Promotion : Entity
 {
     public Guid AcademicYearId { get; set; }
+    /// <summary>Cycle du complexe scolaire, absent des promotions ITM historiques.</summary>
+    public Guid? SchoolCycleId { get; set; }
+    /// <summary>Université LMD : filière, parcours ou spécialité de la promotion.</summary>
+    public Guid? AcademicUnitId { get; set; }
     public Guid? SectionId { get; set; }
     public Section? Section { get; set; }
     /// <summary>Code court utilisé dans les matricules (4 caractères, ex. INF1).</summary>
@@ -146,12 +163,34 @@ public sealed class Promotion : Entity
 
 public enum FeeKind { Mensualite = 0, Inscription = 1, Examen = 2, Autre = 3 }
 
+/// <summary>
+/// Catégorie de frais créée par l'établissement (inscription, examen, tenue, carte…), avec son montant.
+/// Seules les catégories créées existent : aucune n'est imposée. La mensualité n'est pas une catégorie :
+/// elle est obligatoire pour chaque promotion et suit les mois de l'année scolaire.
+/// </summary>
+public sealed class FeeCategory : Entity
+{
+    public string Name { get; set; } = string.Empty;
+    /// <summary>Montant de la catégorie, repris dans chaque promotion où elle s'applique (modifiable par promotion).</summary>
+    public decimal Amount { get; set; }
+    /// <summary>Échéance proposée ; à défaut, les frais sont exigibles dès la rentrée.</summary>
+    public DateOnly? DueDate { get; set; }
+    public bool IsActive { get; set; } = true;
+    public int Order { get; set; }
+    /// <summary>Clé normalisée du nom, pour refuser les doublons.</summary>
+    public string NameKey { get; set; } = string.Empty;
+
+    public const int MaxNameLength = 80;
+}
+
 /// <summary>Rubrique de frais exigible pour une promotion (mensualité, inscription, examen…).</summary>
 public sealed class FeeItem : Entity
 {
     public Guid PromotionId { get; set; }
     public Guid? PeriodId { get; set; }
     public FeeKind Kind { get; set; }
+    /// <summary>Catégorie d'origine d'un frais autre que la mensualité.</summary>
+    public Guid? CategoryId { get; set; }
     public string Label { get; set; } = string.Empty;
     public decimal Amount { get; set; }
     public DateOnly DueDate { get; set; }

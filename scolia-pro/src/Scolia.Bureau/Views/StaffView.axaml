@@ -9,18 +9,18 @@
         <Border Classes="segmented" VerticalAlignment="Bottom" Margin="0,0,16,6">
           <StackPanel Orientation="Horizontal">
             <RadioButton Classes="segment" GroupName="staff" Content="Dossiers du personnel" IsChecked="{Binding !ShowPayroll}" />
-            <RadioButton Classes="segment" GroupName="staff" Content="Paie mensuelle" IsChecked="{Binding ShowPayroll}" />
+            <RadioButton Classes="segment" GroupName="staff" Content="Paie mensuelle" IsChecked="{Binding ShowPayroll}" IsVisible="{Binding CanManagePayroll}" />
           </StackPanel>
         </Border>
         <StackPanel Classes="field" IsVisible="{Binding ShowPayroll}">
-          <TextBlock Text="Mois" Classes="fieldlabel" />
-          <ComboBox Width="200" ItemsSource="{Binding Periods}" SelectedItem="{Binding PeriodChoice}" />
+          <TextBlock Text="Mois" Classes="fieldlabel" TextWrapping="Wrap" />
+          <ComboBox Width="200" ItemsSource="{Binding Periods}" SelectedItem="{Binding PeriodChoice}" AutomationProperties.Name="Mois de paie" />
         </StackPanel>
       </WrapPanel>
     </Border>
 
-    <DataGrid Grid.Row="1" ItemsSource="{Binding Staff}" SelectedItem="{Binding SelectedStaff}"
-              AutoGenerateColumns="False" IsReadOnly="True" IsVisible="{Binding !ShowPayroll}">
+    <DataGrid x:Name="StaffTable" Grid.Row="1" ItemsSource="{Binding Staff}" SelectedItem="{Binding SelectedStaff}"
+              AutoGenerateColumns="False" IsReadOnly="True" IsVisible="{Binding !ShowPayroll}" AutomationProperties.Name="Personnel">
       <DataGrid.Columns>
         <DataGridTextColumn Header="N° de dossier" Binding="{Binding Number}" Width="Auto" MinWidth="152" />
         <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" MinWidth="140" />
@@ -42,7 +42,7 @@
     </DataGrid>
 
     <DataGrid Grid.Row="1" ItemsSource="{Binding Payroll}" SelectedItem="{Binding SelectedPayroll}"
-              AutoGenerateColumns="False" IsReadOnly="True" IsVisible="{Binding ShowPayroll}">
+              AutoGenerateColumns="False" IsReadOnly="True" IsVisible="{Binding ShowPayroll}" AutomationProperties.Name="Préparation de la paie">
       <DataGrid.Columns>
         <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="110" />
         <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" MinWidth="140" />
@@ -65,7 +65,7 @@
         <DataGridTextColumn infra:GridPriority.Level="3" Header="Payé le" Binding="{Binding PaidOn}" Width="Auto" MinWidth="107" />
       </DataGrid.Columns>
     </DataGrid>
-    <c:EmptyState Grid.Row="1" Icon="BriefcaseOutline" Title="Aucun membre du personnel" Hint="Ajoutez le premier avec « Nouveau membre »." IsVisible="{Binding StaffEmpty}" />
+    <c:EmptyState Grid.Row="1" Icon="BriefcaseOutline" Title="Aucun membre du personnel" Hint="{Binding StaffEmptyHint}" IsVisible="{Binding StaffEmpty}" />
     <c:EmptyState Grid.Row="1" Icon="CashMultiple" Title="Aucun bulletin pour ce mois" Hint="Cliquez sur « Préparer la paie » pour générer les bulletins des membres actifs." IsVisible="{Binding PayrollEmpty}" />
   </Grid>
 </UserControl>

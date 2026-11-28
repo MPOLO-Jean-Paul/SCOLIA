@@ -11,9 +11,55 @@ public partial class LoginView : UserControl
 {
     private LoginViewModel? subscribedLogin;
 
+
     public LoginView()
     {
         InitializeComponent();
+        // Même page Fluent sur le téléphone et l'ordinateur ; l'ancienne page bleue reste en réserve.
+        var ios = AuthLayout.UseIosStyle;
+        LoginScroll.IsVisible = !ios;
+        IosLoginScroll.IsVisible = ios;
+        IosLoginThemeScope.IsVisible = ios;
+        Backdrop.IsVisible = !ios;
+        Halo.IsVisible = !ios;
+        IosBackdrop.IsVisible = ios;
+        // Densité de la page (téléphone, petit écran, grand écran avec carte centrée).
+        AuthLayout.Track(IosLoginScroll);
+        // Quand le clavier réduit la hauteur du téléphone, garder « Se connecter »
+        // entièrement atteignable sans masquer ni supprimer les liens Compte/Serveur.
+        void KeepSubmitVisible()
+        {
+            if (!Platform.IsMobile || !IosLoginScroll.IsEffectivelyVisible
+                || !IosLoginSubmitButton.IsEffectivelyVisible) return;
+            AuthLayout.EnsureVisible(IosLoginScroll, IosLoginSubmitButton);
+        }
+        IosPasswordBox.GotFocus += (_, _) =>
+            Dispatcher.UIThread.Post(KeepSubmitVisible, DispatcherPriority.Background);
+        IosLoginScroll.SizeChanged += (_, _) =>
+        {
+            if (Platform.IsMobile && (IosPasswordBox.IsFocused || IosUserNameBox.IsFocused))
+                Dispatcher.UIThread.Post(KeepSubmitVisible, DispatcherPriority.Background);
+        };
+        IosPasswordBox.KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Enter || DataContext is not LoginViewModel login || !login.CanSubmitCredentials) return;
+            login.Submit.Execute(null);
+            e.Handled = true;
+        };
+        IosNewPasswordBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter) { IosConfirmPasswordBox.Focus(); e.Handled = true; }
+        };
+        IosConfirmPasswordBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter) { IosRecoveryCodeBox.Focus(); e.Handled = true; }
+        };
+        IosRecoveryCodeBox.KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Enter || DataContext is not LoginViewModel login || !login.CanRecoverWithCode) return;
+            login.RecoverWithCode.Execute(null);
+            e.Handled = true;
+        };
         PasswordBox.KeyDown += (_, e) =>
         {
             if (e.Key != Key.Enter || DataContext is not LoginViewModel login || !login.CanSubmitCredentials) return;
@@ -70,6 +116,14 @@ public partial class LoginView : UserControl
             subscribedLogin.PropertyChanged += OnLoginChanged;
             subscribedLogin.RefreshBiometrics();
         }
+        RefreshIdentity();
+    }
+
+    private void RefreshIdentity()
+    {
+        var combined = subscribedLogin is { HasRememberedAccount: true, ShowManualCredentials: true, RecoveryOpen: false };
+        CombinedIdentity.IsVisible = combined;
+        StandaloneBrand.IsVisible = !combined;
     }
 
     private void ReleaseLogin()
@@ -89,7 +143,13 @@ public partial class LoginView : UserControl
         if (args.PropertyName is nameof(LoginViewModel.RecoveryOpen)
             or nameof(LoginViewModel.ShowManualCredentials)
             or nameof(LoginViewModel.HasRememberedAccount))
-            Dispatcher.UIThread.Post(FocusRelevantField, DispatcherPriority.Background);
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                RefreshIdentity();
+                FocusRelevantField();
+            }, DispatcherPriority.Background);
+        }
     }
 
     /// <summary>Respecte le compte déjà reconnu et n'ouvre pas le clavier mobile sans geste de l'utilisateur.</summary>
@@ -97,9 +157,10 @@ public partial class LoginView : UserControl
     {
         if (Platform.IsMobile || PhoneLayout.Active || DataContext is not LoginViewModel login
             || !login.ShowManualCredentials) return;
-        if (login.RecoveryOpen) NewPasswordBox.Focus();
-        else if (login.ShowAccountEntry) UserNameBox.Focus();
-        else PasswordBox.Focus();
+        var ios = AuthLayout.UseIosStyle;
+        if (login.RecoveryOpen) (ios ? IosNewPasswordBox : NewPasswordBox).Focus();
+        else if (login.ShowAccountEntry) (ios ? IosUserNameBox : UserNameBox).Focus();
+        else (ios ? IosPasswordBox : PasswordBox).Focus();
     }
 
     private void OnUnlocked() => FocusRelevantField();

@@ -14,6 +14,9 @@ describe('Navigation intuitive selon le rôle', () => {
   });
   it('permet aux caissiers les pages nécessaires', () => {
     expect(accountHome(cashier)).toBe('/');
+    // Enseignant ou étudiant : leur espace est dans l'application SCOLIA.
+    expect(accountHome(['cotes.encoder'])).toBe('/espace');
+    expect(accountHome(['resultats.consulter'])).toBe('/espace');
     expect(canOpenPath('/encaisser', cashier)).toBe(true);
     expect(canOpenPath('/paiements/recus/1234', cashier)).toBe(true);
     expect(canOpenPath('/utilisateurs', cashier)).toBe(false);

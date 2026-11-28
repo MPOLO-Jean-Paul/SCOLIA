@@ -70,4 +70,32 @@ public sealed class PhoneMenuBlocksTests
         Assert.Contains(backups, data.SupplementalCommands);
         Assert.Single(blocks, b => b.Title == "RÉGLAGES ET DONNÉES");
     }
+    [Fact]
+    public void Organisation_pedagogique_rejoint_la_scolarite_sans_doublonner_les_reglages()
+    {
+        NavGroupVm[] navigation =
+        [
+            new("Secrétariat", []), new("Scolarité", []),
+            new("Organisation pédagogique", []),
+            new("Enseignants et cours", []), new("Délibération", []),
+            new("Finances", []), new("Paramètres", []), new("Données", [])
+        ];
+        var blocks = Sidebar.Blocks(navigation);
+        var education = Assert.Single(blocks, b => b.Title == "GESTION SCOLAIRE");
+        Assert.Equal(new[] { "Secrétariat", "Scolarité", "Organisation pédagogique" },
+            education.Groups.Select(group => group.Title));
+        Assert.All(navigation, item =>
+            Assert.Single(blocks.SelectMany(block => block.Groups), group => ReferenceEquals(item, group)));
+        var settings = Assert.Single(blocks, b => b.Title == "RÉGLAGES ET DONNÉES");
+        Assert.Equal(new[] { "Paramètres", "Données" }, settings.Groups.Select(group => group.Title));
+        Assert.Equal(MaterialIconKind.SchoolOutline, FeatureVisuals.Icon("Organisation pédagogique"));
+        Assert.Equal(MaterialIconKind.LanConnect, FeatureVisuals.Icon("Réseau et postes"));
+        // Le regroupement doit être identique sur téléphone : la rubrique ne
+        // doit pas se retrouver isolée sous « AUTRES OUTILS ».
+        var phoneBlocks = PhoneMenuBlockVm.Build(navigation, []);
+        Assert.DoesNotContain(phoneBlocks, block => block.Title == "AUTRES OUTILS");
+        var mobileSchool = Assert.Single(phoneBlocks, block => block.Title == "GESTION SCOLAIRE");
+        Assert.Equal(education.Groups, mobileSchool.NavigationGroups);
+    }
+
 }

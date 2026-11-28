@@ -1,0 +1,17 @@
+SCOLIA Pro — Application Administration JP-Services
+Version 1.0.0
+
+Cette application est réservée aux administrateurs habilités de JP-Services.
+Elle ouvre la console de gestion commerciale accessible via Cloudflare Access.
+L'application ne fournit aucun accès direct aux dossiers scolaires et ne contient
+aucune clé Cloudflare ni aucun jeton d'administration.
+
+Conditions :
+1. Utiliser uniquement un compte autorisé, avec MFA activée.
+2. Conserver les jetons administrateur dans un gestionnaire de mots de passe sécurisé.
+3. Aucune donnée scolaire n'est collectée ou stockée dans le logiciel d'administration.
+4. Les mises à jour sont publiées séparément sous le canal « scolia-owner-v... ».
+5. L'utilisateur reste responsable de la sécurité de son ordinateur et de sa session.
+6. Ce logiciel ne peut être distribué aux établissements comme un client scolaire.
+
+Copyright 2026 JP-Services. Tous droits réservés.

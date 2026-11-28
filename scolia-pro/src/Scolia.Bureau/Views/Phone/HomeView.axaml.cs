@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Scolia.Bureau.Infrastructure;
 
 namespace Scolia.Bureau.Views.Phone;
 
@@ -8,5 +9,9 @@ namespace Scolia.Bureau.Views.Phone;
 /// </summary>
 public partial class HomeView : UserControl
 {
-    public HomeView() => InitializeComponent();
+    public HomeView()
+    {
+        InitializeComponent();
+        AuthLayout.Track(Sections);
+    }
 }

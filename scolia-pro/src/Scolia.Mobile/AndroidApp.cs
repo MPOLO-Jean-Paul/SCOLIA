@@ -7,7 +7,7 @@ using Avalonia.Android;
 namespace Scolia.Mobile;
 
 /// <summary>Application Android de SCOLIA : la même application Avalonia que sur l'ordinateur, en vue unique.</summary>
-[Application(Label = "SCOLIA Phone", Icon = "@mipmap/icon", RoundIcon = "@mipmap/icon_round", UsesCleartextTraffic = true, AllowBackup = false)]
+[Application(Label = MainActivity.DisplayLabel, Icon = "@mipmap/icon", RoundIcon = "@mipmap/icon_round", UsesCleartextTraffic = true, AllowBackup = false)]
 public sealed class AndroidApp : AvaloniaAndroidApplication<Scolia.Bureau.App>
 {
     public AndroidApp(IntPtr javaReference, JniHandleOwnership transfer) : base(javaReference, transfer) { }
@@ -21,6 +21,8 @@ public sealed class AndroidApp : AvaloniaAndroidApplication<Scolia.Bureau.App>
         CultureInfo.CurrentCulture = fr;
         CultureInfo.CurrentUICulture = fr;
         MobilePlatform.Prepare(this);
+        // Contrôle périodique, limité au réseau disponible ; aucun APK téléchargé sans accord.
+        AndroidAppUpdates.Schedule(this);
         return base.CustomizeAppBuilder(builder);
     }
 }

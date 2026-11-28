@@ -13,8 +13,8 @@
     <RootNamespace>Scolia.Mobile</RootNamespace>
     <ApplicationId>com.jpservices.scolia</ApplicationId>
     <ApplicationTitle>SCOLIA Phone</ApplicationTitle>
-    <ApplicationVersion>123</ApplicationVersion>
-    <ApplicationDisplayVersion>1.2.3</ApplicationDisplayVersion>
+    <ApplicationVersion>3633966</ApplicationVersion>
+    <ApplicationDisplayVersion>1.3.17</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <RuntimeIdentifiers>android-arm64;android-arm</RuntimeIdentifiers>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
@@ -27,7 +27,7 @@
   </PropertyGroup>
 
   <!-- APK installable directement, signé avec la clé fournie à la compilation (variables SCOLIA_KEYSTORE_*). -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' And '$(ScoliaFlutterExperiment)' != 'true'">
     <AndroidKeyStore Condition="'$(SCOLIA_KEYSTORE)' != ''">true</AndroidKeyStore>
     <AndroidSigningKeyStore Condition="'$(SCOLIA_KEYSTORE)' != ''">$(SCOLIA_KEYSTORE)</AndroidSigningKeyStore>
     <AndroidSigningStorePass Condition="'$(SCOLIA_KEYSTORE)' != ''">env:SCOLIA_KEYSTORE_PASS</AndroidSigningStorePass>
@@ -39,11 +39,54 @@
 
   <!-- Le serveur de l'établissement, pour le téléphone qui en tient lieu. Le protocole de découverte vient avec lui.
        Il est en .NET pur : il se compile sans l'architecture du téléphone (android-arm64, android-arm). -->
+  <!-- Le module d'installation VPN historique n'est plus inclus dans l'APK. -->
+  <ItemGroup>
+    <Compile Remove="AndroidTailscaleSetup.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Scolia.Api/Scolia.Api.csproj" SetTargetFramework="TargetFramework=net10.0"
                       GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
   </ItemGroup>
   <Import Project="AspNetCoreLocal.props" />
+
+  <!-- Liaison expérimentale, désactivée pour toutes les versions officielles. -->
+  <PropertyGroup Condition="'$(ScoliaFlutterExperiment)' == 'true'">
+    <DefineConstants>$(DefineConstants);SCOLIA_FLUTTER_EXPERIMENT</DefineConstants>
+    <DefineConstants Condition="'$(ScoliaFlutterMigrationSeed)' != 'true'">$(DefineConstants);SCOLIA_FLUTTER_UI</DefineConstants>
+    <DefineConstants Condition="'$(ScoliaFlutterMigrationTest)' == 'true'">$(DefineConstants);SCOLIA_FLUTTER_MIGRATION_TEST</DefineConstants>
+    <DefineConstants Condition="'$(ScoliaFlutterMigrationSeed)' == 'true'">$(DefineConstants);SCOLIA_FLUTTER_MIGRATION_SEED</DefineConstants>
+    <ApplicationId>com.jpservices.scolia.fluttervalidation</ApplicationId>
+    <ApplicationTitle>SCOLIA Flutter Validation</ApplicationTitle>
+    <AndroidManifest>../Scolia.Flutter/build/bridge/AndroidManifest.validation.xml</AndroidManifest>
+    <!-- Jamais la clé de distribution dans cette configuration. -->
+    <AndroidKeyStore>false</AndroidKeyStore>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ScoliaFlutterExperiment)' == 'true' And '$(ScoliaFlutterEmulator)' == 'true'">
+    <RuntimeIdentifiers>android-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+  <!-- Mode candidat officiel : opt-in explicite, aucun changement de package ni de stockage. -->
+  <PropertyGroup Condition="'$(ScoliaFlutterOfficial)' == 'true' And '$(ScoliaFlutterExperiment)' != 'true'">
+    <DefineConstants>$(DefineConstants);SCOLIA_FLUTTER_UI</DefineConstants>
+  </PropertyGroup>
+  <Target Name="GuardOfficialFlutter" BeforeTargets="PrepareForBuild" Condition="'$(ScoliaFlutterOfficial)' == 'true'">
+    <Error Text="Flutter est suspendu en production : utiliser le paquet expérimental isolé." />
+    <Error Condition="'$(ScoliaFlutterExperiment)' == 'true' Or '$(ScoliaFlutterEmulator)' == 'true'" Text="Le mode officiel ne peut pas utiliser le package expérimental." />
+    <Error Condition="'$(Configuration)' != 'Release' Or '$(SCOLIA_KEYSTORE)' == '' Or '$(AndroidKeyStore)' != 'true'" Text="Flutter officiel exige la compilation Release et la clé de distribution existante." />
+    <Error Condition="'$(ApplicationId)' != 'com.jpservices.scolia'" Text="Identifiant officiel SCOLIA modifié." />
+  </Target>
+  <Target Name="GuardMigrationFixture" BeforeTargets="PrepareForBuild" Condition="'$(ScoliaFlutterMigrationTest)' == 'true' Or '$(ScoliaFlutterMigrationSeed)' == 'true'">
+    <Error Condition="'$(ScoliaFlutterExperiment)' != 'true' Or '$(ScoliaFlutterEmulator)' != 'true' Or '$(ScoliaFlutterOfficial)' == 'true' Or '$(ApplicationId)' != 'com.jpservices.scolia.fluttervalidation'" Text="Migration fixtures are restricted to an isolated emulator APK." />
+    <Error Condition="'$(ScoliaFlutterMigrationSeed)' == 'true' And '$(ScoliaFlutterMigrationTest)' != 'true'" Text="Migration seed requires explicit test mode." />
+  </Target>
+  <ItemGroup Condition="('$(ScoliaFlutterExperiment)' == 'true' And '$(ScoliaFlutterMigrationSeed)' != 'true') Or '$(ScoliaFlutterOfficial)' == 'true'">
+    <ProjectReference Include="../Scolia.Flutter.AndroidBinding/Scolia.Flutter.AndroidBinding.csproj" />
+    <AndroidLibrary Include="../Scolia.Flutter/build/bridge/flutter-module.aar" Bind="false" />
+    <AndroidNativeLibrary Condition="'$(ScoliaFlutterEmulator)' != 'true'" Include="../Scolia.Flutter/build/bridge/native/arm64-v8a/libflutter.so" Abi="arm64-v8a" />
+    <AndroidNativeLibrary Condition="'$(ScoliaFlutterEmulator)' != 'true'" Include="../Scolia.Flutter/build/bridge/native/armeabi-v7a/libflutter.so" Abi="armeabi-v7a" />
+    <AndroidNativeLibrary Condition="'$(ScoliaFlutterEmulator)' == 'true'" Include="../Scolia.Flutter/build/bridge/native/x86_64/libflutter.so" Abi="x86_64" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />
@@ -59,6 +102,8 @@
     <!-- Relier un appareil : le serveur affiche un code QR, l'autre appareil le lit. -->
     <PackageReference Include="QRCoder" />
     <PackageReference Include="ZXing.Net" />
+    <PackageReference Include="Xamarin.GooglePlayServices.Code.Scanner" />
+    <PackageReference Include="Xamarin.AndroidX.Tracing.Tracing.Ktx" />
   </ItemGroup>
 
   <!-- Les espaces de noms d'Android ne sont pas ajoutés d'office : ils entreraient en conflit avec ceux d'Avalonia

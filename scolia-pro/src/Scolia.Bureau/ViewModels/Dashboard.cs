@@ -8,16 +8,23 @@ using Scolia.Bureau.Ribbon;
 namespace Scolia.Bureau.ViewModels;
 
 /// <summary>Tuile d'indicateur : libellé, valeur, précision, icône et couleur d'accent.</summary>
-public sealed record KpiVm(string Label, string Value, string Hint, IBrush Accent, MaterialIconKind Icon = MaterialIconKind.ChartLine);
+public sealed record KpiVm(string Label, string Value, string Hint, IBrush Accent, MaterialIconKind Icon = MaterialIconKind.ChartLine)
+{
+    /// <summary>Fond teinté de la tuile d'icône : la couleur d'accent à 14 %.</summary>
+    public IBrush Soft => Accent is ISolidColorBrush solid
+        ? new SolidColorBrush(Color.FromArgb(0x24, solid.Color.R, solid.Color.G, solid.Color.B))
+        : Brushes.Transparent;
+}
 
 /// <summary>Ligne libellé et valeur d'une fiche.</summary>
 public sealed record InfoLine(string Label, string Value);
 
 /// <summary>Colonne de graphique, hauteur en pixels proportionnelle à la plus grande valeur.</summary>
-public sealed record BarVm(string Label, string Value, double Height, double Track = 0);
+public sealed record BarVm(string Label, string Value, double Height, double Track = 0, IBrush? Brush = null);
 
 /// <summary>Ligne du tableau des promotions, avec sa barre de recouvrement.</summary>
-public sealed record PromotionStatVm(string Code, string Name, string Students, string Expected, string Collected, string Outstanding, string Overdue, string Recovery, double RecoveryValue);
+public sealed record PromotionStatVm(string Code, string Name, string Students, string Expected, string Collected, string Outstanding, string Overdue, string Recovery, double RecoveryValue,
+    string Paying = "", string Sponsored = "");
 
 /// <summary>Reçu récent affiché sur le tableau de bord.</summary>
 public sealed record ReceiptLineVm(Guid Id, string Number, string Date, string Amount, string Method);
@@ -42,10 +49,20 @@ public sealed class DashboardPage : PageViewModel
     private string todayTitle = string.Empty;
     private bool hasToday;
     private string backupLine = string.Empty;
+    private string selectionTotal = "Chargement de la sélection…";
+    private string? loadedQuery, selectionKey;
+    public DashboardFiltersVm Filters { get; } = new();
+    public string SelectionTotal { get => selectionTotal; private set => Set(ref selectionTotal, value); }
 
     public DashboardPage(ShellViewModel shell) : base(shell)
     {
         Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell)), primary: true);
+        Action("Exporter la sélection", MaterialIconKind.FileExport, () => Filters.ExportAsync(Shell, false, loadedQuery, selectionKey));
+        Filters.Changed += () =>
+        {
+            ClearSelection("Actualisation de la sélection…");
+            _ = Shell.Run(() => Filters.RefreshLatestAsync(RefreshAsync, () => loadedQuery == Filters.Query));
+        };
         ActionRefresh();
     }
 
@@ -82,18 +99,41 @@ public sealed class DashboardPage : PageViewModel
 
     public override async Task LoadAsync()
     {
-        var d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord");
+        loadedQuery = selectionKey = null;
+        string query;
+        DashboardDto d;
+        try
+        {
+            await Filters.EnsureAsync(Shell.Api, promoter: false);
+            query = Filters.Query;
+            d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord" + query);
+        }
+        catch
+        {
+            ClearSelection("Sélection indisponible. Utilisez Actualiser pour réessayer.");
+            throw;
+        }
+        if (query != Filters.Query) return;
+        loadedQuery = query;
+        selectionKey = d.SelectionKey;
+        SelectionTotal = $"Total de la sélection · {Format.Count(d.ActiveStudents, Shell.StudentTerms.Singular, Shell.StudentTerms.Plural)} · {Money(d.CollectedTotal)} encaissés · {Money(d.Outstanding)} à percevoir";
         subtitle = $"Année {d.AcademicYear} · au {DateTime.Today.ToString("d MMMM", Fr)}";
         Raise(nameof(Subtitle));
 
         Kpis.Clear();
-        Kpis.Add(new KpiVm("Apprenants actifs", Format.Amount(d.ActiveStudents), $"{d.StudentsUpToDate} à jour · {d.StudentsLate} en retard",
+        // Les pris en charge ont leur propre total : « à jour » et « en retard » ne comptent que les payants.
+        Kpis.Add(new KpiVm($"{Shell.StudentTerms.PluralTitle} actifs", Format.Amount(d.ActiveStudents),
+            $"{Format.Count(d.PayingStudents, "payant", "payants")} : {d.StudentsUpToDate} à jour · {d.StudentsLate} en retard",
             ThemeBrush.Get("ToneBlue"), MaterialIconKind.AccountGroupOutline));
-        Kpis.Add(new KpiVm("Recettes de l'année", Money(d.CollectedTotal), $"Aujourd'hui : {Money(d.CollectedToday)}",
+        Kpis.Add(new KpiVm("Pris en charge", Format.Amount(d.SponsoredStudents),
+            (d.PartiallySponsoredStudents > 0 ? $"+ {Format.Count(d.PartiallySponsoredStudents, "partielle", "partielles")} · " : string.Empty)
+                + $"couvert {Money(d.SponsoredAmount)}",
+            ThemeBrush.Get("TonePurple"), MaterialIconKind.HandHeartOutline));
+        // Les recettes du jour figurent dans « Aujourd'hui » : la tuile de l'année porte celles du mois et ses dépenses.
+        Kpis.Add(new KpiVm("Recettes de l'année", Money(d.CollectedTotal),
+            $"Ce mois : {Money(d.CollectedThisMonth)} · dépenses de l'établissement {Money(d.ExpensesThisMonth)}",
             ThemeBrush.Get("ToneGreen"), MaterialIconKind.CashMultiple));
-        Kpis.Add(new KpiVm("Recettes du mois", Money(d.CollectedThisMonth), $"Dépenses du mois : {Money(d.ExpensesThisMonth)}",
-            ThemeBrush.Get("ToneTeal"), MaterialIconKind.CalendarMonthOutline));
-        Kpis.Add(new KpiVm("Reste exigible", Money(d.Overdue), Format.Count(d.StudentsLate, "apprenant en retard", "apprenants en retard"),
+        Kpis.Add(new KpiVm("Reste exigible", Money(d.Overdue), Format.Count(d.StudentsLate, $"{Shell.StudentTerms.Singular} en retard", $"{Shell.StudentTerms.Plural} en retard"),
             ThemeBrush.Get("ToneOrange"), MaterialIconKind.AlertCircleOutline));
         Kpis.Add(new KpiVm("Reste à percevoir", Money(d.Outstanding), $"Attendu à ce jour : {Money(d.ExpectedToDate)}",
             ThemeBrush.Get("ToneIndigo"), MaterialIconKind.ProgressClock));
@@ -109,13 +149,18 @@ public sealed class DashboardPage : PageViewModel
 
         Aging.Clear();
         var agingMax = d.Aging.Select(a => a.Value).DefaultIfEmpty(1m).Max();
+        // Plus le retard est ancien, plus la barre tire vers le rouge.
+        string[] agingTones = ["ToneOrange", "ToneOrange", "ToneRed", "ToneRed"];
+        var agingIndex = 0;
         foreach (var a in d.Aging)
-            Aging.Add(new BarVm(a.Label, Money(a.Value), agingMax <= 0 ? 0 : (double)(a.Value / agingMax) * 100));
+            Aging.Add(new BarVm(a.Label, Money(a.Value), agingMax <= 0 ? 0 : (double)(a.Value / agingMax) * 100, 0,
+                ThemeBrush.Get(agingTones[Math.Min(agingIndex++, agingTones.Length - 1)])));
 
         Promotions.Clear();
         foreach (var p in d.Promotions)
             Promotions.Add(new PromotionStatVm(p.Code, p.Name, Format.Amount(p.Students), Money(p.Expected), Money(p.Collected),
-                Money(p.Outstanding), Money(p.Overdue), Format.Percent(p.RecoveryRate), (double)Math.Clamp(p.RecoveryRate, 0, 100)));
+                Money(p.Outstanding), Money(p.Overdue), Format.Percent(p.RecoveryRate), (double)Math.Clamp(p.RecoveryRate, 0, 100),
+                Format.Amount(p.Paying), Format.Amount(p.Sponsored)));
 
         Latest.Clear();
         foreach (var r in d.LatestReceipts)
@@ -125,8 +170,18 @@ public sealed class DashboardPage : PageViewModel
         MaleShare = total == 0 ? 0 : 100.0 * d.GenderMale / total;
         GenderText = $"Garçons {Format.Amount(d.GenderMale)} · Filles {Format.Amount(d.GenderFemale)}";
 
-        await LoadTodayAsync();
+        if (!Filters.HasScope) await LoadTodayAsync();
+        else { HasToday = false; Appointments.Clear(); Birthdays.Clear(); RaisePeople(); }
         await CheckBackupAsync();
+    }
+
+    private void ClearSelection(string message)
+    {
+        loadedQuery = selectionKey = null;
+        SelectionTotal = message;
+        Kpis.Clear(); Promotions.Clear(); Latest.Clear(); Months.Clear(); Aging.Clear();
+        GenderText = string.Empty; MaleShare = 0;
+        HasToday = false; TodayStats.Clear(); Appointments.Clear(); Birthdays.Clear(); RaisePeople();
     }
 
     /// <summary>Âge de la dernière sauvegarde : rien à signaler sous 24 heures.</summary>
@@ -134,10 +189,11 @@ public sealed class DashboardPage : PageViewModel
     {
         if (!Shell.Can(Perm.BackupManage)) { BackupLine = string.Empty; return; }
         var backups = await Shell.Api.GetAsync<List<BackupDto>>("api/sauvegardes");
+        var schedule = await DataPage.ReadScheduleAsync(Shell);
         var last = backups.Count == 0 ? (DateTime?)null : backups.Max(b => b.CreatedUtc);
         BackupLine = last is null
             ? "Aucune sauvegarde n'existe encore. Une copie vérifiée protège l'établissement en cas de panne."
-            : DateTime.UtcNow - last.Value > TimeSpan.FromHours(24)
+            : !BackupText.IsFresh(last.Value, DateTime.UtcNow, schedule.LocalIntervalHours)
                 ? $"Dernière sauvegarde le {Format.DateTime(last.Value)}. Pensez à en faire une nouvelle."
                 : string.Empty;
     }
@@ -161,8 +217,8 @@ public sealed class DashboardPage : PageViewModel
             ? new TodayStatVm("Caisse", "Arrêtée", "L'arrêté du jour est enregistré", MaterialIconKind.LockCheckOutline, ThemeBrush.Get("ToneTeal"))
             : new TodayStatVm("Caisse", t.ReceiptsToday == 0 ? "Ouverte" : "À arrêter", t.ReceiptsToday == 0 ? "Aucune opération pour l'instant" : "Pensez à l'arrêté de fin de journée",
                 MaterialIconKind.CashRegister, ThemeBrush.Get("ToneOrange")));
-        TodayStats.Add(new TodayStatVm("Appel", t.AttendanceMarked == 0 ? "Non saisi" : Format.Count(t.AttendanceMarked, "apprenant pointé", "apprenants pointés"),
-            t.SuspendedToday == 0 ? "Aucun renvoi en cours" : Format.Count(t.SuspendedToday, "apprenant renvoyé ce jour", "apprenants renvoyés ce jour"),
+        TodayStats.Add(new TodayStatVm("Appel", t.AttendanceMarked == 0 ? "Non saisi" : Format.Count(t.AttendanceMarked, $"{Shell.StudentTerms.Singular} pointé", $"{Shell.StudentTerms.Plural} pointés"),
+            t.SuspendedToday == 0 ? "Aucun renvoi en cours" : Format.Count(t.SuspendedToday, $"{Shell.StudentTerms.Singular} renvoyé ce jour", $"{Shell.StudentTerms.Plural} renvoyés ce jour"),
             MaterialIconKind.ClipboardCheckOutline, ThemeBrush.Get("ToneBlue")));
 
         foreach (var a in t.Appointments) Appointments.Add(Person(a));

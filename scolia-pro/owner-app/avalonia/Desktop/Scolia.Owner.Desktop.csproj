@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>SCOLIA-Console</AssemblyName>
+    <Version>1.2.2</Version>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop"/>
+    <PackageReference Include="Avalonia.Themes.Fluent"/>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData"/>
+    <ProjectReference Include="../Core/Scolia.Owner.Core.csproj"/>
+  </ItemGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Assets/scolia.ico</ApplicationIcon>
+  </PropertyGroup>
+</Project>

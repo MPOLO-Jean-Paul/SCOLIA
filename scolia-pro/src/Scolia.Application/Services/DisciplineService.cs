@@ -240,7 +240,8 @@ public sealed class DisciplineService(IAppDbContext db, IWriteGate gate, IAuditL
     }
 
     private async Task<DisciplineRowDto> RowAsync(Guid id, CancellationToken ct) =>
-        (await RowsAsync(db.DisciplineDecisions.AsNoTracking().Where(d => d.Id == id), ct)).Single();
+        (await RowsAsync(db.DisciplineDecisions.AsNoTracking().Where(d => d.Id == id), ct)).SingleOrDefault()
+            ?? throw new NotFoundException("Décision disciplinaire introuvable.");
 
     private async Task<List<DisciplineRowDto>> RowsAsync(IQueryable<DisciplineDecision> query, CancellationToken ct)
     {
@@ -254,6 +255,7 @@ public sealed class DisciplineService(IAppDbContext db, IWriteGate gate, IAuditL
                           .Take(500).ToListAsync(ct);
         var enrollmentIds = items.Select(i => i.Decision.EnrollmentId).Distinct().ToList();
         var allDecisions = await db.DisciplineDecisions.AsNoTracking().Where(x => enrollmentIds.Contains(x.EnrollmentId)).ToListAsync(ct);
+        var codes = await AnonymousDisplay.CodesAsync(db, enrollmentIds, ct);
         var today = clock.Today;
         var now = clock.UtcNow.ToLocalTime();
         return items.Select(i =>
@@ -264,7 +266,7 @@ public sealed class DisciplineService(IAppDbContext db, IWriteGate gate, IAuditL
             var isConvocation = d.Measure == DisciplineMeasure.Convocation;
             var awaiting = isConvocation && d.State == DecisionState.Validee && d.Reception == ParentReception.EnAttente;
             return new DisciplineRowDto(
-                d.Id, d.EnrollmentId, i.Matricule, i.FullName.Trim(), i.PromotionCode, MeasureText(d.Measure), d.Reason, d.DecisionDate,
+                d.Id, d.EnrollmentId, AnonymousDisplay.Of(codes, d.EnrollmentId), i.FullName.Trim(), i.PromotionCode, MeasureText(d.Measure), d.Reason, d.DecisionDate,
                 d.FirstDay, d.LastDay, d.FirstDay is { } f && d.LastDay is { } l ? DisciplineRules.Days(f, l) : null,
                 d.Measure == DisciplineMeasure.RenvoiTemporaire && d.LastDay is { } last ? DisciplineRules.ReturnFrom(last) : null,
                 d.AppointmentAt, d.IsAutomatic, d.ParentName, d.ParentPhone,

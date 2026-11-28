@@ -7,6 +7,7 @@ using Avalonia.VisualTree;
 using Scolia.Bureau;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Bureau.Ribbon;
 using Scolia.Bureau.ViewModels;
 using Scolia.Bureau.Views;
 
@@ -15,12 +16,25 @@ using Scolia.Bureau.Views;
 var output = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
 var server = new Uri(args.Length > 1 ? args[1] : "http://localhost:5293/");
 var password = args.Length > 2 ? args[2] : "Scolia2026!";
-var dark = args.Length > 3 && args[3] == "sombre";
+var dark = (args.Length > 3 && args[3] == "sombre") || Environment.GetEnvironmentVariable("SCOLIA_CAPTURE_DARK") == "1";
 Directory.CreateDirectory(output);
 
 Scolia.Bureau.Program.BuildAvaloniaApp()
+    .WithInterFont()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
     .SetupWithoutStarting();
+
+if (args.Length > 3 && args[3] == "icones-scolia")
+{
+    FluentIconCapture.Run(output);
+    return;
+}
+
+if (args.Length > 3 && args[3] == "fonctionnement")
+{
+    FunctionalClientChecks.Run(output);
+    return;
+}
 
 // Attend une tâche tout en faisant tourner la boucle d'affichage de l'interface.
 static T Result<T>(Task<T> task)
@@ -93,6 +107,32 @@ void Save(Window window, string name)
     if (Preferences.MobileLayout) Overflow(window, name);
 }
 
+static void VerifyFluentArtwork(Window window)
+{
+    foreach (var icon in window.GetVisualDescendants().OfType<Material.Icons.Avalonia.MaterialIcon>()
+                 .Where(i => i.IsEffectivelyVisible && i.Bounds.Width > 0 && i.Kind is not null))
+    {
+        var kind = icon.Kind!.Value;
+        if (!FluentGlyphs.HasPath(kind) && kind is not Material.Icons.MaterialIconKind.MicrosoftExcel
+            and not Material.Icons.MaterialIconKind.Whatsapp)
+            throw new InvalidOperationException($"Pictogramme hors catalogue Fluent : {kind}.");
+        if (icon.Drawing.Geometry is not { Bounds.Width: > 0, Bounds.Height: > 0 })
+            throw new InvalidOperationException($"Pictogramme vide : {kind}.");
+        if (!icon.GetVisualAncestors().OfType<Border>().Any(b => b.Classes.Contains("appicon"))) continue;
+        var image = icon.GetVisualDescendants().OfType<Image>().FirstOrDefault();
+        if (image?.Source is not { Size.Width: > 0, Size.Height: > 0 })
+            throw new InvalidOperationException($"Illustration Fluent absente : {kind}.");
+        if (FluentGlyphs.ArtworkKey(kind) is { } key &&
+            (!Avalonia.Application.Current!.Resources.TryGetResource(key, Avalonia.Application.Current.ActualThemeVariant, out var artwork)
+             || !ReferenceEquals(artwork, image.Source)))
+            throw new InvalidOperationException($"Illustration Fluent remplacée par un secours : {kind}.");
+    }
+    foreach (var image in window.GetVisualDescendants().OfType<Image>().Where(i => i.IsEffectivelyVisible &&
+                 i.GetVisualAncestors().OfType<Border>().Any(b => b.Classes.Contains("mobilemetricicon") || b.Classes.Contains("mobileicon") || b.Classes.Contains("metricicon"))))
+        if (image.Source is not { Size.Width: > 0, Size.Height: > 0 })
+            throw new InvalidOperationException("Illustration de carte absente.");
+}
+
 // Téléphone : relève ce qui sort de l'écran sur le côté et les textes coupés sans points de suspension.
 // Un tableau ou une zone qui défile en largeur compte aussi : sur un téléphone, rien ne doit défiler de côté.
 void Overflow(Window window, string name)
@@ -157,6 +197,7 @@ if (Environment.GetEnvironmentVariable("SCOLIA_ASTUCES") == "0") prefs.Tips = fa
 if (Environment.GetEnvironmentVariable("SCOLIA_MOBILE") == "1")
 {
     Preferences.MobileLayout = true;
+    Scolia.Bureau.Infrastructure.PlatformTheme.Apply(true);
     Platform.IsMobile = true;
     // Comme sur Android : le téléphone peut être le serveur de l'établissement (sans le démarrer ici).
     Platform.LocalServer = new CaptureServer();
@@ -171,8 +212,238 @@ var taille = (Environment.GetEnvironmentVariable("SCOLIA_TAILLE") ?? "1280x820")
 var window = new MainWindow { DataContext = shell, Width = int.Parse(taille[0]), Height = int.Parse(taille[1]) };
 if (Preferences.MobileLayout) { window.MinWidth = 0; window.MinHeight = 0; window.Width = int.Parse(taille[0]); window.Height = int.Parse(taille[1]); }
 window.Show();
+// Simulation du fond Mica de Windows 11 (SCOLIA_MICA=1) : un bureau teinté derrière une fenêtre translucide,
+// pour vérifier la lisibilité du bandeau et du fond de page. Les cartes restent opaques.
+if (Environment.GetEnvironmentVariable("SCOLIA_MICA") == "1" && window.Content is Scolia.Bureau.Views.MainView micaView)
+{
+    window.Background = new Avalonia.Media.LinearGradientBrush
+    {
+        StartPoint = new Avalonia.RelativePoint(0, 0, Avalonia.RelativeUnit.Relative),
+        EndPoint = new Avalonia.RelativePoint(1, 1, Avalonia.RelativeUnit.Relative),
+        GradientStops = { new Avalonia.Media.GradientStop(Avalonia.Media.Color.Parse("#7FA3C7"), 0),
+                          new Avalonia.Media.GradientStop(Avalonia.Media.Color.Parse("#C9A27A"), 1) }
+    };
+    micaView.Classes.Add("mica");
+}
 // Barre de titre de Windows dessinée par SCOLIA : simulée ici, la fenêtre sans écran n'a pas celle du système.
 if (!Preferences.MobileLayout && Environment.GetEnvironmentVariable("SCOLIA_BARRE_TITRE") != "0" && window.Content is Scolia.Bureau.Views.MainView main) main.ShowTitleBar(32);
+// Emblème de connexion : compte de démonstration, aucune authentification ni appel à un établissement.
+if (args.Length > 3 && args[3] == "a-propos")
+{
+    using var fixture = new LayoutServer();
+    api.Retarget(fixture.Address);
+    ShellViewModel.MinimumOpening = TimeSpan.Zero;
+    Wait(shell.OpenSessionAsync(new SessionDto(Guid.NewGuid(), "about-preview", "Compte de démonstration",
+        "Secretaire", "Secrétariat", [], false, "Institut de démonstration", "TEST", "2026-2027", "FC", "+243")));
+    shell.Sync.Stop();
+    Platform.CheckAppUpdatesAsync = () => Task.CompletedTask;
+    Platform.AppUpdateStatus = () => "Aucune version plus récente trouvée sur GitHub.";
+    shell.ShowAbout();
+    foreach (var (width, height, scale) in Preferences.MobileLayout
+                 ? new[] { (390, 844, 1d), (320, 640, 1d), (360, 740, 1.3d), (320, 640, 1.3d) }
+                 : new[] { (1280, 900, 1d), (1024, 768, 1.2d) })
+    {
+        window.Width = width;
+        window.Height = height;
+        prefs.Scale = scale;
+        Save(window, $"a-propos-{width}x{height}-{scale:0.0}.png");
+        var about = window.GetVisualDescendants().OfType<AboutView>().Single();
+        var scroll = about.GetVisualDescendants().OfType<ScrollViewer>().Single();
+        var frames = about.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("aboutcontacticon")).ToArray();
+        if (frames.Length != 5) throw new InvalidOperationException("Les cinq cadres de contact sont attendus.");
+        foreach (var frame in frames)
+        {
+            if (frame.Child is not Control icon || icon.TranslatePoint(default, frame) is not { } p)
+                throw new InvalidOperationException("Pictogramme de contact absent.");
+            var iconBounds = new Rect(p, icon.Bounds.Size);
+            if (Math.Abs(frame.Bounds.Width - 40) > .5 || Math.Abs(frame.Bounds.Height - 40) > .5 ||
+                iconBounds.Left < 7.5 || iconBounds.Top < 7.5 || iconBounds.Right > frame.Bounds.Width - 7.5 || iconBounds.Bottom > frame.Bounds.Height - 7.5 ||
+                Math.Abs(iconBounds.Center.X - frame.Bounds.Width / 2) > .5 || Math.Abs(iconBounds.Center.Y - frame.Bounds.Height / 2) > .5)
+                throw new InvalidOperationException($"Pictogramme hors cadre ou décentré : {frame.Name} ({iconBounds}).");
+        }
+        foreach (var action in about.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("aboutcontactaction")))
+        {
+            var icons = action.GetVisualDescendants().OfType<Scolia.Bureau.Controls.FluentIcon>().ToArray();
+            if (action.Bounds.Width < 43.5 || action.Bounds.Height < 43.5 || icons.Length != 1)
+                throw new InvalidOperationException("Action de contact dédoublée ou trop petite.");
+            if (icons[0].TranslatePoint(default, action) is not { } p)
+                throw new InvalidOperationException("Pictogramme d'action absent.");
+            var bounds = new Rect(p, icons[0].Bounds.Size);
+            if (bounds.Left < 11.5 || bounds.Top < 11.5 || bounds.Right > action.Bounds.Width - 11.5 || bounds.Bottom > action.Bounds.Height - 11.5 ||
+                Math.Abs(bounds.Center.X - action.Bounds.Width / 2) > .5 || Math.Abs(bounds.Center.Y - action.Bounds.Height / 2) > .5)
+                throw new InvalidOperationException("Pictogramme d'action hors cadre ou décentré.");
+        }
+        Console.WriteLine($"OK À propos {width}×{height} texte {scale:P0} : cinq icônes centrées et contenues, trois actions alignées.");
+        scroll.Offset = new Vector(0, Math.Max(0, scroll.Extent.Height - scroll.Viewport.Height));
+        Save(window, $"a-propos-contacts-{width}x{height}-{scale:0.0}.png");
+        scroll.Offset = default;
+    }
+    shell.CloseDialog();
+    window.Close();
+    return;
+}
+
+if (args.Length > 3 && args[3] == "identite-connexion")
+{
+    // Le format bureau doit rester celui demandé même si l'hôte headless
+    // applique initialement la fenêtre compacte réservée aux autres systèmes.
+    if (!Preferences.MobileLayout)
+    {
+        window.Width = int.Parse(taille[0]);
+        window.Height = int.Parse(taille[1]);
+    }
+    shell.Login.SchoolName = "Institut technique médical de démonstration";
+    shell.Login.RememberAccount("secretariat");
+    Save(window, "01-connexion-compte-reconnu.png");
+    VerifyAuthFieldGeometry("compte reconnu");
+    Control NamedIdentity(string name) => window.GetVisualDescendants().OfType<Control>()
+        .Single(c => c.Name == name);
+    var combined = NamedIdentity("CombinedIdentity");
+    var standalone = NamedIdentity("StandaloneBrand");
+    if (!combined.IsEffectivelyVisible || standalone.IsEffectivelyVisible)
+        throw new InvalidOperationException("Le compte reconnu doit afficher seulement l'emblème combiné.");
+    var brand = NamedIdentity("IdentityBrandCircle");
+    var account = NamedIdentity("IdentityAccountCircle");
+    if (brand.IsEffectivelyVisible && account.IsEffectivelyVisible)
+    {
+        Rect BoundsInWindow(Control control) => control.TransformToVisual(window) is { } matrix
+            ? new Rect(control.Bounds.Size).TransformToAABB(matrix) : default;
+        var a = BoundsInWindow(brand);
+        var b = BoundsInWindow(account);
+        var overlap = Math.Min(a.Right, b.Right) - Math.Max(a.Left, b.Left);
+        Console.WriteLine($"Emblème : marque {a}, compte {b}, intersection horizontale {overlap:0.##} px");
+        if (overlap <= 0 || overlap > 30 || b.Left <= a.Left ||
+            Math.Abs(a.Width - a.Height) > 1 || Math.Abs(b.Width - b.Height) > 1 ||
+            a.Left < -1 || b.Right > window.Bounds.Width + 1)
+            throw new InvalidOperationException("Les deux cercles doivent rester distincts, superposés et dans la fenêtre.");
+    }
+    else if (Preferences.MobileLayout && window.Bounds.Height >= AuthLayout.MicroHeight + 40)
+        throw new InvalidOperationException("Emblème invisible sur un téléphone de hauteur suffisante.");
+    shell.Login.ToggleRecoveryHelp.Execute(null);
+    Save(window, "02-recuperation.png");
+    VerifyAuthFieldGeometry("récupération");
+    if (combined.IsEffectivelyVisible || !standalone.IsEffectivelyVisible)
+        throw new InvalidOperationException("La récupération doit afficher le logo seul.");
+    shell.Login.ToggleRecoveryHelp.Execute(null);
+    shell.Login.ChangeAccount.Execute(null);
+    Save(window, "03-nouveau-compte.png");
+    VerifyAuthFieldGeometry("nouveau compte");
+    if (combined.IsEffectivelyVisible || !standalone.IsEffectivelyVisible)
+        throw new InvalidOperationException("Le nouveau compte doit afficher le logo seul.");
+
+    using var fixture = new LayoutServer();
+    api.Retarget(fixture.Address);
+    ShellViewModel.MinimumOpening = TimeSpan.Zero;
+    Wait(shell.OpenSessionAsync(new SessionDto(Guid.NewGuid(), "secretariat", "Amina Kabeya",
+        "Secretaire", "Secrétariat", [], false,
+        "Institut technique médical de démonstration", "ITM Demo", "2026-2027", "FC", "+243")));
+    shell.Sync.Stop();
+    shell.LockNow();
+    Save(window, "04-session-verrouillee.png");
+    VerifyAuthFieldGeometry("verrouillage");
+    var lockCode = (TextBox)NamedIdentity("IosLockCode");
+    if (!shell.ShowLockScreen || !lockCode.IsEffectivelyVisible || lockCode.RevealPassword)
+        throw new InvalidOperationException("La session verrouillée doit afficher le champ masqué.");
+    shell.LockScreen.ToggleCode.Execute(null);
+    Dispatcher.UIThread.RunJobs();
+    if (!lockCode.RevealPassword)
+        throw new InvalidOperationException("La commande de visibilité du code doit mettre à jour le champ.");
+    shell.LockScreen.ToggleCode.Execute(null);
+    Dispatcher.UIThread.RunJobs();
+    if (lockCode.RevealPassword)
+        throw new InvalidOperationException("Le code doit pouvoir être masqué de nouveau.");
+
+    void VerifyAuthFieldGeometry(string stage)
+    {
+        var access = window.GetVisualDescendants().OfType<ScrollViewer>()
+            .Single(s => s.IsEffectivelyVisible && s.Classes.Contains("fluentaccess"));
+        if (access.Extent.Width > access.Viewport.Width + 1)
+            throw new InvalidOperationException($"Défilement horizontal de l'écran d'accès : {stage}.");
+        var rail = access.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => b.Classes.Contains("authrail"));
+        if (rail is not null && rail.IsEffectivelyVisible != (access.Bounds.Width >= AuthLayout.ExpandedWidth))
+            throw new InvalidOperationException($"Le volet d'aide doit laisser assez de place au formulaire : {stage}.");
+        foreach (var image in access.GetVisualDescendants().OfType<Image>().Where(i => i.IsEffectivelyVisible))
+            if (image.Source is not { Size.Width: > 0, Size.Height: > 0 })
+                throw new InvalidOperationException($"Illustration d'accès absente : {stage}.");
+        var fields = window.GetVisualDescendants().OfType<Grid>()
+            .Where(g => g.IsEffectivelyVisible && g.Classes.Contains("authinput")).ToArray();
+        if (fields.Length == 0) throw new InvalidOperationException($"Aucun champ d'accès visible : {stage}.");
+        foreach (var grid in fields)
+        {
+            var field = grid.Children.OfType<TextBox>().Single();
+            var icon = grid.Children.OfType<Control>().Single(c => c.Classes.Contains("authinputicon"));
+            Rect InGrid(Control c) => c.TransformToVisual(grid) is { } m
+                ? new Rect(c.Bounds.Size).TransformToAABB(m) : default;
+            var box = InGrid(field);
+            var pictogram = InGrid(icon);
+            var textStart = box.Left + field.Padding.Left;
+            var textEnd = box.Right - field.Padding.Right;
+            if (pictogram.Width <= 0 || textStart < pictogram.Right + 4 || textEnd <= textStart)
+                throw new InvalidOperationException($"Chevauchement icône/texte : {stage}, {field.Name}.");
+            var eye = grid.Children.OfType<Button>().FirstOrDefault(b => b.Classes.Contains("autheye"));
+            if (eye is not null && textEnd > InGrid(eye).Left - 2)
+                throw new InvalidOperationException($"Chevauchement texte/œil : {stage}, {field.Name}.");
+            if (field.Bounds.Height < 44 || eye is not null && (eye.Bounds.Width < 44 || eye.Bounds.Height < 44))
+                throw new InvalidOperationException($"Cible tactile trop petite : {stage}, {field.Name}.");
+            var underline = grid.Children.OfType<Border>().Single(b => b.Classes.Contains("authfocusline"));
+            if (underline.IsHitTestVisible || field.IsFocused && Math.Abs(underline.Bounds.Height - 2) > 0.1)
+                throw new InvalidOperationException($"Le filet de focus doit rester visible sans intercepter la saisie : {stage}, {field.Name}.");
+            var placeholder = field.GetVisualDescendants().OfType<TextBlock>()
+                .FirstOrDefault(t => t.Name == "PART_Placeholder" && t.IsEffectivelyVisible);
+            if (placeholder is not null && InGrid(placeholder).Left < pictogram.Right + 4)
+                throw new InvalidOperationException($"Placeholder recouvert : {stage}, {field.Name}.");
+            var presenter = field.GetVisualDescendants().OfType<Control>()
+                .FirstOrDefault(c => c.Name == "PART_TextPresenter" && c.IsEffectivelyVisible);
+            if (presenter is not null && InGrid(presenter).Left < pictogram.Right + 4)
+                throw new InvalidOperationException($"Zone de saisie recouverte : {stage}, {field.Name}.");
+            Console.WriteLine($"OK : {stage}, {field.Name}, réserve gauche {field.Padding.Left:0}, droite {field.Padding.Right:0}");
+        }
+    }
+    window.Close();
+    return;
+}
+
+// Premier accueil et assistant : captures autonomes, sans établissement ni réseau.
+if (args.Length > 3 && args[3] == "premiere-configuration")
+{
+    shell.ApplyInstallationStatus(configured: false);
+    shell.Setup.YearLabel = "2026 - 2027";
+    Save(window, "01-accueil-types.png");
+    var choices = window.GetVisualDescendants().OfType<Button>()
+        .Where(b => b.IsEffectivelyVisible && b.Classes.Contains("profileChoice")).ToArray();
+    if (choices.Length != 6) throw new InvalidOperationException($"Six profils attendus, {choices.Length} trouvés.");
+    if (!Preferences.MobileLayout && choices.Any(b => Math.Abs(b.Bounds.Width - choices[0].Bounds.Width) > 2 ||
+        Math.Abs(b.Bounds.Height - choices[0].Bounds.Height) > 2))
+        throw new InvalidOperationException("Première configuration : les six cartes doivent avoir le même gabarit.");
+    shell.Setup.SelectInstitution.Execute("ComplexeScolaire");
+    shell.Setup.IncludeMaternelle = true;
+    shell.Setup.IncludePrimaire = true;
+    shell.Setup.SchoolName = "Complexe scolaire de démonstration";
+    shell.Setup.ShortName = "CSD";
+    Save(window, "02-configuration-complexe.png");
+    VerifySetupFooter("SetupNextButton");
+    if (!shell.Setup.IsStepOne || shell.Setup.ValidateStepOne() is not null)
+        throw new InvalidOperationException("Le complexe choisi ne peut pas être configuré.");
+    shell.Setup.Step = 2;
+    Save(window, "03-comptes-securite.png");
+    VerifySetupFooter("SetupFinishButton");
+    shell.Setup.Back.Execute(null);
+    shell.Setup.Back.Execute(null);
+    Save(window, "04-retour-accueil.png");
+    if (!shell.Setup.IsChoosingInstitution)
+        throw new InvalidOperationException("Le retour au choix du type a échoué.");
+    void VerifySetupFooter(string name)
+    {
+        var button = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == name && b.IsEffectivelyVisible);
+        if (button.TransformToVisual(window) is not { } matrix)
+            throw new InvalidOperationException($"Commande de configuration non visible : {name}.");
+        var bounds = new Rect(button.Bounds.Size).TransformToAABB(matrix);
+        if (bounds.Width <= 0 || bounds.Height <= 0 || bounds.Top < 0 || bounds.Bottom > window.Bounds.Height + 1)
+            throw new InvalidOperationException($"Commande de configuration hors fenêtre : {name}.");
+    }
+    window.Close();
+    return;
+}
 // Parcours de caisse autonome : aucune écriture sur les données d'un établissement.
 int VerifyPayments(LayoutServer fixture, bool mobile)
 {
@@ -240,6 +511,19 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
         {
             prefs.Scale = textScale;
             fixture.PaymentAccount = account;
+            // Une fiche réellement alimentée après ouverture : les quatre indicateurs
+            // doivent se mesurer sur la largeur utile, pas rester sur une seule rangée.
+            Wait(shell.Open(() => new StudentDetailPage(shell, studentId)));
+            Render();
+            var tiles = window.GetVisualDescendants().OfType<AdaptiveTiles>().FirstOrDefault(v => v.IsEffectivelyVisible);
+            var expectedColumns = tiles is null ? 0 : AdaptiveTiles.ColumnsFor(tiles.Bounds.Width, 4, tiles.MinItemWidth, tiles.MaxColumns, PhoneLayout.Active);
+            var cells = tiles?.Children.Select(Bounds).ToList() ?? [];
+            var columns = cells.Select(b => Math.Round(b.Left, 1)).Distinct().Count();
+            Check($"Fiche apprenant {width}×{height} texte {textScale:P0} : quatre indicateurs, {expectedColumns} colonne(s)",
+                cells.Count == 4 && columns == expectedColumns && cells.All(b => b.Width > 0 && b.Left >= -1 && b.Right <= window.Bounds.Width + 1));
+            if (mobile && width <= 412)
+                Check("Fiche apprenant : jamais quatre montants comprimés en une seule rangée", columns is 1 or 2);
+            Save(window, $"fiche-apprenant-{(mobile ? "mobile" : "bureau")}-{width}x{height}-{textScale:0.0}.png");
             Wait(shell.Open(() => new CashierPage(shell, studentId)));
             Render();
             var page = (CashierPage)shell.Current!;
@@ -269,6 +553,14 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
             window.MouseDown(tap, Avalonia.Input.MouseButton.Left);
             window.MouseUp(tap, Avalonia.Input.MouseButton.Left);
             Check("Caisse : le bouton reçoit réellement l'appui", !page.Pay.CanExecute(null));
+            // Le récapitulatif s'affiche avant tout envoi ; un second appui pendant la confirmation ne fait rien.
+            for (var i = 0; i < 200 && shell.Dialog is not FormViewModel; i++) Wait(Task.Delay(10));
+            Check("Caisse : récapitulatif avant l'encaissement", shell.Dialog is FormViewModel { Title: "Confirmer l'encaissement" } && fixture.PaymentCount == before);
+            if (shell.Dialog is FormViewModel confirmation)
+            {
+                confirmation.Submit.Execute(null);
+                confirmation.Submit.Execute(null);
+            }
             for (var i = 0; i < 200 && fixture.PaymentCount == before; i++) Wait(Task.Delay(10));
             window.MouseDown(tap, Avalonia.Input.MouseButton.Left);
             window.MouseUp(tap, Avalonia.Input.MouseButton.Left);
@@ -301,7 +593,7 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
         var scroll = (ScrollViewer)Named("PhoneScroll");
         scroll.Offset = new Vector(0, 300);
         Render();
-        var anchor = scroll.GetVisualDescendants().OfType<Border>().First(card => card.Classes.Contains("phonecard") && Bounds(card).Top >= Bounds(scroll).Top);
+        var anchor = scroll.GetVisualDescendants().OfType<Button>().First(card => card.Classes.Contains("studentcard") && Bounds(card).Top >= Bounds(scroll).Top);
         var anchorY = Bounds(anchor).Top;
         var quietBusy = 0;
         students.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(PageViewModel.Busy)) quietBusy++; };
@@ -368,6 +660,61 @@ if (args.Length > 3 && args[3] == "contraste")
     window.Width = Preferences.MobileLayout ? 360 : 1280;
     window.Height = Preferences.MobileLayout ? 760 : 820;
     Save(window, "contraste-connexion.png");
+
+    // Tester la vraie vue « Rejoindre un établissement », sans effectuer de connexion ni de recherche réseau.
+    var pairing = new ConnectionView { DataContext = new ConnectionViewModel(shell) };
+    var pairingWindow = new Window { Content = pairing, Width = Preferences.MobileLayout ? 360 : 1024,
+        Height = Preferences.MobileLayout ? 760 : 740 };
+    pairingWindow.Show();
+    foreach (var theme in new[] { "light", "dark" })
+    {
+        prefs.Theme = theme;
+        prefs.Apply();
+        for (var i = 0; i < 6; i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            pairingWindow.UpdateLayout();
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        }
+        var visible = pairing.GetVisualDescendants().OfType<TextBlock>()
+            .Where(t => t.IsEffectivelyVisible && !string.IsNullOrWhiteSpace(t.Text)).ToArray();
+        void CheckPair(string label, Avalonia.Media.IBrush? foreground, Avalonia.Media.IBrush? background)
+        {
+            var ratio = foreground is Avalonia.Media.ISolidColorBrush fg && background is Avalonia.Media.ISolidColorBrush bg
+                ? ThemeContrast.Ratio(fg.Color, bg.Color) : 0;
+            Console.WriteLine($"Jumelage {theme} · {label} : {ratio:0.00}:1");
+            if (ratio < 4.5) failures++;
+        }
+        var title = visible.FirstOrDefault(t => t.Text == (Preferences.MobileLayout ? "Relier mon appareil" : "Bienvenue sur SCOLIA"));
+        var primary = visible.FirstOrDefault(t => t.Text == ((ConnectionViewModel)pairing.DataContext!).ScanLabel);
+        if (title is null || primary is null)
+        {
+            Console.WriteLine($"ECHEC : titre ou action QR absente du jumelage {theme}.");
+            failures++;
+        }
+        else
+        {
+            CheckPair("titre", title.Foreground, ThemeBrush.Get("BgBrush"));
+            CheckPair("action QR", primary.Foreground, ThemeBrush.Get("AccentBrush"));
+        }
+        if (!Preferences.MobileLayout)
+        {
+            foreach (var label in new[] { "Reliez cet appareil au serveur de votre établissement.", "ou via le Wi-Fi", "Rechercher le serveur" })
+            {
+                var item = visible.FirstOrDefault(t => t.Text == label);
+                if (item is null) { failures++; Console.WriteLine($"ECHEC : libellé absent : {label}"); }
+                else CheckPair(label, item.Foreground, ThemeBrush.Get("BgBrush"));
+            }
+            foreach (var name in new[] { "IosQrOptions", "IosWifiOptions" })
+            {
+                var expander = pairing.FindControl<Expander>(name);
+                if (expander is null || !expander.IsEffectivelyVisible) { failures++; continue; }
+                CheckPair(name, expander.Foreground, expander.Background);
+            }
+        }
+        Save(pairingWindow, $"contraste-jumelage-{(Preferences.MobileLayout ? "android" : "windows")}-{theme}.png");
+    }
+    pairingWindow.Close();
     failures += VerifyPayments(contrastServer, Preferences.MobileLayout);
     if (Preferences.MobileLayout)
     {
@@ -1324,6 +1671,92 @@ if (args.Length > 3 && args[3] == "promoteur")
     return;
 }
 
+// Sections : liste, création, modification, choix dans une promotion, sur l'ordinateur et le téléphone.
+if (args.Length > 3 && args[3] == "sections")
+{
+    window.Width = Preferences.MobileLayout ? 360 : 1280;
+    window.Height = Preferences.MobileLayout ? 760 : 820;
+    var suffix = Preferences.MobileLayout ? "mobile" : "bureau";
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    var page = new SettingsPage(shell, "sections");
+    Wait(shell.Open(() => page));
+    Wait(Task.Delay(600));
+    Save(window, $"sections-1-liste-{suffix}.png");
+    Console.WriteLine($"Rubrique : {page.Section?.Value} · lignes {page.SectionRows.Count} · actions {string.Join(", ", page.Actions.Select(a => a.Label))}");
+    var create = page.Actions.FirstOrDefault(a => a.Label == "Nouvelle section");
+    Console.WriteLine($"Action Nouvelle section : {(create is null ? "absente" : "présente")}");
+    if (create is not null)
+    {
+        create.Command.Execute(null);
+        for (var i = 0; i < 100 && shell.Dialog is not FormViewModel; i++) Wait(Task.Delay(20));
+        Save(window, $"sections-2-formulaire-{suffix}.png");
+        if (shell.Dialog is FormViewModel secForm)
+        {
+            secForm.Find("code").Text = "SAN" + DateTime.Now.ToString("ss");
+            secForm.Find("nom").Text = "Santé publique " + DateTime.Now.ToString("HHmmss");
+            secForm.Submit.Execute(null);
+            Wait(Task.Delay(800));
+            Console.WriteLine($"Après création : dialogue {(shell.Dialog is null ? "fermé" : "ouvert : " + (shell.Dialog as FormViewModel)?.Error)} · lignes {page.SectionRows.Count}");
+        }
+    }
+    Save(window, $"sections-3-apres-{suffix}.png");
+    if (page.SectionRows.Count > 0)
+    {
+        page.SelectedSection = page.SectionRows[^1];
+        var edit = page.Actions.FirstOrDefault(a => a.Label == "Modifier");
+        edit?.Command.Execute(null);
+        for (var i = 0; i < 100 && shell.Dialog is not FormViewModel; i++) Wait(Task.Delay(20));
+        Console.WriteLine($"Modifier : {(shell.Dialog is FormViewModel f2 ? f2.Title : "aucun dialogue")}");
+        Save(window, $"sections-4-modifier-{suffix}.png");
+        if (shell.Dialog is FormViewModel f3) f3.Cancel.Execute(null);
+    }
+    shell.Sync.Stop();
+    window.Close();
+    return;
+}
+
+// Paramètres de partage : Réseau et postes (défilé), fenêtre Réseau et activité, puis le code QR « Relier un appareil ».
+if (args.Length > 3 && args[3] == "partage")
+{
+    window.Width = Preferences.MobileLayout ? 360 : 1280;
+    window.Height = Preferences.MobileLayout ? 760 : 820;
+    var suffix = Preferences.MobileLayout ? "mobile" : "bureau";
+    // SCOLIA_PARTAGE_OUVERT=1 : simule le partage Wi-Fi ouvert (réglage lu dans appsettings.json du poste).
+    var settings = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+    var previousSettings = File.Exists(settings) ? File.ReadAllText(settings) : null;
+    if (Environment.GetEnvironmentVariable("SCOLIA_PARTAGE_OUVERT") == "1")
+    {
+        File.WriteAllText(settings, "{\"Scolia\":{\"Reseau\":{\"AccesReseauLocal\":true}}}");
+        suffix += "-ouvert";
+    }
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    Wait(shell.Open(() => new NetworkHubPage(shell)));
+    Wait(Task.Delay(800));
+    Save(window, $"partage-1-reseau-{suffix}.png");
+    var scrollers = window.GetVisualDescendants().OfType<ScrollViewer>().Where(v => v.IsEffectivelyVisible && v.Extent.Height > v.Viewport.Height + 4).ToList();
+    var part = 1;
+    foreach (var offset in new[] { 0.5, 1.0 })
+    {
+        foreach (var scroller in scrollers) scroller.Offset = new Vector(0, (scroller.Extent.Height - scroller.Viewport.Height) * offset);
+        Wait(Task.Delay(200));
+        Save(window, $"partage-1-reseau-{suffix}-{++part}.png");
+    }
+    shell.ShowNetwork();
+    Wait(Task.Delay(600));
+    Save(window, $"partage-2-activite-{suffix}.png");
+    shell.CloseDialog();
+    shell.ShowPairing();
+    Wait(Task.Delay(1500));
+    Save(window, $"partage-3-code-{suffix}.png");
+    var pairing = shell.Dialog as PairingViewModel;
+    Console.WriteLine($"QR prêt : {pairing?.Ready} · {pairing?.ProgressText} · {pairing?.RemainingText}");
+    shell.CloseDialog();
+    if (previousSettings is null) File.Delete(settings); else File.WriteAllText(settings, previousSettings);
+    shell.Sync.Stop();
+    window.Close();
+    return;
+}
+
 // Assistant Tailscale : fenêtre Réseau puis assistant ouvert, sans réseau (téléchargement non lancé).
 if (args.Length > 3 && args[3] == "tailscale")
 {
@@ -1392,7 +1825,13 @@ if (args.Length > 3 && args[3] == "bureau")
         window.Height = desktopHeight;
         RenderDesktop();
         CheckDesktop($"Connexion {desktopWidth}×{desktopHeight} : carte et champs dans la fenêtre",
-            InsideDesktop(DesktopNamed("LoginCard")) && InsideDesktop(DesktopNamed("UserNameBox")));
+            // Compte déjà reconnu : l'identifiant est masqué, le champ visible est celui du mot de passe.
+            // Depuis 1.2.43, l'ordinateur affiche lui aussi la page iOS : la carte et le champ réellement visibles sont vérifiés.
+            AuthLayout.UseIosStyle
+                ? InsideDesktop(DesktopNamed("IosLoginCard"))
+                    && InsideDesktop(DesktopNamed(DesktopNamed("IosUserNameBox").IsEffectivelyVisible ? "IosUserNameBox" : "IosPasswordBox"))
+                : InsideDesktop(DesktopNamed("LoginCard"))
+                    && InsideDesktop(DesktopNamed(DesktopNamed("UserNameBox").IsEffectivelyVisible ? "UserNameBox" : "PasswordBox")));
         Save(window, $"bureau-connexion-{desktopWidth}x{desktopHeight}.png");
     }
     var desktopSession = new SessionDto(Guid.NewGuid(), "desktop-test", "Amina Kabeya du secrétariat", "Lecteur", "Lecture", [], false,
@@ -1487,6 +1926,106 @@ if (args.Length > 3 && args[3] == "bureau")
     return;
 }
 
+// Contrôle mesuré des vues AVANT la connexion Android : une page à la fois, zéro scroll.
+// Inclut le cas extrême 320×420 représentant une hauteur réduite par Android.
+if (args.Length > 3 && args[3] == "connexion-compacte")
+{
+    if (!Preferences.MobileLayout) throw new InvalidOperationException("SCOLIA_MOBILE=1 est requis");
+    var failures = 0;
+    void CheckCompact(string label, bool passed)
+    {
+        Console.WriteLine((passed ? "OK  " : "ECHEC ") + label);
+        if (!passed) failures++;
+    }
+    void RenderCompact()
+    {
+        for (var i = 0; i < 6; i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        }
+    }
+    shell.ReturnToPairingChooser("Aucun appareil relié. Scannez le code du serveur.");
+    RenderCompact();
+    foreach (var (width, height) in new[] { (320, 300), (320, 420), (320, 568), (360, 640), (412, 892) })
+    {
+        window.Width = width;
+        window.Height = height;
+        RenderCompact();
+        var view = window.GetVisualDescendants()
+            .OfType<Scolia.Bureau.Views.Phone.ConnectionCompactView>()
+            .FirstOrDefault(control => control.IsEffectivelyVisible);
+        CheckCompact("Avant connexion " + width + "×" + height + " : vue mobile active", view is not null);
+        if (view is null) continue;
+
+        // TextBox et ComboBox possèdent des ScrollViewer internes dans leurs templates.
+        // On interdit le défilement de la PAGE, pas le caret d'un champ ou la liste d'un menu.
+        var scrolls = view.GetVisualDescendants().OfType<ScrollViewer>()
+            .Where(s => s.IsEffectivelyVisible && !s.GetVisualAncestors()
+                .Any(a => a is TextBox or ComboBox or Button)).ToList();
+        CheckCompact("Avant connexion " + width + "×" + height + " : aucun défilement de page", scrolls.Count == 0);
+
+        Control NamedCompact(string name) =>
+            view.GetVisualDescendants().OfType<Control>().First(control => control.Name == name);
+
+        bool Fits(Control control)
+        {
+            if (!control.IsEffectivelyVisible || control.TransformToVisual(window) is not { } transform)
+                return false;
+            var rect = new Rect(control.Bounds.Size).TransformToAABB(transform);
+            return rect.Width > 0 && rect.Height > 0
+                && rect.Left >= -1 && rect.Right <= width + 1
+                && rect.Top >= -1 && rect.Bottom <= height + 1;
+        }
+
+        void ClickCompact(string name)
+        {
+            var button = (Button)NamedCompact(name);
+            button.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            RenderCompact();
+        }
+        // La barre est réservée aux petits écrans ; au-delà, boutons intégrés à la carte.
+        var smallScreen = width < 390 || height < 700;
+        var navbar = NamedCompact("CompactNavbar");
+        CheckCompact("Navigation adaptative " + width + "×" + height,
+            navbar.IsEffectivelyVisible == smallScreen);
+
+        ClickCompact("TabQr");
+        CheckCompact("QR " + width + "×" + height + " : carte entière visible", Fits(NamedCompact("QrPage")));
+        CheckCompact("QR " + width + "×" + height + " : accès aux méthodes",
+            smallScreen ? Fits(NamedCompact("TabQr")) : Fits(NamedCompact("InlineCodeButton")));
+        if (height == 568) Save(window, "preconnexion-qr-" + width + "x" + height + ".png");
+
+        ClickCompact(smallScreen ? "TabCode" : "InlineCodeButton");
+        CheckCompact("Code " + width + "×" + height + " : champs et actions dans l'écran", Fits(NamedCompact("CodePage")));
+        if (height == 568) Save(window, "preconnexion-code-" + width + "x" + height + ".png");
+
+        if (!smallScreen) ClickCompact("ReturnToQrFromCode");
+        ClickCompact(smallScreen ? "TabWifi" : "InlineWifiButton");
+        CheckCompact("Wi-Fi " + width + "×" + height + " : actions dans l'écran", Fits(NamedCompact("WifiPage")));
+        if (height == 568) Save(window, "preconnexion-wifi-" + width + "x" + height + ".png");
+        ClickCompact("ManualAddressButton");
+        CheckCompact("Adresse " + width + "×" + height + " : saisie dans l'écran", Fits(NamedCompact("AddressPage")));
+        ClickCompact("TabQr");
+        ClickCompact("QrDetails");
+        CheckCompact("État " + width + "×" + height + " : diagnostic dans l'écran", Fits(NamedCompact("DetailsPage")));
+    }
+    // Les captures doivent aussi garantir que les libellés des boutons ne sont pas coupés.
+    var overflowReport = Path.Combine(output, "debordements.txt");
+    if (File.Exists(overflowReport))
+    {
+        var diagnostics = File.ReadAllText(overflowReport);
+        CheckCompact("Avant connexion : aucun bouton ou texte coupé",
+            !diagnostics.Contains("texte coupé", StringComparison.Ordinal)
+            && !diagnostics.Contains("sort de l'écran", StringComparison.Ordinal));
+    }
+    shell.Sync.Stop();
+    window.Close();
+    Environment.ExitCode = failures == 0 ? 0 : 1;
+    return;
+}
+
 // Vérification du parcours mobile sur petit écran et quand le clavier réduit la hauteur.
 // SCOLIA_MOBILE=1 dotnet run -- <sortie> http://localhost:1/ inutilise fluidite
 // Les appels accessoires (logo, direct) vont au serveur HTTP fictif local, jamais à un établissement.
@@ -1524,20 +2063,59 @@ if (args.Length > 3 && args[3] == "fluidite")
         window.Width = width;
         window.Height = height;
         RenderLayout();
-        var loginScroll = (ScrollViewer)Named("LoginScroll");
+        // Depuis 1.2.41, le téléphone utilise la page iOS ; l'ancien formulaire
+        // Windows est masqué. Les captures ciblent la VUE réellement rendue.
+        var isIosLogin = window.GetVisualDescendants().OfType<Control>()
+            .Any(c => c.Name == "IosLoginScroll" && c.IsVisible);
+        var scrollName = isIosLogin ? "IosLoginScroll" : "LoginScroll";
+        var cardName = isIosLogin ? "IosLoginCard" : "LoginCard";
+        var headingName = isIosLogin ? "IosSchoolHeading" : "SchoolHeading";
+        var footerName = isIosLogin ? "IosLoginSubmitButton" : "LoginFooter";
+        var loginScroll = (ScrollViewer)Named(scrollName);
         loginScroll.Offset = default;
         RenderLayout();
-        CheckLayout($"Connexion {width}×{height} : carte dans l'écran", FitsHorizontally(Named("LoginCard")));
-        CheckLayout($"Connexion {width}×{height} : nom d'établissement dans l'écran", FitsHorizontally(Named("SchoolHeading")));
-        CheckLayout($"Connexion {width}×{height} : le titre reste au-dessus du formulaire",
-            InWindow(Named("SchoolHeading")).Bottom <= InWindow(Named("LoginCard")).Top - 8);
+        CheckLayout($"Connexion {width}×{height} : carte dans l'écran", FitsHorizontally(Named(cardName)));
+        CheckLayout($"Connexion {width}×{height} : nom d'établissement dans l'écran", FitsHorizontally(Named(headingName)));
+        // Le nouveau modèle présente désormais l'établissement dans le panneau bleu.
+        // Un titre invisible ou rendu hors panneau doit faire échouer la capture.
+        var school = InWindow(Named(headingName));
+        var cardBounds = InWindow(Named(cardName));
+        CheckLayout($"Connexion {width}×{height} : établissement intégré au panneau",
+            school.Height > 0 && school.Top >= cardBounds.Top - 1 &&
+            school.Bottom <= cardBounds.Bottom + 1);
         if (height == 300)
             CheckLayout("Clavier : le formulaire peut défiler", loginScroll.Extent.Height > loginScroll.Viewport.Height);
-        loginScroll.Offset = new Vector(0, loginScroll.Extent.Height);
+        // Les options textuelles Compte et Serveur sont volontairement placées
+        // APRÈS le bouton principal. Défilement jusqu'au bas ne signifie donc plus
+        // que le bouton est encore dans la fenêtre : vérifier son accès réel.
+        loginScroll.Offset = new Vector(0, Math.Max(0, loginScroll.Extent.Height - loginScroll.Viewport.Height));
         RenderLayout();
-        var footer = InWindow(Named("LoginFooter"));
-        CheckLayout($"Connexion {width}×{height} : bas du formulaire atteignable",
-            footer.Top >= -1 && footer.Bottom <= window.Bounds.Height + 1);
+        if (isIosLogin)
+        {
+            AuthLayout.EnsureVisible(loginScroll, Named(footerName));
+            RenderLayout();
+        }
+        var footer = InWindow(Named(footerName));
+        var scrollViewport = InWindow(loginScroll);
+        CheckLayout($"Connexion {width}×{height} : bouton de connexion atteignable",
+            footer.Height > 0 &&
+            footer.Top >= Math.Max(0, scrollViewport.Top) - 1 &&
+            footer.Bottom <= Math.Min(window.Bounds.Height, scrollViewport.Bottom) + 1);
+        // Un deuxième défilement doit également permettre d'ouvrir les options
+        // compte/serveur : elles ne sont pas masquées pour rendre le bouton accessible.
+        if (isIosLogin)
+        {
+            var links = Named("IosLoginMore");
+            loginScroll.Offset = new Vector(0, Math.Max(0, loginScroll.Extent.Height - loginScroll.Viewport.Height));
+            RenderLayout();
+            var linksBounds = InWindow(links);
+            CheckLayout($"Connexion {width}×{height} : options textuelles accessibles par défilement",
+                links.IsEffectivelyVisible && linksBounds.Height > 0 &&
+                linksBounds.Top >= Math.Max(0, scrollViewport.Top) - 1 &&
+                linksBounds.Bottom <= Math.Min(window.Bounds.Height, scrollViewport.Bottom) + 1);
+            AuthLayout.EnsureVisible(loginScroll, Named(footerName));
+            RenderLayout();
+        }
         Save(window, $"fluidite-connexion-{width}x{height}.png");
     }
 
@@ -1582,6 +2160,8 @@ if (Environment.GetEnvironmentVariable("SCOLIA_ASSISTANT") == "1")
 {
     shell.IsSetupRequired = true;
     Wait(shell.Setup.LoadAsync());
+    Save(window, "00-accueil-choix-etablissement.png");
+    shell.Setup.SelectInstitution.Execute("ItmIm");
     Save(window, "00-assistant-etape-1.png");
     shell.Setup.SchoolName = "Institut de test";
     shell.Setup.ShortName = "IT";
@@ -1600,6 +2180,207 @@ if (Environment.GetEnvironmentVariable("SCOLIA_ASSISTANT") == "1")
     Save(window, "00-assistant-etape-2.png");
     return;
 }
+// Captures fidèles de l'accueil Power BI, depuis l'interface Avalonia réelle,
+// sur un serveur de démonstration local. Aucun établissement n'est contacté.
+if (args.Length > 3 && args[3] == "accueil-powerbi")
+{
+    using var fixture = new LayoutServer { DemoHome = true };
+    api.Retarget(fixture.Address);
+    prefs.Animations = false;
+    var opening = ShellViewModel.MinimumOpening;
+    ShellViewModel.MinimumOpening = TimeSpan.Zero;
+    try
+    {
+        Wait(shell.OpenSessionAsync(new SessionDto(Guid.NewGuid(), "preview-home", "Amina Kabeya",
+            "Secretaire", "Secrétariat",
+            [Scolia.Bureau.Ribbon.Perm.StudentsRead, Scolia.Bureau.Ribbon.Perm.StudentsWrite,
+             Scolia.Bureau.Ribbon.Perm.PaymentsRead, Scolia.Bureau.Ribbon.Perm.PaymentsCreate,
+             Scolia.Bureau.Ribbon.Perm.ReportsRead, Scolia.Bureau.Ribbon.Perm.AcademicsRead],
+            false, "Institut Technique Médical de démonstration", "ITM Demo",
+            "2026-2027", "FC", "+243")));
+    }
+    finally { ShellViewModel.MinimumOpening = opening; }
+    shell.Sync.Stop();
+    if (shell.Current is not StartPage start || start.NewActions.Count != 2)
+        throw new InvalidOperationException("La session doit ouvrir Démarrer avec les deux commandes métier autorisées.");
+    Save(window, "demarrer-clair.png");
+    if (!Preferences.MobileLayout)
+    {
+        var entries = window.GetVisualDescendants().OfType<Button>()
+            .Where(b => b.IsEffectivelyVisible && b.Classes.Contains("startentry")).ToList();
+        if (entries.Count != 3 || entries.Any(b => Math.Abs(b.Bounds.Width - entries[0].Bounds.Width) > 1 ||
+            Math.Abs(b.Bounds.Height - entries[0].Bounds.Height) > 1))
+            throw new InvalidOperationException("Démarrer : Accueil, Inscrire et Encaisser doivent avoir le même gabarit.");
+    }
+    prefs.Theme = "dark";
+    Save(window, "demarrer-sombre.png");
+    prefs.Theme = "light";
+    window.Width = Preferences.MobileLayout ? 320 : 760;
+    window.Height = Preferences.MobileLayout ? 568 : 520;
+    Save(window, "demarrer-compact.png");
+    var homeSizes = Preferences.MobileLayout
+        ? new[] { (320, 568), (360, 740), (412, 892) }
+        : new[] { (760, 520), (1024, 720), (1366, 768), (1600, 900), (1920, 1080) };
+    foreach (var (width, height) in homeSizes)
+    {
+        window.Width = width;
+        window.Height = height;
+        prefs.Theme = "light";
+        Wait(shell.Open(() => new HomePage(shell)));
+        var home = shell.Current as HomePage;
+        if (home is null || home.Kpis.Count != 4 || home.QuickActions.Count < 2)
+            throw new InvalidOperationException($"Accueil Power BI {width}x{height} : indicateurs ou commandes absents.");
+        window.UpdateLayout();
+        Save(window, $"accueil-powerbi-{width}x{height}-clair.png");
+        if (!Preferences.MobileLayout)
+        {
+            var panels = window.GetVisualDescendants().OfType<Grid>()
+                .Single(g => g.IsEffectivelyVisible && g.Name == "HomeSettingsPanels");
+            var threshold = Adaptive.GetStackBelow(panels);
+            if (panels.Bounds.Width < threshold && panels.ColumnDefinitions.Count != 1 ||
+                panels.Bounds.Width >= threshold + 8 && panels.ColumnDefinitions.Count != 2)
+                throw new InvalidOperationException($"Accueil {width}x{height} : les panneaux n'adoptent pas la disposition adaptée.");
+            var rows = panels.GetVisualDescendants().OfType<Button>()
+                .Where(b => b.IsEffectivelyVisible && b.Classes.Contains("pbiAction")).ToList();
+            if (rows.Count != home.QuickActions.Count + home.MoreTools.Count ||
+                rows.Any(row => Math.Abs(row.Bounds.Width - rows[0].Bounds.Width) > 2 || row.Bounds.Height < row.MinHeight))
+                throw new InvalidOperationException($"Accueil {width}x{height} : les lignes d'action n'ont pas le même gabarit.");
+
+            var header = window.GetVisualDescendants().OfType<TextBlock>()
+                .FirstOrDefault(t => t.Name == "RecentAmountHeader" && t.IsEffectivelyVisible);
+            var values = window.GetVisualDescendants().OfType<TextBlock>()
+                .Where(t => t.Name == "RecentAmountValue" && t.IsEffectivelyVisible).ToList();
+            if (header is null || values.Count == 0)
+                throw new InvalidOperationException("En-tête ou montants récents absents.");
+            var right = header.TranslatePoint(new Point(header.Bounds.Width, 0), window);
+            if (right is null || values.Any(v => v.TranslatePoint(new Point(v.Bounds.Width, 0), window) is not { } point ||
+                Math.Abs(point.X - right.Value.X) > 2))
+                throw new InvalidOperationException($"Colonne Montant désalignée à {width}x{height}.");
+        }
+        home.ShowAllTools.Execute(null);
+        window.UpdateLayout();
+        Save(window, $"accueil-powerbi-{width}x{height}-catalogue.png");
+        home.ShowAllTools.Execute(null);
+    }
+    window.Width = Preferences.MobileLayout ? 390 : 1600;
+    window.Height = Preferences.MobileLayout ? 740 : 900;
+    prefs.Theme = "dark";
+    Wait(shell.Open(() => new HomePage(shell)));
+    window.UpdateLayout();
+    Save(window, $"accueil-powerbi-{window.Width}x{window.Height}-sombre.png");
+    if (!Preferences.MobileLayout)
+    {
+        var search = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "HomeSidebarSearch");
+        var headerSearch = window.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "HeaderFinderBar");
+        if (search.IsEffectivelyVisible == headerSearch.IsEffectivelyVisible)
+            throw new InvalidOperationException("Accueil : un seul accès à la recherche générale doit être affiché.");
+        if (search.IsEffectivelyVisible) search.Command!.Execute(null);
+        else shell.ShowSearch();
+    }
+    else shell.ShowSearch();
+    if (shell.Dialog is not SearchViewModel)
+        throw new InvalidOperationException("L'accès à la recherche doit ouvrir l'interface de recherche.");
+    SaveWorkspaceDialog("fenetre-recherche.png");
+    shell.CloseDialog();
+    shell.ShowAppInfo();
+    SaveWorkspaceDialog("fenetre-informations.png");
+    shell.CloseDialog();
+
+    window.Width = Preferences.MobileLayout ? 320 : 760;
+    window.Height = Preferences.MobileLayout ? 568 : 520;
+    var workspaceForm = new FormViewModel("Inscrire un apprenant", "Institut technique médical", _ => Task.FromResult(true));
+    workspaceForm.Fields.Add(new FormField("nom", "Nom de famille", FieldKind.Text, true, "Nom figurant sur le dossier."));
+    workspaceForm.Fields.Add(new FormField("postnom", "Post-nom", FieldKind.Text, true, null));
+    workspaceForm.Fields.Add(new FormField("prenom", "Prénom", FieldKind.Text, true, null));
+    var completion = shell.Ask(workspaceForm);
+    SaveWorkspaceDialog("fenetre-formulaire.png");
+    workspaceForm.Cancel.Execute(null);
+    Wait(completion);
+    if (shell.HasDialog)
+        throw new InvalidOperationException("La fermeture du formulaire doit rendre l'accueil accessible.");
+
+    void SaveWorkspaceDialog(string name)
+    {
+        Save(window, name);
+        var surface = window.GetVisualDescendants().OfType<Border>()
+            .Single(b => b.IsEffectivelyVisible && b.Classes.Contains("dialogsurface"));
+        if (surface.TranslatePoint(default, window) is not { } origin || origin.X < -1 || origin.Y < -1 ||
+            origin.X + surface.Bounds.Width > window.Bounds.Width + 1 ||
+            origin.Y + surface.Bounds.Height > window.Bounds.Height + 1)
+            throw new InvalidOperationException($"La fenêtre {name} dépasse l'espace disponible.");
+    }
+
+    Console.WriteLine("OK : Accueil, Démarrer, commandes et fenêtres de dialogue.");
+    shell.Sync.Stop();
+    window.Close();
+    return;
+}
+
+// Revue visuelle autonome des interfaces de préparation : uniquement des comptes et candidats fictifs.
+// Aucune ouverture de base réelle, aucune requête vers Cloudflare et aucun export scolaire.
+if (args.Length > 3 && args[3] == "cartes-ui")
+{
+    using var localFixture = new LayoutServer { DemoCards = true };
+    api.Retarget(localFixture.Address);
+    prefs.Animations = false;
+    var opening = ShellViewModel.MinimumOpening;
+    ShellViewModel.MinimumOpening = TimeSpan.Zero;
+    try
+    {
+        Wait(shell.OpenSessionAsync(new SessionDto(Guid.NewGuid(), "test-cartes", "Agent de démonstration",
+            "Secrétaire", "Secretariat", [Scolia.Bureau.Ribbon.Perm.StudentsRead, Scolia.Bureau.Ribbon.Perm.StudentsWrite],
+            false, "Établissement fictif", "Test", "2026-2027", "FC", "+243")));
+    }
+    finally { ShellViewModel.MinimumOpening = opening; }
+    shell.Sync.Stop();
+
+    var sizes = Preferences.MobileLayout
+        ? new[] { (360, 720), (412, 892) }
+        : new[] { (760, 520), (1024, 600), (1366, 768), (1920, 1080) };
+    foreach (var (width, height) in sizes)
+    {
+        window.Width = width;
+        window.Height = height;
+        Wait(shell.Open(() => new CardsPage(shell)));
+        if (shell.Current is not CardsPage page || page.Rows.Count != 3)
+            throw new InvalidOperationException("La préparation des cartes de démonstration n'est pas chargée.");
+        page.SelectAllCards.Execute(null);
+        if (page.SelectedCount != 2)
+            throw new InvalidOperationException("Seules les deux cartes éligibles doivent être cochées.");
+        page.ClearSelectedCards.Execute(null);
+        if (page.SelectedCount != 0)
+            throw new InvalidOperationException("Tout décocher n'a pas vidé la sélection.");
+        page.SelectAllCards.Execute(null);
+        // La notification temporaire de sélection ne doit pas masquer les champs de la capture.
+        Wait(Task.Delay(TimeSpan.FromMilliseconds(4300)));
+        window.UpdateLayout();
+        Save(window, $"cartes-interface-{(Preferences.MobileLayout ? "mobile" : "bureau")}-{width}x{height}.png");
+
+        if (!Preferences.MobileLayout)
+        {
+            var cardsView = window.GetVisualDescendants().OfType<CardsView>()
+                .First(view => view.IsEffectivelyVisible);
+            var hint = cardsView.GetVisualDescendants().OfType<TextBlock>()
+                .First(text => text.Text == "Cochez les participants de chaque promotion.");
+            var table = cardsView.GetVisualDescendants().OfType<DataGrid>()
+                .First(grid => grid.IsEffectivelyVisible);
+            if (hint.TransformToVisual(window) is not { } hintTransform ||
+                table.TransformToVisual(window) is not { } tableTransform ||
+                new Rect(hint.Bounds.Size).TransformToAABB(hintTransform).Bottom >=
+                new Rect(table.Bounds.Size).TransformToAABB(tableTransform).Top)
+                throw new InvalidOperationException($"Cartes {width}x{height} : le texte de sélection chevauche le tableau.");
+        }
+    }
+    if (Preferences.MobileLayout)
+    {
+        var report = Path.Combine(output, "debordements.txt");
+        if (!File.Exists(report) || File.ReadAllLines(report).Any(line => line.StartsWith("  ", StringComparison.Ordinal)))
+            throw new InvalidOperationException("Cartes Android : du texte dépasse ou est tronqué sur un petit écran.");
+    }
+    Console.WriteLine("OK : interface des cartes, sélection et absence de chevauchement validées.");
+    return;
+}
+
 shell.Login.SchoolName = Result(api.GetAsync<SetupStatusDto>("api/installation")).SchoolName ?? string.Empty;
 Wait(shell.RefreshLogoAsync());
 Save(window, "01-connexion.png");
@@ -1625,6 +2406,135 @@ if (args.Length > 3 && args[3] == "commandes")
 
 // Défilement du téléphone (argument « defilement ») : la page reste là où le doigt la laisse, en descendant
 // comme en remontant. Chaque pas compare la position demandée à celle obtenue après la mise en page.
+// Visite de tous les écrans : chaque page qui s'ouvre avec le seul shell est capturée (ordinateur ou téléphone).
+// SCOLIA_MOBILE=0 dotnet run -- <sortie> <serveur> <mot_de_passe> visite
+if (args.Length > 3 && args[3] is "visite" or "visite-fluent")
+{
+    prefs.Animations = false;
+    prefs.Tips = false;
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    window.Width = int.Parse(taille[0]);
+    window.Height = int.Parse(taille[1]);
+    var strict = args[3] == "visite-fluent";
+    var failures = new List<string>();
+    var visited = new List<string>();
+    var suffix = Preferences.MobileLayout ? "mobile" : "bureau";
+    var pages = typeof(PageViewModel).Assembly.GetTypes()
+        .Where(t => !t.IsAbstract && typeof(PageViewModel).IsAssignableFrom(t)
+                    && t.GetConstructors().Any(c => c.GetParameters() is [var first, .. var rest]
+                        && first.ParameterType == typeof(ShellViewModel) && rest.All(p => p.IsOptional)))
+        .OrderBy(t => t.Name, StringComparer.Ordinal).ToList();
+    var onlyPages = Environment.GetEnvironmentVariable("SCOLIA_PAGES")?.Split(',', StringSplitOptions.RemoveEmptyEntries);
+    foreach (var type in pages)
+    {
+        if (onlyPages is { Length: > 0 } && !onlyPages.Contains(type.Name)) continue;
+        try
+        {
+            var constructor = type.GetConstructors().First(c => c.GetParameters() is [var first, .. var rest]
+                && first.ParameterType == typeof(ShellViewModel) && rest.All(p => p.IsOptional));
+            var parameters = constructor.GetParameters().Select((p, index) => index == 0 ? (object)shell : p.DefaultValue).ToArray();
+            Wait(shell.Open(() => (PageViewModel)constructor.Invoke(parameters)));
+            Wait(Task.Delay(500));
+            Save(window, $"visite-{type.Name}-{suffix}.png");
+            if (strict) VerifyFluentArtwork(window);
+            visited.Add(type.Name);
+        }
+        catch (Exception ex)
+        {
+            var failure = $"VISITE {type.Name} : {ex.GetBaseException().Message}";
+            Console.WriteLine(failure);
+            failures.Add(failure);
+        }
+    }
+    File.WriteAllLines(Path.Combine(output, "interfaces-verifiees.txt"),
+        [$"{visited.Count} interfaces rendues, {failures.Count} échec(s).", .. visited, .. failures]);
+    shell.Sync.Stop();
+    window.Close();
+    Environment.ExitCode = failures.Count == 0 ? 0 : 1;
+    return;
+}
+
+// Cartes et codes anonymes : captures des deux écrans (ordinateur ou téléphone).
+// SCOLIA_MOBILE=0 dotnet run -- <sortie> <serveur> <mot_de_passe> cartes
+if (args.Length > 3 && args[3] == "cartes")
+{
+    prefs.Animations = false;
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    var suffix = Preferences.MobileLayout ? "mobile" : "bureau";
+    Wait(shell.Open(() => new CardsPage(shell)));
+    Wait(Task.Delay(800));
+    Save(window, $"cartes-{suffix}.png");
+    Wait(shell.Open(() => new AnonymousCodesPage(shell)));
+    Wait(Task.Delay(800));
+    Save(window, $"codes-anonymes-{suffix}.png");
+    Wait(shell.Open(() => new StudentsPage(shell)));
+    Wait(Task.Delay(800));
+    Save(window, $"apprenants-{suffix}.png");
+    Wait(shell.Open(() => new DashboardPage(shell)));
+    Wait(Task.Delay(1200));
+    Save(window, $"tableau-de-bord-{suffix}.png");
+    // Bas du tableau de bord : graphique, retards et promotions.
+    if (window.GetVisualDescendants().OfType<ScrollViewer>().Where(v => v.IsEffectivelyVisible && v.Extent.Height > v.Viewport.Height + 50)
+            .OrderByDescending(v => v.Extent.Height).FirstOrDefault() is { } board)
+    {
+        board.Offset = new Vector(0, Math.Max(0, board.Extent.Height - board.Viewport.Height));
+        Save(window, $"tableau-de-bord-bas-{suffix}.png");
+    }
+    return;
+}
+
+// Défilement à la molette amorti (ordinateur) : chaque cran fixe une destination, la page y glisse.
+// SCOLIA_MOBILE=0 dotnet run -- <sortie> <serveur> <mot_de_passe> molette
+if (args.Length > 3 && args[3] == "molette")
+{
+    if (Preferences.MobileLayout) throw new InvalidOperationException("Le parcours molette nécessite SCOLIA_MOBILE=0.");
+    prefs.Animations = true;
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    var wheelFailures = 0;
+    void WheelCheck(string label, bool ok)
+    {
+        Console.WriteLine($"{(ok ? "OK  " : "ECHEC")} {label}");
+        if (!ok) wheelFailures++;
+    }
+    void Frames(int count)
+    {
+        for (var i = 0; i < count; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(16); }
+    }
+    window.Width = 1280; window.Height = 600;
+    Frames(20);
+    var viewer = window.GetVisualDescendants().OfType<ScrollViewer>()
+        .Where(v => v.IsEffectivelyVisible && v.Extent.Height - v.Viewport.Height > 200)
+        .OrderByDescending(v => v.Viewport.Height).FirstOrDefault();
+    WheelCheck("Accueil : une zone défilante est trouvée", viewer is not null);
+    if (viewer is not null)
+    {
+        viewer.Offset = default;
+        Frames(3);
+        var center = viewer.TranslatePoint(new Point(viewer.Bounds.Width / 2, viewer.Bounds.Height / 2), window) ?? default;
+        // Positions successives de la zone pendant un cran : un glissement en passe par plusieurs.
+        var positions = new List<double>();
+        void OnScroll(object? sender, ScrollChangedEventArgs e) => positions.Add(viewer.Offset.Y);
+        viewer.ScrollChanged += OnScroll;
+        window.MouseWheel(center, new Vector(0, -1));
+        Frames(40);
+        viewer.ScrollChanged -= OnScroll;
+        var settled = viewer.Offset.Y;
+        var between = positions.Count(y => y > 0.5 && y < SmoothScroll.Step - 0.5);
+        WheelCheck($"Un cran : glissement progressif ({between} positions intermédiaires)", between >= 4);
+        WheelCheck($"Un cran : arrivée à {settled:0.0} px", Math.Abs(settled - SmoothScroll.Step) < 1);
+        window.MouseWheel(center, new Vector(0, -1));
+        window.MouseWheel(center, new Vector(0, -1));
+        Frames(40);
+        WheelCheck($"Deux crans rapides s'additionnent ({viewer.Offset.Y:0.0} px)", Math.Abs(viewer.Offset.Y - 3 * SmoothScroll.Step) < 1);
+        window.MouseWheel(center, new Vector(0, 0.4));
+        Frames(2);
+        WheelCheck("Pavé tactile : défilement natif immédiat", viewer.Offset.Y < 3 * SmoothScroll.Step - 1);
+    }
+    Console.WriteLine(wheelFailures == 0 ? "Molette : tout est en place." : $"Molette : {wheelFailures} échec(s).");
+    Environment.ExitCode = wheelFailures == 0 ? 0 : 1;
+    return;
+}
+
 if (args.Length > 3 && args[3] == "defilement")
 {
     var scrollSession = Result(api.LoginAsync("admin", password));
@@ -1814,6 +2724,353 @@ if (args.Length > 3 && args[3] == "smoke")
     return;
 }
 
+// Finitions par rôle : données réelles de démonstration, navigation et stabilité de l'actualisation.
+if (args.Length > 3 && args[3] == "finitions-roles")
+{
+    prefs.Animations = false;
+    prefs.Tips = false;
+    var account = Environment.GetEnvironmentVariable("SCOLIA_COMPTE") ?? "admin";
+    var roleSession = Result(api.LoginAsync(account, password));
+    Wait(shell.OpenSessionAsync(roleSession));
+    window.Width = int.Parse(taille[0]);
+    window.Height = int.Parse(taille[1]);
+    if (double.TryParse(Environment.GetEnvironmentVariable("SCOLIA_PREMIUM_TEXTE"), System.Globalization.NumberStyles.Float,
+        System.Globalization.CultureInfo.InvariantCulture, out var textScale)) prefs.Scale = textScale;
+    shell.Sync.Stop();
+    var failures = new List<string>();
+    var report = new List<string>();
+    void CheckRole(string label, bool valid)
+    {
+        report.Add($"{(valid ? "OK" : "ECHEC")} {label}");
+        if (!valid) failures.Add(label);
+    }
+    void RenderRole(string name)
+    {
+        Save(window, $"{account}-{name}.png");
+        var openingOverlay = window.GetVisualDescendants().OfType<Control>().Single(c => c.Name == "OpeningHost");
+        CheckRole("Le logo d'ouverture est entièrement masqué dans l'espace de travail", !shell.ShowOpening && !openingOverlay.IsVisible);
+        VerifyFluentArtwork(window);
+        if (!Preferences.MobileLayout) return;
+        var frame = window.GetVisualDescendants().OfType<Scolia.Bureau.Views.PhoneFrame>().FirstOrDefault(c => c.IsEffectivelyVisible);
+        if (frame is { Bounds.Height: < 520 })
+        {
+            var context = frame.GetVisualDescendants().OfType<Control>().First(c => c.Name == "PhoneContextLine");
+            CheckRole("Le paysage réserve la hauteur au contenu", !context.IsEffectivelyVisible);
+        }
+        foreach (var button in window.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible &&
+                     b.Classes.Any(c => c is "phoneicon" or "mobileactionrow" or "mobilecourse" or "phonemore" or "phoneshowmore" or "stickyaction")))
+            CheckRole($"Cible tactile {button.Name ?? button.Classes.ToString()}", button.Bounds.Width >= 43.5 && button.Bounds.Height >= 43.5);
+        foreach (var button in window.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible && b.Classes.Contains("phonemore")))
+            CheckRole("Le menu des actions possède un nom accessible", !string.IsNullOrWhiteSpace(Avalonia.Automation.AutomationProperties.GetName(button)));
+        foreach (var label in window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible &&
+                     t.Text is { Length: > 0 } text && !text.Contains(' ') &&
+                     t.GetVisualAncestors().OfType<Button>().Any(b => b.Classes.Contains("phonetab"))))
+            CheckRole($"L'onglet « {label.Text} » reste entier", label.TextLayout.TextLines.Count == 1 && !label.TextLayout.TextLines.Any(line => line.HasCollapsed));
+    }
+    void ShowRole(Func<PageViewModel> create, string name)
+    {
+        Wait(shell.Open(create));
+        Wait(Task.Delay(150));
+        RenderRole(name);
+    }
+    void CheckForm(PageViewModel page, string name)
+    {
+        if (page.PrimaryAction is not { } action || !action.Command.CanExecute(null)) return;
+        action.Command.Execute(null);
+        var until = DateTime.UtcNow.AddSeconds(8);
+        while (shell.Dialog is not FormViewModel && DateTime.UtcNow < until) Wait(Task.Delay(25));
+        CheckRole($"Formulaire {name} ouvert", shell.Dialog is FormViewModel);
+        if (shell.Dialog is FormViewModel form)
+        {
+            RenderRole(name);
+            form.Cancel.Execute(null);
+            Wait(Task.Delay(150));
+            CheckRole($"Formulaire {name} refermé", !shell.HasDialog);
+        }
+    }
+
+    if (!Preferences.MobileLayout)
+    {
+        var originalScale = prefs.Scale;
+        var zoomOut = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "DesktopZoomOut");
+        var zoomIn = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "DesktopZoomIn");
+        prefs.Scale = Preferences.MinimumTextScale;
+        CheckRole("Le zoom minimum désactive seulement Réduire", !zoomOut.IsEnabled && zoomIn.IsEnabled);
+        prefs.Scale = Preferences.MaximumTextScale;
+        CheckRole("Le zoom maximum désactive seulement Agrandir", zoomOut.IsEnabled && !zoomIn.IsEnabled);
+        prefs.Scale = originalScale;
+    }
+    RenderRole("ouverture");
+    if (roleSession.Role == "Enseignant")
+    {
+        var teacher = new TeacherHomePage(shell);
+        ShowRole(() => teacher, "espace-enseignant");
+        Wait(teacher.LoadAsync());
+        var cards = teacher.Courses.ToArray();
+        CheckRole("Les cours de démonstration sont chargés", cards.Length == 4);
+        var reset = false;
+        System.Collections.Specialized.NotifyCollectionChangedEventHandler changed = (_, e) =>
+            reset |= e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset;
+        teacher.Courses.CollectionChanged += changed;
+        var refresh = teacher.LoadAsync();
+        CheckRole("Les cours restent affichés pendant le rafraîchissement", teacher.Courses.Count == cards.Length);
+        Wait(refresh);
+        teacher.Courses.CollectionChanged -= changed;
+        CheckRole("Les cartes de cours inchangées sont conservées", !reset && teacher.Courses.Count == cards.Length &&
+            teacher.Courses.Zip(cards).All(pair => ReferenceEquals(pair.First, pair.Second)));
+        if (cards.FirstOrDefault() is { } course)
+        {
+            var marks = new MarksPage(shell, course.PromotionId, course.CourseId);
+            ShowRole(() => marks, "cotes");
+            CheckRole("La feuille enseignant conserve l'anonymat", marks.Rows.Count > 0 && marks.Rows.All(r => r.FullName == "Anonyme"));
+        }
+    }
+    else if (roleSession.Role == "Promoteur")
+    {
+        var pilotage = new PromoterDashboardPage(shell);
+        ShowRole(() => pilotage, "pilotage");
+        Wait(pilotage.LoadAsync());
+        var cards = pilotage.Promotions.ToArray();
+        CheckRole("Les promotions de démonstration sont chargées", cards.Length > 0);
+        Wait(pilotage.LoadAsync());
+        CheckRole("Les promotions inchangées ne sont pas recréées", cards.Length == pilotage.Promotions.Count &&
+            pilotage.Promotions.Zip(cards).All(pair => ReferenceEquals(pair.First, pair.Second)));
+        pilotage.Filters.Expanded = true;
+        RenderRole("pilotage-filtres");
+        pilotage.Filters.Gender = pilotage.Filters.Genders[2];
+        Wait(pilotage.RefreshAsync());
+        CheckRole("Le pilotage explique le total de la sélection", pilotage.Filters.HasScope && pilotage.SelectionTotal.StartsWith("Total de la sélection", StringComparison.Ordinal));
+        RenderRole("pilotage-selection");
+        var resetEvents = 0;
+        pilotage.Filters.Changed += () => resetEvents++;
+        pilotage.Filters.Reset.Execute(null);
+        CheckRole("Réinitialiser ne déclenche qu'un seul changement de sélection", resetEvents == 1);
+        Wait(pilotage.RefreshAsync());
+        pilotage.Filters.Expanded = false;
+        var details = window.GetVisualDescendants().OfType<Expander>().FirstOrDefault(e => e.IsEffectivelyVisible &&
+            e.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text?.Contains("mois par mois", StringComparison.Ordinal) == true));
+        if (details is not null)
+        {
+            details.IsExpanded = true;
+            details.BringIntoView();
+            RenderRole("pilotage-mois");
+            Wait(pilotage.LoadAsync());
+            CheckRole("Le détail mensuel reste ouvert à l'actualisation", details.IsExpanded);
+        }
+    }
+    else
+    {
+        var allowed = shell.Navigation.SelectMany(g => g.Items).Select(i => i.PageType).ToHashSet();
+        if (allowed.Contains(typeof(HomePage))) ShowRole(() => new HomePage(shell), "accueil");
+        if (allowed.Contains(typeof(DashboardPage)))
+        {
+            var dashboard = new DashboardPage(shell);
+            ShowRole(() => dashboard, "tableau-de-bord");
+            dashboard.Filters.Expanded = true;
+            RenderRole("tableau-de-bord-filtres");
+        }
+        if (shell.Can(Perm.SettingsWrite) && shell.Can(Perm.BackupManage))
+        {
+            var backupSettings = new SettingsPage(shell, "sauvegardes");
+            ShowRole(() => backupSettings, "parametres-sauvegardes");
+            backupSettings.ConfigureBackupSchedule.Execute(null);
+            var waitForDialog = DateTime.UtcNow.AddSeconds(8);
+            while (shell.Dialog is not FormViewModel && DateTime.UtcNow < waitForDialog) Wait(Task.Delay(25));
+            CheckRole("Les fréquences de sauvegarde sont accessibles dans Paramètres", shell.Dialog is FormViewModel);
+            RenderRole("frequences-sauvegardes");
+            if (shell.Dialog is FormViewModel backupForm) backupForm.Cancel.Execute(null);
+        }
+        if (ManagementModePage.CanAccess(shell))
+        {
+            shell.OpenBackstage();
+            CheckRole("Le compte du secrétariat propose le type de gestion", shell.Backstage.Items.Any(item => item.Value == "gestion"));
+            RenderRole("compte-type-gestion");
+            shell.CloseBackstage();
+            var management = new ManagementModePage(shell);
+            ShowRole(() => management, "type-gestion");
+            CheckRole("Le type de gestion est chargé depuis le serveur", management.Supported);
+            management.SelectedMode = shell.Session?.ManagementMode == "Separee" ? "Mixte" : "Separee";
+            RenderRole("type-gestion-selection");
+            if (management.CanApply)
+            {
+                management.Apply.Execute(null);
+                var waitForCode = DateTime.UtcNow.AddSeconds(8);
+                while (shell.Dialog is not FormViewModel && DateTime.UtcNow < waitForCode) Wait(Task.Delay(25));
+                CheckRole("Modifier l'organisation demande le code actuel", shell.Dialog is FormViewModel modeForm
+                    && modeForm.Find("code")?.Kind == FieldKind.Secret);
+                RenderRole("type-gestion-code");
+                if (shell.Dialog is FormViewModel modeCode) modeCode.Cancel.Execute(null);
+                Wait(Task.Delay(50));
+            }
+        }
+        else CheckRole("Le type de gestion reste réservé au secrétariat", !shell.Backstage.Items.Any(item => item.Value == "gestion"));
+        if (allowed.Contains(typeof(StudentsPage)))
+        {
+            var roleStudents = new StudentsPage(shell);
+            ShowRole(() => roleStudents, "apprenants");
+            CheckForm(roleStudents, "inscription");
+            if (roleStudents.Items.FirstOrDefault() is { } student)
+            {
+                var detail = new StudentDetailPage(shell, student.Id);
+                ShowRole(() => detail, "dossier-droits");
+                CheckRole("La consultation individuelle reste accessible", detail.Actions.Any(action => action.Label == "Relevé de compte") == shell.Can(Perm.StudentFinanceRead));
+                CheckRole("Les opérations de prise en charge suivent le métier", detail.Actions.Any(action => action.Label == "Prise en charge") == shell.Can(Perm.SponsorshipManage));
+                CheckRole("Encaisser suit les droits du compte", detail.Actions.Any(action => action.Label == "Encaisser") == shell.Can(Perm.PaymentsCreate));
+            }
+        }
+        if (allowed.Contains(typeof(StaffPage)))
+        {
+            var members = new StaffPage(shell);
+            ShowRole(() => members, "personnel-droits");
+            members.ShowPayroll = false;
+            Wait(members.RefreshAsync());
+            RenderRole("personnel-dossiers");
+            var view = window.GetVisualDescendants().OfType<Scolia.Bureau.Views.StaffView>().FirstOrDefault();
+            var salaryColumn = view?.FindControl<DataGrid>("StaffTable")?.Columns.Single(column => Equals(column.Header, "Salaire de base"));
+            CheckRole("La colonne salaire respecte le droit de paie", salaryColumn is not null && salaryColumn.IsVisible == shell.Can(Perm.PayrollManage));
+            CheckRole("Modifier le personnel reste une action administrative", members.Actions.Any(action => action.Label == "Nouveau membre") == shell.Can(Perm.StaffManage));
+            CheckRole("Payer un salaire reste une action comptable", members.Actions.Any(action => action.Label == "Payer le salaire") == shell.Can(Perm.PayrollManage));
+        }
+        if (allowed.Contains(typeof(CashierPage)))
+        {
+            var cashier = new CashierPage(shell);
+            Wait(shell.Open(() => cashier));
+            cashier.Search = "ACC";
+            Wait(cashier.SearchAsync());
+            foreach (var candidate in cashier.Results)
+            {
+                Wait(cashier.ChooseAsync(candidate));
+                if (cashier.Months.Count > 0) break;
+            }
+            if (cashier.Months.FirstOrDefault() is { } month)
+            {
+                month.IsSelected = true;
+                Wait(cashier.PreviewAsync());
+            }
+            RenderRole("encaissement");
+        }
+        if (allowed.Contains(typeof(ReceiptsPage))) ShowRole(() => new ReceiptsPage(shell), "recus");
+        if (allowed.Contains(typeof(CashPage))) ShowRole(() => new CashPage(shell), "caisse");
+        if (allowed.Contains(typeof(ExpensesPage)))
+        {
+            var expenses = new ExpensesPage(shell);
+            ShowRole(() => expenses, "depenses");
+            CheckForm(expenses, "nouvelle-depense");
+        }
+    }
+    // Les boutons visibles sont exercés avec la souris/tactile, plutôt qu'en appelant le ViewModel.
+    if (shell.CanGoBack && shell.Current is { } beforeBack)
+    {
+        var name = Preferences.MobileLayout ? "PhoneBack" : "DesktopBack";
+        var back = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == name && b.IsEffectivelyVisible);
+        CheckRole("Retour : nom accessible", !string.IsNullOrWhiteSpace(Avalonia.Automation.AutomationProperties.GetName(back)));
+        if (!Preferences.MobileLayout) CheckRole("Retour : un seul contour de navigation", back.BorderThickness == new Thickness(0));
+        var point = back.TranslatePoint(new Point(back.Bounds.Width / 2, back.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(point, Avalonia.Input.MouseButton.Left);
+        window.MouseUp(point, Avalonia.Input.MouseButton.Left);
+        Wait(Task.Delay(180));
+        CheckRole("Retour : le bouton restaure la page précédente", !ReferenceEquals(beforeBack, shell.Current) && shell.CanGoForward);
+        RenderRole("navigation-retour");
+        if (!Preferences.MobileLayout)
+        {
+            var next = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "DesktopForward" && b.IsEffectivelyVisible);
+            CheckRole("Suivant : disponible et sans contour intérieur", next.IsEnabled && next.BorderThickness == new Thickness(0));
+            point = next.TranslatePoint(new Point(next.Bounds.Width / 2, next.Bounds.Height / 2), window)!.Value;
+            window.MouseDown(point, Avalonia.Input.MouseButton.Left);
+            window.MouseUp(point, Avalonia.Input.MouseButton.Left);
+            Wait(Task.Delay(180));
+            CheckRole("Suivant : le bouton restaure la bonne page", ReferenceEquals(beforeBack, shell.Current));
+        }
+    }
+    if (Preferences.MobileLayout)
+    {
+        shell.PhoneMenuOpen = true;
+        RenderRole("menu");
+    }
+    File.WriteAllLines(Path.Combine(output, "finitions-verifiees.txt"),
+        [$"{account} · {failures.Count} échec(s).", .. report]);
+    Console.WriteLine(string.Join(Environment.NewLine, report));
+    window.Close();
+    Environment.ExitCode = failures.Count == 0 ? 0 : 1;
+    return;
+}
+
+// Audit par rôle (SCOLIA_COMPTE=admin|comptable|promoteur|enseignant) : chaque écran du menu de ce compte,
+// une image par écran, et un rapport (droits, menus, ruban, actions, notifications d'erreur).
+if (args.Length > 3 && args[3] == "roles")
+{
+    var account = Environment.GetEnvironmentVariable("SCOLIA_COMPTE") ?? "admin";
+    var layout = Preferences.MobileLayout ? "mobile" : "bureau";
+    var report = new List<string>();
+    static string Slug(string text) => new string(text.Normalize(System.Text.NormalizationForm.FormD)
+        .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark)
+        .Select(c => char.IsAsciiLetterOrDigit(c) ? char.ToLowerInvariant(c) : '-').ToArray()).Trim('-');
+    void Settle(int milliseconds)
+    {
+        var until = DateTime.UtcNow.AddMilliseconds(milliseconds);
+        while (DateTime.UtcNow < until) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(15); }
+    }
+    var roleSession = Result(api.LoginAsync(account, password));
+    Wait(shell.OpenSessionAsync(roleSession));
+    Settle(1500);
+    report.Add($"# {roleSession.DisplayName} — {account} ({roleSession.RoleLabel}) — {layout}");
+    report.Add("Permissions : " + string.Join(", ", roleSession.Permissions));
+    report.Add($"Écran d'ouverture : {shell.Current?.Title} · {shell.Current?.Subtitle}");
+    if (shell.Notice is { Length: > 0 } openingNotice) report.Add("Notification à l'ouverture : " + openingNotice);
+    report.Add("Menu : " + string.Join(" | ", shell.Navigation.Select(g => (g.Title.Length == 0 ? "(accueil)" : g.Title) + " [" + string.Join(", ", g.Items.Select(i => i.Label)) + "]")));
+    report.Add("Ruban : " + string.Join(" | ", shell.Tabs.Select(t => t.Title + " [" + string.Join(", ", t.Groups.SelectMany(g => g.Commands).Select(c => c.Label)) + "]")));
+    Save(window, $"{account}-{layout}-00-ouverture.png");
+    var index = 1;
+    foreach (var group in shell.Navigation.ToList())
+        foreach (var item in group.Items.ToList())
+        {
+            var before = shell.Notice;
+            item.Open.Execute(null);
+            var limit = DateTime.UtcNow.AddSeconds(20);
+            while (shell.Current?.GetType() != item.PageType && DateTime.UtcNow < limit) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(15); }
+            Settle(1800);
+            var page = shell.Current;
+            var notice = shell.Notice is { Length: > 0 } n && n != before ? n : null;
+            report.Add($"{index:00} {(group.Title.Length == 0 ? "(accueil)" : group.Title)} › {item.Label} → {(page?.GetType() == item.PageType ? "ouvert" : "NON OUVERT")} : {page?.Title} · {page?.Subtitle}"
+                + $" · actions : {string.Join(", ", page?.Actions.Select(a => a.Label) ?? [])}"
+                + (notice is null ? string.Empty : $" · NOTIFICATION : {notice}"));
+            try { Save(window, $"{account}-{layout}-{index:00}-{Slug(item.Label)}.png"); }
+            catch (InvalidOperationException ex) { report.Add($"   capture impossible : {ex.Message}"); }
+            index++;
+        }
+    // Enseignant : un vrai parcours d'encodage (feuille ouverte, cotes tapées, enregistrement) sur sa feuille anonyme.
+    if (roleSession.Permissions.Contains(Scolia.Bureau.Ribbon.Perm.MarksEncode) && !roleSession.Permissions.Contains(Scolia.Bureau.Ribbon.Perm.AcademicsRead)
+        && Scolia.Domain.School.InstitutionProfiles.Canonicalize(roleSession.InstitutionType) == Scolia.Domain.School.InstitutionProfiles.ItmIm)
+    {
+        var marks = new MarksPage(shell);
+        Wait(shell.Open(() => marks));
+        Settle(1200);
+        marks.Course = marks.Courses.FirstOrDefault();
+        Settle(1500);
+        var typed = 0;
+        foreach (var row in marks.Rows.Where(r => r.Value.Length == 0).Take(3)) { row.Value = (12 + typed).ToString(System.Globalization.CultureInfo.InvariantCulture); typed++; }
+        var noticeBefore = shell.Notice;
+        var saveAction = marks.Actions.First(a => a.Label == "Enregistrer les cotes");
+        saveAction.Command.Execute(null);
+        Settle(2500);
+        var anonymous = marks.Rows.All(r => r.FullName == "Anonyme" && r.Code != "—");
+        report.Add($"Parcours d'encodage : {typed} cote(s) tapée(s) · feuille {(anonymous ? "anonyme (codes seulement)" : "NOMINATIVE")} · {marks.SheetHint}"
+            + (shell.Notice is { Length: > 0 } saved && saved != noticeBefore ? $" · NOTIFICATION : {saved}" : string.Empty));
+        Save(window, $"{account}-{layout}-90-feuille-encodee.png");
+    }
+    if (Preferences.MobileLayout)
+    {
+        shell.PhoneMenuOpen = true;
+        Settle(800);
+        Save(window, $"{account}-{layout}-99-menu.png");
+        shell.PhoneMenuOpen = false;
+    }
+    File.WriteAllLines(Path.Combine(output, $"rapport-{account}-{layout}.txt"), report);
+    Console.WriteLine(string.Join(Environment.NewLine, report));
+    window.Close();
+    return;
+}
+
 var session = Result(api.LoginAsync(Environment.GetEnvironmentVariable("SCOLIA_COMPTE") ?? "admin", password));
 // Ouverture : la roue et les étapes, capturées en cours de route, puis l'accueil.
 var openingTask = shell.OpenSessionAsync(session);
@@ -1918,7 +3175,13 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
     Wait(cashier.PreviewAsync());
     Check("aperçu de répartition", cashier.Allocations.Count > 0 && cashier.Total == cashier.Months.First(m => m.IsSelected).AmountText, $"{cashier.Allocations.Count} imputation(s), {cashier.Total}");
     var before = Result(api.GetAsync<PagedResult<ReceiptRowDto>>("api/paiements?taille=1")).Total;
-    Wait(shell.Run(() => cashier.PayAsync()));
+    // L'encaissement demande d'abord une confirmation avec le récapitulatif.
+    var paying = shell.Run(() => cashier.PayAsync());
+    var confirmUntil = DateTime.UtcNow.AddSeconds(10);
+    while (shell.Dialog is not FormViewModel && !paying.IsCompleted && DateTime.UtcNow < confirmUntil) Wait(Task.Delay(50));
+    Check("confirmation avant encaissement", shell.Dialog is FormViewModel { Title: "Confirmer l'encaissement" }, shell.Dialog?.GetType().Name ?? "aucune fenêtre");
+    if (shell.Dialog is FormViewModel confirmPay) confirmPay.Submit.Execute(null);
+    Wait(paying);
     Wait(Task.Delay(200));
     var after = Result(api.GetAsync<PagedResult<ReceiptRowDto>>("api/paiements?taille=1")).Total;
     Check("encaissement crée un reçu", cashier.HasReceipt && after == before + 1, cashier.HasReceipt ? cashier.ReceiptText : Notice(shell));
@@ -2003,6 +3266,8 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
     var expenseBefore = Result(api.GetAsync<PagedResult<ExpenseDto>>("api/depenses?taille=1")).Total;
     var ok = Submit(shell, ExpensesPage.NewExpenseAsync(shell), f =>
     {
+        // La catégorie est un choix obligatoire sans valeur par défaut.
+        f.Find("categorie").Choice = f.Find("categorie").Options[0];
         f.Find("beneficiaire").Text = "Smoke fournisseur";
         f.Find("description").Text = "Dépense de test du parcours";
         f.Find("montant").Text = "5000";
@@ -2207,10 +3472,27 @@ Page(() => new UsersPage(shell), "21-utilisateurs.png");
 Page(() => new DataPage(shell), "22-donnees.png");
 Page(() => new ReportsPage(shell), "22d-rapports-exports.png");
 Page(() => new DashboardPage(shell), "22e-tableau-de-bord.png");
+Page(() => new SettingsPage(shell, "frais"), "20d-parametres-categories-frais.png");
 Page(() => new CardsPage(shell), "16b-cartes-acces.png");
 Page(() => new MonthlyPage(shell), "08b-suivi-mensuel.png");
 Page(() => new MonthlyPage(shell, "nonpaye"), "08c-suivi-mensuel-non-payes.png");
 Page(() => new TeachingPage(shell), "16c-enseignants-cours.png");
+Page(() => new AnonymousCodesPage(shell), "16d-codes-anonymes.png");
+Page(() => new MarksPage(shell), "16e-encodage-cotes.png");
+if (only.Length == 0 || only.Any(o => "16f".StartsWith(o, StringComparison.Ordinal)))
+{
+    // Feuille de cotes ouverte sur le premier cours, pour contrôler la saisie et la cote retenue.
+    var marks = new MarksPage(shell);
+    Wait(shell.Open(() => marks));
+    marks.Course = marks.Courses.FirstOrDefault();
+    Wait(Task.Delay(600));
+    Save(window, "16f-encodage-feuille.png");
+}
+Page(() => new DeliberationPage(shell), "16g-deliberation.png");
+Page(() => new EncodingProgressPage(shell), "16h-suivi-encodage.png");
+Page(() => new DeliberationSettingsPage(shell), "16i-parametres-deliberation.png");
+Page(() => new TeacherAccountsPage(shell), "16j-comptes-enseignants.png");
+Page(() => new CloudBackupPage(shell), "21b-sauvegarde-en-ligne.png");
 Page(() => new StaffAttendancePage(shell), "18b-pointage.png");
 Page(() => new EraseDataPage(shell, payments: true), "22b-effacer-donnees.png");
 Page(() => new EraseDataPage(shell, payments: false), "22c-effacer-apprenants.png");
@@ -2625,6 +3907,8 @@ sealed class LayoutServer : IDisposable
     private readonly System.Net.HttpListener listener = new();
     public Uri Address { get; }
     public AccountDto? PaymentAccount { get; set; }
+    public bool DemoCards { get; set; }
+    public bool DemoHome { get; set; }
     public int PaymentCount { get; private set; }
     public TaskCompletionSource? HoldPayment { get; set; }
     public TaskCompletionSource? HoldStudents { get; set; }
@@ -2659,10 +3943,42 @@ sealed class LayoutServer : IDisposable
         try
         {
             var path = context.Request.Url?.AbsolutePath;
-            object? result = null;
+            // Un serveur de test disponible doit répondre à la sonde réelle.
+            // Sinon la détection accélérée signale à tort une panne réseau
+            // et empêche le chargement du compte pendant les captures.
+            object? result = path == "/api/sante"
+                ? (DemoCards
+                    ? new { status = "ok", version = "1.2.90", cardGenerator = Scolia.Domain.Students.CardGeneratorManifest.Id }
+                    : (object)new { status = "ok" })
+                : null;
+            if (DemoHome && path == "/api/rapports/tableau-de-bord")
+                result = new DashboardDto("2026-2027", 186, 18, 8450000m, 2430000m, 125000m,
+                    12500000m, 4050000m, 3250000m, 68m, 122, 64, 400000m,
+                    [], [], [],
+                    [new ReceiptSummaryDto(Guid.NewGuid(), "REC-2026-00123", DateOnly.FromDateTime(DateTime.Today),
+                        55000m, "Especes", "Valide", "Agent de démonstration", "INF1 · MUKENDI KABUYA Alice"),
+                     new ReceiptSummaryDto(Guid.NewGuid(), "REC-2026-00122", DateOnly.FromDateTime(DateTime.Today),
+                        70000m, "Especes", "Valide", "Agent de démonstration", "ACC2 · NGOY BAKAJIKA Marcel")],
+                    91, 95);
+            if (DemoHome && path == "/api/rapports/aujourdhui")
+                result = new TodayDto(DateOnly.FromDateTime(DateTime.Today), 3, 125000m, 0m,
+                    false, 0, 0, [], []);
+            if (DemoCards && path == "/api/etablissement/promotions")
+                result = Array.Empty<PromotionDto>();
+            if (DemoCards && path == "/api/cartes/candidats")
+                result = new[]
+                {
+                    new CardCandidateDto(Guid.Parse("00000000-0000-0000-0000-000000000101"),
+                        "DEMO01", "MOYO MUKENDI Alice", "INF1", "Actif", true, true, false),
+                    new CardCandidateDto(Guid.Parse("00000000-0000-0000-0000-000000000102"),
+                        "", "KABILA KASONGO Cédric", "ACC2", "Actif", true, true, false),
+                    new CardCandidateDto(Guid.Parse("00000000-0000-0000-0000-000000000103"),
+                        "", "ÉLÈVE DE TEST NON ÉLIGIBLE", "INF3", "Suspendu", false, true, false),
+                };
             if (PaymentAccount is { } account)
             {
                 if (path == $"/api/inscriptions/{account.EnrollmentId}/compte") result = account;
+                else if (path == $"/api/inscriptions/{account.EnrollmentId}/prises-en-charge") result = Array.Empty<SponsorshipDto>();
                 else if (path == $"/api/apprenants/{account.StudentId}")
                     result = new StudentDto(account.StudentId, account.Matricule, "Kabeya", "Mbuyi", "Amina", "F", null, null,
                         null, null, null, null, null, null, account.GuardianPhone, null, null, false,

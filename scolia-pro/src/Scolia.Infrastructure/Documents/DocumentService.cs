@@ -4,12 +4,17 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using Scolia.Application.Abstractions;
+using Scolia.Domain.Finance;
 
 namespace Scolia.Infrastructure.Documents;
 
 /// <summary>Documents PDF professionnels (QuestPDF). Charte SCOLIA : bleu marine, bleu action, gris bleuté.</summary>
 public sealed class DocumentService : IDocumentService
 {
+    /// <summary>Version du générateur réellement assemblé (PDF et Word doivent coïncider).</summary>
+    public static string CardGeneratorId =>
+        string.Equals(StudentCardPdf.LayoutId, CardWordWriter.LayoutId, StringComparison.Ordinal)
+            ? StudentCardPdf.LayoutId : "INCOMPATIBLE-PDF-WORD";
     private const string Navy = "#13294B";
     private const string Blue = "#1D4ED8";
     private const string Soft = "#E8EEF7";
@@ -39,7 +44,7 @@ public sealed class DocumentService : IDocumentService
         }
     }
 
-    private static string M(decimal amount, string symbol) => amount.ToString("N0", Fr) + " " + symbol;
+    private static string M(decimal amount, string symbol) => Money.Display(amount, symbol);
 
     private static void Header(IContainer container, SchoolHeader school, string title, string? subtitle)
     {
@@ -156,7 +161,7 @@ public sealed class DocumentService : IDocumentService
                     row.RelativeItem().Column(c =>
                     {
                         c.Item().Text($"Mode de paiement : {d.Method}" + (string.IsNullOrWhiteSpace(d.Reference) ? string.Empty : $" · Réf. {d.Reference}")).FontSize(8.5f);
-                        c.Item().Text($"Reste à payer pour l'année : {M(d.BalanceAfter, d.School.CurrencySymbol)}").FontSize(8.5f).Bold().FontColor(d.BalanceAfter > 0 ? "#B45309" : "#15803D");
+                        c.Item().Text($"{(d.BalanceAtIssue ? "Reste à payer à l’émission" : "Solde actuel (ancien reçu, recalculé)")} : {M(d.BalanceAfter, d.School.CurrencySymbol)}").FontSize(8.5f).Bold().FontColor(d.BalanceAfter > 0 ? "#B45309" : "#15803D");
                         c.Item().PaddingTop(14).Text($"Le caissier : {d.Cashier}").FontSize(8.5f);
                         c.Item().PaddingTop(18).Width(150).BorderBottom(0.5f).BorderColor(Muted);
                         c.Item().Text("Signature et cachet").FontSize(7).FontColor(Muted);
@@ -210,15 +215,15 @@ public sealed class DocumentService : IDocumentService
                     var bg = i++ % 2 == 0 ? "#FFFFFF" : "#F7F9FD";
                     t.Cell().Background(bg).Padding(4).Text(l.Label);
                     t.Cell().Background(bg).Padding(4).Text(l.DueDate.ToString("dd/MM/yyyy", Fr));
-                    t.Cell().Background(bg).Padding(4).AlignRight().Text(l.Amount.ToString("N0", Fr));
-                    t.Cell().Background(bg).Padding(4).AlignRight().Text(l.Covered == 0 ? "—" : l.Covered.ToString("N0", Fr));
-                    t.Cell().Background(bg).Padding(4).AlignRight().Text(l.Paid.ToString("N0", Fr));
-                    t.Cell().Background(bg).Padding(4).AlignRight().Text(l.Remaining.ToString("N0", Fr)).FontColor(l.IsOverdue ? "#DC2626" : "#1E293B");
+                    t.Cell().Background(bg).Padding(4).AlignRight().Text(Money.Number(l.Amount));
+                    t.Cell().Background(bg).Padding(4).AlignRight().Text(l.Covered == 0 ? "—" : Money.Number(l.Covered));
+                    t.Cell().Background(bg).Padding(4).AlignRight().Text(Money.Number(l.Paid));
+                    t.Cell().Background(bg).Padding(4).AlignRight().Text(Money.Number(l.Remaining)).FontColor(l.IsOverdue ? "#DC2626" : "#1E293B");
                     t.Cell().Background(bg).Padding(4).Text(l.Status).FontColor(l.IsOverdue ? "#DC2626" : Muted);
                 }
                 t.Cell().ColumnSpan(4).BorderTop(1).BorderColor(Navy).Padding(4).Text("TOTAL NET À PAYER : " + M(d.TotalNet, d.School.CurrencySymbol)).Bold();
-                t.Cell().BorderTop(1).BorderColor(Navy).Padding(4).AlignRight().Text(d.TotalPaid.ToString("N0", Fr)).Bold();
-                t.Cell().BorderTop(1).BorderColor(Navy).Padding(4).AlignRight().Text(d.Balance.ToString("N0", Fr)).Bold();
+                t.Cell().BorderTop(1).BorderColor(Navy).Padding(4).AlignRight().Text(Money.Number(d.TotalPaid)).Bold();
+                t.Cell().BorderTop(1).BorderColor(Navy).Padding(4).AlignRight().Text(Money.Number(d.Balance)).Bold();
                 t.Cell().BorderTop(1).BorderColor(Navy);
             });
             col.Item().PaddingTop(6).Text("Reçus enregistrés").Bold().FontColor(Navy);
@@ -237,7 +242,7 @@ public sealed class DocumentService : IDocumentService
                     t.Cell().Padding(4).Text(r.Date.ToString("dd/MM/yyyy", Fr));
                     t.Cell().Padding(4).Text(r.Allocations ?? string.Empty).FontSize(8);
                     t.Cell().Padding(4).Text(r.Method);
-                    t.Cell().Padding(4).AlignRight().Text(r.Amount.ToString("N0", Fr)).FontColor(cancelled ? Muted : "#1E293B");
+                    t.Cell().Padding(4).AlignRight().Text(Money.Number(r.Amount)).FontColor(cancelled ? Muted : "#1E293B");
                 }
             });
         });
@@ -252,29 +257,46 @@ public sealed class DocumentService : IDocumentService
 
     public byte[] Table(TableDocument d) => Document.Create(doc => doc.Page(page =>
     {
+        // Tableau large (grille de délibération) : police et marges des cellules resserrées pour que toutes les colonnes
+        // tiennent dans la largeur de la page, l'en-tête étant répété sur chaque page.
+        var (size, headSize, padding) = d.Columns.Count switch
+        {
+            > 22 => (5.5f, 5.5f, 1.5f),
+            > 16 => (6.5f, 6.5f, 2f),
+            > 11 => (7.5f, 7.5f, 3f),
+            _ => (8.5f, 8f, 4f),
+        };
         page.Size(d.Landscape ? PageSizes.A4.Landscape() : PageSizes.A4);
-        page.Margin(28);
-        page.DefaultTextStyle(s => s.FontFamily(Font).FontSize(8.5f).FontColor("#1E293B"));
+        page.Margin(d.Columns.Count > 16 ? 18 : 28);
+        page.DefaultTextStyle(s => s.FontFamily(Font).FontSize(size).FontColor("#1E293B"));
         page.Header().Element(c => Header(c, d.School, d.Title, d.Subtitle));
-        var widths = ColumnWidths(d);
-        var amounts = AmountColumns(d);
+        var columns = d.Columns.Count > 0 ? d.Columns : (IReadOnlyList<string>)["Information"];
+        float[] widths = d.Columns.Count > 0 ? ColumnWidths(d) : [1f];
+        bool[] amounts = d.Columns.Count > 0 ? AmountColumns(d) : [false];
         page.Content().PaddingTop(10).Table(t =>
         {
             t.ColumnsDefinition(c => { foreach (var w in widths) c.RelativeColumn(w); });
             t.Header(h =>
             {
-                for (var c = 0; c < d.Columns.Count; c++)
-                    Align(h.Cell().Background(Navy).Padding(4), amounts[c]).Text(d.Columns[c]).FontColor(Colors.White).Bold().FontSize(8);
+                for (var c = 0; c < columns.Count; c++)
+                    Align(h.Cell().Background(Navy).Padding(padding), amounts[c]).Text(columns[c]).FontColor(Colors.White).Bold().FontSize(headSize);
             });
             var i = 0;
             foreach (var row in d.Rows)
             {
                 var bg = i++ % 2 == 0 ? "#FFFFFF" : "#F7F9FD";
-                for (var c = 0; c < row.Count; c++) Align(t.Cell().Background(bg).Padding(4), c < amounts.Length && amounts[c]).Text(row[c]);
+                for (var c = 0; c < columns.Count; c++)
+                    Align(t.Cell().Background(bg).Padding(padding), amounts[c]).Text(c < row.Count ? row[c] : string.Empty);
+            }
+            if (d.Rows.Count == 0)
+            {
+                Align(t.Cell().Padding(7), false).Text("Aucune donnée à exporter pour les critères sélectionnés.");
+                for (var c = 1; c < columns.Count; c++) t.Cell().Text(string.Empty);
             }
             if (d.Totals is not null)
-                for (var c = 0; c < d.Totals.Count; c++)
-                    Align(t.Cell().BorderTop(1).BorderColor(Navy).Padding(4), c < amounts.Length && amounts[c]).Text(d.Totals[c]).Bold();
+                for (var c = 0; c < columns.Count; c++)
+                    Align(t.Cell().BorderTop(1).BorderColor(Navy).Padding(4), amounts[c])
+                        .Text(c < d.Totals.Count ? d.Totals[c] : string.Empty).Bold();
         });
         page.Footer().Element(c => Footer(c, null));
     })).GeneratePdf();
@@ -283,13 +305,23 @@ public sealed class DocumentService : IDocumentService
     /// Rapport à plusieurs parties : les chiffres clés en tuiles de quatre par ligne, puis chaque partie avec son titre
     /// et son tableau ; une partie vide dit simplement qu'il n'y a rien ce jour-là.
     /// </summary>
-    public byte[] Report(ReportDocument d) => Document.Create(doc => doc.Page(page =>
+    public byte[] Report(ReportDocument d) => Document.Create(doc => doc.Page(page => ComposeReport(page, d))).GeneratePdf();
+
+    public byte[] Reports(IReadOnlyList<ReportDocument> documents) => Document.Create(doc =>
+    {
+        foreach (var d in documents) doc.Page(page => ComposeReport(page, d));
+    }).GeneratePdf();
+
+    private void ComposeReport(PageDescriptor page, ReportDocument d)
     {
         page.Size(PageSizes.A4);
         page.Margin(28);
         page.DefaultTextStyle(s => s.FontFamily(Font).FontSize(8.5f).FontColor("#1E293B"));
         page.Header().Element(c => Header(c, d.School, d.Title, d.Subtitle));
-        page.Content().PaddingTop(10).Column(col =>
+        // Un bulletin tient toujours sur une page : s'il a beaucoup de cours, le contenu est réduit, jamais coupé.
+        var content = page.Content().PaddingTop(10);
+        if (d.OnePage) content = content.ScaleToFit();
+        content.Column(col =>
         {
             col.Spacing(12);
             foreach (var chunk in d.Figures.Chunk(4))
@@ -335,15 +367,29 @@ public sealed class DocumentService : IDocumentService
                 });
             }
             if (d.Note is { Length: > 0 } note) col.Item().PaddingTop(6).Text(note).FontSize(7.5f).Italic().FontColor(Muted);
+            if (d.VerificationUrl is { Length: > 0 } url)
+                col.Item().PaddingTop(6).Row(row =>
+                {
+                    row.ConstantItem(62).Height(62).Image(Qr(url)).FitArea();
+                    row.RelativeItem().PaddingLeft(8).AlignMiddle().Column(c =>
+                    {
+                        c.Item().Text("Vérifier ce document").FontSize(8).Bold().FontColor(Navy);
+                        c.Item().Text(url).FontSize(7).FontColor(Muted);
+                    });
+                });
         });
         page.Footer().Element(c => Footer(c, null));
-    })).GeneratePdf();
+    }
 
     /// <summary>Largeur de chaque colonne selon son contenu : un nom complet a plus de place qu'un code de promotion.</summary>
     private static float[] ColumnWidths(TableDocument d) => d.Columns.Select((title, c) =>
     {
         var longest = d.Rows.Take(300).Select(r => c < r.Count ? r[c].Length : 0).DefaultIfEmpty(0).Max();
-        return Math.Clamp(Math.Max(title.Length * 0.8f, longest), 3f, 30f);
+        // Un titre long se replie sur plusieurs lignes : seul son mot le plus long impose une largeur,
+        // pour qu'une colonne courte (rang, code, %) ne soit pas écrasée par des intitulés de cours.
+        var word = title.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(w => w.Length).DefaultIfEmpty(0).Max();
+        // Le rembourrage des cellules compte aussi : une marge fixe évite de couper « 79,94 » ou un code.
+        return Math.Clamp(Math.Max(Math.Max(title.Length * 0.5f, word * 1.1f), longest), 4f, 30f) + 2.5f;
     }).ToArray();
 
     /// <summary>Colonnes de montants, alignées à droite pour que les chiffres se lisent en colonne.</summary>

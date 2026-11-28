@@ -35,6 +35,9 @@ public sealed class GradesPage : PageViewModel
     private AssessmentRowVm? assessment;
     private string subtitle = string.Empty;
     private string sheetTitle = "3. Notes";
+    private int assessmentsRequest;
+    private int sheetRequest;
+    private Guid? loadedAssessment;
     private bool ready;
 
     public GradesPage(ShellViewModel shell) : base(shell)
@@ -64,7 +67,12 @@ public sealed class GradesPage : PageViewModel
     public ChoiceItem? Promotion
     {
         get => promotion;
-        set { if (Set(ref promotion, value) && ready) _ = Shell.Run(RefreshAsync); }
+        set
+        {
+            if (!Set(ref promotion, value) || !ready) return;
+            ResetCourses();
+            _ = Shell.Run(RefreshAsync);
+        }
     }
 
     public CourseRowVm? Course
@@ -109,31 +117,53 @@ public sealed class GradesPage : PageViewModel
             Raise(nameof(Promotion));
             ready = true;
         }
-        if (Promotion is null) return;
-
-        var courses = await Shell.Api.GetAsync<List<CourseDto>>("api/scolarite/cours" + ScoliaClient.Query(("promotionId", Guid.Parse(Promotion.Value))));
-        Courses.Clear();
+        var chosen = Promotion;
+        ResetCourses();
+        if (chosen is null) return;
+        var courses = await Shell.Api.GetAsync<List<CourseDto>>("api/scolarite/cours" + ScoliaClient.Query(("promotionId", Guid.Parse(chosen.Value))));
+        if (Promotion?.Value != chosen.Value) return;
         foreach (var c in courses)
             Courses.Add(new CourseRowVm(c.Id, c.Number.ToString(System.Globalization.CultureInfo.InvariantCulture), c.Name, c.Coefficient.ToString("0.##"), $"{c.Hours:0.##} h",
                 c.MaxScore.ToString("0.##"), c.TeacherName ?? "—", c.AssessmentCount, c));
-        subtitle = $"{Format.Count(courses.Count, "cours", "cours")} · {Promotion.Label}";
+        subtitle = $"{Format.Count(courses.Count, "cours", "cours")} · {chosen.Label}";
         Raise(nameof(Subtitle));
-        course = null;
-        Raise(nameof(Course));
-        Assessments.Clear();
+    }
+
+    private void ResetSheet()
+    {
+        sheetRequest++;
+        loadedAssessment = null;
         Grades.Clear();
         SheetTitle = "3. Notes";
     }
 
-    private async Task LoadAssessmentsAsync()
+    private void ResetAssessments()
     {
+        assessmentsRequest++;
         Assessments.Clear();
-        Grades.Clear();
         assessment = null;
         Raise(nameof(Assessment));
-        SheetTitle = "3. Notes";
-        if (Course is null) return;
-        var list = await Shell.Api.GetAsync<List<AssessmentDto>>($"api/scolarite/cours/{Course.Id}/evaluations");
+        Raise(nameof(NoAssessment));
+        ResetSheet();
+    }
+
+    private void ResetCourses()
+    {
+        Courses.Clear();
+        course = null;
+        Raise(nameof(Course));
+        Raise(nameof(NoCourse));
+        ResetAssessments();
+    }
+
+    private async Task LoadAssessmentsAsync()
+    {
+        ResetAssessments();
+        var request = assessmentsRequest;
+        var chosen = Course;
+        if (chosen is null) return;
+        var list = await Shell.Api.GetAsync<List<AssessmentDto>>($"api/scolarite/cours/{chosen.Id}/evaluations");
+        if (request != assessmentsRequest || Course?.Id != chosen.Id) return;
         foreach (var a in list)
             Assessments.Add(new AssessmentRowVm(a.Id, a.Title, Labels.Kind(a.Kind), $"Période {a.Term}", Format.Date(a.Date),
                 a.MaxScore.ToString("0.##"), a.Weight.ToString("0.##"), $"{a.GradedCount}", a));
@@ -141,13 +171,16 @@ public sealed class GradesPage : PageViewModel
 
     private async Task LoadSheetAsync()
     {
-        Grades.Clear();
-        if (Assessment is null) return;
-        var sheet = await Shell.Api.GetAsync<GradeSheetDto>($"api/scolarite/evaluations/{Assessment.Id}/notes");
+        ResetSheet();
+        var request = sheetRequest;
+        var chosen = Assessment;
+        if (chosen is null) return;
+        var sheet = await Shell.Api.GetAsync<GradeSheetDto>($"api/scolarite/evaluations/{chosen.Id}/notes");
+        if (request != sheetRequest || Assessment?.Id != chosen.Id) return;
         SheetTitle = $"{sheet.Assessment.Title} · sur {sheet.Assessment.MaxScore:0.##}";
         foreach (var r in sheet.Rows)
             Grades.Add(new GradeEditRowVm(r.EnrollmentId, r.Matricule, r.FullName, r.Score?.ToString("0.##") ?? string.Empty, r.Comment));
-        Raise(nameof(SheetTitle));
+        loadedAssessment = chosen.Id;
     }
 
     public async Task SaveGradesAsync()
@@ -157,6 +190,14 @@ public sealed class GradesPage : PageViewModel
             Shell.Notify("Sélectionnez une évaluation avant d'enregistrer.");
             return;
         }
+        var chosen = Assessment;
+        if (loadedAssessment != chosen.Id)
+        {
+            Shell.Notify("Attendez le chargement de la feuille avant d'enregistrer.");
+            return;
+        }
+        var request = sheetRequest;
+        var snapshot = Grades.Select(g => (g.EnrollmentId, g.Score, g.Comment)).ToArray();
         var rows = new List<object>();
         foreach (var g in Grades)
         {
@@ -166,11 +207,26 @@ public sealed class GradesPage : PageViewModel
                 return;
             }
             var score = Format.TryAmount(g.Score, out var value) ? (decimal?)value : null;
+            if (score is { } number && (number < 0 || number > chosen.Source.MaxScore))
+            {
+                Shell.Notify($"Note hors limites pour {g.FullName} : maximum {chosen.Source.MaxScore:0.##}.");
+                return;
+            }
             rows.Add(new { enrollmentId = g.EnrollmentId, score, comment = string.IsNullOrWhiteSpace(g.Comment) ? null : g.Comment.Trim() });
         }
-        await Shell.Api.SendAsync(HttpMethod.Put, $"api/scolarite/evaluations/{Assessment.Id}/notes", rows);
-        Shell.Notify("Notes enregistrées.");
-        await LoadSheetAsync();
+        try
+        {
+            await Shell.Api.SendAsync(HttpMethod.Put, $"api/scolarite/evaluations/{chosen.Id}/notes", rows);
+            Shell.Notify("Notes enregistrées.");
+        }
+        catch (OfflineQueuedException)
+        {
+            Shell.Notify("Notes enregistrées localement ; synchronisation automatique au retour du serveur.");
+        }
+        // Une saisie plus récente ou une autre évaluation ne doit jamais être effacée par la fin de l'envoi.
+        if (request == sheetRequest && Assessment?.Id == chosen.Id &&
+            snapshot.SequenceEqual(Grades.Select(g => (g.EnrollmentId, g.Score, g.Comment))))
+            await LoadSheetAsync();
     }
 
     /// <summary>Crée un cours dans la promotion choisie. Le numéro proposé est le premier libre de la promotion.</summary>
@@ -189,7 +245,8 @@ public sealed class GradesPage : PageViewModel
                 name = f.Text("intitule"),
                 coefficient = f.Amount("coefficient"),
                 hours = f.Amount("heures"),
-                maxScore = f.Amount("cotation"),
+                maxScore = Labels.MaxScore(f),
+                semester = f.ChoiceValue("semestre"),
             });
             shell.Notify("Cours créé. Attribuez-le à un enseignant depuis Attributions et charges.");
             return true;
@@ -197,9 +254,14 @@ public sealed class GradesPage : PageViewModel
         form.AddChoice("promotion", "Promotion", promotions, promotionId?.ToString(), required: true);
         form.Add("numero", "Numéro du cours", FieldKind.Amount, next.ToString(System.Globalization.CultureInfo.InvariantCulture), required: true, hint: "De 1 à 9999, unique dans la promotion.");
         form.Add("intitule", "Intitulé", required: true);
-        form.Add("coefficient", "Coefficient", FieldKind.Amount, "1", required: true);
-        form.Add("heures", "Volume horaire annuel", FieldKind.Amount, "30", required: true, hint: "Peut comporter une décimale, par exemple 30,5.");
-        form.Add("cotation", "Cotation maximale (points)", FieldKind.Amount, "20", required: true);
+        form.Add("coefficient", Labels.WeightLabel, FieldKind.Amount, "1", required: true, hint: Labels.WeightHint);
+        form.Add("heures", "Volume horaire annuel", FieldKind.Amount, "30", required: true, hint: "Peut comporter une décimale, par exemple 30,5. Épreuve du jury : 1.");
+        form.Add("cotation", Labels.MaxScoreLabel, FieldKind.Amount, null, hint: Labels.MaxScoreHint);
+        var isLmd = shell.Session?.InstitutionType == "SuperieurLmd";
+        IReadOnlyList<ChoiceItem> periods = isLmd
+            ? Labels.Semesters.Where(p => p.Value is "S1" or "S2").ToList()
+            : Labels.Semesters;
+        form.AddChoice("semestre", "Organisation pédagogique", periods, isLmd ? "S1" : "Annuel", required: true);
         if (await shell.Ask(form) && shell.Current is GradesPage page) await page.RefreshAsync();
     }
 
@@ -213,7 +275,7 @@ public sealed class GradesPage : PageViewModel
             var list = await shell.Api.GetAsync<List<CourseDto>>("api/scolarite/cours" + ScoliaClient.Query(("promotionId", p.Id)));
             courses.AddRange(list.Select(c => new ChoiceItem(c.Id.ToString(), $"{p.Code} · {c.Number} · {c.Name}")));
         }
-        var form = new FormViewModel("Nouvelle évaluation", "Une évaluation reçoit ensuite les notes de chaque apprenant.", async f =>
+        var form = new FormViewModel("Nouvelle évaluation", $"Une évaluation reçoit ensuite les notes de chaque {shell.StudentTerms.Singular}.", async f =>
         {
             await shell.Api.SendAsync(HttpMethod.Post, "api/scolarite/evaluations", new
             {
@@ -318,7 +380,7 @@ public sealed class ResultsPage : PageViewModel
     {
         if (Selected is null || Promotion is null)
         {
-            Shell.Notify("Sélectionnez un apprenant pour produire son bulletin.");
+            Shell.Notify($"Sélectionnez un {Shell.StudentTerms.Singular} pour produire son bulletin.");
             return;
         }
         var query = ScoliaClient.Query(("promotionId", Guid.Parse(Promotion.Value)), ("inscriptionId", Selected.EnrollmentId),
@@ -362,7 +424,7 @@ public sealed class AttendancePage : PageViewModel
             Action("Confirmer le jour de cours", MaterialIconKind.CalendarCheck, () => ConfirmDayAsync(true));
             Action("Retirer la confirmation", MaterialIconKind.CalendarRemove, () => ConfirmDayAsync(false));
         }
-        Action("Apprenants à traiter", MaterialIconKind.AlertCircle, ShowAlertsAsync);
+        Action($"{Shell.StudentTerms.PluralTitle} à traiter", MaterialIconKind.AlertCircle, ShowAlertsAsync);
         ActionRefresh();
     }
 
@@ -446,7 +508,7 @@ public sealed class AttendancePage : PageViewModel
         private Task MarkAllPresentAsync()
     {
         foreach (var r in Rows) r.Status = Statuses[0];
-        Shell.Notify("Tous les apprenants sont marqués présents. Enregistrez l'appel pour le conserver.");
+        Shell.Notify($"Tous les {Shell.StudentTerms.Plural} sont marqués présents. Enregistrez l'appel pour le conserver.");
         return Task.CompletedTask;
     }
 
@@ -467,24 +529,49 @@ public sealed class AttendancePage : PageViewModel
         var date = ToDay(Day);
         var alerts = await Shell.Api.GetAsync<List<AttendanceAlertDto>>("api/scolarite/presences/alertes" + ScoliaClient.Query(
             ("promotionId", Guid.Parse(Promotion.Value)), ("du", date.AddDays(-30)), ("au", date)));
-        var form = new FormViewModel("Apprenants à traiter", "Seuils : 3 absences non justifiées, ou 3 jours de cours consécutifs absents. Période : 30 jours.", _ => Task.FromResult(true))
+        var form = new FormViewModel($"{Shell.StudentTerms.PluralTitle} à traiter", "Seuils : 3 absences non justifiées, ou 3 jours de cours consécutifs absents. Période : 30 jours.", _ => Task.FromResult(true))
         {
             Message = alerts.Count == 0
-                ? "Aucun apprenant ne dépasse les seuils."
-                : string.Join(Environment.NewLine, alerts.Select(a => $"{a.Matricule} · {a.FullName} : {a.UnjustifiedAbsences} absence(s) non justifiée(s), {a.LongestRun} jour(s) consécutif(s)")),
+                ? $"Aucun {Shell.StudentTerms.Singular} ne dépasse les seuils."
+                : string.Join(Environment.NewLine, alerts.Select(a => $"{Infrastructure.Format.CodeAndName(a.Matricule, a.FullName)} : {a.UnjustifiedAbsences} absence(s) non justifiée(s), {a.LongestRun} jour(s) consécutif(s)")),
             SubmitText = "Fermer",
             ShowCancel = false,
         };
         await Shell.Ask(form);
     }
 
-    public async Task SaveAsync()
+    internal async Task LoadForFlutterAsync(string? promotionId, DateTime date, bool summary)
     {
-        if (Promotion is null) return;
+        if (!ready) await LoadAsync();
+        promotion = string.IsNullOrEmpty(promotionId) ? (Promotions.Count > 0 ? Promotions[0] : null) :
+            Promotions.FirstOrDefault(p => p.Value == promotionId) ?? throw new ArgumentException("Promotion invalide.");
+        day = date;
+        showSummary = summary;
+        await LoadAsync();
+    }
+
+    internal Task ConfirmForFlutterAsync(bool confirm) => ConfirmDayAsync(confirm);
+
+    public async Task SaveAsync() => _ = await SaveForFlutterAsync();
+
+    internal async Task<string> SaveForFlutterAsync()
+    {
+        if (Promotion is null || ShowSummary || !Shell.Can(Perm.AcademicsWrite))
+            throw new InvalidOperationException("Feuille d'appel indisponible.");
         var date = ToDay(Day);
         var rows = Rows.Select(r => new { enrollmentId = r.EnrollmentId, status = r.Status.Value, note = string.IsNullOrWhiteSpace(r.Note) ? null : r.Note.Trim() }).ToList();
-        await Shell.Api.SendAsync(HttpMethod.Put, "api/scolarite/presences" + ScoliaClient.Query(("promotionId", Guid.Parse(Promotion.Value)), ("date", date)), rows);
-        Shell.Notify("Appel enregistré.");
+        try
+        {
+            await Shell.Api.SendAsync(HttpMethod.Put, "api/scolarite/presences" + ScoliaClient.Query(("promotionId", Guid.Parse(Promotion.Value)), ("date", date)), rows);
+            Shell.Notify("Appel enregistré.");
+            return "Appel enregistré.";
+        }
+        catch (OfflineQueuedException)
+        {
+            const string notice = "Appel enregistré sur cet appareil ; transmission automatique dès que le serveur revient.";
+            Shell.Notify(notice);
+            return notice;
+        }
     }
 }
 
@@ -522,7 +609,7 @@ public sealed class DisciplinePage : PageViewModel
             Action("Parent reçu ou absent", MaterialIconKind.AccountCheck, ReceptionAsync, row: true);
         }
         Action("Convocation à imprimer", MaterialIconKind.Printer, PrintConvocationAsync, row: true);
-        Action("Historique de l'apprenant", MaterialIconKind.History, ShowHistoryAsync, row: true);
+        Action($"Historique de {Shell.StudentTerms.Elided}", MaterialIconKind.History, ShowHistoryAsync, row: true);
         if (Shell.Can(Perm.DisciplineCancel)) Action("Annuler la décision", MaterialIconKind.CloseCircle, CancelAsync, row: true);
         Action("Exporter en CSV", MaterialIconKind.FileExport, ExportAsync);
         ActionRefresh();
@@ -565,6 +652,16 @@ public sealed class DisciplinePage : PageViewModel
         Raise(nameof(Subtitle));
     }
 
+    internal async Task LoadForFlutterAsync(string? promotionId, string? measureId)
+    {
+        if (!ready) await LoadAsync();
+        promotion = Promotions.FirstOrDefault(p => p.Value == (promotionId ?? "")) ?? throw new ArgumentException("Promotion invalide.");
+        measure = Measures.FirstOrDefault(m => m.Value == (measureId ?? "")) ?? throw new ArgumentException("Mesure invalide.");
+        await LoadAsync();
+    }
+
+    internal Task ExportForFlutterAsync() => ExportAsync();
+
     private static string Day(DateOnly? day) => day is { } d ? Format.Date(d) : "—";
 
     /// <summary>Nouvelle décision : renvoi temporaire, renvoi définitif ou convocation. Le serveur applique les règles.</summary>
@@ -601,7 +698,7 @@ public sealed class DisciplinePage : PageViewModel
             shell.Notify("Décision enregistrée dans le registre.");
             return true;
         });
-        form.AddChoice("apprenant", "Apprenant", choices, null, required: true);
+        form.AddChoice("apprenant", shell.StudentTerms.SingularTitle, choices, null, required: true);
         form.AddChoice("mesure", "Mesure", MeasureChoices.Skip(1).ToList(), "RenvoiTemporaire", required: true);
         form.Add("motif", "Motif", FieldKind.Multiline, required: true, hint: "Entre 5 et 2000 caractères.");
         form.AddDay("date", "Date de la décision", DateOnly.FromDateTime(DateTime.Today), required: true);
@@ -646,7 +743,7 @@ public sealed class DisciplinePage : PageViewModel
     {
         if (Selected is not { } row)
         {
-            Shell.Notify("Sélectionnez une ligne pour voir l'historique de l'apprenant.");
+            Shell.Notify($"Sélectionnez une ligne pour voir l'historique de {Shell.StudentTerms.Elided}.");
             return;
         }
         var history = await Shell.Api.GetAsync<List<DisciplineRowDto>>($"api/scolarite/discipline/inscriptions/{row.EnrollmentId}/historique");

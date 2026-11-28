@@ -1,0 +1,23 @@
+name: SCOLIA Confidentialite du depot public
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-fichiers:
+    name: Refuser bases de donnees et secrets suivis par Git
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Tester les regles de detection
+        run: bash scolia-pro/scripts/audit-tracked-files.sh --self-test
+      - name: Examiner les chemins suivis dans Git
+        run: bash scolia-pro/scripts/audit-tracked-files.sh

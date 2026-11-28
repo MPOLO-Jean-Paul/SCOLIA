@@ -41,9 +41,11 @@ public sealed class NativeSearchRoutingTests
         await search.SearchAsync();
         search.Selected = Assert.Single(search.Results, r => r.Title == "Sécurité du compte");
         search.Open.Execute(null);
-        Assert.True(shell.BackstageOpen);
-        Assert.True(shell.Backstage.IsPassword);
-        Assert.Null(shell.Current); // aucune redirection parasite à Accueil
+        // Sur Windows, la sécurité appartient aux Paramètres, plus au Compte.
+        Assert.False(shell.BackstageOpen);
+        var settings = Assert.IsType<SettingsPage>(shell.Current);
+        Assert.True(settings.IsSecurity);
+        Assert.True(settings.SecurityModel.IsPassword);
     }
 
     [Fact]

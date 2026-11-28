@@ -4,22 +4,30 @@ using Scolia.Application.Common;
 using Scolia.Application.Dtos;
 using Scolia.Domain.Common;
 using Scolia.Domain.Finance;
+using Scolia.Domain.Security;
 using Scolia.Domain.Staff;
 using Scolia.Domain.Students;
 
 namespace Scolia.Application.Services;
 
 /// <summary>Personnel et paie mensuelle. Le paiement d'un bulletin crée la dépense correspondante.</summary>
-public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, ICurrentUser user)
+public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, ICurrentUser user, CashService cash)
 {
     public async Task<IReadOnlyList<StaffDto>> ListAsync(CancellationToken ct = default) =>
-        (await db.Staff.AsNoTracking().OrderBy(s => s.LastName).ToListAsync(ct)).Select(ToDto).ToList();
+        (await db.Staff.AsNoTracking().OrderBy(s => s.LastName).ToListAsync(ct)).Select(ToDtoForCurrent).ToList();
 
     private static StaffDto ToDto(StaffMember s) => new(s.Id, s.Number, s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(), s.Function, s.Phone, s.Email,
         s.HireDate, s.ExitDate, s.BaseSalary, s.IsActive);
 
+    private StaffDto ToDtoForCurrent(StaffMember member) => user.HasPermission(Permissions.PayrollManage)
+        ? ToDto(member) : ToDto(member) with { BaseSalary = 0 };
+
     public Task<StaffDto> UpsertAsync(Guid? id, StaffUpsert input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
+        if (!user.HasPermission(Permissions.StaffManage)) throw new ForbiddenException("La modification du personnel est réservée au secrétariat.");
+        var managesPayroll = await EffectivePermissions.AllowsAsync(db, user, Permissions.PayrollManage, ct);
+        if (!managesPayroll && input.BaseSalary != 0)
+            throw new ForbiddenException("La définition des salaires revient à la comptabilité en gestion séparée.");
         var v = new ValidationBuilder()
             .Require(!string.IsNullOrWhiteSpace(input.LastName), "lastName", "Nom obligatoire.")
             .Require(!string.IsNullOrWhiteSpace(input.FirstName), "firstName", "Prénom obligatoire.")
@@ -28,6 +36,8 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
         string? phone = null;
         try { phone = IdentityRules.NormalizePhone(input.Phone); } catch (DomainException e) { v.Add("phone", e.Message); }
         v.ThrowIfInvalid();
+        var school = await YearContext.SchoolAsync(db, ct);
+        ValidateAmount(input.BaseSalary, school.WholeAmountsOnly, "baseSalary");
         StaffMember member;
         if (id is null)
         {
@@ -42,10 +52,24 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
         member.Function = input.Function.Trim(); member.Phone = phone; member.Email = string.IsNullOrWhiteSpace(input.Email) ? null : input.Email.Trim();
         if (input.ExitDate is { } exit && exit < input.HireDate)
             throw new DomainException("personnel", "La fin d'activité ne peut pas précéder l'entrée en fonction.");
-        member.HireDate = input.HireDate; member.ExitDate = input.ExitDate; member.BaseSalary = input.BaseSalary; member.IsActive = input.IsActive;
+        member.HireDate = input.HireDate; member.ExitDate = input.ExitDate; member.IsActive = input.IsActive;
+        if (managesPayroll) member.BaseSalary = input.BaseSalary;
         audit.Record(id is null ? "personnel.cree" : "personnel.modifie", "Personnel", member.Id.ToString(), $"{member.Number} {member.FullName} ({member.Function}).");
         await db.SaveChangesAsync(ct);
-        return ToDto(member);
+        return ToDtoForCurrent(member);
+    }, ct);
+
+    public Task<StaffDto> ChangeSalaryAsync(Guid id, StaffSalaryUpdate input, CancellationToken ct = default) => gate.RunAsync(async () =>
+    {
+        await RequirePayrollAsync(ct);
+        var school = await YearContext.SchoolAsync(db, ct);
+        ValidateAmount(input.BaseSalary, school.WholeAmountsOnly, "baseSalary");
+        var member = await db.Staff.FirstOrDefaultAsync(s => s.Id == id, ct) ?? throw new NotFoundException("Membre du personnel introuvable.");
+        member.BaseSalary = input.BaseSalary;
+        audit.Record("personnel.salaire-modifie", "Personnel", member.Id.ToString(),
+            $"Salaire de base de {member.FullName} : {Money.Display(member.BaseSalary, school.CurrencySymbol)}. Les bulletins déjà préparés sont conservés.");
+        await db.SaveChangesAsync(ct);
+        return ToDtoForCurrent(member);
     }, ct);
 
     public static string NormalizePeriod(string period)
@@ -57,6 +81,7 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
 
     public async Task<IReadOnlyList<PayrollDto>> PayrollAsync(string period, CancellationToken ct = default)
     {
+        await RequirePayrollAsync(ct);
         period = NormalizePeriod(period);
         var rows = await (from p in db.Payroll.AsNoTracking()
                           join s in db.Staff.AsNoTracking() on p.StaffMemberId equals s.Id
@@ -72,6 +97,7 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
     /// <summary>Prépare les bulletins du mois pour tout le personnel actif (sans doublon).</summary>
     public Task<int> GenerateAsync(string period, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
+        await RequirePayrollAsync(ct);
         period = NormalizePeriod(period);
         var existing = await db.Payroll.Where(p => p.Period == period).Select(p => p.StaffMemberId).ToListAsync(ct);
         var staff = await db.Staff.Where(s => s.IsActive && !existing.Contains(s.Id)).ToListAsync(ct);
@@ -88,25 +114,41 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
 
     public Task<PayrollDto> UpdateEntryAsync(Guid id, PayrollUpdate input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
+        await RequirePayrollAsync(ct);
         var entry = await db.Payroll.FirstOrDefaultAsync(p => p.Id == id, ct) ?? throw new NotFoundException("Bulletin introuvable.");
         if (entry.Status == PayrollStatus.Paye) throw new DomainException("paie", "Un bulletin payé ne peut plus être modifié.");
+        var school = await YearContext.SchoolAsync(db, ct);
+        ValidateAmount(input.Allowances, school.WholeAmountsOnly, "allowances");
+        ValidateAmount(input.Deductions, school.WholeAmountsOnly, "deductions");
+        ValidateAmount(input.Advances, school.WholeAmountsOnly, "advances");
         entry.Allowances = input.Allowances; entry.Deductions = input.Deductions; entry.Advances = input.Advances; entry.Note = input.Note;
         entry.Recompute();
+        ValidateAmount(entry.Net, school.WholeAmountsOnly, "paie");
         entry.Status = PayrollStatus.Valide;
         var s = await db.Staff.AsNoTracking().FirstAsync(x => x.Id == entry.StaffMemberId, ct);
-        audit.Record("paie.modifiee", "Paie", entry.Id.ToString(), $"Bulletin de {s.FullName} modifié : net {entry.Net:N0} FC.");
+        audit.Record("paie.modifiee", "Paie", entry.Id.ToString(), $"Bulletin de {s.FullName} modifié : net {Money.Display(entry.Net, school.CurrencySymbol)}.");
         await db.SaveChangesAsync(ct);
         return ToDto(entry, s);
     }, ct);
 
     public Task<PayrollDto> PayAsync(Guid id, string method, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
+        await RequirePayrollAsync(ct);
         var entry = await db.Payroll.FirstOrDefaultAsync(p => p.Id == id, ct) ?? throw new NotFoundException("Bulletin introuvable.");
         if (entry.Status == PayrollStatus.Paye) throw new ConflictException("Ce bulletin est déjà payé.");
         var s = await db.Staff.AsNoTracking().FirstAsync(x => x.Id == entry.StaffMemberId, ct);
         var year = await YearContext.CurrentAsync(db, ct);
-        var lastClosing = await PaymentService.LastClosingAsync(db, ct);
-        if (lastClosing is not null && clock.Today <= lastClosing) throw new DomainException("date", "La caisse du jour est déjà arrêtée.");
+        var lastClosing = await CashLock.LastAsync(db, ct);
+        if (CashLock.RefusesNew(lastClosing, clock.Today, clock.Today)) throw new DomainException("date", "La caisse du jour est déjà arrêtée.");
+        var school = await YearContext.SchoolAsync(db, ct);
+        ValidateAmount(entry.Net, school.WholeAmountsOnly, "paie");
+        var paymentMethod = PaymentService.ParseMethod(method);
+        if (entry.Net > 0 && paymentMethod == PaymentMethod.Especes)
+        {
+            var available = (await cash.SituationAsync(clock.Today, ct)).ExpectedCash;
+            if (entry.Net > available)
+                throw new DomainException("amount", $"Espèces disponibles insuffisantes : {Money.Display(available, school.CurrencySymbol)} en caisse.");
+        }
         entry.Status = PayrollStatus.Paye;
         entry.PaidOn = clock.Today;
         if (entry.Net > 0)
@@ -114,10 +156,18 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
             {
                 Number = await PaymentService.NextNumberAsync(db, "DP", year.FirstCalendarYear, ct), Date = clock.Today, AcademicYearId = year.Id,
                 Category = "Salaires", Beneficiary = s.FullName, Description = $"Salaire {entry.Period} ({s.Function})", Amount = entry.Net,
-                Method = PaymentService.ParseMethod(method), RecordedByName = user.Name,
+                Method = paymentMethod, RecordedByName = user.Name,
             });
-        audit.Record("paie.payee", "Paie", id.ToString(), $"Salaire {entry.Period} de {s.FullName} payé : {entry.Net:N0}.");
+        audit.Record("paie.payee", "Paie", id.ToString(), $"Salaire {entry.Period} de {s.FullName} payé : {Money.Display(entry.Net, school.CurrencySymbol)}.");
         await db.SaveChangesAsync(ct);
         return ToDto(entry, s);
     }, ct);
+
+    private Task RequirePayrollAsync(CancellationToken ct) => EffectivePermissions.RequireAsync(db, user, Permissions.PayrollManage, ct);
+
+    private static void ValidateAmount(decimal amount, bool wholeOnly, string field)
+    {
+        // Une rubrique de paie peut être nulle ; toute valeur non nulle suit les règles monétaires de l'école.
+        if (amount != 0) Money.EnsureValid(amount, wholeOnly, field);
+    }
 }

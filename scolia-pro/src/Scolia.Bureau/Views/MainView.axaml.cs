@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Media;
-using Avalonia.Controls.Primitives.PopupPositioning;
 using Material.Icons;
 using Material.Icons.Avalonia;
 using Avalonia.Controls;
@@ -31,6 +30,7 @@ public partial class MainView : UserControl
     private TopLevel? backHost;
     private bool fitActionsQueued;
     private bool fittingWindow;
+    private bool resizeQueued;
     private bool themeChanging;
     private CancellationTokenSource? themeFadeCancellation;
     private readonly Func<IReadOnlyList<string>, Task<PickedFile?>> pickFileHandler;
@@ -39,19 +39,24 @@ public partial class MainView : UserControl
 
     public MainView()
     {
+        // Même trait doux partout : lissage en niveaux de gris et calage léger, sur Windows comme sur Android.
+        Avalonia.Media.TextOptions.SetTextRenderingMode(this, Avalonia.Media.TextRenderingMode.Antialias);
+        Avalonia.Media.TextOptions.SetTextHintingMode(this, Avalonia.Media.TextHintingMode.Light);
         pickFileHandler = PickFileAsync;
         copyHandler = CopyAsync;
         isTypingHandler = IsTypingInView;
         InitializeComponent();
         Keyboard = new KeyboardAvoidance(this, RootContent);
+        StickyLayout.Track(DesktopStickyBar, PageHost, new Thickness(20, 8, 20, 16), 92);
         // Onde au toucher sur les boutons et les lignes, comme sur Android ; coupée avec les animations.
-        TouchFeedback.Attach(this, () => Shell?.Prefs.Animations ?? true);
+        TouchFeedback.Attach(this, () => Platform.IsMobile && (Shell?.Prefs.Animations ?? true));
         // Toute activité repousse la mise en veille : toucher, clic, molette, frappe.
         AddHandler(PointerPressedEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(PointerWheelChangedEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(KeyDownEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(TextInputEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
-        SizeChanged += (_, e) => FitWindow(e.NewSize);
+        SizeChanged += (_, _) => QueueResize();
+        DesktopArea.SizeChanged += (_, _) => PlaceCommandMenu();
         AttachedToVisualTree += (_, _) =>
         {
             ShowThemeIcon();
@@ -68,6 +73,10 @@ public partial class MainView : UserControl
         };
         ActualThemeVariantChanged += (_, _) => ShowThemeIcon();
         PageBar.SizeChanged += (_, _) => QueueFitPageActions();
+        HeaderFinderBar.SizeChanged += (_, _) =>
+        {
+            if (Shell?.HeaderFinderOpen == true) QueuePlaceHeaderFinder();
+        };
         PageHost.AddHandler(PointerReleasedEvent, OnPagePointerReleased, Avalonia.Interactivity.RoutingStrategies.Bubble);
         DataContextChanged += (_, _) => AttachShell();
     }
@@ -96,12 +105,14 @@ public partial class MainView : UserControl
         shell.CopyHandler = copyHandler;
         WatchPage(shell.Current);
         ApplyPageTransition(shell.Prefs);
+        UpdateZoomControls(shell.Prefs);
         FitWindow(Bounds.Size);
         QueueFitPageActions();
     }
 
     private void ReleaseShell()
     {
+        CloseCommandMenu();
         WatchPage(null);
         if (subscribedShell is { } shell)
         {
@@ -137,12 +148,17 @@ public partial class MainView : UserControl
         if (subscribedShell is not { } shell) return;
         if (args.PropertyName is nameof(Preferences.Animations) or nameof(Preferences.PageTransitions) or nameof(Preferences.Speed))
             ApplyPageTransition(shell.Prefs);
+        if (args.PropertyName == nameof(Preferences.Scale)) UpdateZoomControls(shell.Prefs);
         // Ne pas mesurer de nouveau l'en-tête quand un son, une animation ou
         // une préférence sans incidence géométrique est modifié.
         if (args.PropertyName is nameof(Preferences.Scale) or nameof(Preferences.Font)
             or nameof(Preferences.Compact) or nameof(Preferences.Sidebar)
             or nameof(Preferences.RibbonCollapsed))
             QueueFitPageActions();
+        // L'ouverture du volet décale le champ sans nécessairement changer sa largeur.
+        // Repositionner la liste de suggestions après la nouvelle mise en page.
+        if (args.PropertyName == nameof(Preferences.Sidebar) && shell.HeaderFinderOpen)
+            QueuePlaceHeaderFinder();
     }
 
     /// <summary>Place le curseur dans le filtre de la page sans ouvrir la recherche globale.</summary>
@@ -151,10 +167,12 @@ public partial class MainView : UserControl
         // Filtre ouvert ou fermé : la place laissée aux boutons de la page change.
         if (args.PropertyName == nameof(PhoneHeaderSearchVm.IsOpen)) QueueFitPageActions();
         if (args.PropertyName != nameof(PhoneHeaderSearchVm.IsOpen) ||
-            subscribedShell is not { } shell || !shell.HeaderSearch.IsOpen || shell.Phone) return;
+            subscribedShell is not { } shell || !ReferenceEquals(sender, shell.HeaderSearch)
+            || !shell.HeaderSearch.IsOpen || shell.Phone) return;
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            if (subscribedShell is { } current && current.HeaderSearch.IsOpen && !current.Phone)
+            if (ReferenceEquals(subscribedShell, shell) && ReferenceEquals(Shell, shell)
+                && shell.HeaderSearch.IsOpen && !shell.Phone)
                 DesktopContextSearchBox.Focus();
         }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
@@ -162,7 +180,13 @@ public partial class MainView : UserControl
     private void OnShellChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
     {
         if (subscribedShell is not { } shell) return;
+        if (args.PropertyName is nameof(ShellViewModel.Current) or nameof(ShellViewModel.Dialog)
+            or nameof(ShellViewModel.BackstageOpen) or nameof(ShellViewModel.IsLocked) or nameof(ShellViewModel.IsLoggedIn))
+            CloseCommandMenu();
         if (args.PropertyName == nameof(ShellViewModel.CompactWindow)) FitWindow(Bounds.Size);
+        if (args.PropertyName is nameof(ShellViewModel.SidebarShown) or nameof(ShellViewModel.Narrow)
+            && shell.HeaderFinderOpen)
+            QueuePlaceHeaderFinder();
         // Un résultat ouvert (page, fiche, fenêtre, menu Fichier) ou la veille : la liste de la barre se referme et se vide.
         if (shell.HeaderFinderOpen && args.PropertyName is nameof(ShellViewModel.Current) or nameof(ShellViewModel.Dialog)
                 or nameof(ShellViewModel.BackstageOpen) or nameof(ShellViewModel.IsLocked) or nameof(ShellViewModel.IsLoggedIn))
@@ -170,8 +194,11 @@ public partial class MainView : UserControl
         // Lancement et ouverture de session : le logo s'assemble, puis le nom, le message et les trois points suivent.
         if (args.PropertyName == nameof(ShellViewModel.ShowStartup) && shell.ShowStartup) PlayIntro(StartupLogo, StartupContent, shell);
         if (args.PropertyName == nameof(ShellViewModel.ShowLockScreen) && shell.ShowLockScreen)
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => LockHost.GetVisualDescendants().OfType<LockScreenView>().FirstOrDefault()?.FocusCode(),
-                Avalonia.Threading.DispatcherPriority.Loaded);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (ReferenceEquals(subscribedShell, shell) && ReferenceEquals(Shell, shell) && shell.ShowLockScreen)
+                    LockHost.GetVisualDescendants().OfType<LockScreenView>().FirstOrDefault()?.FocusCode();
+            }, Avalonia.Threading.DispatcherPriority.Loaded);
         // Accueil après la connexion : le logo, déjà assemblé au lancement, se pose seulement ; le message suit aussitôt.
         if (args.PropertyName == nameof(ShellViewModel.Opening) && shell.Opening) PlayIntro(OpeningLogo, WelcomeContent, shell, assemble: false);
         if (args.PropertyName != nameof(ShellViewModel.Current)) return;
@@ -190,32 +217,25 @@ public partial class MainView : UserControl
         var followers = content.Children.Where(c => !c.GetVisualDescendants().Contains(logo)).ToList();
         foreach (var follower in followers)
         {
-            // Chaque ligne apparaît en remontant de quelques points, comme les écrans d'Android 16.
+            // Le titre et les trois points restent lisibles dès la première image.
             follower.Transitions = animate
                 ?
                 [
-                    new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(320), Easing = new Avalonia.Animation.Easings.CubicEaseOut() },
-                    new Avalonia.Animation.TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(360), Easing = new Avalonia.Animation.Easings.CubicEaseOut() },
+                    new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(150), Easing = Infrastructure.Motion.Spring },
+                    new Avalonia.Animation.TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(160), Easing = Infrastructure.Motion.Spring },
                 ]
                 : null;
-            follower.Opacity = animate ? 0 : 1;
-            follower.RenderTransform = animate ? Avalonia.Media.Transformation.TransformOperations.Parse("translateY(8px)") : null;
+            follower.Opacity = animate ? 0.85 : 1;
+            follower.RenderTransform = animate ? Avalonia.Media.Transformation.TransformOperations.Parse("translateY(3px)") : null;
         }
-        void Reveal(object? sender, EventArgs e)
-        {
-            logo.Assembled -= Reveal;
-            for (var i = 0; i < followers.Count; i++)
-            {
-                var follower = followers[i];
-                Avalonia.Threading.DispatcherTimer.RunOnce(() =>
-                {
-                    follower.Opacity = 1;
-                    follower.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("translateY(0px)");
-                }, TimeSpan.FromMilliseconds(140 + i * 90));
-            }
-        }
-        logo.Assembled += Reveal;
         logo.Play(animate, assemble);
+        // Ne pas attendre la fin de l'assemblage ni créer une temporisation par ligne.
+        foreach (var follower in followers)
+        {
+            follower.Opacity = 1;
+            follower.RenderTransform = animate
+                ? Avalonia.Media.Transformation.TransformOperations.Parse("translateY(0px)") : null;
+        }
     }
 
     // ---------- Recherche générale dans la barre du haut ----------
@@ -223,9 +243,11 @@ public partial class MainView : UserControl
     /// <summary>Ctrl+K ou « Rechercher » : le curseur dans la barre, la liste ouverte dessous. Aucune autre fenêtre.</summary>
     private void FocusHeaderFinder()
     {
+        if (subscribedShell is not { } shell) return;
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            if (Shell is not { } shell || !HeaderFinderBar.IsEffectivelyVisible) return;
+            if (!ReferenceEquals(subscribedShell, shell) || !ReferenceEquals(Shell, shell)
+                || !HeaderFinderBar.IsEffectivelyVisible) return;
             HeaderFinderBox.Focus();
             HeaderFinderBox.SelectAll();
             OpenHeaderFinder(shell);
@@ -233,11 +255,6 @@ public partial class MainView : UserControl
     }
 
     private void OnHeaderFinderFocus(object? sender, FocusChangedEventArgs e)
-    {
-        if (Shell is { } shell) OpenHeaderFinder(shell);
-    }
-
-    private void OnHeaderFinderMic(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (Shell is { } shell) OpenHeaderFinder(shell);
     }
@@ -254,11 +271,18 @@ public partial class MainView : UserControl
     private void PlaceHeaderFinder()
     {
         if (HeaderFinderBar.Bounds.Width <= 0 || HeaderFinderBar.TranslatePoint(new Point(0, HeaderFinderBar.Bounds.Height), DesktopArea) is not { } corner) return;
-        var width = Math.Max(HeaderFinderBar.Bounds.Width, 560);
-        width = Math.Min(width, Math.Max(320, DesktopArea.Bounds.Width - 24));
+        // La liste se cale sous le champ et se recompose même après redimensionnement.
+        var space = Math.Max(0, DesktopArea.Bounds.Width - 24);
+        if (space <= 0) return;
+        var width = Math.Min(Math.Max(HeaderFinderBar.Bounds.Width, 500), 580);
+        width = Math.Min(width, space);
         var left = Math.Max(12, Math.Min(corner.X, DesktopArea.Bounds.Width - width - 12));
-        HeaderFinderDrop.Width = width;
-        HeaderFinderDrop.Margin = new Thickness(left, corner.Y + 8, 0, 0);
+        var top = Math.Max(0, corner.Y + 8);
+        var height = Adaptive.PopupHeight(DesktopArea.Bounds.Height, top, 490);
+        var margin = new Thickness(left, top, 0, 0);
+        if (HeaderFinderDrop.Width != width) HeaderFinderDrop.Width = width;
+        if (HeaderFinderDrop.MaxHeight != height) HeaderFinderDrop.MaxHeight = height;
+        if (HeaderFinderDrop.Margin != margin) HeaderFinderDrop.Margin = margin;
     }
 
     private void OnHeaderFinderOutside(object? sender, PointerPressedEventArgs e)
@@ -287,8 +311,12 @@ public partial class MainView : UserControl
                 e.Handled = true;
                 if (!finder.HasQuery) break;
                 // Saisie à peine tapée : la recherche part tout de suite, puis le premier résultat s'ouvre.
+                var query = finder.Query;
                 if (finder.Selected is null) await finder.SearchAsync();
-                if (finder.Open.CanExecute(null)) finder.Open.Execute(null);
+                // Une nouvelle frappe, une déconnexion ou la fermeture du volet
+                // ne doit jamais ouvrir un résultat provenant de l'ancienne recherche.
+                if (Shell == shell && shell.HeaderFinderOpen && finder.Query == query &&
+                    finder.Open.CanExecute(null)) finder.Open.Execute(null);
                 break;
         }
     }
@@ -328,8 +356,38 @@ public partial class MainView : UserControl
 
     private async Task CopyAsync(string text)
     {
-        if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard)
-            await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(clipboard, text);
+        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard
+            ?? throw new NotSupportedException("Le presse-papiers n'est pas disponible pour cette fenêtre.");
+        await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(clipboard, text);
+    }
+
+    // Plusieurs événements de taille pendant une même passe de rendu ne demandent qu'un seul recalcul.
+    private void QueueResize()
+    {
+        if (resizeQueued) return;
+        resizeQueued = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            resizeQueued = false;
+            if (subscribedShell is null) return;
+            FitWindow(Bounds.Size);
+            if (Shell?.HeaderFinderOpen == true) QueuePlaceHeaderFinder();
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
+    // La barre peut changer de largeur plusieurs fois pendant le même redimensionnement.
+    private bool finderPlacementQueued;
+
+    private void QueuePlaceHeaderFinder()
+    {
+        if (finderPlacementQueued) return;
+        finderPlacementQueued = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            finderPlacementQueued = false;
+            if (subscribedShell is { } shell && ReferenceEquals(Shell, shell) && shell.HeaderFinderOpen)
+                PlaceHeaderFinder();
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     private void QueueFitPageActions()
@@ -360,7 +418,7 @@ public partial class MainView : UserControl
         var size = Scaler.Bounds.Size;
         // Une capture bitmap du plein écran est coûteuse sur Android : la plateforme
         // applique le thème directement, sans surcharge GPU ni gel de la saisie.
-        if (shell.Phone || Platform.IsMobile || !shell.Prefs.Animations || size.Width <= 0 || size.Height <= 0)
+        if (OperatingSystem.IsWindows() || shell.Phone || Platform.IsMobile || !shell.Prefs.Animations || size.Width <= 0 || size.Height <= 0)
         {
             shell.Prefs.Theme = next;
             return;
@@ -385,7 +443,7 @@ public partial class MainView : UserControl
             var fade = new Animation
             {
                 Duration = TimeSpan.FromMilliseconds(220) * shell.Prefs.SpeedFactor,
-                Easing = new Avalonia.Animation.Easings.QuadraticEaseOut(),
+                Easing = Infrastructure.Motion.Smooth,
                 FillMode = FillMode.Forward,
                 Children =
                 {
@@ -411,8 +469,20 @@ public partial class MainView : UserControl
         }
     }
 
-    private void ShowThemeIcon() =>
-        ThemeIcon.Kind = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark ? MaterialIconKind.WeatherSunny : MaterialIconKind.WeatherNight;
+    private void ShowThemeIcon()
+    {
+        var dark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
+        ThemeIcon.Kind = dark ? MaterialIconKind.WeatherSunny : MaterialIconKind.WeatherNight;
+        var action = dark ? "Activer le thème clair" : "Activer le thème sombre";
+        ToolTip.SetTip(DesktopThemeToggle, action);
+        Avalonia.Automation.AutomationProperties.SetName(DesktopThemeToggle, action);
+    }
+
+    private void UpdateZoomControls(Preferences prefs)
+    {
+        DesktopZoomOut.IsEnabled = prefs.Scale > Preferences.MinimumTextScale;
+        DesktopZoomIn.IsEnabled = prefs.Scale < Preferences.MaximumTextScale;
+    }
 
     /// <summary>
     /// Met toute l'interface à l'échelle de la place disponible, replie le volet si la page manque de place,
@@ -430,7 +500,10 @@ public partial class MainView : UserControl
             if (shell.CompactWindow && !Preferences.MobileLayout) shell.Prefs.Fit(1280, 720);
             else shell.Prefs.Fit(size.Width, size.Height);
             var k = shell.Prefs.LayoutScale;
-            if (Math.Abs(k - 1) < 0.001) Scaler.LayoutTransform = null;
+            if (Math.Abs(k - 1) < 0.001)
+            {
+                if (Scaler.LayoutTransform is not null) Scaler.LayoutTransform = null;
+            }
             else if (Scaler.LayoutTransform is not ScaleTransform currentScale || Math.Abs(currentScale.ScaleX - k) >= 0.001)
                 Scaler.LayoutTransform = new ScaleTransform(k, k);
             shell.Narrow = size.Width / k < NarrowBelow;
@@ -469,10 +542,12 @@ public partial class MainView : UserControl
     /// </summary>
     private void FitPageActions()
     {
-        if (Shell?.Current is not { } page || PageBar.Bounds.Width <= 0) return;
-        var font = Shell.Prefs.Factor * 13.5;
+        if (Shell is not { } shell || shell.Phone || shell.Current is not { } page || PageBar.Bounds.Width <= 0) return;
+        var actions = page.HeaderActions;
+        if (actions.Count == 0) { page.FitActions(0); return; }
+        var font = shell.Prefs.Factor * 13.5;
         // Le bloc du titre prend la largeur du titre ou du sous-titre, le plus long des deux, dans sa limite.
-        var heading = TextWidth(page.Heading, 17 * Shell.Prefs.Factor, FontWeight.Bold);
+        var heading = TextWidth(page.Heading, 17 * Shell.Prefs.Factor, FontWeight.SemiBold);
         var sub = TextWidth(page.Subtitle, 12 * Shell.Prefs.Factor, FontWeight.Normal);
         var title = Math.Clamp(Math.Max(heading, sub) + 8 + 42, 140, TitleMax);
         // Le bandeau garde aussi la recherche, au moins sur une largeur lisible, l'état du réseau et le compte.
@@ -480,27 +555,49 @@ public partial class MainView : UserControl
         // Le filtre d'une liste garde sa largeur de saisie ; le bouton de recherche générale peut se resserrer.
         var search = Shell.HeaderSearch.IsOpen ? SearchMin : 220;
         var room = PageBar.Bounds.Width - PageBarFixed - title - extras - search;
-        var widths = page.HeaderActions.Select(a => TextWidth(a.Label, font, FontWeight.Normal) + 58).ToList();
-        const double more = 46;
-        int count;
-        if (widths.Count <= 3 && widths.Sum() <= room) count = widths.Count;
-        else
-        {
-            count = 0;
-            for (var k = Math.Min(2, widths.Count - 1); k > 0; k--)
-                if (widths.Take(k).Sum() + more <= room) { count = k; break; }
-        }
-        page.FitActions(count);
+        // Au maximum trois commandes sont affichées.
+        var widths = actions.Take(3).Select(a => TextWidth(a.Label, font, FontWeight.Normal) + 58).ToArray();
+        page.FitActions(FitHeaderActionCount(actions.Count, widths, room));
     }
 
-    private double TextWidth(string text, double size, FontWeight weight) =>
-        new FormattedText(text, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-            new Typeface(FontFamily, FontStyle.Normal, weight), size, null).Width;
+    public static int FitHeaderActionCount(int total, IReadOnlyList<double> widths, double room)
+    {
+        const double more = 46;
+        if (total <= 0) return 0;
+        if (total <= 3 && widths.Count >= total && widths.Take(total).Sum() <= room) return total;
+        for (var k = Math.Min(Math.Min(2, total - 1), widths.Count); k > 0; k--)
+            if (widths.Take(k).Sum() + more <= room) return k;
+        return 0;
+    }
+
+    private readonly Dictionary<(string Text, double Size, FontWeight Weight), double> textWidths = new();
+    private FontFamily? measuredFont;
+    private string? measuredCulture;
+
+    private double TextWidth(string text, double size, FontWeight weight)
+    {
+        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        var family = Shell is { } shell ? Preferences.FamilyOf(shell.Prefs.Font) : FontFamily;
+        if (!Equals(measuredFont, family) || measuredCulture != culture.Name)
+        {
+            textWidths.Clear();
+            measuredFont = family;
+            measuredCulture = culture.Name;
+        }
+        var key = (text, size, weight);
+        if (textWidths.TryGetValue(key, out var width)) return width;
+        // Cache borné : des libellés dynamiques ne doivent pas croître toute la session.
+        if (textWidths.Count >= 128) textWidths.Clear();
+        width = new FormattedText(text, culture, FlowDirection.LeftToRight,
+            new Typeface(family, FontStyle.Normal, weight), size, null).Width;
+        textWidths[key] = width;
+        return width;
+    }
 
     /// <summary>Fondu entre les pages, désactivé par la préférence « Animations ».</summary>
     private void ApplyPageTransition(Preferences prefs) =>
         PageHost.PageTransition = prefs.Animations && prefs.PageTransitions
-            ? new SharedAxisTransition(TimeSpan.FromMilliseconds(Math.Clamp(250 * prefs.SpeedFactor, 180, 320)), 18)
+            ? new SharedAxisTransition(TimeSpan.FromMilliseconds(Math.Clamp(160 * prefs.SpeedFactor, 110, 240)), 8, lightweight: true)
             : null;
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;
@@ -536,7 +633,6 @@ public partial class MainView : UserControl
         else if (shell.HasDialog) shell.CloseDialog();
         else if (shell.BackstageOpen) { if (shell.Backstage.ShowDetail) shell.Backstage.BackToList.Execute(null); else shell.CloseBackstage(); }
         else if (shell.PhoneMenuOpen && shell.SettingsSearch.IsOpen) shell.SettingsSearch.Reset();
-        else if (shell.PhoneMenuOpen && shell.SettingsSearch.IsOpen) shell.SettingsSearch.Reset();
         else if (shell.PhoneMenuOpen) shell.PhoneMenuOpen = false;
         else if (shell.Current is SettingsPage settings && settings.TryBackToMobileSections()) { }
         else if (!shell.Phone && shell.Narrow && shell.SidebarShown) shell.ToggleSidebar();
@@ -565,38 +661,163 @@ public partial class MainView : UserControl
         if (Shell is { } shell) shell.Prefs.Scale -= 0.1;
     }
 
-    /// <summary>
-    /// Menu de toutes les commandes : chaque métier en sous-menu avec ses commandes et leurs raccourcis,
-    /// puis le compte et la déconnexion. Il est construit à l'ouverture, d'après les droits et l'écran affiché.
-    /// </summary>
+    // Le menu natif ouvre des fenêtres Popup indépendantes, contraintes à l'écran et non à SCOLIA.
+    // Ce panneau reste dans le DesktopArea, y compris lors d'un redimensionnement ou d'un changement de zoom.
+    private Grid? commandMenuOverlay;
+    private Border? commandMenuPanel;
+    private Control? commandMenuAnchor;
+
+    private void PlaceCommandMenu()
+    {
+        if (commandMenuPanel is not { } panel || commandMenuAnchor is not { } anchor) return;
+        var width = DesktopArea.Bounds.Width;
+        var height = DesktopArea.Bounds.Height;
+        if (width <= 0 || height <= 0) return;
+        var corner = anchor.TranslatePoint(new Point(0, anchor.Bounds.Height), DesktopArea);
+        var bounds = CommandMenuBounds(new Size(width, height), corner?.Y ?? 0);
+        if (panel.Width != bounds.Width) panel.Width = bounds.Width;
+        if (panel.MaxHeight != bounds.Height) panel.MaxHeight = bounds.Height;
+        var margin = new Thickness(0, bounds.Y, 8, 8);
+        if (panel.Margin != margin) panel.Margin = margin;
+    }
+
+    /// <summary>Dimensions logiques du panneau, limitées au viewport client (indépendantes du DPI de l'écran).</summary>
+    public static Rect CommandMenuBounds(Size viewport, double anchorBottom)
+    {
+        var width = Math.Max(0, viewport.Width);
+        var height = Math.Max(0, viewport.Height);
+        var top = Math.Clamp(anchorBottom + 6, 0, Math.Max(0, height - 160));
+        var panelWidth = Math.Min(420, Math.Max(0, width - 16));
+        return new Rect(Math.Max(0, width - 8 - panelWidth), top, panelWidth,
+            Math.Max(0, height - top - 8));
+    }
+
+    private void CloseCommandMenu(bool restoreFocus = false)
+    {
+        if (commandMenuOverlay is not { } overlay) return;
+        var anchor = commandMenuAnchor;
+        DesktopArea.Children.Remove(overlay);
+        commandMenuOverlay = null;
+        commandMenuPanel = null;
+        commandMenuAnchor = null;
+        if (restoreFocus) anchor?.Focus();
+    }
+
+    /// <summary>Commandes autorisées, présentées dans un panneau interne défilant, avec navigation par catégorie.</summary>
     private void OnMenuClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (Shell is not { } shell || sender is not Control anchor) return;
-        var menu = new MenuFlyout { Placement = PlacementMode.BottomEdgeAlignedRight };
-        foreach (var tab in shell.Tabs.Where(t => t.Id != "fichier"))
+        if (commandMenuOverlay is not null) { CloseCommandMenu(true); return; }
+        shell.HeaderFinderOpen = false;
+        var overlay = new Grid { ClipToBounds = true, ZIndex = 20 };
+        Grid.SetRowSpan(overlay, 4);
+        Grid.SetColumnSpan(overlay, 2);
+        var catcher = new Border { Background = Brushes.Transparent };
+        catcher.PointerPressed += (_, args) => { CloseCommandMenu(true); args.Handled = true; };
+        overlay.Children.Add(catcher);
+
+        var panel = new Border
         {
-            var sub = new MenuItem { Header = tab.Title, Icon = Glyph(TabIcon(tab.Id)) };
-            var first = true;
-            foreach (var group in tab.Groups.Where(g => g.Title != "Récents"))
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top,
+            ClipToBounds = true,
+        };
+        panel.Classes.Add("finderdrop");
+        overlay.Children.Add(panel);
+        var layout = new DockPanel { LastChildFill = true };
+        panel.Child = layout;
+        var heading = new TextBlock { Text = "Toutes les commandes", FontWeight = FontWeight.SemiBold,
+            Margin = new Thickness(10, 8, 10, 6), TextWrapping = TextWrapping.Wrap };
+        DockPanel.SetDock(heading, Dock.Top);
+        layout.Children.Add(heading);
+        var rows = new StackPanel { Spacing = 2, Margin = new Thickness(4) };
+        var scroll = new ScrollViewer
+        {
+            Content = rows,
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+        };
+        layout.Children.Add(scroll);
+
+        Button AddRow(string label, MaterialIconKind icon, System.Windows.Input.ICommand? command = null,
+            KeyGesture? gesture = null, Action? navigate = null)
+        {
+            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), ColumnSpacing = 10 };
+            var glyph = Glyph(icon);
+            glyph.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center;
+            row.Children.Add(glyph);
+            var title = new TextBlock { Text = label, TextWrapping = TextWrapping.Wrap,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center };
+            Grid.SetColumn(title, 1);
+            row.Children.Add(title);
+            if (gesture is not null || navigate is not null)
             {
-                if (!first) sub.Items.Add(new Separator());
-                first = false;
-                foreach (var command in group.Commands)
-                    sub.Items.Add(new MenuItem { Header = command.Label, Icon = Glyph(command.Icon), Command = command.Command, InputGesture = command.Gesture });
+                var hint = new TextBlock { Text = gesture?.ToString() ?? "›", FontSize = 12,
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap, MaxWidth = 100 };
+                hint.Classes.Add("muted");
+                Grid.SetColumn(hint, 2);
+                row.Children.Add(hint);
             }
-            menu.Items.Add(sub);
+            var button = new Button { Content = row, Command = command, MinHeight = 38,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+            button.Classes.Add("searchrow");
+            button.Click += (_, _) =>
+            {
+                if (navigate is not null) navigate();
+                else CloseCommandMenu();
+            };
+            rows.Children.Add(button);
+            return button;
         }
-        menu.Items.Add(new Separator());
-        menu.Items.Add(new MenuItem { Header = "Rechercher…", Icon = Glyph(MaterialIconKind.Magnify), Command = shell.SearchCommand, InputGesture = new KeyGesture(Key.K, KeyModifiers.Control) });
-        menu.Items.Add(new MenuItem { Header = "Précédent", Icon = Glyph(MaterialIconKind.ChevronLeft), Command = shell.BackCommand, InputGesture = new KeyGesture(Key.Left, KeyModifiers.Alt) });
-        menu.Items.Add(new MenuItem { Header = "Suivant", Icon = Glyph(MaterialIconKind.ChevronRight), Command = shell.ForwardCommand, InputGesture = new KeyGesture(Key.Right, KeyModifiers.Alt) });
-        menu.Items.Add(new Separator());
-        menu.Items.Add(new MenuItem { Header = "Compte et poste…", Icon = Glyph(MaterialIconKind.AccountCircleOutline), Command = new RelayCommand(shell.OpenBackstage) });
-        menu.Items.Add(new MenuItem { Header = "Se déconnecter", Icon = Glyph(MaterialIconKind.Logout), Command = new AsyncCommand(shell.LogoutAsync) });
-        menu.ShowAt(anchor);
+
+        void ShowRoot()
+        {
+            rows.Children.Clear();
+            heading.Text = "Toutes les commandes";
+            scroll.Offset = default;
+            foreach (var tab in shell.Tabs.Where(t => t.Id != "fichier"))
+            {
+                AddRow(tab.Title, TabIcon(tab.Id), navigate: () =>
+                {
+                    rows.Children.Clear();
+                    heading.Text = tab.Title;
+                    scroll.Offset = default;
+                    var back = AddRow("Revenir aux commandes", MaterialIconKind.ChevronLeft, navigate: ShowRoot);
+                    foreach (var group in tab.Groups.Where(g => g.Title != "Récents"))
+                    {
+                        if (!string.IsNullOrWhiteSpace(group.Title))
+                        {
+                            var section = new TextBlock { Text = group.Title, FontWeight = FontWeight.SemiBold,
+                                TextWrapping = TextWrapping.Wrap, Margin = new Thickness(10, 8, 10, 2) };
+                            section.Classes.Add("muted");
+                            rows.Children.Add(section);
+                        }
+                        foreach (var command in group.Commands)
+                            AddRow(command.Label, command.Icon, command.Command, command.Gesture);
+                    }
+                    back.Focus();
+                });
+            }
+            rows.Children.Add(new Separator());
+            AddRow("Rechercher…", MaterialIconKind.Magnify, shell.SearchCommand, new KeyGesture(Key.K, KeyModifiers.Control));
+            AddRow("Précédent", MaterialIconKind.ChevronLeft, shell.BackCommand, new KeyGesture(Key.Left, KeyModifiers.Alt));
+            AddRow("Suivant", MaterialIconKind.ChevronRight, shell.ForwardCommand, new KeyGesture(Key.Right, KeyModifiers.Alt));
+            rows.Children.Add(new Separator());
+            AddRow("Compte et poste…", MaterialIconKind.AccountCircleOutline, new RelayCommand(shell.OpenBackstage));
+            AddRow("Se déconnecter", MaterialIconKind.Logout, new AsyncCommand(shell.LogoutAsync));
+            if (rows.Children.FirstOrDefault() is Button first) first.Focus();
+        }
+
+        commandMenuAnchor = anchor;
+        commandMenuOverlay = overlay;
+        commandMenuPanel = panel;
+        DesktopArea.Children.Add(overlay);
+        PlaceCommandMenu();
+        ShowRoot();
     }
 
-    private static MaterialIcon Glyph(MaterialIconKind kind) => new() { Kind = kind, Width = 16, Height = 16 };
+    private static MaterialIcon Glyph(MaterialIconKind kind) => new() { Kind = Infrastructure.Icons.Line(kind), Width = Infrastructure.Icons.ButtonSize, Height = Infrastructure.Icons.ButtonSize };
 
     private static MaterialIconKind TabIcon(string id) => id switch
     {
@@ -604,6 +825,8 @@ public partial class MainView : UserControl
         "secretariat" => MaterialIconKind.AccountGroupOutline,
         "finances" => MaterialIconKind.CashMultiple,
         "scolarite" => MaterialIconKind.SchoolOutline,
+        "deliberation" => MaterialIconKind.Gavel,
+        "enseignant" => MaterialIconKind.AccountSchoolOutline,
         "personnel" => MaterialIconKind.BriefcaseOutline,
         "pilotage" => MaterialIconKind.ViewDashboardOutline,
         "parametres" => MaterialIconKind.CogOutline,
@@ -642,7 +865,8 @@ public partial class MainView : UserControl
             return;
         }
         if (e.Key != Key.Escape) return;
-        if (shell.HeaderFinderOpen) shell.HeaderFinderOpen = false;
+        if (commandMenuOverlay is not null) CloseCommandMenu(true);
+        else if (shell.HeaderFinderOpen) shell.HeaderFinderOpen = false;
         else if (shell.HasSheet) shell.CloseSheet();
         else if (shell.Dialog is FormViewModel form) { if (!form.Busy) form.Cancel.Execute(null); }
         else if (shell.HasDialog) shell.CloseDialog();

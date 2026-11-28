@@ -22,6 +22,13 @@ public sealed class ConnectionViewModel : Observable
     private readonly ShellViewModel shell;
     private string message = string.Empty;
     private bool searching;
+    private bool pairingInProgress;
+    /// <summary>Le QR est reconnu : montrer une seule interface de vérification, sans les champs sous-jacents.</summary>
+    public bool PairingInProgress
+    {
+        get => pairingInProgress;
+        private set => Set(ref pairingInProgress, value);
+    }
 
     public ConnectionViewModel(ShellViewModel shell)
     {
@@ -29,39 +36,65 @@ public sealed class ConnectionViewModel : Observable
         Search = new AsyncCommand(SearchAsync);
         UseThisComputer = new AsyncCommand(() => shell.UseThisComputerAsync());
         ConnectAddress = new AsyncCommand(ConnectAddressAsync);
-        ConnectTailnet = new AsyncCommand(ConnectTailnetAsync);
-        PrepareTailnet = new AsyncCommand(Installer.BeginAsync);
-        Installer.Refresh();
         JoinInternet = new AsyncCommand(JoinInternetAsync);
         ScanCode = new AsyncCommand(ScanCodeAsync);
+        ImportQrImage = new AsyncCommand(ImportQrImageAsync);
     }
 
-    // ---------- Code QR du serveur : la voie la plus simple, Wi-Fi, Tailscale ou Internet ----------
+    // ---------- QR du responsable : Wi-Fi local ou Internet chiffré ----------
     /// <summary>Téléphone : l'appareil photo. Ordinateur : une image du code (photo, capture d'écran).</summary>
     public AsyncCommand ScanCode { get; }
+    public AsyncCommand ImportQrImage { get; }
+    public bool CanImportQrImage => Platform.IsMobile && Platform.PickQrImageAsync is not null;
     /// <summary>Ordinateur : le code copié sur le serveur (ou une invitation) se colle sous le bouton.</summary>
-    public bool CanPasteCode => !PairingFlow.HasCamera;
+    public bool CanPasteCode => Platform.IsMobile || !PairingFlow.HasCamera;
     public string ScanLabel => PairingFlow.HasCamera ? "Scanner le code QR" : "Lire une image du code QR";
     public string ScanHint => PairingFlow.HasCamera
-        ? "Sur le serveur : Poste et réseau, puis Relier un appareil. Visez le code : SCOLIA choisit seul le Wi-Fi, Tailscale ou Internet."
+        ? "Sur le serveur : Relier un appareil, puis scannez son QR. SCOLIA choisit le réseau local ou Internet automatiquement."
         : "Sur le serveur : Poste et réseau, puis Relier un appareil. Ouvrez une photo du code, ou collez le code copié.";
 
-    private async Task ScanCodeAsync()
+    private Task ScanCodeAsync() => ReadQrAsync(fromPhoto: false);
+    private Task ImportQrImageAsync() => ReadQrAsync(fromPhoto: true);
+
+    private async Task ReadQrAsync(bool fromPhoto)
     {
-        var (text, problem) = await PairingFlow.CaptureAsync(shell);
-        if (text is null)
+        if (Searching) return;
+        Searching = true;
+        try
         {
-            if (problem is not null) Message = problem;
-            return;
+            var (text, problem) = await PairingFlow.CaptureAsync(shell, fromPhoto);
+            if (text is null)
+            {
+                if (problem is not null) Message = problem;
+                return;
+            }
+            await JoinCodeAsync(text);
         }
-        await JoinCodeAsync(text);
+        finally { Searching = false; }
     }
 
     private async Task JoinCodeAsync(string text)
     {
         Searching = true;
-        try { Message = await PairingFlow.JoinAsync(shell, text, step => Message = step); }
-        finally { Searching = false; }
+        shell.BeginDevicePairing();
+        PairingInProgress = true;
+        Message = "Code reconnu. Vérification de l'appareil et de ses autorisations…";
+        try
+        {
+            Message = await PairingFlow.JoinAsync(shell, text, step => Message = step);
+            if (!shell.DevicePairingSucceeded) shell.ReturnToPairingChooser(Message);
+        }
+        catch (Exception ex) when (ex is IOException or HttpRequestException or TaskCanceledException
+            or Api.ApiException or InvalidOperationException or UnauthorizedAccessException)
+        {
+            Message = $"Jumelage impossible : {ex.Message}. Vérifiez le serveur et réessayez.";
+            if (!shell.IsLoggedIn) shell.ReturnToPairingChooser(Message);
+        }
+        finally
+        {
+            PairingInProgress = false;
+            Searching = false;
+        }
     }
 
     /// <summary>Tout ordinateur peut être le serveur ; un téléphone aussi, quand l'établissement n'a pas d'ordinateur.</summary>
@@ -79,72 +112,18 @@ public sealed class ConnectionViewModel : Observable
     /// <summary>Adresse saisie à la main, quand le Wi-Fi bloque la recherche automatique : 192.168.1.10, ou 192.168.1.10:5080.</summary>
     public string Address { get => address; set => Set(ref address, value); }
     public AsyncCommand ConnectAddress { get; }
-    private string tailscaleAddress = string.Empty;
-    /// <summary>IPv4 Tailscale ou nom MagicDNS complet de l'appareil qui porte la base.</summary>
-    public string TailscaleAddress { get => tailscaleAddress; set => Set(ref tailscaleAddress, value); }
-    public AsyncCommand ConnectTailnet { get; }
-    /// <summary>Installation ou ouverture du client VPN, uniquement après un clic de l'utilisateur.</summary>
-    public AsyncCommand PrepareTailnet { get; }
-    public TailscaleInstaller Installer { get; } = TailscaleInstaller.Instance;
-
-    private async Task ConnectTailnetAsync()
-    {
-        if (string.IsNullOrWhiteSpace(TailscaleAddress))
-        {
-            Message = "Commencez par installer ou ouvrir Tailscale, puis saisissez l'adresse privée du téléphone ou PC serveur.";
-            return;
-        }
-        if (!TailscaleEndpoint.TryParse(TailscaleAddress, PosteAdmin.DefaultPort, out var target) || target is null)
-        {
-            Message = "Adresse Tailscale invalide. Utilisez l'adresse 100.64–100.127.x.x ou un nom complet .ts.net, avec le port SCOLIA.";
-            return;
-        }
-
-        Searching = true;
-        Message = "Vérification de la liaison privée Tailscale…";
-        try
-        {
-            // Lors d'un choix volontaire de rejoindre le tailnet, demander sa
-            // reconnexion discrète sans présenter l'envoi comme un succès.
-            if (Platform.IsMobile && Platform.IsTailscaleInstalled?.Invoke() == false)
-            {
-                Message = "Tailscale est absent. Lancez son assistant d'installation avant de rejoindre le serveur.";
-                return;
-            }
-            if (Platform.ConnectTailscaleInBackground is not null)
-                await TailscaleCompanion.ConnectInBackgroundAsync();
-            if (!await TailscaleEndpoint.ResolvesPrivatelyAsync(target))
-            {
-                Message = "L'adresse indiquée ne correspond pas à un appareil privé Tailscale joignable. Vérifiez MagicDNS et l'état du VPN.";
-                return;
-            }
-            using var probe = new Api.ScoliaClient(target);
-            if (!await probe.IsRunningAsync())
-            {
-                Message = "SCOLIA ne répond pas sur le réseau privé. Vérifiez Tailscale sur les deux appareils, leur autorisation et le serveur SCOLIA.";
-                return;
-            }
-            var status = await probe.GetAsync<Api.SetupStatusDto>("api/installation");
-            await shell.JoinAsync(new DiscoveredServer(target.Host,
-                status.SchoolName ?? "Établissement", target.Host, string.Empty, target));
-            Message = "Connecté sur le réseau privé Tailscale. Les autorisations de connexion SCOLIA restent nécessaires.";
-        }
-        catch (Exception ex) when (ex is HttpRequestException or Api.ApiException or TaskCanceledException or IOException)
-        {
-            Message = "Connexion Tailscale impossible. Contrôlez que les deux appareils sont approuvés dans le même tailnet et que le port SCOLIA est accessible.";
-        }
-        finally { Searching = false; }
-    }
-
     /// <summary>Vérifie que SCOLIA répond à l'adresse saisie, puis relie l'appareil à ce serveur.</summary>
     private async Task ConnectAddressAsync()
     {
         var text = Address.Trim();
         if (text.Length == 0) { Message = "Saisissez l'adresse de l'ordinateur principal, par exemple 192.168.1.10."; return; }
         if (!text.Contains("://", StringComparison.Ordinal)) text = "http://" + text;
-        if (!Uri.TryCreate(text, UriKind.Absolute, out var uri) || uri.Host.Length == 0)
+        if (!Uri.TryCreate(text, UriKind.Absolute, out var uri) || uri.Host.Length == 0
+            || uri.Scheme != Uri.UriSchemeHttp || !PairingCode.IsAllowed(uri.Host)
+            || TailscaleEndpoint.IsTailnetAddress(uri) || uri.AbsolutePath != "/"
+            || uri.UserInfo.Length > 0 || uri.Query.Length > 0 || uri.Fragment.Length > 0)
         {
-            Message = "Adresse invalide. Exemple : 192.168.1.10 ou 192.168.1.10:5080.";
+            Message = "Saisissez uniquement une adresse IP locale de l'établissement, par exemple 192.168.1.10:5080. Pour Internet, utilisez le QR code.";
             return;
         }
         var server = new UriBuilder(uri.Scheme, uri.Host, uri.IsDefaultPort && !text.Contains($":{uri.Port}", StringComparison.Ordinal) ? PosteAdmin.DefaultPort : uri.Port).Uri;
@@ -174,7 +153,7 @@ public sealed class ConnectionViewModel : Observable
     public AsyncCommand JoinInternet { get; }
     private async Task JoinInternetAsync()
     {
-        // Le code de liaison copié sur le serveur se colle ici aussi : il essaie le Wi-Fi et Tailscale avant Internet.
+        // Le code du responsable fonctionne aussi sur le Wi-Fi ou via Render.
         if (Invitation.Trim().StartsWith(PairingCode.Prefix, StringComparison.OrdinalIgnoreCase))
         {
             var code = Invitation;
@@ -201,9 +180,43 @@ public sealed class ConnectionViewModel : Observable
 
     public ObservableCollection<ServerRowVm> Servers { get; } = [];
     public bool HasServers => Servers.Count > 0;
-    public string Message { get => message; private set => Set(ref message, value); }
+
+    private ServerRowVm? selectedServer;
+    public ServerRowVm? SelectedServer
+    {
+        get => selectedServer;
+        set
+        {
+            if (Set(ref selectedServer, value)) Raise(nameof(HasSelectedServer));
+        }
+    }
+    public bool HasSelectedServer => selectedServer is not null;
+
+    public bool HasMessage => !string.IsNullOrWhiteSpace(message);
+    public string Message
+    {
+        get => message;
+        private set
+        {
+            if (Set(ref message, value)) Raise(nameof(HasMessage));
+        }
+    }
     public bool Searching { get => searching; private set { if (Set(ref searching, value)) Raise(nameof(NotSearching)); } }
     public bool NotSearching => !searching;
+
+    /// <summary>Opération longue (démarrage du serveur de ce téléphone) : progression visible, boutons en attente.</summary>
+    internal void BeginProgress(string text)
+    {
+        Message = text;
+        Searching = true;
+    }
+
+    /// <summary>Fin de l'opération longue ; le message explique le résultat ou l'erreur.</summary>
+    internal void EndProgress(string text)
+    {
+        Searching = false;
+        Message = text;
+    }
 
     public AsyncCommand Search { get; }
     public AsyncCommand UseThisComputer { get; }
@@ -221,6 +234,7 @@ public sealed class ConnectionViewModel : Observable
     {
         Servers.Clear();
         foreach (var server in servers) Servers.Add(new ServerRowVm(server, shell.JoinAsync));
+        SelectedServer = Servers.FirstOrDefault();
         Raise(nameof(HasServers));
         Message = text;
     }

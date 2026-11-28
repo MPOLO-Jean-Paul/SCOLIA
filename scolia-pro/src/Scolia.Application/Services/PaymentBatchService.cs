@@ -24,11 +24,14 @@ public sealed class PaymentBatchService(IAppDbContext db, IWriteGate gate, IAudi
         var year = await YearContext.CurrentAsync(db, ct);
         var map = await accounts.ComputeAsync(year.Id, null, null, ct);
         var terms = TextKey.Normalize(search).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var codes = await AnonymousDisplay.CodesAsync(db, map.Values.Select(a => a.Enrollment.Id), ct);
         return map.Values
             .Where(a => a.Account.Balance > 0 && (promotionId is null || a.Promotion.Id == promotionId))
-            .Where(a => terms.All(t => a.Enrollment.Student!.SearchText.Contains(t, StringComparison.Ordinal)))
+            // Recherche par nom ou par code anonyme.
+            .Where(a => terms.All(t => a.Enrollment.Student!.SearchText.Contains(t, StringComparison.Ordinal)
+                || TextKey.Normalize(AnonymousDisplay.Of(codes, a.Enrollment.Id)).Contains(t, StringComparison.Ordinal)))
             .OrderBy(a => a.Promotion.Code).ThenBy(a => a.Enrollment.Student!.LastName).ThenBy(a => a.Enrollment.Student!.FirstName)
-            .Select(a => new BatchCandidateDto(a.Enrollment.Id, a.Enrollment.Student!.Matricule, a.Enrollment.Student.FullName, a.Promotion.Code,
+            .Select(a => new BatchCandidateDto(a.Enrollment.Id, AnonymousDisplay.Of(codes, a.Enrollment.Id), a.Enrollment.Student!.FullName, a.Promotion.Code,
                 a.Account.Balance, a.Account.Overdue,
                 a.Account.Lines.Where(l => l.Kind == FeeKind.Mensualite && l.Remaining > 0)
                     .OrderBy(l => l.DueDate).ThenBy(l => l.Order)
@@ -41,13 +44,20 @@ public sealed class PaymentBatchService(IAppDbContext db, IWriteGate gate, IAudi
     {
         var date = EnsureItems(input);
         var lines = new List<BatchPreviewLineDto>(input.Items.Count);
+        var plannedEnrollments = new HashSet<Guid>();
         foreach (var item in input.Items)
         {
             var (matricule, name) = await IdentityAsync(item.EnrollmentId, ct);
             try
             {
                 var data = await accounts.ForEnrollmentAsync(item.EnrollmentId, null, ct);
-                var plan = PaymentAllocator.Months(data.Account, item.FeeItemIds);
+                var plan = PaymentAllocator.Months(data.Account, item.FeeItemIds, monthsOnly: true);
+                if (!plannedEnrollments.Add(item.EnrollmentId))
+                {
+                    lines.Add(new BatchPreviewLineDto(item.EnrollmentId, matricule, name, 0, 0, [],
+                        "Cet apprenant figure déjà dans le lot : regroupez ses mois sur une seule ligne."));
+                    continue;
+                }
                 var total = plan.Sum(p => p.Amount);
                 var duplicates = (await db.Receipts.AsNoTracking()
                         .Where(r => r.EnrollmentId == item.EnrollmentId && r.Status == OperationStatus.Valide && r.Date == date)
@@ -72,6 +82,7 @@ public sealed class PaymentBatchService(IAppDbContext db, IWriteGate gate, IAudi
     {
         EnsureItems(input);
         var lines = new List<BatchPaymentLineDto>(input.Items.Count);
+        var processedEnrollments = new HashSet<Guid>();
         for (var i = 0; i < input.Items.Count; i++)
         {
             var item = input.Items[i];
@@ -80,17 +91,40 @@ public sealed class PaymentBatchService(IAppDbContext db, IWriteGate gate, IAudi
             try
             {
                 // Un envoi déjà traité renvoie son reçu : les mois sont alors déjà réglés et ne seraient plus planifiables.
-                var previous = key is null ? null : await db.Receipts.AsNoTracking().Where(r => r.IdempotencyKey == key)
-                    .Select(r => new { r.Id, r.Number, r.Amount }).FirstOrDefaultAsync(ct);
+                var previous = key is null ? null : await db.Receipts.AsNoTracking()
+                    .Include(r => r.Allocations).FirstOrDefaultAsync(r => r.IdempotencyKey == key, ct);
                 if (previous is not null)
                 {
+                    // Le lot doit être réémis à l'identique : ni réorganisation des apprenants
+                    // ni changement de mois, de mode ou de référence ne peut réutiliser ce reçu.
+                    if (previous.EnrollmentId != item.EnrollmentId
+                        || previous.Status != OperationStatus.Valide
+                        || previous.Method != PaymentService.ParseMethod(item.Method)
+                        || (input.Date.HasValue && previous.Date != input.Date.Value)
+                        || !string.Equals(previous.Reference?.Trim(), item.Reference?.Trim(), StringComparison.Ordinal)
+                        || previous.Allocations.Count != item.FeeItemIds.Distinct().Count()
+                        || previous.Allocations.Any(a => !item.FeeItemIds.Contains(a.FeeItemId)))
+                        throw new DomainException("lot", "Le lot a changé depuis son premier envoi : rechargez les lignes avant de recommencer.");
+                    if (!processedEnrollments.Add(item.EnrollmentId))
+                    {
+                        lines.Add(new BatchPaymentLineDto(item.EnrollmentId, matricule, name, false, null, null, 0,
+                            "Cet apprenant possède déjà un paiement dans ce lot."));
+                        continue;
+                    }
                     lines.Add(new BatchPaymentLineDto(item.EnrollmentId, matricule, name, true, previous.Id, previous.Number, previous.Amount, null));
                     continue;
                 }
+                if (processedEnrollments.Contains(item.EnrollmentId))
+                {
+                    lines.Add(new BatchPaymentLineDto(item.EnrollmentId, matricule, name, false, null, null, 0,
+                        "Cet apprenant a déjà été encaissé dans ce lot : regroupez ses mois."));
+                    continue;
+                }
                 var data = await accounts.ForEnrollmentAsync(item.EnrollmentId, null, ct);
-                var amount = PaymentAllocator.Months(data.Account, item.FeeItemIds).Sum(p => p.Amount);
+                var amount = PaymentAllocator.Months(data.Account, item.FeeItemIds, monthsOnly: true).Sum(p => p.Amount);
                 var receipt = await payments.CreateAsync(new PaymentRequest(item.EnrollmentId, amount, input.Date, item.Method, item.Reference,
                     item.PayerName, item.PayerPhone, null, item.FeeItemIds, key), ct);
+                processedEnrollments.Add(item.EnrollmentId);
                 lines.Add(new BatchPaymentLineDto(item.EnrollmentId, matricule, name, true, receipt.Id, receipt.Number, receipt.Amount, null));
             }
             catch (DomainException ex)
@@ -130,7 +164,9 @@ public sealed class PaymentBatchService(IAppDbContext db, IWriteGate gate, IAudi
     private async Task<(string Matricule, string Name)> IdentityAsync(Guid enrollmentId, CancellationToken ct)
     {
         var enrollment = await db.Enrollments.AsNoTracking().Include(e => e.Student).FirstOrDefaultAsync(e => e.Id == enrollmentId, ct);
-        return enrollment?.Student is null ? ("?", "Inscription introuvable") : (enrollment.Student.Matricule, enrollment.Student.FullName);
+        if (enrollment?.Student is null) return ("?", "Inscription introuvable");
+        var codes = await AnonymousDisplay.CodesAsync(db, [enrollmentId], ct);
+        return (AnonymousDisplay.Of(codes, enrollmentId), enrollment.Student.FullName);
     }
 }
 

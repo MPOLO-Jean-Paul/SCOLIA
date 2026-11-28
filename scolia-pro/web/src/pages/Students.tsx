@@ -8,6 +8,7 @@ import { money } from '../lib/format';
 import { Badge, Button, Empty, ErrorAlert, Loading, PageHead, Pager, SelectField, statusTone, useDebounced, useToast } from '../components/ui';
 import { NewStudentDialog } from './StudentForm';
 import { P, useSession } from '../lib/session';
+import { adapt } from '../lib/terms';
 
 export function StudentsPage() {
   const [params, setParams] = useSearchParams();
@@ -21,7 +22,7 @@ export function StudentsPage() {
   const debounced = useDebounced(search, 200);
   const navigate = useNavigate();
   const toast = useToast();
-  const { can } = useSession();
+  const { can, session } = useSession();
   const promotions = useQuery({ queryKey: ['promotions'], queryFn: () => api.get<Promotion[]>('/api/etablissement/promotions') });
   const list = useQuery({
     queryKey: ['students', debounced, promotionId, status, page],
@@ -39,7 +40,7 @@ export function StudentsPage() {
 
   return (
     <>
-      <PageHead title="Apprenants" subtitle="Retrouver un dossier, consulter sa situation financière et sa scolarité."
+      <PageHead title={adapt('Apprenants', session?.institutionType)} subtitle="Retrouver un dossier, consulter sa situation financière et sa scolarité."
         actions={<>
           {promotionId && <Button icon={<FileDown />} onClick={() => openDocument(`/api/rapports/liste-classe/${promotionId}`)}>Liste nominative</Button>}
           {can(P.studentsWrite) && <Button variant="primary" icon={<UserPlus />} onClick={() => setCreating(true)}>Nouvelle inscription</Button>}

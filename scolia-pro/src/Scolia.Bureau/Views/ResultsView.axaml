@@ -7,16 +7,16 @@
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
       <WrapPanel>
         <StackPanel Classes="field">
-          <TextBlock Text="Promotion" Classes="fieldlabel" />
-          <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+          <TextBlock Text="Promotion" Classes="fieldlabel" TextWrapping="Wrap" />
+          <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" AutomationProperties.Name="Promotion" />
         </StackPanel>
         <StackPanel Classes="field">
-          <TextBlock Text="Période" Classes="fieldlabel" />
-          <ComboBox Width="170" ItemsSource="{Binding Terms}" SelectedItem="{Binding Term}" />
+          <TextBlock Text="Période" Classes="fieldlabel" TextWrapping="Wrap" />
+          <ComboBox Width="170" ItemsSource="{Binding Terms}" SelectedItem="{Binding Term}" AutomationProperties.Name="Période" />
         </StackPanel>
       </WrapPanel>
     </Border>
-    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" AutomationProperties.Name="Résultats de la promotion">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Rang" Binding="{Binding Rank}" Width="Auto" MinWidth="84" />
         <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />

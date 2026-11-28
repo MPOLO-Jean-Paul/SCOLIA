@@ -10,7 +10,7 @@ namespace Scolia.Tests;
 public sealed class DevicePairingApiTests
 {
     [Fact]
-    public async Task Invitation_a_usage_unique_et_appareil_revoque()
+    public async Task Invitation_a_usage_unique_ne_cree_pas_de_session_utilisateur()
     {
         using var server = new ScoliaApp();
         using var owner = await server.InstalledAdmin();
@@ -21,15 +21,17 @@ public sealed class DevicePairingApiTests
         var invitation = registry.Invite(account.Id, account.SecurityStamp);
 
         using var device = server.Client();
-        device.DefaultRequestHeaders.Add("X-Scolia-Poste", "device-unique-001");
+        const string deviceId = "device-unique-001";
+        device.DefaultRequestHeaders.Add("X-Scolia-Poste", deviceId);
         var accepted = await device.Post("/api/jumelage/accepter", new
         {
-            invitationToken = invitation.Token, deviceId = "device-unique-001", deviceName = "Poste infirmier"
+            invitationToken = invitation.Token, deviceId, deviceName = "Poste infirmier"
         }).Ok();
         var grantId = accepted.GetProperty("grantId").GetGuid();
-        var secret = accepted.GetProperty("deviceSecret").GetString();
-        Assert.False(string.IsNullOrEmpty(secret));
-        Assert.Equal("admin", accepted.GetProperty("session").GetProperty("userName").GetString());
+        var secret = accepted.GetProperty("deviceSecret").GetString()!;
+        Assert.Equal("Institut de test", accepted.GetProperty("schoolName").GetString());
+        Assert.False(accepted.TryGetProperty("session", out _));
+        Assert.Equal(HttpStatusCode.Unauthorized, (await device.GetAsync("/api/session")).StatusCode);
 
         var reused = await server.Client().Post("/api/jumelage/accepter", new
         {
@@ -38,22 +40,24 @@ public sealed class DevicePairingApiTests
         Assert.Equal(HttpStatusCode.Unauthorized, reused.Status);
 
         using var restart = server.Client();
-        restart.DefaultRequestHeaders.Add("X-Scolia-Poste", "device-unique-001");
-        var loggedIn = await restart.Post("/api/session/appareil", new
+        restart.DefaultRequestHeaders.Add("X-Scolia-Poste", deviceId);
+        var linked = await restart.Post("/api/jumelage/appareil/verifier", new
         {
-            grantId, deviceId = "device-unique-001", secret
+            grantId, deviceId, secret
         }).Ok();
-        Assert.Equal("admin", loggedIn.GetProperty("userName").GetString());
-
-        // Une session copiée avec un autre identifiant de poste ne suffit pas.
-        restart.DefaultRequestHeaders.Remove("X-Scolia-Poste");
-        restart.DefaultRequestHeaders.Add("X-Scolia-Poste", "device-non-autorise");
+        Assert.True(linked.GetProperty("expiresUtc").GetDateTime() > DateTime.UtcNow);
         Assert.Equal(HttpStatusCode.Unauthorized, (await restart.GetAsync("/api/session")).StatusCode);
 
-        await owner.Post("/api/jumelage/appareils/" + grantId + "/revoquer", new { }).Ok();
-        var refused = await device.Post("/api/session/appareil", new
+        // Même avec la clé correcte, les anciens endpoints de connexion restent fermés.
+        Assert.Equal(HttpStatusCode.Unauthorized, (await restart.Post("/api/session/appareil/renouveler", new
         {
-            grantId, deviceId = "device-unique-001", secret
+            grantId, deviceId, secret
+        })).StatusCode);
+
+        await owner.Post($"/api/jumelage/appareils/{grantId}/revoquer", new { }).Ok();
+        var refused = await restart.Post("/api/jumelage/appareil/verifier", new
+        {
+            grantId, deviceId, secret
         }).Fail();
         Assert.Equal(HttpStatusCode.Unauthorized, refused.Status);
     }

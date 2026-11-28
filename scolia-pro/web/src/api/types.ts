@@ -1,6 +1,8 @@
 export interface Session {
   id: string; userName: string; displayName: string; role: string; roleLabel: string; permissions: string[];
   mustChangePassword: boolean; schoolName: string; schoolShortName?: string; currentYear?: string; currencySymbol: string; phoneCountryCode: string;
+  /** ItmIm, Primaire, Secondaire, ComplexeScolaire, Maternelle ou SuperieurLmd. */
+  institutionType?: string;
 }
 export interface Paged<T> { items: T[]; total: number; page: number; pageSize: number; sum?: number | null }
 export interface School {

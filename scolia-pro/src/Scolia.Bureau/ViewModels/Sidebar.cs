@@ -2,6 +2,7 @@ using Avalonia.Media;
 using Material.Icons;
 using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.Ribbon;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -13,24 +14,30 @@ public sealed class NavItemVm : Observable
     public NavItemVm(string label, MaterialIconKind icon, string tone, Type page, Func<PageViewModel> create, ShellViewModel shell)
     {
         Label = label;
-        Icon = icon;
-        Brush = ThemeBrush.Get(tone);
+        Icon = FeatureVisuals.ForPage(page, icon);
+        Brush = IconPalette.Get(FeatureVisuals.NavigationTone(tone));
         PageType = page;
         Open = new AsyncCommand(() => shell.Run(() => shell.Open(create)));
     }
 
     public string Label { get; }
     /// <summary>Libellé court des onglets du téléphone, où la place manque : « Reçus » pour « Journal des reçus ».</summary>
-    public string TabLabel => Label switch
+    public string TabLabel => PageType == typeof(StartPage) ? "Outils"
+        : PageType == typeof(StudentsPage) ? "Dossiers"
+        : PageType == typeof(CashierPage) ? "Paiement"
+        : Label switch
     {
         "Journal des reçus" => "Reçus",
         "Suivi mensuel" => "Suivi",
         "Recouvrement" => "Retards",
         "Encaissement par lot" => "Par lot",
+        "Mes cours et cotes" => "Cours & cotes",
         _ => Label,
     };
     public MaterialIconKind Icon { get; }
     public IBrush Brush { get; }
+    /// <summary>Avatar illustré de la page, pour les listes de l'accueil.</summary>
+    public IImage Illustration => Infrastructure.Illustrations.For(Icon, Brush);
     public Type PageType { get; }
     public AsyncCommand Open { get; }
     public bool IsSelected { get => selected; set => Set(ref selected, value); }
@@ -46,7 +53,7 @@ public sealed class NavGroupVm : Observable
         Title = title;
         Items = items;
         Icon = FeatureVisuals.Icon(title);
-        Brush = ThemeBrush.Get(FeatureVisuals.Tone(title));
+        Brush = IconPalette.Get(FeatureVisuals.Tone(title));
         // L'accueil est accessible immédiatement ; les autres métiers sont repliés sur mobile.
         isExpanded = title.Length == 0 || expandedByDefault;
         Toggle = new RelayCommand(() =>
@@ -92,20 +99,56 @@ public static class Sidebar
         NavGroupVm Group(string title, params NavItemVm?[] items) =>
             new(title, items.OfType<NavItemVm>().ToList(), toggleGroup: shell.ToggleNavGroup);
 
+        // Aucune entrée n'apparaît sur les anciens ITM/IM. Le module est
+        // visible seulement lorsqu'un profil scolaire est officiellement activé.
+        var type = shell.Session?.InstitutionType;
+        var cyclesAvailable = InstitutionProfiles.IsEnabled(type) &&
+            type is InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire
+                or InstitutionProfiles.Secondaire or InstitutionProfiles.ComplexeScolaire;
+        var university = type == InstitutionProfiles.SuperieurLmd;
+        // Le moteur de cours, de cotes et de délibération ITM ne concerne que les ITM/IM.
+        var itm = !cyclesAvailable && !university;
+        // La maternelle seule n'a ni points, ni délibération, ni examen national.
+        var gradedSchool = cyclesAvailable && type != InstitutionProfiles.Maternelle;
+
+        // Étudiant : ses résultats et les réglages de ce poste, rien qui interroge les données de l'établissement.
+        if (shell.StudentOnly)
+            return
+            [
+                Group(string.Empty,
+                    Item("Mes résultats", MaterialIconKind.Certificate, "ToneIndigo", null, typeof(StudentResultsPage), () => new StudentResultsPage(shell))),
+                Group("Paramètres",
+                    Item("Configuration", MaterialIconKind.Cog, "TonePurple", null, typeof(SettingsPage), () => new SettingsPage(shell))),
+            ];
+
         var groups = new[]
         {
             Group(string.Empty,
-                Item("Accueil", MaterialIconKind.Home, "ToneBlue", null,
-                    shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead) ? typeof(PromoterDashboardPage) : typeof(HomePage),
-                    () => shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead)
-                        ? new PromoterDashboardPage(shell) : new HomePage(shell))),
+                !shell.TeacherOnly && !(shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead))
+                    ? Item("Démarrer", MaterialIconKind.ViewDashboard, "ToneBlue", null, typeof(StartPage), () => new StartPage(shell)) : null,
+                // L'enseignant a son propre accueil : ses cours, ses annonces et les règles de l'encodage.
+                shell.TeacherOnly && !itm
+                    ? Item("Mes branches et notes", MaterialIconKind.Pen, "TonePurple", null, typeof(TeacherCurriculumPage), () => new TeacherCurriculumPage(shell))
+                : shell.TeacherOnly
+                    ? Item("Mon espace", MaterialIconKind.AccountSchool, "TonePurple", null, typeof(TeacherHomePage), () => new TeacherHomePage(shell))
+                    : Item("Accueil", MaterialIconKind.Home, "ToneBlue", null,
+                        shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead) ? typeof(PromoterDashboardPage) : typeof(HomePage),
+                        () => shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead)
+                            ? new PromoterDashboardPage(shell) : new HomePage(shell))),
+            // Espace enseignant : seulement ce qui relève de son métier (encodage anonyme de ses cours).
+            shell.TeacherOnly && itm
+                ? Group("Espace enseignant",
+                    Item("Mes cours et cotes", MaterialIconKind.Pen, "TonePurple", null, typeof(MarksPage), () => new MarksPage(shell)))
+                : Group("Espace enseignant"),
             // Pilotage : regarder et exporter les chiffres.
             Group("Pilotage",
                 Item("Tableau de bord", MaterialIconKind.ViewDashboard, "ToneBlue", Perm.ReportsRead, typeof(DashboardPage), () => new DashboardPage(shell)),
                 Item("Rapports et exports", MaterialIconKind.FileChart, "ToneIndigo", Perm.ReportsRead, typeof(ReportsPage), () => new ReportsPage(shell))),
             // Secrétariat : les dossiers des apprenants et ce qui en sort (cartes d'accès).
             Group("Secrétariat",
-                Item("Apprenants", MaterialIconKind.AccountGroup, "ToneBlue", Perm.StudentsRead, typeof(StudentsPage), () => new StudentsPage(shell)),
+                Item(shell.StudentTerms.PluralTitle, MaterialIconKind.AccountGroup, "ToneBlue", Perm.StudentsRead, typeof(StudentsPage), () => new StudentsPage(shell)),
+                university ? Item("Accès étudiants", MaterialIconKind.AccountKeyOutline, "ToneIndigo", Perm.UsersManage,
+                    typeof(StudentAccountsPage), () => new StudentAccountsPage(shell)) : null,
                 Item("Réinscriptions", MaterialIconKind.School, "ToneIndigo", Perm.StudentsWrite, typeof(ReEnrollmentPage), () => new ReEnrollmentPage(shell)),
                 Item("Cartes d'accès", MaterialIconKind.CardAccountDetails, "ToneBlue", Perm.AcademicsRead, typeof(CardsPage), () => new CardsPage(shell))),
             Group("Finances",
@@ -117,23 +160,66 @@ public static class Sidebar
                 Item("Caisse", MaterialIconKind.CashMultiple, "ToneGreen", Perm.PaymentsRead, typeof(CashPage), () => new CashPage(shell)),
                 Item("Dépenses", MaterialIconKind.Wallet, "ToneRed", Perm.PaymentsRead, typeof(ExpensesPage), () => new ExpensesPage(shell)),
                 Item("Prises en charge", MaterialIconKind.HandHeart, "TonePink", Perm.PaymentsRead, typeof(SponsorshipsPage), () => new SponsorshipsPage(shell))),
-            // Scolarité : l'enseignement, de l'appel aux résultats.
+            // Scolarité : la vie de classe (notes du cycle ordinaire, appel, discipline).
             Group("Scolarité",
-                Item("Cours et notes", MaterialIconKind.BookOpenVariant, "TonePurple", Perm.AcademicsRead, typeof(GradesPage), () => new GradesPage(shell)),
-                Item("Résultats", MaterialIconKind.Certificate, "ToneIndigo", Perm.AcademicsRead, typeof(ResultsPage), () => new ResultsPage(shell)),
+                itm ? Item("Cours et notes", MaterialIconKind.BookOpenVariant, "TonePurple", Perm.AcademicsRead, typeof(GradesPage), () => new GradesPage(shell)) : null,
+                itm ? Item("Résultats", MaterialIconKind.Certificate, "ToneIndigo", Perm.AcademicsRead, typeof(ResultsPage), () => new ResultsPage(shell)) : null,
+                gradedSchool ? Item("Résultats et bulletins", MaterialIconKind.Certificate, "ToneIndigo", Perm.AcademicsRead,
+                    typeof(EpstResultsPage), () => new EpstResultsPage(shell)) : null,
+                gradedSchool ? Item("Délibération de fin d'année", MaterialIconKind.Gavel, "ToneRed", Perm.AcademicsRead,
+                    typeof(EpstDeliberationPage), () => new EpstDeliberationPage(shell)) : null,
+                gradedSchool ? Item("Examens nationaux", MaterialIconKind.ClipboardTextOutline, "ToneOrange", Perm.AcademicsRead,
+                    typeof(NationalExamsPage), () => new NationalExamsPage(shell)) : null,
+                university ? Item("Notes des EC", MaterialIconKind.PencilBoxMultipleOutline, "TonePurple", Perm.AcademicsRead,
+                    typeof(LmdMarksPage), () => new LmdMarksPage(shell)) : null,
+                university ? Item("Délibération LMD", MaterialIconKind.Gavel, "ToneRed", Perm.AcademicsRead,
+                    typeof(LmdResultsPage), () => new LmdResultsPage(shell)) : null,
+                university ? Item("Dettes académiques", MaterialIconKind.BookAlertOutline, "ToneOrange", Perm.AcademicsRead,
+                    typeof(LmdDebtsPage), () => new LmdDebtsPage(shell)) : null,
                 Item("Présences", MaterialIconKind.ClipboardCheck, "ToneTeal", Perm.AcademicsRead, typeof(AttendancePage), () => new AttendancePage(shell)),
-                Item("Discipline", MaterialIconKind.AlertOctagon, "ToneRed", Perm.AcademicsRead, typeof(DisciplinePage), () => new DisciplinePage(shell)),
-                Item("Enseignants et cours", MaterialIconKind.AccountSchool, "ToneOrange", Perm.AcademicsRead, typeof(TeachingPage), () => new TeachingPage(shell))),
+                Item("Discipline", MaterialIconKind.AlertOctagon, "ToneRed", Perm.AcademicsRead, typeof(DisciplinePage), () => new DisciplinePage(shell))),
+            // Les référentiels de cycles, matières et semestres relèvent de la pédagogie,
+            // pas de l'apparence ou de la sécurité du logiciel. Même accès sur Windows/Android.
+            Group("Organisation pédagogique",
+                cyclesAvailable ? Item("Cycles scolaires", MaterialIconKind.SchoolOutline, "ToneTeal", Perm.SettingsWrite,
+                    typeof(SchoolCyclesPage), () => new SchoolCyclesPage(shell)) : null,
+                type == InstitutionProfiles.SuperieurLmd
+                    ? Item("Organisation LMD", MaterialIconKind.BookEducationOutline, "ToneTeal", Perm.SettingsWrite,
+                        typeof(LmdPlanningPage), () => new LmdPlanningPage(shell)) : null,
+                !itm ? Item("Règlement pédagogique", MaterialIconKind.ScaleBalance, "ToneIndigo", Perm.AcademicsRead,
+                    typeof(RegulationPage), () => new RegulationPage(shell)) : null),
+            // Gestion des délibérations (fusion d'ITMCD), dans l'ordre du travail :
+            // 1. les enseignants, leurs comptes et l'attribution des cours ;
+            Group("Enseignants et cours",
+                !itm ? Item(university ? "Attribution des EC" : "Attribution des branches", MaterialIconKind.AccountSchool, "ToneOrange",
+                    Perm.AcademicsRead, typeof(CurriculumAssignmentPage), () => new CurriculumAssignmentPage(shell)) : null,
+                !itm ? null : Item("Attribution des cours", MaterialIconKind.AccountSchool, "ToneOrange", Perm.AcademicsRead, typeof(TeachingPage), () => new TeachingPage(shell)),
+                Item("Comptes enseignants", MaterialIconKind.AccountKey, "ToneBlue", Perm.UsersManage, typeof(TeacherAccountsPage), () => new TeacherAccountsPage(shell))),
+            // 2. la préparation (paramètres, codes anonymes), l'encodage et son suivi, puis le jury.
+            itm ? Group("Délibération",
+                Item("Paramètres de délibération", MaterialIconKind.Tune, "ToneOrange", Perm.DeliberationManage, typeof(DeliberationSettingsPage), () => new DeliberationSettingsPage(shell)),
+                Item("Codes anonymes", MaterialIconKind.Incognito, "ToneIndigo", Perm.DeliberationManage, typeof(AnonymousCodesPage), () => new AnonymousCodesPage(shell)),
+                Item("Encodage des cotes", MaterialIconKind.Pen, "TonePurple", Perm.AcademicsRead, typeof(MarksPage), () => new MarksPage(shell)),
+                Item("Suivi de l'encodage", MaterialIconKind.ProgressClock, "ToneTeal", Perm.AcademicsRead, typeof(EncodingProgressPage), () => new EncodingProgressPage(shell)),
+                Item("Délibération", MaterialIconKind.Gavel, "ToneRed", Perm.AcademicsRead, typeof(DeliberationPage), () => new DeliberationPage(shell)))
+                : Group("Délibération"),
             // Personnel : les membres de l'établissement, leur paie et leur pointage.
             Group("Personnel",
                 Item("Personnel et paie", MaterialIconKind.Briefcase, "ToneOrange", Perm.StaffManage, typeof(StaffPage), () => new StaffPage(shell)),
                 Item("Pointage", MaterialIconKind.ClockCheck, "ToneTeal", Perm.StaffManage, typeof(StaffAttendancePage), () => new StaffAttendancePage(shell))),
+            // Connexions : destination autonome facile à découvrir, hors du Compte.
+            Group("Réseau et postes",
+                Item("Réseau de l'établissement", MaterialIconKind.LanConnect, "ToneTeal", null,
+                    typeof(NetworkHubPage), () => new NetworkHubPage(shell))),
             Group("Paramètres",
                 Item("Configuration", MaterialIconKind.Cog, "TonePurple", null, typeof(SettingsPage), () => new SettingsPage(shell)),
+                shell.TeacherOnly && itm ? Item("Encodage des cotes", MaterialIconKind.Pen, "TonePurple",
+                    null, typeof(MarksPage), () => new MarksPage(shell)) : null,
                 Item("Utilisateurs", MaterialIconKind.AccountCog, "ToneBlue", Perm.UsersManage, typeof(UsersPage), () => new UsersPage(shell))),
             // Données : protéger, contrôler et, si besoin, effacer.
             Group("Données",
                 Item("Sauvegardes", MaterialIconKind.DatabaseExport, "ToneGreen", Perm.BackupManage, typeof(DataPage), () => new DataPage(shell)),
+                Item("Sauvegarde en ligne", MaterialIconKind.CloudLock, "ToneTeal", Perm.BackupManage, typeof(CloudBackupPage), () => new CloudBackupPage(shell)),
                 Item("Journal d'audit", MaterialIconKind.ShieldCheck, "ToneIndigo", Perm.AuditRead, typeof(AuditPage), () => new AuditPage(shell)),
                 Item("Effacement des données", MaterialIconKind.DeleteSweep, "ToneRed", Perm.BackupManage, typeof(EraseDataPage), () => new EraseDataPage(shell, payments: true)))
         };
@@ -153,9 +239,12 @@ public static class Sidebar
             blocks.Add(new NavBlockVm(title, entries));
         }
         Add("VUE D’ENSEMBLE", "", "Pilotage");
-        Add("GESTION SCOLAIRE", "Secrétariat", "Scolarité");
+        Add("ESPACE ENSEIGNANT", "Espace enseignant");
+        Add("GESTION SCOLAIRE", "Secrétariat", "Scolarité", "Organisation pédagogique");
+        Add("GESTION DES DÉLIBÉRATIONS", "Enseignants et cours", "Délibération");
         Add("GESTION FINANCIÈRE", "Finances");
         Add("ORGANISATION", "Personnel");
+        Add("CONNEXIONS", "Réseau et postes");
         Add("RÉGLAGES ET DONNÉES", "Paramètres", "Données");
         var other = groups.Where(g => !used.Contains(g)).ToArray();
         if (other.Length != 0) blocks.Add(new NavBlockVm("AUTRES OUTILS", other));

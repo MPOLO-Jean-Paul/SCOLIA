@@ -19,6 +19,11 @@ public static class PhoneFit
     private const double LabelColumn = 60;
 
     private static bool installed;
+    private sealed class SegmentState
+    {
+        public bool Queued;
+    }
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Border, SegmentState> SegmentStates = new();
 
     public static void Install()
     {
@@ -73,25 +78,43 @@ public static class PhoneFit
     {
         if (PhoneLayout.Active && border.Classes.Contains("band")) FoldFilters(border);
         if (!PhoneLayout.Active || !border.Classes.Contains("segmented") || border.Child is not StackPanel { Orientation: Orientation.Horizontal } row) return;
+        if (SegmentStates.TryGetValue(border, out _)) return;
+        var state = new SegmentState();
+        SegmentStates.Add(border, state);
         border.SetValue(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Stretch, BindingPriority.Animation);
         void Share()
         {
+            state.Queued = false;
+            if (!PhoneLayout.Active || !border.IsEffectivelyVisible || border.Child != row) return;
             var segments = row.Children.OfType<Control>().Where(c => c.IsVisible).ToList();
             var width = border.Bounds.Width - border.Padding.Left - border.Padding.Right - border.BorderThickness.Left - border.BorderThickness.Right;
             if (segments.Count == 0 || width <= 0) return;
-            var each = Math.Floor(width / segments.Count) - row.Spacing;
+            var each = SegmentWidth(width, segments.Count, row.Spacing);
             foreach (var segment in segments)
             {
-                segment.SetValue(Layoutable.WidthProperty, each, BindingPriority.Animation);
-                segment.SetValue(ContentControl.HorizontalContentAlignmentProperty, HorizontalAlignment.Center, BindingPriority.Animation);
+                if (double.IsNaN(segment.Width) || Math.Abs(segment.Width - each) > 0.5)
+                    segment.SetValue(Layoutable.WidthProperty, each, BindingPriority.Animation);
+                if (segment is ContentControl content && content.HorizontalContentAlignment != HorizontalAlignment.Center)
+                    content.SetValue(ContentControl.HorizontalContentAlignmentProperty, HorizontalAlignment.Center, BindingPriority.Animation);
             }
+        }
+        void QueueShare()
+        {
+            if (state.Queued) return;
+            state.Queued = true;
+            Avalonia.Threading.Dispatcher.UIThread.Post(Share, Avalonia.Threading.DispatcherPriority.Loaded);
         }
         border.SizeChanged += (_, args) =>
         {
-            if (Math.Abs(args.NewSize.Width - args.PreviousSize.Width) > 0.5) Avalonia.Threading.Dispatcher.UIThread.Post(Share);
+            if (Math.Abs(args.NewSize.Width - args.PreviousSize.Width) > 0.5) QueueShare();
         };
-        Avalonia.Threading.Dispatcher.UIThread.Post(Share, Avalonia.Threading.DispatcherPriority.Loaded);
+        border.AttachedToVisualTree += (_, _) => QueueShare();
+        QueueShare();
     }
+
+    /// <summary>Partage la largeur disponible, sans largeur négative ni débordement dû aux espaces.</summary>
+    public static double SegmentWidth(double width, int count, double spacing) =>
+        count <= 0 ? 0 : Math.Max(0, Math.Floor((width - Math.Max(0, spacing) * (count - 1)) / count));
 
     /// <summary>Nombre de champs de filtre au-delà duquel le téléphone replie les filtres secondaires.</summary>
     private const int FoldFrom = 3;

@@ -11,8 +11,57 @@ using Scolia.Bureau.Ribbon;
 
 namespace Scolia.Bureau.ViewModels;
 
-/// <summary>Sauvegarde de la base, avec sa taille et sa date.</summary>
-public sealed record BackupRowVm(string Name, string Created, string Size, BackupDto Source);
+/// <summary>Sauvegarde de la base : son type en clair, sa date, son âge et sa taille ; le nom du fichier reste accessible.</summary>
+public sealed record BackupRowVm(string Name, string Created, string Size, BackupDto Source)
+{
+    /// <summary>Type lisible, déduit du nom du fichier (« scolia-AAAAMMJJ-HHMMSS-motif.db »).</summary>
+    public string Kind => KindOf(Name);
+    /// <summary>Âge de la copie : « il y a 2 h », « hier »…</summary>
+    public string Age => BackupText.Age(Source.CreatedUtc, DateTime.UtcNow);
+    /// <summary>Icône du type : automatique, manuelle, de sécurité ou importée.</summary>
+    public MaterialIconKind Icon => Name.Contains("-automatique", StringComparison.Ordinal) ? MaterialIconKind.CalendarSync
+        : Name.Contains("-manuelle", StringComparison.Ordinal) ? MaterialIconKind.ContentSaveOutline
+        : Name.Contains("-importee", StringComparison.Ordinal) ? MaterialIconKind.FileImportOutline
+        : MaterialIconKind.ShieldCheckOutline;
+
+    public static string KindOf(string name)
+    {
+        string[] parts = name.Replace(".db", string.Empty, StringComparison.Ordinal).Split('-');
+        var reason = parts.Length >= 4 ? parts[3] : string.Empty;
+        return reason switch
+        {
+            "manuelle" => "Sauvegarde manuelle",
+            "automatique" => "Sauvegarde automatique",
+            "avantrestauration" => "Avant une restauration",
+            "avantmiseajour" => "Avant une mise à jour",
+            "avantcloture" => "Avant une clôture",
+            "avanteffacementapprenants" => "Avant l'effacement de dossiers",
+            "avanteffacementpaiements" => "Avant l'effacement de paiements",
+            "importee" => "Sauvegarde importée",
+            _ => "Sauvegarde de sécurité",
+        };
+    }
+}
+
+/// <summary>Textes de l'état des sauvegardes.</summary>
+public static class BackupText
+{
+    /// <summary>Âge court et naturel d'une date passée.</summary>
+    public static string Age(DateTime createdUtc, DateTime nowUtc)
+    {
+        var age = nowUtc - createdUtc;
+        if (age < TimeSpan.FromMinutes(1)) return "à l'instant";
+        if (age < TimeSpan.FromHours(1)) return $"il y a {(int)age.TotalMinutes} min";
+        if (age < TimeSpan.FromHours(24)) return $"il y a {(int)age.TotalHours} h";
+        if (age < TimeSpan.FromHours(48)) return "hier";
+        return $"il y a {(int)age.TotalDays} jours";
+    }
+
+    /// <summary>Respecte la fréquence choisie, avec 10 % de tolérance, plafonnée à deux heures.</summary>
+    public static bool IsFresh(DateTime? lastUtc, DateTime nowUtc, int intervalHours = 24) =>
+        lastUtc is { } last && last <= nowUtc.AddMinutes(5) && intervalHours > 0
+            && nowUtc - last < TimeSpan.FromHours(intervalHours + Math.Min(2, intervalHours * 0.1));
+}
 
 /// <summary>Données et sauvegardes : sauvegardes, restauration, contrôle d'intégrité et import du classeur V79.</summary>
 public sealed class DataPage : PageViewModel
@@ -23,16 +72,26 @@ public sealed class DataPage : PageViewModel
     public DataPage(ShellViewModel shell) : base(shell)
     {
         Action("Sauvegarder", MaterialIconKind.ContentSave, () => BackupNowAsync(Shell), primary: true);
-        Action("Télécharger", MaterialIconKind.Download, DownloadAsync, row: true);
-        Action("Restaurer", MaterialIconKind.BackupRestore, RestoreAsync, row: true);
-        Action("Importation du classeur", MaterialIconKind.Upload, () => ImportAsync(Shell));
-        Action("Modèle d'import", MaterialIconKind.FileExcel, () => TemplateAsync(Shell));
-        Action("Vérifier la base", MaterialIconKind.DatabaseCheck, () => CheckDatabaseAsync(Shell));
-        if (Shell.Can(Perm.BackupManage))
+        if (Shell.Can(Perm.SettingsWrite))
         {
-            Action("Effacer des paiements", MaterialIconKind.DeleteSweep, () => Shell.Open(() => new EraseDataPage(Shell, payments: true)));
-            Action("Effacer des dossiers", MaterialIconKind.AccountRemove, () => Shell.Open(() => new EraseDataPage(Shell, payments: false)));
+            Action("Paramètres des sauvegardes", MaterialIconKind.CogOutline, () => ConfigureBackupsAsync(Shell));
+            Action("Nettoyer les anciennes copies", MaterialIconKind.DeleteOutline, () => CleanupBackupsAsync(Shell));
         }
+        Action("Télécharger", MaterialIconKind.Download, DownloadAsync, row: true);
+        Action("Exporter chiffré", MaterialIconKind.LockOutline, ExportEncryptedAsync, row: true);
+        Action("Importer chiffré", MaterialIconKind.Upload, ImportEncryptedAsync);
+        if (Shell.Can(Perm.SettingsWrite)) Action("Restaurer", MaterialIconKind.BackupRestore, RestoreAsync, row: true);
+        // Importer des listes et restaurer modifient l'établissement : réservé au paramétrage (secrétariat).
+        if (Shell.Can(Perm.SettingsWrite))
+        {
+            Action("Importation du classeur", MaterialIconKind.Upload, () => ImportAsync(Shell));
+            Action("Modèle d'import", MaterialIconKind.FileExcel, () => TemplateAsync(Shell));
+        }
+        Action("Vérifier la base", MaterialIconKind.DatabaseCheck, () => CheckDatabaseAsync(Shell));
+        if (Shell.Can(Perm.BackupManage) && Shell.Can(Perm.PaymentsCancel))
+            Action("Effacer des paiements", MaterialIconKind.DeleteSweep, () => Shell.Open(() => new EraseDataPage(Shell, payments: true)));
+        if (Shell.Can(Perm.BackupManage) && Shell.Can(Perm.StudentsWrite))
+            Action("Effacer des dossiers", MaterialIconKind.AccountRemove, () => Shell.Open(() => new EraseDataPage(Shell, payments: false)));
         ActionRefresh();
     }
 
@@ -41,16 +100,101 @@ public sealed class DataPage : PageViewModel
     public override MaterialIconKind Glyph => MaterialIconKind.DatabaseExportOutline;
 
     public ObservableCollection<BackupRowVm> Items { get; } = [];
+
+    private string statusTitle = "Aucune sauvegarde";
+    private string statusDetail = "Créez la première sauvegarde pour protéger les données de l'établissement.";
+    private bool fresh;
+    /// <summary>État de la protection, en une phrase : « Vos données sont protégées ».</summary>
+    public string StatusTitle { get => statusTitle; private set => Set(ref statusTitle, value); }
+    /// <summary>Dernière copie, rythme automatique et nombre de copies conservées.</summary>
+    public string StatusDetail { get => statusDetail; private set => Set(ref statusDetail, value); }
+    /// <summary>Vrai si la dernière copie a moins de 26 heures.</summary>
+    public bool Fresh { get => fresh; private set { if (Set(ref fresh, value)) { Raise(nameof(StatusIcon)); Raise(nameof(StatusBrush)); } } }
+    public MaterialIconKind StatusIcon => Fresh ? MaterialIconKind.ShieldCheck : MaterialIconKind.ShieldAlertOutline;
+    public IBrush StatusBrush => ThemeBrush.Get(Fresh ? "ToneGreen" : "ToneOrange");
     public BackupRowVm? Selected { get => selected; set => Set(ref selected, value); }
 
     public override async Task LoadAsync()
     {
         var backups = await Shell.Api.GetAsync<List<BackupDto>>("api/sauvegardes");
+        var schedule = await ReadScheduleAsync(Shell);
         Items.Clear();
         foreach (var b in backups.OrderByDescending(b => b.CreatedUtc))
             Items.Add(new BackupRowVm(b.Name, Format.DateTime(b.CreatedUtc), Size(b.SizeBytes), b));
-        subtitle = $"{Format.Count(backups.Count, "sauvegarde", "sauvegardes")} · gardées 30 jours";
+        subtitle = $"{Format.Count(backups.Count, "sauvegarde", "sauvegardes")} · {ScheduleLabel(schedule)}";
         Raise(nameof(Subtitle));
+        var latest = backups.OrderByDescending(b => b.CreatedUtc).FirstOrDefault();
+        var now = DateTime.UtcNow;
+        Fresh = BackupText.IsFresh(latest?.CreatedUtc, now, schedule.LocalIntervalHours);
+        StatusTitle = latest is null ? "Aucune sauvegarde"
+            : Fresh ? "Vos données sont protégées" : "Sauvegarde à refaire";
+        StatusDetail = latest is null
+            ? "Créez la première sauvegarde pour protéger les données de l'établissement."
+            : $"Dernière copie {BackupText.Age(latest.CreatedUtc, now)} ({BackupRowVm.KindOf(latest.Name).ToLowerInvariant()}, {Size(latest.SizeBytes)}) · "
+              + (schedule.Supported ? $"{ScheduleLabel(schedule)} · nettoyage manuel après {schedule.CleanupAfterDays} jours" : "Réglages disponibles après mise à jour du serveur.");
+    }
+
+    public static async Task<BackupScheduleDto> ReadScheduleAsync(ShellViewModel shell, bool requireSupported = false)
+    {
+        try { return await shell.Api.GetAsync<BackupScheduleDto>("api/sauvegardes/parametres"); }
+        catch (ApiException ex) when (ex.Status is 400 or 404)
+        {
+            if (requireSupported) throw new InvalidOperationException("Mettez à jour le serveur de l'établissement pour régler les fréquences des sauvegardes.");
+            return new BackupScheduleDto { Supported = false };
+        }
+    }
+
+    private static string ScheduleLabel(BackupScheduleDto value) => !value.Supported ? "planification gérée par le serveur" : !value.Enabled
+        ? "sauvegarde automatique désactivée"
+        : value.LocalIntervalHours == 24 ? "copie automatique chaque jour"
+        : $"copie automatique toutes les {value.LocalIntervalHours} h";
+
+    public static async Task ConfigureBackupsAsync(ShellViewModel shell)
+    {
+        var current = await ReadScheduleAsync(shell, requireSupported: true);
+        var frequencies = new[] { 1, 3, 6, 12, 24, 48, 168 }.Append(current.LocalIntervalHours).Distinct().Order()
+            .Select(h => new ChoiceItem(h.ToString(CultureInfo.InvariantCulture), h == 1 ? "Toutes les heures" : h == 24 ? "Chaque jour" : h == 168 ? "Chaque semaine" : $"Toutes les {h} heures")).ToList();
+        var cloudFrequencies = new[] { 1, 3, 6, 12, 24 }.Append(current.CloudIntervalHours).Distinct().Order()
+            .Select(h => new ChoiceItem(h.ToString(CultureInfo.InvariantCulture), h == 1 ? "Toutes les heures" : h == 24 ? "Chaque jour" : $"Toutes les {h} heures")).ToList();
+        var form = new FormViewModel("Paramètres des sauvegardes", "Réglages du serveur de l'établissement, appliqués sans redémarrage.", async f =>
+        {
+            if (!int.TryParse(f.Text("jours"), out var days) || days is < 1 or > 3650 ||
+                !int.TryParse(f.Text("garder"), out var keep) || keep is < 1 or > 1000)
+                throw new InvalidOperationException("Indiquez un âge de 1 à 3650 jours et de 1 à 1000 copies récentes.");
+            var input = new BackupScheduleDto(f.Flag("active"), int.Parse(f.ChoiceValue("locale")!, CultureInfo.InvariantCulture),
+                int.Parse(f.ChoiceValue("nuage")!, CultureInfo.InvariantCulture), days, keep);
+            await shell.Api.SendAsync(HttpMethod.Put, "api/sauvegardes/parametres", input);
+            shell.Notify("Planification des sauvegardes enregistrée.");
+            if (shell.Current is DataPage data) await data.RefreshAsync();
+            return true;
+        });
+        form.AddHeader("Copies locales", "Une copie SQLite vérifiée est conservée sur le serveur.");
+        form.AddFlag("active", "Activer les copies automatiques", current.Enabled);
+        form.AddChoice("locale", "Fréquence des copies locales", frequencies, current.LocalIntervalHours.ToString(CultureInfo.InvariantCulture), required: true);
+        form.AddHeader("Copies en ligne", "Cette fréquence s'applique si la sauvegarde en ligne est activée et si les données ont changé. Une copie est faite au moins chaque jour.");
+        form.AddChoice("nuage", "Fréquence des copies en ligne", cloudFrequencies, current.CloudIntervalHours.ToString(CultureInfo.InvariantCulture), required: true);
+        form.AddHeader("Nettoyage manuel", "Les anciennes copies sont supprimées uniquement après votre confirmation dans « Nettoyer les anciennes copies ».");
+        form.Add("jours", "Âge minimal des copies à nettoyer (jours)", FieldKind.Amount, current.CleanupAfterDays.ToString(CultureInfo.InvariantCulture), required: true);
+        form.Add("garder", "Copies récentes à toujours conserver", FieldKind.Amount, current.KeepLatest.ToString(CultureInfo.InvariantCulture), required: true);
+        await shell.Ask(form);
+    }
+
+    public static async Task CleanupBackupsAsync(ShellViewModel shell)
+    {
+        var settings = await ReadScheduleAsync(shell);
+        var form = new FormViewModel("Nettoyer les anciennes sauvegardes", "Seules les copies plus anciennes que l'âge indiqué et au-delà des copies récentes conservées seront supprimées.", async f =>
+        {
+            if (!int.TryParse(f.Text("jours"), out var days) || days is < 1 or > 3650 ||
+                !int.TryParse(f.Text("garder"), out var keep) || keep is < 1 or > 1000)
+                throw new InvalidOperationException("Vérifiez l'âge minimal et le nombre de copies à conserver.");
+            await shell.Api.SendAsync(HttpMethod.Post, "api/sauvegardes/nettoyage", new { garder = keep, plusAnciennesQue = days });
+            shell.Notify("Nettoyage des anciennes sauvegardes terminé.");
+            if (shell.Current is DataPage data) await data.RefreshAsync();
+            return true;
+        }) { Danger = true, SubmitText = "Confirmer le nettoyage" };
+        form.Add("jours", "Âge minimal (jours)", FieldKind.Amount, settings.CleanupAfterDays.ToString(CultureInfo.InvariantCulture), required: true);
+        form.Add("garder", "Copies récentes à conserver", FieldKind.Amount, settings.KeepLatest.ToString(CultureInfo.InvariantCulture), required: true);
+        await shell.Ask(form);
     }
 
     private static string Size(long bytes) => bytes >= 1_048_576
@@ -66,6 +210,62 @@ public sealed class DataPage : PageViewModel
         }
         var name = Selected.Name;
         await Shell.Download($"api/sauvegardes/{Uri.EscapeDataString(name)}", name);
+    }
+
+    private async Task ExportEncryptedAsync()
+    {
+        if (Selected is null)
+        {
+            Shell.Notify("Choisissez d'abord une sauvegarde à protéger.");
+            return;
+        }
+        var name = Selected.Name;
+        var form = new FormViewModel("Exporter une sauvegarde chiffrée",
+            "Une phrase secrète de 12 caractères minimum protégera l'archive portable. Elle ne sera pas enregistrée dans SCOLIA.",
+            async f =>
+            {
+                var passphrase = f.Text("passphrase");
+                if (passphrase.Length < 12)
+                {
+                    f.Find("passphrase").Error = "Indiquez au moins 12 caractères.";
+                    return false;
+                }
+                var (data, _) = await Shell.Api.PostDocumentAsync(
+                    $"api/sauvegardes/{Uri.EscapeDataString(name)}/export-chiffre", new { passphrase });
+                var location = Files.Save(data, name + ".scolia-enc");
+                Shell.Notify($"Archive chiffrée enregistrée : {location}");
+                return true;
+            }) { SubmitText = "Exporter chiffré" };
+        form.Add("passphrase", "Phrase secrète de l'archive", FieldKind.Secret, required: true,
+            hint: "Conservez cette phrase secrète séparément du fichier ; sans elle, l'archive ne pourra pas être restaurée.");
+        await Shell.Ask(form);
+    }
+
+    private async Task ImportEncryptedAsync()
+    {
+        if (Shell.PickFileHandler is null) return;
+        var picked = await Shell.PickFileHandler([".scolia-enc"]);
+        if (picked is null) return;
+        var form = new FormViewModel("Importer une sauvegarde chiffrée",
+            "L'archive sera déchiffrée et vérifiée dans une nouvelle copie. La base actuelle restera inchangée.",
+            async f =>
+            {
+                var passphrase = f.Text("passphrase");
+                if (passphrase.Length < 12)
+                {
+                    f.Find("passphrase").Error = "Indiquez au moins 12 caractères.";
+                    return false;
+                }
+                var result = await Shell.Api.UploadWithFieldsAsync<BackupDto>(HttpMethod.Post,
+                    "api/sauvegardes/import-chiffre",
+                    [new UploadedFile("archive", picked.Name, picked.Data)],
+                    new Dictionary<string, string> { ["passphrase"] = passphrase });
+                Shell.Notify($"Archive validée et importée : {result.Name}. Vous pourrez la restaurer après vérification.");
+                await RefreshAsync();
+                return true;
+            }) { SubmitText = "Importer et vérifier" };
+        form.Add("passphrase", "Phrase secrète de l'archive", FieldKind.Secret, required: true);
+        await Shell.Ask(form);
     }
 
     private async Task RestoreAsync()
@@ -122,7 +322,7 @@ public sealed class DataPage : PageViewModel
             return;
         }
 
-        var detected = $"Promotions : {preview.Promotions} · apprenants : {preview.Students} · reçus : {preview.Receipts} · imputations : {preview.Allocations}";
+        var detected = $"Promotions : {preview.Promotions} · {shell.StudentTerms.Plural} : {preview.Students} · reçus : {preview.Receipts} · imputations : {preview.Allocations}";
         // Les détails nombreux restent limités à l'aperçu. Aucune liste de contacts
         // absents ne doit cacher le bouton Importer sur un petit écran.
         // Le bilan dit combien d'apprenants ont été lus et combien seront créés : aucun ne disparaît sans explication.
@@ -147,7 +347,7 @@ public sealed class DataPage : PageViewModel
                 + string.Join('\n', applied.Errors.Take(8)), "Fermer");
             return;
         }
-        shell.Notify($"Import terminé : {applied.Students} apprenant(s), {applied.Receipts} reçu(s).");
+        shell.Notify($"Import terminé : {applied.Students} {(applied.Students == 1 ? shell.StudentTerms.Singular : shell.StudentTerms.Plural)}, {applied.Receipts} reçu(s).");
         if (shell.Current is DataPage page) await page.RefreshAsync();
     }
 }
@@ -201,7 +401,7 @@ public sealed class AuditPage : PageViewModel
         var page = await Shell.Api.GetAsync<PagedResult<AuditDto>>("api/audit" + Filters(1, 100));
         Items.Clear();
         foreach (var a in page.Items)
-            Items.Add(new AuditRowVm(Format.DateTime(a.AtUtc), a.UserName, Labels.AuditAction(a.Action), a.EntityType, a.Summary, a.IpAddress ?? "—"));
+            Items.Add(new AuditRowVm(Format.DateTime(a.AtUtc), a.UserName, Labels.AuditAction(a.Action), Labels.AuditEntity(a.EntityType), a.Summary, a.IpAddress ?? "—"));
         subtitle = $"{Format.Count(page.Total, "événement", "événements")}" + (page.Total > 100 ? " · 100 affichés" : string.Empty);
         Raise(nameof(Subtitle));
     }
@@ -240,7 +440,7 @@ public sealed class SearchViewModel : Observable
         this.settingsOnly = settingsOnly;
         message = settingsOnly
             ? "Cherchez un réglage de l'application, sans consulter les données scolaires."
-            : "Recherche générale : apprenants, reçus, fonctionnalités et paramètres autorisés.";
+            : $"Recherche générale : {shell.StudentTerms.Plural}, reçus, fonctionnalités et paramètres autorisés.";
         Open = new AsyncCommand(OpenSelectedAsync);
         Close = new RelayCommand(shell.CloseDialog);
         ClearQuery = new RelayCommand(() => Query = string.Empty);
@@ -269,15 +469,15 @@ public sealed class SearchViewModel : Observable
 
     // ---------- Voix : le micro du champ, comme dans Google ----------
     public bool VoiceAvailable => VoiceInput.Available;
+    private readonly VoiceCaptureSession voiceSession = new();
     private bool listening;
-    public bool Listening { get => listening; private set { if (Set(ref listening, value)) Raise(nameof(Placeholder)); } }
-    public AsyncCommand Listen => listen ??= new AsyncCommand(async () =>
-    {
-        Listening = true;
-        try { if (await VoiceInput.ListenAsync() is { } text) Query = text; }
-        finally { Listening = false; }
-    });
-    private AsyncCommand? listen;
+    public bool Listening { get => listening; private set { if (Set(ref listening, value)) { Raise(nameof(Placeholder)); Raise(nameof(VoiceTip)); } } }
+    public string VoiceTip => Listening ? "Arrêter l'écoute vocale" : "Rechercher à la voix";
+    public ToggleVoiceCommand Listen => listen ??= new ToggleVoiceCommand(() =>
+        voiceSession.ToggleAsync(text => Query = text, active => Listening = active));
+    private ToggleVoiceCommand? listen;
+    /// <summary>Fermer la recherche interrompt l'écoute et ignore toute ancienne transcription.</summary>
+    public void StopListening() => voiceSession.Cancel(active => Listening = active);
     public ObservableCollection<RecentSearchRow> Recent { get; } = [];
     public bool HasRecent => Recent.Count > 0;
     public IReadOnlyList<SearchShortcutRow> Shortcuts { get; }
@@ -336,9 +536,9 @@ public sealed class SearchViewModel : Observable
     /// <summary>Recherche faite, rien trouvé : la carte « Aucun résultat » s'affiche, comme dans le menu.</summary>
     public bool IsEmptyResult { get => isEmptyResult; private set => Set(ref isEmptyResult, value); }
 
-    private static string GroupTitle(string type) => type switch
+    private string GroupTitle(string type) => type switch
     {
-        "Apprenant" => "APPRENANTS",
+        "Apprenant" => shell.StudentTerms.PluralTitle.ToUpperInvariant(),
         "Reçu" => "REÇUS",
         "Fonctionnalité" or "Paramètre" => "FONCTIONNALITÉS ET PARAMÈTRES",
         _ => type.ToUpperInvariant(),
@@ -357,7 +557,7 @@ public sealed class SearchViewModel : Observable
         {
             Message = settingsOnly
                 ? "Saisissez au moins deux caractères pour retrouver un réglage."
-                : "Saisissez au moins deux caractères pour trouver un apprenant, un reçu ou un réglage.";
+                : $"Saisissez au moins deux caractères pour trouver un {shell.StudentTerms.Singular}, un reçu ou un réglage.";
             return;
         }
         // Réglages : catalogue local filtré selon les permissions et jamais envoyé au serveur.
@@ -375,7 +575,7 @@ public sealed class SearchViewModel : Observable
             // et toutes les autres fonctions ouvrent réellement leur destination.
             var isSetting = setting.Title is "Configuration" or "Thème et couleurs"
                 or "Texte et polices" or "Fenêtres et affichage" or "Animations et fluidité"
-                or "Sons" or "Sécurité du compte" or "Poste et réseau"
+                or "Sons" or "Sécurité du compte" or "Poste et réseau" or "À propos et mises à jour"
                 or "Établissement" or "Années scolaires" or "Sections"
                 or "Promotions et frais" or "Nouvelle promotion" or "Nouvelle année"
                 or "Utilisateurs";
@@ -452,9 +652,19 @@ public sealed class SearchViewModel : Observable
         if (url is "/compte/poste" or "/compte/mot-de-passe")
         {
             shell.CloseDialog();
-            shell.OpenBackstage();
-            var section = url == "/compte/poste" ? "poste" : "mot-de-passe";
-            shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == section);
+            if (shell.Phone || Platform.IsMobile)
+            {
+                shell.OpenBackstage();
+                var section = url == "/compte/poste" ? "poste" : "mot-de-passe";
+                shell.Backstage.Section = shell.Backstage.Items.FirstOrDefault(i => i.Value == section)
+                    ?? new BackstageItemVm(section, section == "poste" ? "Poste et réseau" : "Sécurité du compte",
+                        section == "poste" ? MaterialIconKind.LanConnect : MaterialIconKind.ShieldLockOutline,
+                        section == "poste" ? "ToneGreen" : "ToneOrange");
+            }
+            else if (url == "/compte/poste")
+                await shell.Open(() => new NetworkHubPage(shell));
+            else
+                await shell.Open(() => new SettingsPage(shell, "securite"));
             return;
         }
         if (url.StartsWith("/navigation/", StringComparison.Ordinal))
@@ -499,7 +709,7 @@ public sealed class SearchViewModel : Observable
             "personnel" when shell.Can(Perm.StaffManage) => () => new StaffPage(shell),
             "parametres" when parts.Length > 1 && parts[1] == "utilisateurs" && shell.Can(Perm.UsersManage)
                 => () => new UsersPage(shell),
-            "parametres" when parts.Length > 1 && (new[] { "apparence", "texte", "fenetres", "animations", "sons" }.Contains(parts[1]) || (shell.Can(Perm.SettingsWrite) && new[] { "etablissement", "annees", "sections", "promotions" }.Contains(parts[1]))) => () => new SettingsPage(shell, parts[1]),
+            "parametres" when parts.Length > 1 && (new[] { "apparence", "texte", "fenetres", "animations", "sons" }.Contains(parts[1]) || (shell.Can(Perm.SettingsWrite) && new[] { "etablissement", "annees", "sections", "promotions", "frais", "sauvegardes" }.Contains(parts[1]))) => () => new SettingsPage(shell, parts[1]),
             "parametres" => () => new SettingsPage(shell),
             "utilisateurs" when shell.Can(Perm.UsersManage) => () => new UsersPage(shell),
             "donnees" when shell.Can(Perm.BackupManage) => () => new DataPage(shell),
@@ -558,6 +768,7 @@ public sealed record BackstageItemVm(string Value, string Label, MaterialIconKin
 public sealed class BackstageViewModel : Observable
 {
     private readonly ShellViewModel shell;
+    private readonly IReadOnlyList<BackstageItemVm> baseItems;
     private BackstageItemVm? section;
     private FormViewModel? passwordForm;
     private PosteViewModel? poste;
@@ -569,17 +780,23 @@ public sealed class BackstageViewModel : Observable
     public BackstageViewModel(ShellViewModel shell)
     {
         this.shell = shell;
-        Items =
-        [
-            new BackstageItemVm("infos", "Informations", MaterialIconKind.Information, "ToneBlue"),
-            new BackstageItemVm("mot-de-passe", "Sécurité du compte", MaterialIconKind.ShieldLockOutline, "ToneOrange"),
-            new BackstageItemVm("poste", "Poste et réseau", MaterialIconKind.LanConnect, "ToneGreen"),
-            // Raccourci vers Paramètres > Cet appareil : un seul endroit pour le thème, la police et les sons.
-            new BackstageItemVm("preferences", "Apparence et confort", MaterialIconKind.TuneVariant, "TonePurple"),
-            Preferences.MobileLayout
-                ? new BackstageItemVm("aide", "Aide et gestes", MaterialIconKind.GestureTap, "ToneNeutral")
-                : new BackstageItemVm("aide", "Aide et raccourcis", MaterialIconKind.Keyboard, "ToneNeutral"),
-        ];
+        // Compte Windows : uniquement identité, information et aide.
+        // Réseau, sécurité et apparence ont des emplacements dédiés et faciles
+        // à retrouver dans la navigation principale ou Paramètres.
+        var entries = new List<BackstageItemVm>
+        {
+            new("infos", "Informations", MaterialIconKind.Information, "ToneBlue"),
+        };
+        if (Preferences.MobileLayout)
+        {
+            entries.Add(new("mot-de-passe", "Sécurité du compte", MaterialIconKind.ShieldLockOutline, "ToneOrange"));
+            entries.Add(new("poste", "Poste et réseau", MaterialIconKind.LanConnect, "ToneGreen"));
+            entries.Add(new("preferences", "Apparence et confort", MaterialIconKind.TuneVariant, "TonePurple"));
+        }
+        entries.Add(Preferences.MobileLayout
+            ? new("aide", "Aide et gestes", MaterialIconKind.GestureTap, "ToneNeutral")
+            : new("aide", "Aide et raccourcis", MaterialIconKind.Keyboard, "ToneNeutral"));
+        baseItems = entries;
         section = Items[0];
         Close = new RelayCommand(shell.CloseBackstage);
         Logout = new AsyncCommand(() => shell.LogoutAsync());
@@ -588,7 +805,11 @@ public sealed class BackstageViewModel : Observable
         ToggleSecurityPassword = new RelayCommand(() => SecurityPasswordVisible = !SecurityPasswordVisible);
     }
 
-    public IReadOnlyList<BackstageItemVm> Items { get; }
+    public IReadOnlyList<BackstageItemVm> Items => ManagementModePage.CanAccess(shell)
+        ? [baseItems[0], new("gestion", "Type de gestion", MaterialIconKind.AccountSwitch, "ToneBlue"), .. baseItems.Skip(1)]
+        : baseItems;
+
+    public void RefreshEntries() => Raise(nameof(Items));
 
     /// <summary>Rubrique affichée. Préférences et aide ouvrent leur boîte, sans quitter les informations.</summary>
     public BackstageItemVm? Section
@@ -599,6 +820,10 @@ public sealed class BackstageViewModel : Observable
             if (value is null) return;
             switch (value.Value)
             {
+                case "gestion":
+                    shell.CloseBackstage();
+                    _ = shell.Run(() => shell.Open(() => new ManagementModePage(shell)));
+                    return;
                 case "preferences":
                     _ = PreferencesDialog.ShowAsync(shell);
                     return;
@@ -631,6 +856,29 @@ public sealed class BackstageViewModel : Observable
             }
         }
     }
+
+    public bool CanCheckWindowsUpdates => OperatingSystem.IsWindows();
+
+    /// <summary>Contrôle manuel complémentaire au contrôle automatique Windows à l'ouverture.</summary>
+    public AsyncCommand CheckWindowsUpdates => checkWindowsUpdates ??= new AsyncCommand(async () =>
+    {
+        if (Avalonia.Application.Current?.ApplicationLifetime is
+            Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime
+            { MainWindow: { } window })
+            await DesktopAppUpdates.CheckAsync(window, manual: true);
+    });
+    private AsyncCommand? checkWindowsUpdates;
+
+    /// <summary>Visible sur Android dans Mon compte : même contrôle forcé que Poste et réseau.</summary>
+    public bool CanCheckPhoneUpdates => Platform.IsMobile && Platform.CheckAppUpdatesAsync is not null;
+    public string PhoneUpdateStatus => Platform.AppUpdateStatus?.Invoke() ?? "Aucune recherche effectuée.";
+    public AsyncCommand CheckPhoneUpdates => checkPhoneUpdates ??= new AsyncCommand(async () =>
+    {
+        if (Platform.CheckAppUpdatesAsync is not { } check) return;
+        await check();
+        Raise(nameof(PhoneUpdateStatus));
+    });
+    private AsyncCommand? checkPhoneUpdates;
 
     public bool IsInfos => section?.Value == "infos";
     /// <summary>Mobile : la liste des rubriques s'affiche tant qu'aucune rubrique à page propre n'est ouverte.</summary>
@@ -879,6 +1127,7 @@ public sealed class BackstageViewModel : Observable
             currentCode = newCode = confirmCode = string.Empty;
             Raise(nameof(CurrentCode)); Raise(nameof(NewCode)); Raise(nameof(ConfirmCode));
             RaiseCode();
+            var wasProvisional = codeProvisional;
             codeProvisional = false;
             CodeEditorOpen = false;
             CodeNotice = $"{kind} enregistré. Il sert dès maintenant à vous connecter.";
@@ -889,6 +1138,8 @@ public sealed class BackstageViewModel : Observable
                 shell.Sync.Remember(current.UserName, saved);
                 await ResealBiometricsAsync(current.UserName, saved);
             }
+            // L'écran ouvert avant le choix du code (refusé avec le code provisoire) se recharge aussitôt.
+            if (wasProvisional && shell.Current is { } page) await page.RefreshAsync();
         }
         catch (ApiException ex)
         {
@@ -1124,7 +1375,7 @@ public sealed class ShortcutsViewModel
         var groups = new List<ShortcutGroupVm>
         {
             new("Partout", [
-                new("Ctrl+K", "Rechercher", "Un apprenant, un reçu ou une page."),
+                new("Ctrl+K", "Rechercher", $"Un {shell.StudentTerms.Singular}, un reçu ou une page."),
                 new("Échap", "Fermer", "La fenêtre ou le menu ouvert."),
                 new("Entrée", "Ouvrir la ligne choisie", "Dans tous les tableaux."),
                 new("Maj+F10", "Menu de la ligne", "Comme le clic droit."),
@@ -1169,8 +1420,19 @@ public sealed class AboutViewModel : Observable
         Close = new RelayCommand(shell.CloseDialog);
         WriteEmail = new RelayCommand(() => Files.Open($"mailto:{AboutInfo.Email}?subject=SCOLIA%20Pro%20{AboutInfo.Version}"));
         OpenWhatsApp = new RelayCommand(() => Files.Open($"https://wa.me/{AboutInfo.PhoneDigits}"));
-        CopyContacts = new AsyncCommand(CopyAsync);
+        OpenWebsite = new RelayCommand(() => Files.Open($"https://{AboutInfo.Website}"));
+        CopyContacts = new AsyncCommand(() => shell.Run(CopyAsync));
     }
+
+    public bool CanCheckPhoneUpdates => Platform.IsMobile && Platform.CheckAppUpdatesAsync is not null;
+    public string PhoneUpdateStatus => Platform.AppUpdateStatus?.Invoke() ?? "Aucune recherche effectuée.";
+    public AsyncCommand CheckPhoneUpdates => checkPhoneUpdates ??= new AsyncCommand(async () =>
+    {
+        if (Platform.CheckAppUpdatesAsync is not { } check) return;
+        await check();
+        Raise(nameof(PhoneUpdateStatus));
+    });
+    private AsyncCommand? checkPhoneUpdates;
 
     public string Title => "SCOLIA Pro";
     public string Tagline => AboutInfo.Tagline;
@@ -1182,18 +1444,19 @@ public sealed class AboutViewModel : Observable
     public string Role => AboutInfo.Role;
     public string Phone => AboutInfo.Phone;
     public string Email => AboutInfo.Email;
+    public string Website => AboutInfo.Website;
     public string Copyright => AboutInfo.Copyright;
-    public string Accounts => "Trois espaces : Secrétariat, Comptabilité et Promoteur (consultation des indicateurs uniquement).";
+    public string Accounts => "Quatre espaces : Secrétariat, Comptabilité, Promoteur (consultation des indicateurs uniquement) et Enseignant (encodage de ses cours, par code anonyme).";
 
     public RelayCommand Close { get; }
     public RelayCommand WriteEmail { get; }
     public RelayCommand OpenWhatsApp { get; }
+    public RelayCommand OpenWebsite { get; }
     public AsyncCommand CopyContacts { get; }
 
     private async Task CopyAsync()
     {
-        var text = $"SCOLIA Pro {AboutInfo.Version} · {AboutInfo.Publisher}{Environment.NewLine}{AboutInfo.Developer}{Environment.NewLine}{AboutInfo.Phone}{Environment.NewLine}{AboutInfo.Email}";
-        if (shell.CopyHandler is { } copy) await copy(text);
-        shell.Notify("Coordonnées du développeur copiées.");
+        var text = $"SCOLIA Pro {AboutInfo.Version} · {AboutInfo.Publisher}{Environment.NewLine}{AboutInfo.Developer}{Environment.NewLine}{AboutInfo.Phone}{Environment.NewLine}{AboutInfo.Email}{Environment.NewLine}{AboutInfo.Website}";
+        if (await shell.TryCopyAsync(text)) shell.Notify("Coordonnées du développeur copiées.");
     }
 }

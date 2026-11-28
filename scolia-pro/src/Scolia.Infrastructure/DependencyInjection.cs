@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Scolia.Application.Abstractions;
 using Scolia.Application.Services;
 using Scolia.Domain.Common;
+using Scolia.Domain.School;
 using Scolia.Domain.Security;
 using Scolia.Infrastructure.Backup;
 using Scolia.Infrastructure.Documents;
@@ -36,8 +37,10 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordService, PasswordService>();
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IDocumentService, DocumentService>();
+        services.AddSingleton<IAcademicDocumentService, AcademicDocumentService>();
         services.AddSingleton<ISpreadsheetService, SpreadsheetService>();
         services.AddSingleton<BackupService>();
+        services.AddSingleton<BackupScheduleStore>();
         services.AddSingleton<DataRevision>();
         services.AddSingleton<Live.LiveHub>();
         services.AddHostedService<AutomaticBackupWorker>();
@@ -53,6 +56,21 @@ public static class DependencyInjection
 
         services.AddScoped<SetupService>();
         services.AddScoped<SchoolService>();
+        services.AddScoped<SchoolCycleConfigurationService>();
+        services.AddScoped<LmdPlanningService>();
+        services.AddScoped<SchoolCycleAssessmentService>();
+        services.AddScoped<SchoolPlanningService>();
+        services.AddScoped<AcademicRegulationService>();
+        services.AddScoped<EpstResultsService>();
+        services.AddScoped<EpstConductService>();
+        services.AddScoped<EpstDeliberationService>();
+        services.AddScoped<NationalExamService>();
+        services.AddScoped<LmdResultsService>();
+        services.AddScoped<LmdFeesService>();
+        services.AddScoped<CurriculumTeachingService>();
+        services.AddScoped<StudentAccountService>();
+        services.AddScoped<StudentPortalService>();
+        services.AddScoped<FeeCategoryService>();
         services.AddScoped<AccountService>();
         services.AddScoped<StudentService>();
         services.AddScoped<SponsorshipService>();
@@ -69,9 +87,12 @@ public static class DependencyInjection
         services.AddScoped<AcademicService>();
         services.AddScoped<DisciplineService>();
         services.AddScoped<TeachingService>();
+        services.AddScoped<DeliberationService>();
+        services.AddScoped<TeacherAccountService>();
         services.AddScoped<StaffAttendanceService>();
         services.AddScoped<CardService>();
         services.AddScoped<StaffService>();
+        services.AddScoped<ManagementModeService>();
         return services;
     }
 
@@ -94,6 +115,42 @@ public static class DependencyInjection
             await scope.ServiceProvider.GetRequiredService<BackupService>().CreateAsync("avantmiseajour", ct);
         await db.Database.MigrateAsync(ct);
         await ConvertLegacyRolesAsync(db, ct);
+        await AttachLegacyFeesToCategoriesAsync(db, scope.ServiceProvider.GetRequiredService<IAuditLog>(), ct);
+    }
+
+    /// <summary>
+    /// Les frais saisis avant le catalogue (inscription, examen…) reçoivent leur catégorie, créée d'après leur libellé :
+    /// rien n'est supprimé ni recalculé, et une catégorie n'apparaît que si l'établissement avait déjà saisi ces frais.
+    /// </summary>
+    public static async Task AttachLegacyFeesToCategoriesAsync(ScoliaDbContext db, IAuditLog audit, CancellationToken ct = default)
+    {
+        var orphans = await db.FeeItems.Where(f => f.Kind != FeeKind.Mensualite && f.CategoryId == null).ToListAsync(ct);
+        if (orphans.Count == 0) return;
+        var categories = await db.FeeCategories.ToDictionaryAsync(c => c.NameKey, ct);
+        var order = categories.Count;
+        foreach (var group in orphans.GroupBy(f => TextKey.Normalize(f.Label)))
+        {
+            if (group.Key.Length == 0) continue;
+            if (!categories.TryGetValue(group.Key, out var category))
+            {
+                var first = group.OrderBy(f => f.Order).First();
+                var name = first.Label.Trim();
+                category = new FeeCategory
+                {
+                    Name = name.Length > FeeCategory.MaxNameLength ? name[..FeeCategory.MaxNameLength] : name, NameKey = group.Key,
+                    // Montant le plus fréquent parmi les promotions, la promotion gardant son propre montant.
+                    Amount = group.GroupBy(f => f.Amount).OrderByDescending(g => g.Count()).First().Key,
+                    IsActive = true, Order = ++order,
+                };
+                db.FeeCategories.Add(category);
+                categories[group.Key] = category;
+            }
+            foreach (var item in group) item.CategoryId = category.Id;
+        }
+        // Toute écriture est tracée dans le journal chaîné, y compris cette reprise au démarrage.
+        audit.Record("frais.categories.reprise", "CategorieFrais", null,
+            $"Mise à jour : {orphans.Count} frais existant(s) rattaché(s) au catalogue des catégories ({string.Join(", ", categories.Values.Select(c => c.Name).Distinct())}).");
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>Deux comptes seulement : l'ancien administrateur et la direction deviennent le secrétariat, qui administre SCOLIA.
@@ -102,7 +159,9 @@ public static class DependencyInjection
     {
         await db.Users.Where(u => u.Role == Role.Administrateur || u.Role == Role.Direction)
             .ExecuteUpdateAsync(x => x.SetProperty(u => u.Role, Role.Secretariat), ct);
-        await db.Users.Where(u => u.Role == Role.Enseignant && u.IsActive)
+        // Les anciens comptes enseignants sans fiche du personnel restent désactivés ; un compte enseignant relié
+        // à sa fiche (encodage des cotes de ses cours) est le rôle actuel.
+        await db.Users.Where(u => u.Role == Role.Enseignant && u.IsActive && u.StaffMemberId == null)
             .ExecuteUpdateAsync(x => x.SetProperty(u => u.IsActive, false).SetProperty(u => u.SecurityStamp, Guid.NewGuid().ToString("N")), ct);
     }
 }

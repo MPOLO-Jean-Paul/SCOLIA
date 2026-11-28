@@ -31,6 +31,8 @@ public sealed class Receipt : Entity
     public string? CancellationReason { get; set; }
     /// <summary>Clé fournie par le poste de saisie pour empêcher un double enregistrement.</summary>
     public string? IdempotencyKey { get; set; }
+    /// <summary>Données d'émission immuables ; null pour les reçus historiques sans photographie.</summary>
+    public string? PrintSnapshotJson { get; set; }
     public List<ReceiptAllocation> Allocations { get; set; } = [];
 }
 
@@ -111,6 +113,9 @@ public static class Money
         if (amount > 1_000_000_000_000m) throw new DomainException(field, "Montant hors limites.");
     }
 
-    public static string Display(decimal amount, string symbol) =>
-        amount.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")) + " " + symbol;
+    /// <summary>Conserve les centimes autorisés, sans alourdir les montants entiers.</summary>
+    public static string Number(decimal amount) =>
+        amount.ToString(amount == decimal.Truncate(amount) ? "N0" : "N2", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"));
+
+    public static string Display(decimal amount, string symbol) => Number(amount) + " " + symbol;
 }

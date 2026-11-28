@@ -1,0 +1,110 @@
+using System.Xml.Linq;
+using Avalonia.Media;
+using Scolia.Bureau.Infrastructure;
+using Xunit;
+
+namespace Scolia.Bureau.Tests;
+
+/// <summary>Le style iOS, commun au téléphone et à l'ordinateur, garde toutes les commandes de sécurité ; l'ancienne page reste en réserve.</summary>
+public sealed class MobileIosAuthenticationViewsTests
+{
+    private static string Source(string relative)
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Scolia.sln")))
+            dir = dir.Parent;
+        return Path.Combine(dir?.FullName ?? throw new DirectoryNotFoundException("Scolia.sln introuvable."),
+            "src", "Scolia.Bureau", relative);
+    }
+
+    private static XElement[] Elements(string path) =>
+        XDocument.Load(Source("Views/" + path)).Descendants().ToArray();
+
+    private static bool Attribute(XElement node, string key, string value) =>
+        node.Attributes().Any(a => (a.Name.LocalName == key || a.Name.LocalName.EndsWith("." + key, StringComparison.Ordinal)) && a.Value == value);
+
+    [Fact]
+    public void Les_trois_ecrans_utilisent_les_vecteurs_Fluent_et_conservent_les_reserves_de_saisie()
+    {
+        foreach (var (file, scroll, fields) in new[]
+        {
+            ("LoginView.axaml", "IosLoginScroll", new[] { "IosUserNameBox", "IosPasswordBox", "IosNewPasswordBox", "IosConfirmPasswordBox", "IosRecoveryCodeBox" }),
+            ("LockScreenView.axaml", "IosLockScroll", new[] { "IosLockCode" }),
+        })
+        {
+            var active = Assert.Single(Elements(file), e => Attribute(e, "Name", scroll));
+            var nodes = active.Descendants().ToArray();
+            foreach (var name in fields)
+            {
+                var field = Assert.Single(nodes, e => Attribute(e, "Name", name));
+                var grid = field.Parent!;
+                Assert.Contains(grid.Elements(), e => e.Name.LocalName == "PathIcon" && Attribute(e, "Classes", "authinputicon"));
+                var secret = name != "IosUserNameBox";
+                Assert.True(Attribute(field, "Padding", secret ? "46,0,54,0" : "46,0,14,0"));
+                if (secret)
+                {
+                    Assert.True(Attribute(field, "IsSensitive", "True"));
+                    Assert.Contains(grid.Descendants(), e => e.Name.LocalName == "PathIcon" &&
+                        e.Attributes().Any(a => a.Value.Contains("AuthGlyphs.EyeConverter")));
+                }
+            }
+            Assert.Contains(nodes, e => e.Name.LocalName == "PathIcon" && Attribute(e, "Data", "{x:Static infra:AuthGlyphs.Fingerprint}"));
+        }
+        // La géométrie est construite par le moteur Avalonia lors des captures UI.
+        // Ce test sans plateforme vérifie les références distinctes dans le code source.
+        var glyphs = File.ReadAllText(Source("Infrastructure/AuthGlyphs.cs"));
+        foreach (var name in new[] { "Person", "Lock", "Fingerprint", "Eye", "EyeOff" })
+            Assert.Contains("Geometry " + name + " ", glyphs);
+        Assert.Contains("? EyeOff : Eye", glyphs);
+    }
+
+    [Fact]
+    public void La_reprise_iOS_conserve_le_code_et_la_biometrie()
+    {
+        var nodes = Elements("LockScreenView.axaml");
+        foreach (var name in new[] { "ClassicLockScreen", "IosLockScroll", "LockCode", "IosLockCode" })
+            Assert.Contains(nodes, e => Attribute(e, "Name", name));
+        var password = Assert.Single(nodes, e => Attribute(e, "Name", "IosLockCode"));
+        Assert.True(Attribute(password, "PasswordChar", "•"));
+        Assert.True(Attribute(password, "IsSensitive", "True"));
+        foreach (var binding in new[] { "{Binding Unlock}", "{Binding UnlockWithBiometrics}",
+            "{Binding ForgotCode}", "{Binding SwitchAccount}" })
+            Assert.Contains(nodes, e => e.Name.LocalName == "Button" && Attribute(e, "Command", binding));
+        var code = File.ReadAllText(Source("Views/LockScreenView.axaml.cs"));
+        Assert.Contains("ClassicLockScreen.IsVisible = !ios", code);
+        Assert.Contains("IosLockScroll.IsVisible = ios", code);
+        Assert.Contains("IosLockCode", code);
+    }
+
+    [Fact]
+    public void Premiere_ouverture_iOS_conserve_le_QR_et_la_verification_apres_jumelage()
+    {
+        var nodes = Elements("ConnectionView.axaml");
+        Assert.Contains(nodes, e => Attribute(e, "Name", "ClassicConnectionScreen"));
+        Assert.Contains(nodes, e => Attribute(e, "Name", "IosConnectionScreen"));
+        foreach (var command in new[] { "{Binding ScanCode}", "{Binding ImportQrImage}",
+            "{Binding Search}", "{Binding UseThisComputer}" })
+            Assert.Contains(nodes, e => e.Name.LocalName == "Button" && Attribute(e, "Command", command));
+        Assert.Contains(nodes, e => e.Name.LocalName == "ScrollViewer" &&
+            Attribute(e, "IsVisible", "{Binding PairingInProgress}") &&
+            e.Descendants().Any(d => Attribute(d, "Text", "Vérification sécurisée")));
+        var code = File.ReadAllText(Source("Views/ConnectionView.axaml.cs"));
+        Assert.Contains("ClassicConnectionScreen.IsVisible = !ios", code);
+        Assert.Contains("IosConnectionScreen.IsVisible = ios", code);
+    }
+
+    [Fact]
+    public void Serveur_du_telephone_la_connexion_n_apparait_qu_une_fois_le_serveur_pret()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Scolia.sln"))) dir = dir.Parent;
+        var shell = File.ReadAllText(Path.Combine(dir!.FullName, "src", "Scolia.Bureau", "ViewModels", "Shell.cs"));
+        var start = shell.IndexOf("public async Task UseThisComputerAsync()", StringComparison.Ordinal);
+        var body = shell[start..shell.IndexOf("public async Task SetNetworkAsync", start, StringComparison.Ordinal)];
+        // Le démarrage est suivi sur l'écran de choix ; l'échec y reste affiché avec son détail.
+        Assert.True(body.IndexOf("Connection.BeginProgress", StringComparison.Ordinal)
+            < body.IndexOf("ChoosingServer = false", StringComparison.Ordinal));
+        Assert.Contains("localServer.Diagnostic", body);
+        Assert.Contains("ChoosingServer = true", body);
+    }
+}

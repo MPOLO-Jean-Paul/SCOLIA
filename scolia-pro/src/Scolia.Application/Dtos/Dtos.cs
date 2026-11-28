@@ -7,15 +7,18 @@ namespace Scolia.Application.Dtos;
 // ---------- Établissement et configuration ----------
 public sealed record SchoolDto(string Name, string ShortName, string? Motto, string? Address, string? City, string? Country, string? Phone,
     string? Email, string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, bool HasLogo, string PhoneCountryCode,
-    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null, string? CardInstitute = null, string? CardAddress = null);
+    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null, string? CardInstitute = null, string? CardAddress = null, string InstitutionType = "ItmIm",
+    string Governance = "Prive", string? Province = null, string? Commune = null, string? OfficialCode = null);
 
 public sealed record SchoolUpdate(string Name, string ShortName, string? Motto, string? Address, string? City, string? Country, string? Phone,
     string? Email, string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, string PhoneCountryCode,
-    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null, string? CardInstitute = null, string? CardAddress = null);
+    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null, string? CardInstitute = null, string? CardAddress = null,
+    string? Province = null, string? Commune = null, string? OfficialCode = null);
 
 public sealed record SetupRequest(string SchoolName, string ShortName, string? Motto, string? City, string? Phone, string CurrencyCode, string CurrencySymbol,
     string YearLabel, int StartMonth, int MonthCount, string AdminUserName, string AdminDisplayName, string AdminPassword, bool LoadDemoData,
-    IReadOnlyList<SetupAccount>? Accounts = null, int LastOnTimeDay = 5, int? EndMonth = null);
+    IReadOnlyList<SetupAccount>? Accounts = null, int LastOnTimeDay = 5, int? EndMonth = null,
+    string InstitutionType = "ItmIm", string Governance = "Prive", IReadOnlyList<string>? InitialSchoolCycles = null);
 
 /// <summary>Compte métier créé pendant l'installation. Rôle : Secretariat ou Comptabilite.</summary>
 public sealed record SetupAccount(string Role, string UserName, string DisplayName, string Password);
@@ -34,36 +37,49 @@ public sealed record AcademicYearCreate(string Label, int StartMonth, int MonthC
 /// <summary>Modification du calendrier existant, bloquée si une mensualité a été affectée ou prise en charge.</summary>
 public sealed record AcademicYearScheduleUpdate(int StartMonth, int EndMonth, int LastOnTimeDay);
 
-public sealed record SectionDto(Guid Id, string Code, string Name, bool IsActive);
+/// <param name="PromotionCount">Promotions de l'année courante rattachées à la section.</param>
+/// <param name="StudentCount">Apprenants actifs de ces promotions.</param>
+public sealed record SectionDto(Guid Id, string Code, string Name, bool IsActive, int PromotionCount = 0, int StudentCount = 0);
 
 public sealed record SectionUpsert(string Code, string Name, bool IsActive);
 
-public sealed record FeeItemDto(Guid Id, string Kind, string Label, decimal Amount, DateOnly DueDate, int Order, Guid? PeriodId);
+public sealed record FeeItemDto(Guid Id, string Kind, string Label, decimal Amount, DateOnly DueDate, int Order, Guid? PeriodId, Guid? CategoryId = null);
+
+/// <summary>Catégorie de frais du catalogue de l'établissement, avec le nombre de promotions de l'année courante qui l'appliquent.</summary>
+public sealed record FeeCategoryDto(Guid Id, string Name, decimal Amount, DateOnly? DueDate, bool IsActive, int Order, int PromotionCount);
+
+/// <summary>Création ou modification d'une catégorie ; ApplyToPromotions l'ajoute (ou met son montant à jour) dans les promotions actives de l'année courante.</summary>
+public sealed record FeeCategoryUpsert(string Name, decimal Amount, DateOnly? DueDate, bool IsActive = true, bool ApplyToPromotions = false);
 
 public sealed record PromotionDto(Guid Id, Guid AcademicYearId, string Code, string Name, Guid? SectionId, string? SectionName, int Level, int? Capacity,
-    bool IsActive, string? NextPromotionCode, decimal MonthlyFee, decimal AnnualTotal, int StudentCount, IReadOnlyList<FeeItemDto> Fees);
+    bool IsActive, string? NextPromotionCode, decimal MonthlyFee, decimal AnnualTotal, int StudentCount, IReadOnlyList<FeeItemDto> Fees,
+    Guid? SchoolCycleId = null, Guid? AcademicUnitId = null);
 
 /// <summary>Création ou modification d'une promotion : la mensualité génère une rubrique par mois,
 /// les frais ponctuels (inscription, examen…) sont ajoutés en plus.</summary>
 public sealed record PromotionUpsert(string Code, string Name, Guid? SectionId, int Level, int? Capacity, bool IsActive, string? NextPromotionCode,
-    decimal MonthlyFee, IReadOnlyList<OneTimeFee>? OneTimeFees);
+    decimal MonthlyFee, IReadOnlyList<OneTimeFee>? OneTimeFees, bool ManagesCategories = false,
+    Guid? SchoolCycleId = null, Guid? AcademicUnitId = null, LmdAnnualFeeInput? LmdAnnualFee = null);
 
-public sealed record OneTimeFee(string Kind, string Label, decimal Amount, DateOnly DueDate);
+/// <summary>Autre frais d'une promotion. CategoryId désigne la catégorie du catalogue ; les anciens clients
+/// n'envoient que la nature et le libellé, rapprochés du nom d'une catégorie existante.</summary>
+public sealed record OneTimeFee(string? Kind, string? Label, decimal Amount, DateOnly? DueDate, Guid? CategoryId = null);
 
 // ---------- Apprenants ----------
 public sealed record StudentListItem(Guid Id, Guid? EnrollmentId, string Matricule, string LastName, string MiddleName, string FirstName, string Gender,
-    string? PromotionCode, string? Status, string? GuardianPhone, decimal Balance, decimal Overdue);
+    string? PromotionCode, string? Status, string? GuardianPhone, decimal Balance, decimal Overdue, string? Sponsorship = null);
 
 public sealed record StudentDto(Guid Id, string Matricule, string LastName, string MiddleName, string FirstName, string Gender, DateOnly? BirthDate,
     string? BirthPlace, string? Nationality, string? Address, string? Phone, string? Email, string? GuardianName, string? GuardianRelation,
-    string? GuardianPhone, string? GuardianPhone2, string? Notes, bool HasPhoto, IReadOnlyList<EnrollmentDto> Enrollments, long Version);
+    string? GuardianPhone, string? GuardianPhone2, string? Notes, bool HasPhoto, IReadOnlyList<EnrollmentDto> Enrollments, long Version,
+    string? PermanentNumber = null);
 
 public sealed record EnrollmentDto(Guid Id, Guid AcademicYearId, string AcademicYear, Guid PromotionId, string PromotionCode, string PromotionName,
     DateOnly EnrolledOn, string Status, DateOnly? ExitDate, string? ExitReason, bool IsReEnrollment);
 
 public sealed record StudentUpsert(string LastName, string MiddleName, string FirstName, string Gender, DateOnly? BirthDate, string? BirthPlace,
     string? Nationality, string? Address, string? Phone, string? Email, string? GuardianName, string? GuardianRelation, string? GuardianPhone,
-    string? GuardianPhone2, string? Notes, long? Version);
+    string? GuardianPhone2, string? Notes, long? Version, string? PermanentNumber = null);
 
 public sealed record StudentCreate(StudentUpsert Identity, Guid PromotionId, DateOnly? EnrolledOn, bool ConfirmDuplicate);
 
@@ -73,24 +89,28 @@ public sealed record EnrollRequest(Guid PromotionId, DateOnly? EnrolledOn);
 
 public sealed record StatusChange(string Status, DateOnly? Date, string? Reason);
 
-public sealed record ReEnrollmentPlanItem(Guid StudentId, string Matricule, string FullName, string FromPromotion, string? ToPromotion, decimal PreviousBalance, bool Selected);
+public sealed record ReEnrollmentPlanItem(Guid StudentId, string Matricule, string FullName, string FromPromotion, string? ToPromotion, decimal PreviousBalance, bool Selected,
+    string? JuryDecision = null);
 
 public sealed record ReEnrollmentRequest(Guid TargetYearId, IReadOnlyList<ReEnrollmentChoice> Choices);
 
-public sealed record ReEnrollmentChoice(Guid StudentId, Guid PromotionId);
+/// <summary>PromotionId existant ou code d'une classe absente à créer lors de la validation.</summary>
+public sealed record ReEnrollmentChoice(Guid StudentId, Guid? PromotionId, string? PromotionCode = null);
 
 // ---------- Prises en charge ----------
 public sealed record SponsorshipDto(Guid Id, Guid EnrollmentId, string SponsorName, string Reason, DateOnly EffectiveFrom, bool IsActive,
-    IReadOnlyList<SponsorshipLineDto> Lines, decimal CoveredTotal);
+    IReadOnlyList<SponsorshipLineDto> Lines, decimal CoveredTotal, string Type = "Historique", decimal MonthlyAmount = 0m);
 
 public sealed record SponsorshipListItem(Guid Id, Guid EnrollmentId, string Matricule, string FullName, string Promotion, string SponsorName,
-    string Reason, DateOnly EffectiveFrom, bool IsActive, decimal Covered);
+    string Reason, DateOnly EffectiveFrom, bool IsActive, decimal Covered, string Type = "Historique", decimal MonthlyAmount = 0m);
 
 public sealed record SponsorshipLineDto(Guid FeeItemId, string Label, decimal Percent, decimal Amount);
 
-public sealed record SponsorshipUpsert(string SponsorName, string Reason, DateOnly EffectiveFrom, IReadOnlyList<SponsorshipLineInput> Lines);
+/// <summary>Les anciennes requêtes avec Lines et sans Type restent acceptées pour compatibilité.</summary>
+public sealed record SponsorshipUpsert(string SponsorName, string Reason, DateOnly EffectiveFrom, IReadOnlyList<SponsorshipLineInput>? Lines = null,
+    string? Type = null, decimal? MonthlyAmount = null);
 
-public sealed record SponsorshipLineInput(Guid FeeItemId, decimal Percent);
+public sealed record SponsorshipLineInput(Guid FeeItemId, decimal Percent = 0m, decimal? Amount = null);
 
 // ---------- Compte et paiements ----------
 public sealed record AccountLineDto(Guid FeeItemId, string Label, DateOnly DueDate, decimal Amount, decimal Covered, decimal Net, decimal Paid,
@@ -139,10 +159,19 @@ public sealed record CashClosingDto(Guid Id, DateOnly Date, DateOnly PeriodStart
     decimal ExpectedCash, decimal CountedCash, decimal Difference, string? Note, string ClosedBy, DateTime ClosedAtUtc);
 
 // ---------- Tableau de bord et rapports ----------
+public sealed record DashboardQuery(Guid? PromotionId = null, Guid? SectionId = null, string? Gender = null,
+    string? State = null, string? Search = null, string? Sort = null);
+public sealed record DashboardSectionOption(Guid Id, string Label);
+public sealed record DashboardPromotionOption(Guid Id, string Code, string Name, Guid? SectionId);
+public sealed record DashboardFilterOptions(IReadOnlyList<DashboardSectionOption> Sections,
+    IReadOnlyList<DashboardPromotionOption> Promotions, int Version = 1);
+
 public sealed record DashboardDto(string AcademicYear, int ActiveStudents, int NewThisMonth, decimal CollectedTotal, decimal CollectedThisMonth,
     decimal CollectedToday, decimal ExpectedToDate, decimal Outstanding, decimal Overdue, decimal RecoveryRate, int StudentsUpToDate,
     int StudentsLate, decimal ExpensesThisMonth, IReadOnlyList<SeriesPoint> MonthlyCollections, IReadOnlyList<PromotionStat> Promotions,
-    IReadOnlyList<SeriesPoint> Aging, IReadOnlyList<ReceiptSummaryDto> LatestReceipts, int GenderMale, int GenderFemale);
+    IReadOnlyList<SeriesPoint> Aging, IReadOnlyList<ReceiptSummaryDto> LatestReceipts, int GenderMale, int GenderFemale,
+    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m,
+    string? SelectionKey = null);
 
 public sealed record SeriesPoint(string Label, decimal Value, decimal? Secondary = null);
 
@@ -152,11 +181,14 @@ public sealed record PromoterPeriodDto(Guid PeriodId, string Label, decimal Coll
 
 public sealed record PromoterPromotionDto(Guid Id, string Code, string Name, int ActiveStudents,
     int StudentsWithBalance, int StudentsOverdue, decimal CollectedToday, decimal CollectedThisMonth,
-    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPeriodDto> Periods);
+    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPeriodDto> Periods,
+    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m, int StudentsUpToDate = 0);
 
 public sealed record PromoterDashboardDto(string AcademicYear, DateOnly AsOf, int ActiveStudents,
     int StudentsWithBalance, int StudentsOverdue, decimal CollectedToday, decimal CollectedThisMonth,
-    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPromotionDto> Promotions);
+    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPromotionDto> Promotions,
+    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m, int StudentsUpToDate = 0,
+    string? SelectionKey = null);
 
 // ---------- Suivi des paiements par mois ----------
 /// <summary>Filtres du suivi mensuel : le mois, la promotion (toutes si absente), l'état et une recherche.</summary>
@@ -167,12 +199,12 @@ public sealed record PeriodChoiceDto(Guid Id, string Name, bool IsCurrent);
 /// <summary>Un apprenant face au mois choisi : montant du mois, payé, reste, état et dernier reçu qui l'a réglé.</summary>
 public sealed record MonthlyRowDto(Guid StudentId, Guid EnrollmentId, string Matricule, string FullName, string PromotionCode,
     decimal Amount, decimal Paid, decimal Remaining, string Status, string? ReceiptNumber, DateOnly? PaidOn, string? GuardianPhone,
-    string? WhatsAppLink, string? SmsLink);
+    string? WhatsAppLink, string? SmsLink, string? Sponsorship = null, Guid? FeeItemId = null);
 
 /// <summary>Suivi d'un mois : les mois de l'année, les totaux par état et la liste filtrée.</summary>
 public sealed record MonthlyFollowUpDto(Guid PeriodId, string Period, IReadOnlyList<PeriodChoiceDto> Periods,
     int PaidCount, int UnpaidCount, int LateCount, int CoveredCount, decimal Expected, decimal Collected, decimal Remaining,
-    IReadOnlyList<MonthlyRowDto> Rows);
+    IReadOnlyList<MonthlyRowDto> Rows, int? ReceiptCount = null, int? PayingStudentsByReceiptDate = null, decimal? CashReceived = null);
 
 /// <summary>Journée en cours : caisse, appel, rendez-vous et anniversaires, pour l'accueil.</summary>
 public sealed record TodayDto(DateOnly Date, int ReceiptsToday, decimal CollectedToday, decimal ExpensesToday, bool CashClosed,
@@ -180,27 +212,38 @@ public sealed record TodayDto(DateOnly Date, int ReceiptsToday, decimal Collecte
 
 public sealed record TodayPersonDto(Guid StudentId, string Name, string Promotion, string Detail);
 
-public sealed record PromotionStat(Guid Id, string Code, string Name, int Students, decimal Expected, decimal Collected, decimal Outstanding, decimal Overdue, decimal RecoveryRate);
+/// <param name="Students">Effectif actif ; Paying + Sponsored = Students. UpToDate et Late ne comptent que les payants.</param>
+public sealed record PromotionStat(Guid Id, string Code, string Name, int Students, decimal Expected, decimal Collected, decimal Outstanding, decimal Overdue, decimal RecoveryRate,
+    int Paying = 0, int Sponsored = 0, int PartiallySponsored = 0, int UpToDate = 0, int Late = 0, decimal SponsoredAmount = 0m);
 
 public sealed record DebtorDto(Guid StudentId, Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, decimal Balance,
-    decimal Overdue, int OverdueCount, string Periods, string AgingBucket, string? GuardianName, string? GuardianPhone, string? WhatsAppLink, string? SmsLink);
+    decimal Overdue, int OverdueCount, string Periods, string AgingBucket, string? GuardianName, string? GuardianPhone, string? WhatsAppLink, string? SmsLink,
+    string? Sponsorship = null);
 
 public sealed record DebtorQuery(Guid? PromotionId, int? MinOverdueMonths, string? Bucket, string? Search);
 
 // ---------- Utilisateurs et audit ----------
+/// <summary><c>StaffMemberId</c> : fiche du personnel d'un compte enseignant (il n'encode que les cours attribués à cette fiche).</summary>
 public sealed record UserDto(Guid Id, string UserName, string DisplayName, string Role, string RoleLabel, bool IsActive, bool MustChangePassword,
-    DateTime? LastLoginUtc, bool IsLocked);
+    DateTime? LastLoginUtc, bool IsLocked, Guid? StaffMemberId = null, bool JuryAccess = false);
 
-public sealed record UserCreate(string UserName, string DisplayName, string Role, string Password);
+/// <summary><c>JuryAccess</c> : privilège jury d'un compte enseignant (ignoré pour les autres rôles).</summary>
+public sealed record UserCreate(string UserName, string DisplayName, string Role, string Password, Guid? StaffMemberId = null, bool JuryAccess = false);
 
-public sealed record UserUpdate(string DisplayName, string Role, bool IsActive);
+public sealed record UserUpdate(string DisplayName, string Role, bool IsActive, Guid? StaffMemberId = null, bool JuryAccess = false);
 
 public sealed record PasswordReset(string NewPassword);
 
 public sealed record PasswordChange(string CurrentPassword, string NewPassword);
 
 public sealed record SessionDto(Guid Id, string UserName, string DisplayName, string Role, string RoleLabel, IReadOnlyCollection<string> Permissions,
-    bool MustChangePassword, string SchoolName, string? SchoolShortName, string? CurrentYear, string CurrencySymbol, string PhoneCountryCode);
+    bool MustChangePassword, string SchoolName, string? SchoolShortName, string? CurrentYear, string CurrencySymbol, string PhoneCountryCode,
+    string InstitutionType = "ItmIm", Scolia.Domain.School.SchoolManagementMode ManagementMode = Scolia.Domain.School.SchoolManagementMode.Mixte,
+    int PermissionPolicyVersion = 2);
+
+public sealed record ManagementModeStatus(Scolia.Domain.School.SchoolManagementMode Mode, int ActiveAccountants, int Version = 1);
+public sealed record ManagementModeChange(Scolia.Domain.School.SchoolManagementMode Mode, string CurrentPassword);
+public sealed record StaffSalaryUpdate(decimal BaseSalary);
 
 public sealed record LoginRequest(string UserName, string Password);
 
@@ -213,8 +256,9 @@ public sealed record SearchHit(string Type, string Title, string Subtitle, strin
 
 // ---------- Scolarité ----------
 public sealed record CourseDto(Guid Id, Guid PromotionId, string PromotionCode, int Number, string Name, decimal Coefficient, decimal Hours,
-    decimal MaxScore, Guid? TeacherId, string? TeacherName, bool IsActive, int AssessmentCount);
-public sealed record CourseUpsert(Guid PromotionId, int Number, string Name, decimal Coefficient, decimal Hours, decimal MaxScore);
+    decimal MaxScore, Guid? TeacherId, string? TeacherName, bool IsActive, int AssessmentCount, string Semester = "Annuel");
+/// <summary>Semester : « S1 », « S2 » ou « Annuel » ; vide garde l'organisation actuelle (annuel pour un nouveau cours).</summary>
+public sealed record CourseUpsert(Guid PromotionId, int Number, string Name, decimal Coefficient, decimal Hours, decimal MaxScore, string? Semester = null);
 
 /// <summary>Attribution d'un cours. La réattribution d'un cours déjà attribué demande une confirmation.</summary>
 public sealed record AssignmentRequest(Guid TeacherId, bool ConfirmReplace);
@@ -228,7 +272,7 @@ public sealed record TeacherChargeDto(Guid TeacherId, string Name, int Courses, 
 
 public sealed record TeacherChoiceDto(Guid Id, string Nom, string Function);
 
-/// <summary>Signature d'entrée ou de sortie : l'heure est celle du poste, et une entrée à 08:00:00 ou après est en retard.</summary>
+/// <summary>Signature d'entrée ou de sortie : l'heure est celle du poste ; retard strictement après 08:00:00.</summary>
 public sealed record StaffMarkDto(Guid Id, string Kind, string Time, bool IsLate);
 
 public sealed record StaffJustifyRequest(DateOnly Date, string Reason);
@@ -266,7 +310,7 @@ public sealed record AttendanceSheetDto(Guid PromotionId, DateOnly Date, IReadOn
 
 /// <summary>Apprenant proposé pour les cartes. Les identités incomplètes et les matricules répétés sont signalés et écartés.</summary>
 public sealed record CardCandidateDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Status, bool Eligible,
-    bool IdentityComplete, bool DuplicateMatricule);
+    bool IdentityComplete, bool DuplicateMatricule, bool HasAnonymousCode = true);
 
 /// <summary>Nettoyage manuel des sauvegardes : garder les plus récentes, et ne supprimer que celles qui ont plus de N jours.</summary>
 public sealed record BackupCleanup(int Garder, int PlusAnciennesQue);

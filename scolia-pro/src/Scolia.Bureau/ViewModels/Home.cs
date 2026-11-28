@@ -12,16 +12,33 @@ public sealed record ToolCardVm(string Title, string Description, MaterialIconKi
 {
     /// <summary>Libellé d'un seul mot pour les gros boutons du téléphone : jamais coupé au milieu d'un mot.</summary>
     public string ShortTitle { get; init; } = Title;
+    /// <summary>Repère Fluent de la fonctionnalité, dans les couleurs du logo.</summary>
+    public Avalonia.Media.IImage Illustration => Infrastructure.Illustrations.For(Icon, Brush);
+    /// <summary>Numéro de la carte sur l'accueil (« 01 », « 02 »…).</summary>
+    public string Number { get; init; } = string.Empty;
 }
 
 /// <summary>Reçu récent de l'accueil : une ligne de la liste « Récents », qui ouvre le reçu.</summary>
-public sealed record RecentReceiptVm(string Number, string Student, string Date, string Method, string Amount, string Status, AsyncCommand Open);
+public sealed record RecentReceiptVm(string Number, string Student, string Date, string Method, string Amount, string Status, AsyncCommand Open)
+{
+    private static readonly IBrush ReceiptBrush = new SolidColorBrush(Color.Parse("#7C3AED"));
+    /// <summary>Avatar illustré du reçu, le même dessin que la carte « Reçus » de l'accueil.</summary>
+    public IImage Illustration => Illustrations.For(MaterialIconKind.ReceiptTextOutline, ReceiptBrush);
+}
 
 /// <summary>Indicateur de l'accueil : une icône, un chiffre, une précision ; un clic ouvre la page détaillée.</summary>
-public sealed record HomeKpiVm(string Label, string Value, string Hint, MaterialIconKind Icon, IBrush Brush, AsyncCommand Open);
+public sealed record HomeKpiVm(string Label, string Value, string Hint, MaterialIconKind Icon, IBrush Brush, AsyncCommand Open)
+{
+    /// <summary>Repère Fluent de l'indicateur.</summary>
+    public IImage Illustration => Illustrations.For(Icon, Brush);
+}
 
 /// <summary>Point de la liste « Aujourd'hui » : ce qui demande une action dans la journée.</summary>
-public sealed record HomeTaskVm(string Text, string Detail, MaterialIconKind Icon, IBrush Brush, AsyncCommand Open);
+public sealed record HomeTaskVm(string Text, string Detail, MaterialIconKind Icon, IBrush Brush, AsyncCommand Open)
+{
+    /// <summary>Avatar illustré de la tâche du jour.</summary>
+    public IImage Illustration => Illustrations.For(Icon, Brush);
+}
 
 /// <summary>
 /// Accueil : un bandeau de bienvenue avec la date et l'état de la caisse, quatre indicateurs, les outils
@@ -34,7 +51,13 @@ public sealed class HomePage : PageViewModel
 
     public HomePage(ShellViewModel shell) : base(shell)
     {
-        ShowAllTools = new RelayCommand(Shell.ShowSidebar);
+        ShowAllTools = new RelayCommand(() =>
+        {
+            AllToolsVisible = !AllToolsVisible;
+            Raise(nameof(AllToolsLabel));
+            Raise(nameof(AllToolGroups));
+        });
+        PropertyChanged += (_, e) => { if (e.PropertyName == nameof(Busy)) Raise(nameof(OverviewUnavailable)); };
         BuildTools();
     }
 
@@ -69,6 +92,7 @@ public sealed class HomePage : PageViewModel
     /// <summary>Mobile : l'accueil montre l'état de la connexion et l'activité des autres postes.</summary>
     public SyncCenter Sync => Shell.Sync;
     public RelayCommand Network => Shell.NetworkCommand;
+    public AsyncCommand Refresh => Shell.ReloadCommand;
     public Avalonia.Media.Imaging.Bitmap? SchoolLogo => Shell.SchoolLogo;
     public bool HasSchoolLogo => Shell.HasSchoolLogo;
     public string Initials => Shell.UserInitials;
@@ -77,9 +101,38 @@ public sealed class HomePage : PageViewModel
     public string CashLine { get => cashLine; private set { if (Set(ref cashLine, value)) Raise(nameof(HasCashLine)); } }
     public bool HasCashLine => cashLine.Length > 0;
     public IBrush CashBrush { get => cashBrush; private set => Set(ref cashBrush, value); }
+    public bool CanReadOverview => Shell.Can(Perm.ReportsRead);
+    private bool overviewAvailable;
+    public bool OverviewAvailable
+    {
+        get => overviewAvailable;
+        private set
+        {
+            if (Set(ref overviewAvailable, value)) Raise(nameof(OverviewUnavailable));
+        }
+    }
+    private bool overviewAttempted;
+    public bool OverviewUnavailable => overviewAttempted && CanReadOverview && !OverviewAvailable && !Busy;
+    private bool dailyDetailsAvailable;
+    public bool DailyDetailsAvailable
+    {
+        get => dailyDetailsAvailable;
+        private set => Set(ref dailyDetailsAvailable, value);
+    }
     public bool HasKpis => Kpis.Count > 0;
     public bool HasTasks => Tasks.Count > 0;
     public RelayCommand ShowAllTools { get; }
+    private bool allToolsVisible;
+    /// <summary>Le bouton ouvre le catalogue des fonctionnalités, même si le menu gauche est déjà affiché.</summary>
+    public bool AllToolsVisible
+    {
+        get => allToolsVisible;
+        private set => Set(ref allToolsVisible, value);
+    }
+    public string AllToolsLabel => AllToolsVisible ? "Réduire les outils" : "Afficher tous les outils";
+    /// <summary>Le catalogue utilise les droits effectifs du compte, pas une liste fixe de six raccourcis.</summary>
+    public IReadOnlyList<NavGroupVm> AllToolGroups => Shell.Navigation.Where(g => g.HasTitle && g.Items.Count > 0).ToList();
+
 
     /// <summary>Les deux premiers outils, en boutons dans le bandeau de bienvenue : l'action du jour d'un clic.</summary>
     public IReadOnlyList<ToolCardVm> QuickActions => Tools.Take(2).ToList();
@@ -98,13 +151,33 @@ public sealed class HomePage : PageViewModel
         Raise(nameof(SchoolLine));
         Raise(nameof(AccountContextLine));
         Raise(nameof(HeaderSchoolLine));
-        if (!Shell.Can(Perm.ReportsRead)) { RaiseLists(); return; }
+        Raise(nameof(AllToolGroups));
+        Raise(nameof(CanReadOverview));
+        if (!CanReadOverview) { RaiseLists(); return; }
 
-        // Toutes les réponses sont prêtes avant de toucher aux cartes affichées.
-        var d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord");
+        // Hors connexion, l'absence de copie locale ne doit pas empêcher
+        // l'ouverture de l'accueil ni produire des chiffres inventés.
+        DashboardDto d;
+        overviewAttempted = true;
+        try { d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord"); }
+        catch (OfflineException)
+        {
+            OverviewAvailable = false;
+            Raise(nameof(OverviewUnavailable));
+            DailyDetailsAvailable = false;
+            Kpis.Clear();
+            Tasks.Clear();
+            Receipts.Clear();
+            CashLine = string.Empty;
+            TodayLine = string.Empty;
+            RaiseLists();
+            return;
+        }
         TodayDto? t = null;
         try { t = await Shell.Api.GetAsync<TodayDto>("api/rapports/aujourdhui"); }
-        catch (ApiException) { }
+        catch (ApiException) { } // Inclut OfflineException, dérivée de ApiException.
+        OverviewAvailable = true;
+        DailyDetailsAvailable = t is not null;
         var nextReceipts = new List<RecentReceiptVm>();
         var nextKpis = new List<HomeKpiVm>();
         var nextTasks = new List<HomeTaskVm>();
@@ -118,10 +191,10 @@ public sealed class HomePage : PageViewModel
             Go(() => new ReceiptsPage(Shell))));
         nextKpis.Add(new HomeKpiVm("Encaissé ce mois", Money(d.CollectedThisMonth), $"{Money(d.CollectedTotal)} depuis la rentrée", MaterialIconKind.CalendarMonth, ThemeBrush.Get("ToneBlue"),
             Go(() => new DashboardPage(Shell))));
-        nextKpis.Add(new HomeKpiVm("Apprenants actifs", d.ActiveStudents.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")),
+        nextKpis.Add(new HomeKpiVm($"{Shell.StudentTerms.PluralTitle} actifs", d.ActiveStudents.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")),
             d.NewThisMonth > 0 ? $"{Format.Count(d.NewThisMonth, "inscrit", "inscrits")} ce mois" : "Aucune inscription ce mois", MaterialIconKind.AccountGroup, ThemeBrush.Get("ToneIndigo"),
             Go(() => new StudentsPage(Shell))));
-        nextKpis.Add(new HomeKpiVm("Recouvrement", $"{d.RecoveryRate:0} %", d.StudentsLate > 0 ? $"{Format.Count(d.StudentsLate, "apprenant en retard", "apprenants en retard")}" : "Tout le monde est à jour",
+        nextKpis.Add(new HomeKpiVm("Recouvrement", $"{d.RecoveryRate:0} %", d.StudentsLate > 0 ? $"{Format.Count(d.StudentsLate, $"{Shell.StudentTerms.Singular} en retard", $"{Shell.StudentTerms.Plural} en retard")}" : "Tout le monde est à jour",
             MaterialIconKind.ChartBar, ThemeBrush.Get(d.StudentsLate > 0 ? "ToneOrange" : "ToneGreen"), Go(() => new DebtorsPage(Shell))));
 
         // Établissement tout neuf : les premiers pas, dans l'ordre, avant les tâches du quotidien.
@@ -132,10 +205,10 @@ public sealed class HomePage : PageViewModel
         {
             var promotions = Shell.Can(Perm.SettingsWrite) ? await PromotionsAsync() : [];
             if (Shell.Can(Perm.SettingsWrite) && promotions.Count == 0)
-                nextTasks.Add(new HomeTaskVm("1. Créer les promotions et leurs frais", "Chaque apprenant est inscrit dans une promotion, avec sa mensualité",
+                nextTasks.Add(new HomeTaskVm("1. Créer les promotions et leurs frais", $"Chaque {Shell.StudentTerms.Singular} est inscrit dans une promotion, avec sa mensualité",
                     MaterialIconKind.School, ThemeBrush.Get("ToneIndigo"), new AsyncCommand(() => Shell.Run(() => SettingsPage.NewPromotionAsync(Shell)))));
             if (Shell.Can(Perm.StudentsWrite))
-                nextTasks.Add(new HomeTaskVm($"{(nextTasks.Count + 1)}. Inscrire le premier apprenant", "Son matricule est donné automatiquement",
+                nextTasks.Add(new HomeTaskVm($"{(nextTasks.Count + 1)}. Inscrire le premier {Shell.StudentTerms.Singular}", "Le matricule reste vide jusqu’à l’attribution du code anonyme",
                     MaterialIconKind.AccountPlus, ThemeBrush.Get("ToneBlue"), new AsyncCommand(() => Shell.Run(() => StudentForms.CreateAsync(Shell)))));
             if (Shell.Can(Perm.PaymentsCreate))
                 nextTasks.Add(new HomeTaskVm($"{(nextTasks.Count + 1)}. Encaisser une mensualité", "Le reçu numéroté s'imprime aussitôt",
@@ -150,7 +223,7 @@ public sealed class HomePage : PageViewModel
                 nextTasks.Add(new HomeTaskVm("Arrêter la caisse", $"{Format.Count(t.ReceiptsToday, "reçu", "reçus")} pour {Money(t.CollectedToday)}", MaterialIconKind.CashRegister,
                     ThemeBrush.Get("ToneOrange"), Go(() => new CashPage(Shell))));
             if (!starting && t.AttendanceMarked == 0 && Shell.Can(Perm.AcademicsWrite))
-                nextTasks.Add(new HomeTaskVm("Faire l'appel", "Aucun apprenant pointé aujourd'hui", MaterialIconKind.ClipboardCheck, ThemeBrush.Get("ToneTeal"),
+                nextTasks.Add(new HomeTaskVm("Faire l'appel", $"Aucun {Shell.StudentTerms.Singular} pointé aujourd'hui", MaterialIconKind.ClipboardCheck, ThemeBrush.Get("ToneTeal"),
                     Go(() => new AttendancePage(Shell))));
             foreach (var a in t.Appointments.Take(3))
                 nextTasks.Add(new HomeTaskVm($"Parent convoqué : {a.Name}", $"{a.Promotion} · {a.Detail}", MaterialIconKind.AccountClock, ThemeBrush.Get("ToneRed"),
@@ -160,7 +233,11 @@ public sealed class HomePage : PageViewModel
                     Go(() => new StudentDetailPage(Shell, b.StudentId))));
             TodayLine = Format.Count(t.ReceiptsToday, "reçu aujourd'hui", "reçus aujourd'hui");
         }
-        else TodayLine = string.Empty;
+        else
+        {
+            CashLine = string.Empty;
+            TodayLine = string.Empty;
+        }
         CollectionSync.Apply(Receipts, nextReceipts, (a, b) => a with { Open = b.Open } == b);
         CollectionSync.Apply(Kpis, nextKpis, (a, b) => a with { Open = b.Open } == b);
         CollectionSync.Apply(Tasks, nextTasks);
@@ -186,25 +263,25 @@ public sealed class HomePage : PageViewModel
         void Add(string? perm, string title, string description, MaterialIconKind icon, string tone, Func<Task> run, string? shortTitle = null)
         {
             if (perm is null || Shell.Can(perm))
-                Tools.Add(new ToolCardVm(title, description, icon, ThemeBrush.Get(tone), new AsyncCommand(() => Shell.Run(run)))
-                    { ShortTitle = shortTitle ?? title });
+                Tools.Add(new ToolCardVm(title, description, icon, ThemeBrush.Get(FeatureVisuals.NavigationTone(tone)), new AsyncCommand(() => Shell.Run(run)))
+                    { ShortTitle = shortTitle ?? title, Number = (Tools.Count + 1).ToString("00", System.Globalization.CultureInfo.InvariantCulture) });
         }
 
-        Add(Perm.PaymentsCreate, "Encaisser", "Choisir les mois payés et imprimer le reçu numéroté.", MaterialIconKind.HandCoin, "ToneGreen",
+        Add(Perm.PaymentsCreate, "Encaisser", "Choisir les mois payés, imprimer le reçu.", MaterialIconKind.HandCoin, "ToneGreen",
             () => Shell.Open(() => new CashierPage(Shell)));
-        Add(Perm.StudentsWrite, "Inscrire un apprenant", "Créer le dossier. Le matricule est attribué seul.", MaterialIconKind.AccountPlus, "ToneBlue",
+        Add(Perm.StudentsWrite,  $"Inscrire {Shell.StudentTerms.Indefinite}", "Créer un dossier et enregistrer son code anonyme lorsqu’il est disponible.", MaterialIconKind.AccountPlus, "ToneBlue",
             () => StudentForms.CreateAsync(Shell), "Inscrire");
         Add(Perm.ReportsRead, "Recouvrement", "Voir les retards et relancer les parents.", MaterialIconKind.ChartBar, "ToneOrange",
             () => Shell.Open(() => new DebtorsPage(Shell)), "Retards");
         Add(Perm.ReportsRead, "Rapports et exports", "Tous les documents en PDF ou en Excel.", MaterialIconKind.FileChart, "ToneRed",
             () => Shell.Open(() => new ReportsPage(Shell)), "Rapports");
-        Add(Perm.PaymentsRead, "Journal des reçus", "Retrouver, imprimer ou annuler un reçu.", MaterialIconKind.ReceiptText, "TonePurple",
+        Add(Perm.PaymentsRead, "Journal des reçus", "Retrouver et consulter les reçus de l’établissement.", MaterialIconKind.ReceiptText, "TonePurple",
             () => Shell.Open(() => new ReceiptsPage(Shell)), "Reçus");
         Add(Perm.AcademicsRead, "Présences", "Faire l'appel du jour par promotion.", MaterialIconKind.ClipboardCheck, "ToneTeal",
             () => Shell.Open(() => new AttendancePage(Shell)));
-        Add(Perm.ReportsRead, "Tableau de bord", "Recettes, retards et indicateurs de l'année.", MaterialIconKind.ViewDashboard, "ToneIndigo",
+        Add(Perm.ReportsRead, "Tableau de bord", "Recettes, retards et indicateurs de l'année.", MaterialIconKind.ChartBox, "ToneBlue",
             () => Shell.Open(() => new DashboardPage(Shell)), "Indicateurs");
-        Add(Perm.StudentsRead, "Apprenants", "Rechercher un dossier et ouvrir sa fiche.", MaterialIconKind.AccountGroup, "ToneBlue",
+        Add(Perm.StudentsRead, Shell.StudentTerms.PluralTitle, "Rechercher un dossier et ouvrir sa fiche.", MaterialIconKind.AccountGroup, "ToneBlue",
             () => Shell.Open(() => new StudentsPage(Shell)));
         while (Tools.Count > 6) Tools.RemoveAt(Tools.Count - 1);
     }

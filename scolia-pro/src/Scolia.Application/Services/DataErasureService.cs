@@ -79,6 +79,10 @@ public sealed class DataErasureService(IAppDbContext db, IWriteGate gate, IAudit
         await db.SponsorshipLines.Where(l => sponsorshipIds.Contains(l.SponsorshipId)).ExecuteDeleteAsync(ct);
         await sponsorships.ExecuteDeleteAsync(ct);
         await db.Grades.Where(g => enrollmentIds.Contains(g.EnrollmentId)).ExecuteDeleteAsync(ct);
+        await db.CourseMarks.Where(m => enrollmentIds.Contains(m.EnrollmentId)).ExecuteDeleteAsync(ct);
+        await db.JuryDecisions.Where(d => enrollmentIds.Contains(d.EnrollmentId)).ExecuteDeleteAsync(ct);
+        await db.DeliberationResults.Where(r => enrollmentIds.Contains(r.EnrollmentId)).ExecuteDeleteAsync(ct);
+        await db.AnonymousCodes.Where(c => enrollmentIds.Contains(c.EnrollmentId)).ExecuteDeleteAsync(ct);
         await db.Attendance.Where(a => enrollmentIds.Contains(a.EnrollmentId)).ExecuteDeleteAsync(ct);
         await db.DisciplineDecisions.Where(d => enrollmentIds.Contains(d.EnrollmentId)).ExecuteDeleteAsync(ct);
         await db.Incidents.Where(i => enrollmentIds.Contains(i.EnrollmentId)).ExecuteDeleteAsync(ct);

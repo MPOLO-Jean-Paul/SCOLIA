@@ -8,10 +8,12 @@ import { money, pct, date, int } from '../lib/format';
 import { BarChart, HBars, Ring } from '../components/charts';
 import { Badge, Button, Card, Empty, ErrorAlert, Kpi, Loading, PageHead, SelectField, statusTone } from '../components/ui';
 import { P, useSession } from '../lib/session';
+import { adapt } from '../lib/terms';
 
 export function DashboardPage() {
   const [promotionId, setPromotionId] = useState('');
-  const { can } = useSession();
+  const { can, session } = useSession();
+  const t = (text: string) => adapt(text, session?.institutionType);
   const navigate = useNavigate();
   const promotions = useQuery({ queryKey: ['promotions'], queryFn: () => api.get<Promotion[]>('/api/etablissement/promotions') });
   const q = useQuery({ queryKey: ['dashboard', promotionId], queryFn: () => api.get<Dashboard>('/api/rapports/tableau-de-bord', { promotionId }) });
@@ -33,7 +35,7 @@ export function DashboardPage() {
       {!d ? (q.isError ? <Card><Empty title="Tableau de bord indisponible" text="Impossible d'obtenir les chiffres. Vérifiez la connexion et réessayez."><Button onClick={() => { void q.refetch(); }}>Réessayer</Button></Empty></Card> : <Loading rows={6} />) : (
         <div className="stack">
           <div className="grid cols-4">
-            <Kpi icon={<Users size={15} />} label="Apprenants actifs" value={int(d.activeStudents)} hint={`${d.genderFemale} filles · ${d.genderMale} garçons`} />
+            <Kpi icon={<Users size={15} />} label={t("Apprenants actifs")} value={int(d.activeStudents)} hint={`${d.genderFemale} filles · ${d.genderMale} garçons`} />
             <Kpi icon={<Banknote size={15} />} label="Recettes de l'année" value={money(d.collectedTotal)} hint={`Ce mois : ${money(d.collectedThisMonth)} · aujourd’hui : ${money(d.collectedToday)}`} tone="green" />
             <Kpi icon={<AlertTriangle size={15} />} label="Reste exigible" value={money(d.overdue)} hint={`${d.studentsLate} apprenant(s) en retard`} tone="orange" />
             <Kpi icon={<CalendarClock size={15} />} label="Reste à percevoir (année)" value={money(d.outstanding)} hint={`Dépenses du mois : ${money(d.expensesThisMonth)}`} tone="purple" />
@@ -46,8 +48,8 @@ export function DashboardPage() {
               <div className="row" style={{ justifyContent: 'center' }}><Ring value={d.recoveryRate} label="recouvré" /></div>
               <div className="stack" style={{ gap: 6, marginTop: 10 }}>
                 <div className="row" style={{ justifyContent: 'space-between' }}><span className="muted small">Attendu à ce jour</span><strong className="mono">{money(d.expectedToDate)}</strong></div>
-                <div className="row" style={{ justifyContent: 'space-between' }}><span className="muted small">Apprenants à jour</span><strong>{d.studentsUpToDate} / {d.activeStudents}</strong></div>
-                <div className="row" style={{ justifyContent: 'space-between' }}><span className="muted small">Taux d’apprenants à jour</span><strong>{pct(d.activeStudents ? Math.round((d.studentsUpToDate * 1000) / d.activeStudents) / 10 : 100)}</strong></div>
+                <div className="row" style={{ justifyContent: 'space-between' }}><span className="muted small">{t("Apprenants à jour")}</span><strong>{d.studentsUpToDate} / {d.activeStudents}</strong></div>
+                <div className="row" style={{ justifyContent: 'space-between' }}><span className="muted small">{t("Taux d’apprenants à jour")}</span><strong>{pct(d.activeStudents ? Math.round((d.studentsUpToDate * 1000) / d.activeStudents) / 10 : 100)}</strong></div>
               </div>
             </Card>
           </div>
@@ -83,7 +85,7 @@ export function DashboardPage() {
             {d.latestReceipts.length === 0 ? <Empty text="Aucun reçu pour cette année." /> : (
               <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>
                 <table className="data">
-                  <thead><tr><th>N° reçu</th><th>Date</th><th>Apprenant</th><th>Mode</th><th>Caissier</th><th>Statut</th><th className="num">Montant</th></tr></thead>
+                  <thead><tr><th>N° reçu</th><th>Date</th><th>{t("Apprenant")}</th><th>Mode</th><th>Caissier</th><th>Statut</th><th className="num">Montant</th></tr></thead>
                   <tbody>{d.latestReceipts.map((r) => (
                     <tr key={r.id} className="clickable" onClick={() => navigate(`/paiements/recus/${r.id}`)}>
                       <td><Link className="tag-code" to={`/paiements/recus/${r.id}`}>{r.number}</Link></td><td>{date(r.date)}</td><td>{r.allocations}</td><td>{r.method}</td><td className="muted">{r.cashier}</td>

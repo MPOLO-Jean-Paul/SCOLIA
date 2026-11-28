@@ -1,0 +1,166 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:infra="using:Scolia.Bureau.Infrastructure">
+  <!-- Finitions des trois écrans de compte. Les marges et la palette restent celles de SCOLIA ;
+       les icônes de contenu sont les vecteurs couleur Microsoft Fluent, les commandes restent au trait. -->
+  <Style Selector="ScrollViewer.fluentaccess">
+    <Setter Property="UseLayoutRounding" Value="True" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Grid.authworkspace">
+    <Setter Property="MaxWidth" Value="856" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess StackPanel.authbody">
+    <Setter Property="Spacing" Value="20" />
+    <Setter Property="Margin" Value="24,32" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess.wide StackPanel.authbody">
+    <Setter Property="Margin" Value="32,40" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess.compact StackPanel.authbody">
+    <Setter Property="Margin" Value="20,24" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess.tiny StackPanel.authbody">
+    <Setter Property="Margin" Value="16,20" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess.micro StackPanel.authbody">
+    <Setter Property="Margin" Value="16,12" />
+    <Setter Property="Spacing" Value="12" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess TextBlock.authtitle">
+    <Setter Property="FontSize" Value="26" />
+    <Setter Property="LetterSpacing" Value="-0.4" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess.wide TextBlock.authtitle">
+    <Setter Property="FontSize" Value="28" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess.tiny TextBlock.authtitle">
+    <Setter Property="FontSize" Value="23" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess.micro TextBlock.authtitle">
+    <Setter Property="FontSize" Value="21" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess TextBlock.authsubtitle">
+    <Setter Property="LineHeight" Value="19" />
+  </Style>
+
+  <!-- Le volet n'apparaît que s'il reste assez de place pour un formulaire confortable. -->
+  <Style Selector="ScrollViewer.fluentaccess Border.authrail">
+    <Setter Property="Width" Value="256" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Margin" Value="20,32,24,32" />
+    <Setter Property="Padding" Value="24" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess:not(.expanded) Border.authrail">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Border.accesshero">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Height" Value="112" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Border.accessfeature">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="10,9" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Grid.accessidentity">
+    <Setter Property="Width" Value="80" />
+    <Setter Property="Height" Value="72" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Border.authlogo">
+    <Setter Property="Width" Value="60" /><Setter Property="Height" Value="60" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Border.accessbadge">
+    <Setter Property="Width" Value="34" /><Setter Property="Height" Value="34" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess.micro Grid.accessidentity">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Grid.authavatar > Border.badge.locked">
+    <Setter Property="Width" Value="30" /><Setter Property="Height" Value="30" />
+    <Setter Property="CornerRadius" Value="15" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="Margin" Value="0,0,0,2" />
+  </Style>
+
+  <!-- Filet stable, accent uniquement sous la saisie : le focus WinUI ne déplace ni texte ni icônes. -->
+  <Style Selector="ScrollViewer.fluentaccess TextBox.authfield">
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess TextBox.authfield /template/ Border#PART_BorderElement">
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess TextBox.authfield:focus /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Border.authfocusline">
+    <Setter Property="Background" Value="{DynamicResource FieldLineBrush}" />
+    <Setter Property="Height" Value="1" />
+    <Setter Property="CornerRadius" Value="1" />
+    <Setter Property="Margin" Value="5,0,5,0" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Grid.authinput:focus-within Border.authfocusline">
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="Height" Value="2" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Button.authprimary">
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+    <Setter Property="FontSize" Value="14" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Button.authprimary:disabled /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Button.authsecondary">
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Button.authlink">
+    <Setter Property="FontWeight" Value="Normal" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Button.authprimary /template/ ContentPresenter">
+    <Setter Property="RenderTransform" Value="scale(1)" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Button.authprimary:pressed /template/ ContentPresenter">
+    <Setter Property="RenderTransform" Value="scale(0.99)" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Button.autheye PathIcon">
+    <Setter Property="RenderTransform" Value="scale(1)" />
+  </Style>
+  <Style Selector="ScrollViewer.fluentaccess Button.autheye:pressed PathIcon">
+    <Setter Property="RenderTransform" Value="scale(0.92)" />
+  </Style>
+  <Style Selector="LayoutTransformControl.anim ScrollViewer.fluentaccess Button.authprimary /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.12" Easing="{x:Static infra:Motion.Smooth}" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" Easing="{x:Static infra:Motion.Smooth}" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="LayoutTransformControl.anim ScrollViewer.fluentaccess Button.autheye PathIcon">
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" Easing="{x:Static infra:Motion.Smooth}" />
+      </Transitions>
+    </Setter>
+  </Style>
+</Styles>

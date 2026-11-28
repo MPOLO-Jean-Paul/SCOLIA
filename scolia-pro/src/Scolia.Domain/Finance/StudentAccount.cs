@@ -40,8 +40,9 @@ public sealed class StudentAccount
         OldestOverdueDate = lines.Where(l => l.IsOverdue).Select(l => (DateOnly?)l.DueDate).Min();
     }
 
-    /// <param name="coverage">Pourcentage couvert par rubrique (somme des prises en charge actives).</param>
-    /// <param name="payments">Montants affectés par rubrique (reçus valides uniquement).</param>
+    /// <summary>Compatibilité des anciens calculs de couverture en pourcentage.</summary>
+    /// <param name="coverage">Pourcentage couvert par rubrique.</param>
+    /// <param name="payments">Montant déjà encaissé par rubrique.</param>
     public static StudentAccount Compute(
         IEnumerable<FeeLineInput> fees,
         IReadOnlyDictionary<Guid, decimal> coverage,
@@ -49,43 +50,80 @@ public sealed class StudentAccount
         DateOnly asOf,
         bool wholeAmounts = true)
     {
+        var feeList = fees.ToList();
+        var covered = feeList.ToDictionary(f => f.FeeItemId, f =>
+        {
+            var percent = Math.Clamp(coverage.GetValueOrDefault(f.FeeItemId), 0m, 100m);
+            return decimal.Round(f.Amount * percent / 100m, wholeAmounts ? 0 : 2, MidpointRounding.AwayFromZero);
+        });
+        return ComputeAmounts(feeList, covered, payments, asOf, wholeAmounts);
+    }
+
+    /// <summary>Nouveau calcul au montant exact couvert, sans conversion en pourcentages.</summary>
+    public static StudentAccount ComputeAmounts(
+        IEnumerable<FeeLineInput> fees,
+        IReadOnlyDictionary<Guid, decimal> coveredAmounts,
+        IReadOnlyDictionary<Guid, decimal> payments,
+        DateOnly asOf,
+        bool wholeAmounts = true)
+    {
         var lines = new List<AccountLine>();
         foreach (var fee in fees.OrderBy(f => f.DueDate).ThenBy(f => f.Order))
         {
-            var percent = Math.Clamp(coverage.TryGetValue(fee.FeeItemId, out var p) ? p : 0m, 0m, 100m);
-            var covered = fee.Amount * percent / 100m;
-            covered = wholeAmounts ? decimal.Round(covered, 0, MidpointRounding.AwayFromZero) : decimal.Round(covered, 2, MidpointRounding.AwayFromZero);
+            var covered = Math.Clamp(coveredAmounts.GetValueOrDefault(fee.FeeItemId), 0m, fee.Amount);
+            covered = decimal.Round(covered, wholeAmounts ? 0 : 2, MidpointRounding.AwayFromZero);
             var net = fee.Amount - covered;
             var paid = payments.TryGetValue(fee.FeeItemId, out var paidAmount) ? paidAmount : 0m;
             var remaining = Math.Max(0m, net - paid);
             var status = net == 0 ? LineStatus.Couvert : remaining == 0 ? LineStatus.Paye : paid > 0 ? LineStatus.Partiel : LineStatus.Impaye;
-            lines.Add(new AccountLine(fee.FeeItemId, fee.Label, fee.DueDate, fee.Order, fee.PeriodId, fee.Amount, covered, net, paid, remaining, status, remaining > 0 && fee.DueDate <= asOf, fee.Kind));
+            lines.Add(new AccountLine(fee.FeeItemId, fee.Label, fee.DueDate, fee.Order, fee.PeriodId, fee.Amount,
+                covered, net, paid, remaining, status, remaining > 0 && fee.DueDate <= asOf, fee.Kind));
         }
         return new StudentAccount(lines);
     }
+
 }
 
-/// <summary>Règlement d'un paiement : les mois choisis, chacun soldé en entier (aucun règlement partiel).</summary>
+/// <summary>Répartit un versement total ou partiel sur les rubriques choisies (mois et autres frais), par ancienneté.</summary>
 public static class PaymentAllocator
 {
-    /// <summary>Règlement par mois : chaque rubrique choisie est soldée en entier, à son montant dû.
-    /// Aucun règlement partiel n'est enregistré : le montant du versement est la somme des mois choisis.</summary>
-    public static IReadOnlyList<(Guid FeeItemId, decimal Amount)> Months(StudentAccount account, IReadOnlyCollection<Guid> selected)
+    /// <summary>
+    /// Le montant demandé doit être strictement positif et ne jamais dépasser les restes dus.
+    /// Un mois déjà payé ou étranger à l'inscription est refusé. L'absence de montant signifie
+    /// que chaque mois sélectionné est soldé (compatibilité avec les anciens clients).
+    /// </summary>
+    /// <param name="monthsOnly">Vrai pour les encaissements par lot, limités aux mensualités.</param>
+    public static IReadOnlyList<(Guid FeeItemId, decimal Amount)> Months(
+        StudentAccount account, IReadOnlyCollection<Guid> selected, decimal? amount = null, bool monthsOnly = false)
     {
-        if (selected.Count == 0) throw new DomainException("rubriques", "Choisissez au moins un mois à payer.");
-        var notTuition = account.Lines.Where(l => selected.Contains(l.FeeItemId) && l.Kind != FeeKind.Mensualite).ToList();
-        if (notTuition.Count > 0) throw new DomainException("rubriques", "Seuls les mois de scolarité se règlent par mois.");
-        var unknown = selected.Where(id => account.Lines.All(l => l.FeeItemId != id)).ToList();
-        if (unknown.Count > 0) throw new DomainException("rubriques", "Une rubrique choisie n'appartient pas à cette inscription.");
-        var plan = new List<(Guid, decimal)>();
-        foreach (var line in account.Lines.Where(l => selected.Contains(l.FeeItemId)))
-        {
-            if (line.Remaining <= 0) throw new DomainException("rubriques", $"« {line.Label} » est déjà réglé : actualisez la liste des mois.");
-            plan.Add((line.FeeItemId, line.Remaining));
-        }
-        return plan;
-    }
+        if (selected.Count == 0) throw new DomainException("rubriques", "Choisissez au moins un mois ou un frais à payer.");
+        if (selected.Distinct().Count() != selected.Count)
+            throw new DomainException("rubriques", "Un même mois a été choisi plusieurs fois.");
+        var chosen = account.Lines.Where(l => selected.Contains(l.FeeItemId))
+            .OrderBy(l => l.DueDate).ThenBy(l => l.Order).ToList();
+        if (chosen.Count != selected.Count)
+            throw new DomainException("rubriques", "Une rubrique choisie n'appartient pas à cette inscription.");
+        if (monthsOnly && chosen.Any(l => l.Kind != FeeKind.Mensualite))
+            throw new DomainException("rubriques", "Seuls les mois de scolarité se règlent par lot : encaissez les autres frais un par un.");
+        var settled = chosen.FirstOrDefault(l => l.Remaining <= 0);
+        if (settled is not null)
+            throw new DomainException("rubriques", $"« {settled.Label} » est déjà réglé : actualisez la liste des mois.");
 
+        var maximum = chosen.Sum(l => l.Remaining);
+        var toAllocate = amount ?? maximum;
+        if (toAllocate <= 0 || toAllocate > maximum)
+            throw new DomainException("montant", $"Indiquez un montant positif ne dépassant pas le solde des rubriques choisies ({maximum}).");
+
+        var allocations = new List<(Guid FeeItemId, decimal Amount)>();
+        foreach (var line in chosen)
+        {
+            if (toAllocate <= 0) break;
+            var allocated = Math.Min(line.Remaining, toAllocate);
+            allocations.Add((line.FeeItemId, allocated));
+            toAllocate -= allocated;
+        }
+        return allocations;
+    }
 }
 
 /// <summary>Balance âgée des créances (norme de suivi du recouvrement).</summary>

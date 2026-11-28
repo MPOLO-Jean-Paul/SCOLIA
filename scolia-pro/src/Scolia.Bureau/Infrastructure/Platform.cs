@@ -91,10 +91,20 @@ public static class Platform
     public static Func<bool>? IsInForeground { get; set; }
 
     /// <summary>
+    /// Android : demande à WorkManager une reprise durable dès que le réseau est disponible,
+    /// après une écriture mise en attente. Aucune promesse de synchronisation immédiate.
+    /// Inactif sur Windows/iOS tant qu'aucun adaptateur natif n'est configuré.
+    /// </summary>
+    public static Action? RequestBackgroundSync { get; set; }
+
+    /// <summary>
     /// Recherche à la voix : le système écoute (Google sur Android, reconnaissance vocale d'Apple sur iPhone) et rend
     /// le texte dicté, ou rien si la personne annule. Vide sur l'ordinateur : le micro n'y est pas proposé.
     /// </summary>
     public static Func<Task<string?>>? RecognizeSpeechAsync { get; set; }
+
+    /// <summary>Reconnaissance annulable pour Windows : un second clic coupe immédiatement le processus et le microphone.</summary>
+    public static Func<CancellationToken, Task<string?>>? RecognizeSpeechWithCancellationAsync { get; set; }
 
     /// <summary>Vrai si l'appareil sait reconnaître la voix (service vocal présent).</summary>
     public static Func<bool>? CanRecognizeSpeech { get; set; }
@@ -125,6 +135,18 @@ public static class Platform
     /// <summary>Le serveur ASP.NET local écoute effectivement sur l'appareil.</summary>
     public static Func<bool>? IsHostApiServing { get; set; }
 
+    /// <summary>Résultat des tests de santé du téléphone serveur après minimisation, sans exposer de données scolaires.</summary>
+    public static Func<string>? HostNetworkDiagnostic { get; set; }
+
+    /// <summary>Relance un test de santé explicite, indépendant de la fenêtre.</summary>
+    public static Func<Task>? CheckHostNetworkAsync { get; set; }
+
+    /// <summary>Contrôle manuel GitHub Releases, disponible sur Android depuis Poste et réseau.</summary>
+    public static Func<Task>? CheckAppUpdatesAsync { get; set; }
+
+    /// <summary>Message de diagnostic de la dernière vérification Android.</summary>
+    public static Func<string>? AppUpdateStatus { get; set; }
+
     /// <summary>Répare l'hébergement sur demande depuis une interface visible, jamais depuis un client.</summary>
     public static Action? EnsureHostAvailable { get; set; }
 
@@ -148,6 +170,12 @@ public static class Platform
     /// l'utilisateur annule. Null sur un ordinateur, qui lit plutôt une image enregistrée ou un code collé.
     /// </summary>
     public static Func<Task<byte[]?>>? CaptureImageAsync { get; set; }
+
+    /// <summary>Lecture QR en direct par l'appareil photo ; les photos restent un secours hors ligne.</summary>
+    public static Func<Task<string?>>? ScanQrAsync { get; set; }
+
+    /// <summary>Ouvre les photos du téléphone pour importer un QR sans accès global à la galerie.</summary>
+    public static Func<Task<byte[]?>>? PickQrImageAsync { get; set; }
 
     /// <summary>Vrai quand ce poste peut être le serveur de l'établissement : tout ordinateur, et le téléphone qui en a les moyens.</summary>
     public static bool CanHostServer => !IsMobile || LocalServer is not null;

@@ -23,7 +23,7 @@ public class NativeVisualsTests
         var navigation = new NavGroupVm("Scolarité", Array.Empty<NavItemVm>());
         var tools = new PhoneToolGroupVm("Scolarité", Array.Empty<RibbonCommandVm>());
         Assert.Equal(navigation.Icon, tools.Icon);
-        Assert.Equal("TonePurple", FeatureVisuals.Tone(navigation.Title));
+        Assert.Equal("ToneBlue", FeatureVisuals.Tone(navigation.Title));
         Assert.False(navigation.IsExpanded);
         Assert.False(tools.IsExpanded);
 
@@ -36,14 +36,15 @@ public class NativeVisualsTests
     [Theory]
     [InlineData("Nouvelle dépense", "ToneGreen")]
     [InlineData("Effacer des dossiers", "ToneRed")]
-    [InlineData("Reçus (PDF)", "ToneOrange")]
-    [InlineData("Vérifier la base", "ToneTeal")]
-    [InlineData("Taille du texte", "TonePurple")]
-    [InlineData("Situation (PDF)", "ToneIndigo")]
+    [InlineData("Reçus (PDF)", "ToneGreen")]
+    [InlineData("Vérifier la base", "ToneGreen")]
+    [InlineData("Taille du texte", "ToneBlue")]
+    [InlineData("Situation (PDF)", "ToneBlue")]
     public void Les_commandes_secondaires_recoivent_une_couleur_metier(string label, string expectedTone)
     {
         Assert.Equal(expectedTone, FeatureVisuals.CommandTone(label, "ToneNeutral"));
-        Assert.Equal("TonePink", FeatureVisuals.CommandTone(label, "TonePink"));
+        Assert.Equal(label.StartsWith("Effacer", StringComparison.Ordinal) ? "ToneRed" : "ToneGreen",
+            FeatureVisuals.CommandTone(label, "TonePink"));
     }
 
     [Fact]

@@ -35,6 +35,26 @@ static class ThemeChecks
         prefs.Animations = false;
         prefs.Theme = "light";
         prefs.Apply();
+        // Contraste élevé des icônes : pictogramme de chaque tuile et teinte employée en texte (« À jour », retards).
+        foreach (var theme in new[] { "light", "dark" })
+        {
+            prefs.Theme = theme;
+            prefs.Apply();
+            foreach (var tone in new[] { "ToneBlue", "ToneGreen", "ToneOrange", "TonePurple", "ToneRed", "ToneTeal", "ToneIndigo", "TonePink", "ToneNeutral" })
+            {
+                var tile = ColorOf(ThemeBrush.Get(tone));
+                Pair($"{theme} · pictogramme sur tuile {tone}", new SolidColorBrush(TileGlyph.GlyphFor(tile)), ThemeBrush.Get(tone));
+                Pair($"{theme} · texte {tone} sur bloc", ThemeBrush.Get(tone), ThemeBrush.Get("GroupBrush"));
+            }
+            Pair($"{theme} · texte secondaire sur bloc", ThemeBrush.Get("MutedBrush"), ThemeBrush.Get("GroupBrush"));
+            Pair($"{theme} · bordure des champs", ThemeBrush.Get("LineStrongBrush"), ThemeBrush.Get("FieldBrush"), 3);
+            Pair($"{theme} · contour des champs métier", ThemeBrush.Get("FieldLineBrush"), ThemeBrush.Get("FieldBrush"), 3);
+            Pair($"{theme} · texte sur le fond de page", ThemeBrush.Get("TextBrush"), ThemeBrush.Get("BgBrush"));
+            Pair($"{theme} · texte secondaire sur le fond de page", ThemeBrush.Get("MutedBrush"), ThemeBrush.Get("BgBrush"));
+            Pair($"{theme} · texte secondaire sur sélection du volet", ThemeBrush.Get("MutedBrush"), ThemeBrush.Get("SidebarSelectedBrush"));
+        }
+        prefs.Theme = "light";
+        prefs.Apply();
         var retained = ThemeBrush.Get("ToneIndigo");
         var oldColor = ColorOf(retained);
         var ordinary = new TextBlock { Text = "Apprenant et solde du compte" };
@@ -63,7 +83,7 @@ static class ThemeChecks
         var readOnly = new TextBox { Text = "TR-2026-00001", IsReadOnly = true, MinHeight = 44 };
         var choice = new ComboBox { ItemsSource = new[] { "Espèces", "Mobile Money" }, SelectedIndex = 0, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
         var table = new DataGrid { ItemsSource = new[] { new ThemeRow("SC-001", "Amina Kabeya"), new ThemeRow("SC-002", "Paul Mpolo") }, Height = 130, IsReadOnly = true, AutoGenerateColumns = false };
-        table.Columns.Add(new DataGridTextColumn { Header = "Matricule", Binding = new Binding("Number"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
+        table.Columns.Add(new DataGridTextColumn { Header = "Matricule", Binding = new Binding("Number"), MinWidth = 112, Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
         table.Columns.Add(new DataGridTextColumn { Header = "Apprenant", Binding = new Binding("Name"), Width = new DataGridLength(2, DataGridLengthUnitType.Star) });
         var stack = new StackPanel { Spacing = 10, Children = { ordinary, muted, error, input, placeholder, readOnly, choice, primary, neutral, danger, sheet, count, hero, table } };
         var card = new Border { Child = stack, Padding = new Thickness(16) };

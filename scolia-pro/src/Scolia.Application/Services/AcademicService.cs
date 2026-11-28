@@ -6,6 +6,7 @@ using Scolia.Domain.Academics;
 using Scolia.Domain.Discipline;
 using Scolia.Domain.Common;
 using Scolia.Domain.Students;
+using Scolia.Domain.School;
 
 namespace Scolia.Application.Services;
 
@@ -53,7 +54,7 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
     {
         var a = await db.Assessments.AsNoTracking().FirstOrDefaultAsync(x => x.Id == assessmentId, ct) ?? throw new NotFoundException("Évaluation introuvable.");
         var course = await db.Courses.AsNoTracking().FirstAsync(c => c.Id == a.CourseId, ct);
-        var students = await StudentsOfAsync(course.PromotionId, ct);
+        var students = await StudentsWithCodesAsync(course.PromotionId, ct);
         var grades = await db.Grades.AsNoTracking().Where(g => g.AssessmentId == assessmentId).ToDictionaryAsync(g => g.EnrollmentId, ct);
         var rows = students.Select(s => new GradeRow(s.EnrollmentId, s.Matricule, s.FullName, grades.GetValueOrDefault(s.EnrollmentId)?.Score, grades.GetValueOrDefault(s.EnrollmentId)?.Comment)).ToList();
         return new GradeSheetDto(ToDto(a, rows.Count(r => r.Score != null)), rows);
@@ -94,6 +95,14 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
 
     private sealed record EnrolledStudent(Guid EnrollmentId, string Matricule, string FullName, DateOnly EnrolledOn);
 
+    /// <summary>Apprenants de la promotion présentés par leur code anonyme (notes, résultats, bulletins, présences).</summary>
+    private async Task<List<EnrolledStudent>> StudentsWithCodesAsync(Guid promotionId, CancellationToken ct)
+    {
+        var students = await StudentsOfAsync(promotionId, ct);
+        var codes = await AnonymousDisplay.CodesAsync(db, students.Select(s => s.EnrollmentId), ct);
+        return students.Select(s => s with { Matricule = AnonymousDisplay.Of(codes, s.EnrollmentId) }).ToList();
+    }
+
     private async Task<List<EnrolledStudent>> StudentsOfAsync(Guid promotionId, CancellationToken ct) =>
         (await (from e in db.Enrollments.AsNoTracking()
                 join s in db.Students.AsNoTracking() on e.StudentId equals s.Id
@@ -111,7 +120,7 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
         var assessments = await db.Assessments.AsNoTracking().Where(a => courseIds.Contains(a.CourseId) && (term == null || a.Term == term)).ToListAsync(ct);
         var assessmentIds = assessments.Select(a => a.Id).ToList();
         var grades = await db.Grades.AsNoTracking().Where(g => assessmentIds.Contains(g.AssessmentId)).ToListAsync(ct);
-        var students = await StudentsOfAsync(promotionId, ct);
+        var students = await StudentsWithCodesAsync(promotionId, ct);
         var gradeMap = grades.ToDictionary(g => (g.AssessmentId, g.EnrollmentId));
         var rows = students.Select(s =>
         {
@@ -133,20 +142,24 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
 
     public async Task<byte[]> ReportCardPdfAsync(Guid promotionId, Guid enrollmentId, int? term, CancellationToken ct = default)
     {
+        var sourceSchool = await YearContext.SchoolAsync(db, ct);
+        if (InstitutionProfiles.Canonicalize(sourceSchool.InstitutionType) != InstitutionProfiles.ItmIm)
+            throw new DomainException("bulletin",
+                "Le bulletin ITM ne s'applique pas à cet établissement. Utilisez les aperçus pédagogiques propres aux cycles ; les documents officiels exigent une validation réglementaire.");
         var results = await ResultsAsync(promotionId, term, ct);
         var row = results.Rows.FirstOrDefault(r => r.EnrollmentId == enrollmentId) ?? throw new NotFoundException("Apprenant absent de cette promotion.");
         var school = await YearContext.SchoolAsync(db, ct);
         var promotion = await db.Promotions.AsNoTracking().FirstAsync(p => p.Id == promotionId, ct);
         var year = await db.AcademicYears.AsNoTracking().FirstAsync(y => y.Id == promotion.AcademicYearId, ct);
         var lines = results.Courses.Select((c, i) => (c, results.Coefficients[i], row.CourseAverages[i], 20m)).ToList();
-        return documents.ReportCard(new ReportCardDocument(PaymentService.Header(school), row.FullName, row.Matricule, results.Promotion + (term is null ? "" : $" · Période {term}"),
+        return documents.ReportCard(new ReportCardDocument(PaymentService.Header(school), row.FullName, AnonymousDisplay.Printed(row.Matricule), results.Promotion + (term is null ? "" : $" · Période {term}"),
             year.Label, lines, row.Average, row.Rank, results.Rows.Count, row.Decision));
     }
 
     // ---------- Présences ----------
     public async Task<AttendanceSheetDto> AttendanceSheetAsync(Guid promotionId, DateOnly date, CancellationToken ct = default)
     {
-        var students = await StudentsOfAsync(promotionId, ct);
+        var students = await StudentsWithCodesAsync(promotionId, ct);
         var ids = students.Select(s => s.EnrollmentId).ToList();
         var records = await db.Attendance.AsNoTracking().Where(a => a.Date == date && ids.Contains(a.EnrollmentId)).ToDictionaryAsync(a => a.EnrollmentId, ct);
         var confirmed = await db.CourseDays.AsNoTracking().AnyAsync(c => c.PromotionId == promotionId && c.Date == date, ct);
@@ -227,7 +240,7 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
 
     public async Task<IReadOnlyList<AttendanceSummary>> AttendanceSummaryAsync(Guid promotionId, DateOnly from, DateOnly to, CancellationToken ct = default)
     {
-        var students = await StudentsOfAsync(promotionId, ct);
+        var students = await StudentsWithCodesAsync(promotionId, ct);
         var timeline = await TimelineAsync(promotionId, students, from, to, ct);
         return students.Select(s =>
         {
@@ -245,7 +258,7 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
     /// <summary>Apprenants à traiter : absences non justifiées atteignant le seuil, ou jours consécutifs absents.</summary>
     public async Task<IReadOnlyList<AttendanceAlertDto>> AttendanceAlertsAsync(Guid promotionId, DateOnly from, DateOnly to, CancellationToken ct = default)
     {
-        var students = await StudentsOfAsync(promotionId, ct);
+        var students = await StudentsWithCodesAsync(promotionId, ct);
         var timeline = await TimelineAsync(promotionId, students, from, to, ct);
         var today = clock.Today;
         var alerts = new List<AttendanceAlertDto>();
@@ -318,7 +331,9 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
                 orderby i.Date descending
                 select new IncidentDto(i.Id, e.Id, s.Matricule, s.LastName + " " + s.MiddleName + " " + s.FirstName, p.Code, i.Date, i.Category, i.Description, i.Sanction,
                     i.Severity.ToString(), i.RecordedByName);
-        return await q.Take(500).ToListAsync(ct);
+        var incidents = await q.Take(500).ToListAsync(ct);
+        var codes = await AnonymousDisplay.CodesAsync(db, incidents.Select(x => x.EnrollmentId), ct);
+        return incidents.Select(x => x with { Matricule = AnonymousDisplay.Of(codes, x.EnrollmentId) }).ToList();
     }
 
     public Task<IncidentDto> CreateIncidentAsync(IncidentCreate input, CancellationToken ct = default) => gate.RunAsync(async () =>

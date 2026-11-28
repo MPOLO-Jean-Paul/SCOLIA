@@ -13,11 +13,19 @@ namespace Scolia.Bureau.Infrastructure;
 /// </summary>
 public sealed class SharedAxisTransition : IPageTransition
 {
-    public SharedAxisTransition(TimeSpan duration, double distance)
+    public SharedAxisTransition(TimeSpan duration, double distance, bool lightweight = false)
     {
         Duration = duration;
         Distance = distance;
+        Lightweight = lightweight;
     }
+
+    /// <summary>
+    /// Téléphone : l'ancienne page disparaît aussitôt et seule la nouvelle s'anime (fondu et léger glissement).
+    /// Une seule page dessinée en transparence au lieu de deux : le toucher répond tout de suite, même sur un
+    /// Android d'entrée de gamme.
+    /// </summary>
+    public bool Lightweight { get; }
 
     public TimeSpan Duration { get; }
     public double Distance { get; }
@@ -26,12 +34,23 @@ public sealed class SharedAxisTransition : IPageTransition
     public const double FadeOutShare = 0.35;
 
     /// <summary>Courbe « standard » de Material 3 : départ franc, arrivée très douce.</summary>
-    private static readonly Easing Standard = new SplineEasing(0.2, 0, 0, 1);
+    private static readonly Easing Standard = Motion.Spring;
 
     public async Task Start(Visual? from, Visual? to, bool forward, CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested) return;
         var shift = forward ? Distance : -Distance;
+        if (Lightweight)
+        {
+            if (from is not null) from.IsVisible = false;
+            if (to is null) return;
+            to.IsVisible = true;
+            await Task.WhenAll(
+                // Le contenu est lisible dès la première image ; aucun flash de page vide.
+                Fade(to, [(0, 0.88), (1, 1)], cancellationToken),
+                Slide(to, shift * 0.5, 0, cancellationToken));
+            return;
+        }
         var tasks = new List<Task>(4);
         if (from is not null)
         {
@@ -51,7 +70,7 @@ public sealed class SharedAxisTransition : IPageTransition
 
     private Task Fade(Visual target, (double Cue, double Opacity)[] steps, CancellationToken token)
     {
-        var animation = new Animation { Duration = Duration, Easing = new LinearEasing(), FillMode = FillMode.Forward };
+        var animation = new Animation { Duration = Duration, Easing = Motion.Smooth, FillMode = FillMode.Forward };
         foreach (var (cue, opacity) in steps)
             animation.Children.Add(new KeyFrame { Cue = new Cue(cue), Setters = { new Setter(Visual.OpacityProperty, opacity) } });
         return animation.RunAsync(target, token);

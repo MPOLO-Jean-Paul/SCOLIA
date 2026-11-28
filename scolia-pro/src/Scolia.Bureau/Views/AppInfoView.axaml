@@ -21,8 +21,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Border Classes="card" infra:Adaptive.FitDialog="True" Width="760" Padding="0" CornerRadius="16"
-          Background="{DynamicResource BgBrush}" BoxShadow="0 12 40 0 #33000000">
+  <Border Classes="dialogsurface" infra:Adaptive.FitDialog="True" Width="760">
     <Grid RowDefinitions="Auto,Auto,*">
       <!-- En-tête -->
       <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,16,14,8">
@@ -35,28 +34,31 @@
           <TextBlock Text="{Binding Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
         </StackPanel>
         <Button Grid.Column="2" Classes="closex" Command="{Binding Close}" VerticalAlignment="Top" ToolTip.Tip="Fermer">
-          <mi:MaterialIcon Kind="Close" />
+          <PathIcon Data="{x:Static infra:HomeGlyphs.Dismiss}" />
         </Button>
       </Grid>
       <!-- Recherche dans le catalogue -->
       <Border Grid.Row="1" Classes="googlebar pill" Margin="16,4,16,10">
         <Grid ColumnDefinitions="Auto,*,Auto,Auto">
           <mi:MaterialIcon Kind="Magnify" Width="22" Height="22" Margin="12,0,6,0" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
-          <TextBox x:Name="CatalogQuery" Grid.Column="1" Classes="searchfield" Text="{Binding Query}" PlaceholderText="{Binding Placeholder}" />
+          <TextBox x:Name="CatalogQuery" Grid.Column="1" Classes="searchfield" MinWidth="0" AutomationProperties.Name="{Binding Placeholder}" Text="{Binding Query}" PlaceholderText="{Binding Placeholder}" />
           <Button Grid.Column="2" Classes="baricon" Command="{Binding ClearQuery}" IsVisible="{Binding HasQuery}" ToolTip.Tip="Effacer" Width="40" Height="40">
             <mi:MaterialIcon Kind="Close" />
           </Button>
           <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding Listening}" Command="{Binding Listen}"
-                  IsVisible="{Binding VoiceAvailable}" ToolTip.Tip="Chercher à la voix" Width="40" Height="40">
-            <mi:MaterialIcon Kind="Microphone" />
+                  IsVisible="{Binding VoiceAvailable}" ToolTip.Tip="{Binding VoiceTip}" Width="40" Height="40">
+            <Grid>
+                  <mi:MaterialIcon Kind="MicrophoneOutline" IsVisible="{Binding !Listening}" />
+                  <mi:MaterialIcon Kind="StopOutline" IsVisible="{Binding Listening}" />
+                </Grid>
           </Button>
         </Grid>
       </Border>
 
       <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled" MaxHeight="620" x:Name="CatalogScroll">
         <StackPanel Margin="16,0,16,18" Spacing="10">
-          <TextBlock Text="{Binding Totals}" Classes="muted" FontSize="{DynamicResource FsSmall}" Margin="4,0,0,0" />
-          <TextBlock Text="Aucune fonction ne correspond à cette recherche." Classes="muted" IsVisible="{Binding IsEmpty}" Margin="4,10" />
+          <TextBlock Text="{Binding Totals}" TextWrapping="Wrap" Classes="muted" FontSize="{DynamicResource FsSmall}" Margin="4,0,0,0" />
+          <TextBlock Text="Aucune fonction ne correspond à cette recherche." TextWrapping="Wrap" Classes="muted" IsVisible="{Binding IsEmpty}" Margin="4,10" />
           <ItemsControl ItemsSource="{Binding Modules}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>

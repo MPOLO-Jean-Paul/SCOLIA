@@ -31,19 +31,20 @@
     <Style Selector="TextBlock.late"><Setter Property="Foreground" Value="{DynamicResource ToneRed}" /></Style>
   </UserControl.Styles>
   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-  <Grid ColumnDefinitions="2*,3*" infra:Adaptive.StackBelow="1000">
+  <Grid ColumnDefinitions="2*,3*" ColumnSpacing="12" infra:Adaptive.StackBelow="1000">
     <!-- Gauche : recherche de l'apprenant, puis saisie du versement -->
-    <StackPanel Grid.Column="0" Spacing="12" Margin="0,0,16,0">
+    <StackPanel Grid.Column="0" Spacing="12">
       <Border Classes="card">
         <StackPanel Spacing="8">
-          <TextBlock Text="1. Apprenant" Classes="heading" />
+          <TextBlock Text="{infra:Terms '1. Apprenant'}" Classes="heading" />
           <!-- Une seule recherche : celle de l'en-tête. Ce bouton y ramène si elle a été fermée. -->
           <Button Classes="ghost" Command="{Binding OpenHeaderSearch}" IsVisible="{Binding !HasStudent}" HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Left" ToolTip.Tip="Chercher l'apprenant dans la barre du haut">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="Magnify" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}" />
-              <TextBlock Text="Cherchez l'apprenant dans la barre du haut : nom ou matricule" TextWrapping="Wrap" VerticalAlignment="Center" />
-            </StackPanel>
+                  HorizontalContentAlignment="Left" ToolTip.Tip="{infra:Terms 'Chercher l\'apprenant dans la barre du haut'}">
+            <!-- Grille, pas pile horizontale : sur un téléphone le texte passe à la ligne au lieu de sortir de l'écran. -->
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <mi:MaterialIcon Kind="Magnify" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Top" Margin="0,1,0,0" />
+              <TextBlock Grid.Column="1" Text="{infra:Terms 'Chercher l\'apprenant : nom ou matricule'}" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </Grid>
           </Button>
           <TextBlock Text="{Binding SearchStatus}" IsVisible="{Binding HasSearchStatus}" Classes="muted"
                      FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
@@ -62,11 +63,11 @@
             <TextBlock Text="{Binding StudentInfo}" Classes="muted" TextWrapping="Wrap" />
             <Grid ColumnDefinitions="*,*" Margin="0,8,0,0" infra:Adaptive.StackBelow="360">
               <StackPanel>
-                <TextBlock Text="Solde à payer" Classes="caption" />
+                <TextBlock Text="Solde à payer" Classes="caption" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Balance}" Classes="kpi" TextWrapping="Wrap" />
               </StackPanel>
               <StackPanel Grid.Column="1">
-                <TextBlock Text="Reste exigible" Classes="caption" />
+                <TextBlock Text="Reste exigible" Classes="caption" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Overdue}" Classes="kpi" Foreground="{Binding OverdueBrush}" TextWrapping="Wrap" />
               </StackPanel>
             </Grid>
@@ -88,14 +89,14 @@
       <!-- Tant qu'aucun apprenant n'est choisi, le versement n'a rien à montrer : une seule consigne. -->
       <Border Classes="card" IsVisible="{Binding !HasStudent}">
         <c:EmptyState Icon="AccountSearchOutline" Title="2. Versement"
-                      Hint="Cherchez d'abord l'apprenant dans « 1. Apprenant » : ses mois à payer s'affichent ici." />
+                      Hint="{infra:Terms 'Cherchez d\'abord l\'apprenant dans « 1. Apprenant » : ses mois à payer s\'affichent ici.'}" />
       </Border>
       <Border Classes="card" IsVisible="{Binding ShowPayment}">
         <StackPanel Spacing="10">
           <TextBlock Text="2. Versement" Classes="heading" />
           <!-- Mois à encaisser : une ligne par mois, touchée n'importe où pour la cocher. Le plus ancien en retard est déjà coché. -->
           <StackPanel Spacing="6">
-            <TextBlock Text="Mois à encaisser" Classes="caption" />
+            <TextBlock Text="Mois et frais à encaisser" Classes="caption" TextWrapping="Wrap" />
             <TextBlock Text="{Binding MonthListStatus}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding HasMonths}" />
             <!-- Aucune liste silencieusement vide : diagnostiquer la configuration et proposer le bon écran. -->
             <Border Background="{DynamicResource OrangeSoftBrush}" CornerRadius="12" Padding="12"
@@ -117,7 +118,7 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
                   <Border Classes="monthrow" Classes.chosen="{Binding IsSelected}" CornerRadius="12" Margin="0,2">
-                    <CheckBox IsChecked="{Binding IsSelected}" MinHeight="52" Padding="8,0,12,0"
+                    <CheckBox IsChecked="{Binding IsSelected}" AutomationProperties.Name="{Binding Label}" MinHeight="52" Padding="8,0,12,0"
                               HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <StackPanel Spacing="1" VerticalAlignment="Center">
@@ -125,58 +126,67 @@
                           <TextBlock Text="{Binding Deadline}" IsVisible="{Binding HasDeadline}" FontSize="{DynamicResource FsSmall}"
                                      Classes="muted" Classes.late="{Binding Overdue}" TextWrapping="Wrap" />
                         </StackPanel>
-                        <TextBlock Grid.Column="1" Text="{Binding AmountText}" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right" />
+                        <TextBlock Grid.Column="1" Text="{Binding AmountText}" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right" TextWrapping="Wrap" />
                       </Grid>
                     </CheckBox>
                   </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <TextBlock Text="Chaque mois se règle en entier, à son montant." Classes="muted" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding HasMonths}" />
-            <TextBlock Text="{Binding TotalCaption}" Classes="muted" IsVisible="{Binding HasMonths}" />
+            <StackPanel Spacing="5" IsVisible="{Binding HasMonths}">
+              <TextBlock Text="Montant réellement reçu" Classes="caption" TextWrapping="Wrap" />
+              <TextBox Text="{Binding AmountText, Mode=TwoWay}" PlaceholderText="Montant du versement"
+                       HorizontalAlignment="Stretch" MinHeight="42" AutomationProperties.Name="Montant réellement reçu" />
+              <TextBlock Text="{Binding TotalCaption}" Classes="muted" TextWrapping="Wrap" />
+              <TextBlock Text="Un versement partiel est imputé aux mois les plus anciens ; la part non versée reste due sur ces mois."
+                         Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+            </StackPanel>
           </StackPanel>
           <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="12" infra:Adaptive.StackBelow="700">
             <!-- Le total se lit dans la barre du bas, à côté du bouton Encaisser : il n'est pas répété ici. -->
             <StackPanel Grid.Column="0">
-              <TextBlock Text="Date du reçu" Classes="caption" />
-              <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" />
+              <TextBlock Text="Date du reçu" Classes="caption" TextWrapping="Wrap" />
+              <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" AutomationProperties.Name="Date de l’opération" />
             </StackPanel>
             <StackPanel Grid.Column="1" Grid.ColumnSpan="2">
-              <TextBlock Text="Mode" Classes="caption" />
-              <ComboBox ItemsSource="{Binding Methods}" SelectedItem="{Binding Method}" HorizontalAlignment="Stretch" />
+              <TextBlock Text="Mode de paiement" Classes="caption" TextWrapping="Wrap" />
+              <ComboBox ItemsSource="{Binding Methods}" SelectedItem="{Binding Method}" HorizontalAlignment="Stretch" AutomationProperties.Name="Mode de paiement" />
             </StackPanel>
-            <!-- Remplis par SCOLIA : la référence, la personne connectée, le téléphone du dossier. Seul le mode se choisit. -->
-            <StackPanel Grid.Row="1" Grid.Column="0">
-              <TextBlock Text="Référence de la transaction" Classes="caption" />
-              <Border Classes="autofield" ToolTip.Tip="Donnée par SCOLIA pour chaque versement">
+            <!-- Une référence interne est créée pour les espèces ; les références externes sont saisies sur la confirmation réelle. -->
+            <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4">
+              <TextBlock Text="Référence de la transaction" Classes="caption" TextWrapping="Wrap" />
+              <Border Classes="autofield" ToolTip.Tip="Référence interne générée par SCOLIA" IsVisible="{Binding !NeedsExternalReference}">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="{Binding ReferenceText}" TextTrimming="CharacterEllipsis" FontWeight="Normal" FontSize="{DynamicResource FsSmall}" ToolTip.Tip="{Binding ReferenceText}" />
+                  <TextBlock Text="{Binding ReferenceText}" TextTrimming="CharacterEllipsis" FontWeight="Normal" FontSize="{DynamicResource FsSmall}" ToolTip.Tip="{Binding ReferenceText}" TextWrapping="Wrap" />
                   <mi:MaterialIcon Grid.Column="1" Kind="Autorenew" />
                 </Grid>
               </Border>
+              <TextBox Text="{Binding Reference, Mode=TwoWay}" IsVisible="{Binding NeedsExternalReference}"
+                       PlaceholderText="Référence réelle de l'opérateur" MinHeight="42"
+                       ToolTip.Tip="Recopiez la référence figurant sur la confirmation Mobile Money, bancaire ou du chèque" AutomationProperties.Name="Référence de transaction" />
             </StackPanel>
-            <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,10,10,0">
-              <TextBlock Text="Visé par" Classes="caption" />
+            <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+              <TextBlock Text="Visé par" Classes="caption" TextWrapping="Wrap" />
               <Border Classes="autofield" ToolTip.Tip="La personne connectée, qui reçoit l'argent">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="{Binding ReviewedBy}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding ReviewedBy}" ToolTip.Tip="{Binding ReviewedBy}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
                   <mi:MaterialIcon Grid.Column="1" Kind="AccountCheckOutline" />
                 </Grid>
               </Border>
             </StackPanel>
-            <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,10,0,0">
-              <TextBlock Text="Téléphone du payeur" Classes="caption" />
-              <Border Classes="autofield" ToolTip.Tip="Le téléphone du tuteur, repris du dossier de l'apprenant">
+            <StackPanel Grid.Row="1" Grid.Column="2" Spacing="4">
+              <TextBlock Text="Téléphone du payeur" Classes="caption" TextWrapping="Wrap" />
+              <Border Classes="autofield" ToolTip.Tip="{infra:Terms 'Le téléphone du tuteur, repris du dossier de l\'apprenant'}">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="{Binding PayerPhoneText}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding PayerPhoneText}" ToolTip.Tip="{Binding PayerPhoneText}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
                   <mi:MaterialIcon Grid.Column="1" Kind="PhoneOutline" />
                 </Grid>
               </Border>
             </StackPanel>
           </Grid>
           <StackPanel Margin="0,4,0,0">
-            <TextBlock Text="Observation (facultative)" Classes="caption" />
-            <TextBox Text="{Binding Note}" AcceptsReturn="True" Height="60" TextWrapping="Wrap" PlaceholderText="Laissée vide, le reçu portera « OK »" />
+            <TextBlock Text="Observation (facultative)" Classes="caption" TextWrapping="Wrap" />
+            <TextBox Text="{Binding Note}" AcceptsReturn="True" MinHeight="60" TextWrapping="Wrap" VerticalContentAlignment="Top" PlaceholderText="Laissée vide, le reçu portera « OK »" AutomationProperties.Name="Observation facultative" />
           </StackPanel>
         </StackPanel>
       </Border>
@@ -184,11 +194,26 @@
       <!-- Répartition calculée en direct sur les échéances -->
       <Border Classes="card" IsVisible="{Binding ShowPayment}">
         <StackPanel Spacing="8">
-          <Grid ColumnDefinitions="*,Auto">
+          <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="400">
             <TextBlock Text="Répartition" Classes="heading" />
-            <TextBlock Grid.Column="1" Text="{Binding BalanceAfter}" Classes="muted" TextWrapping="Wrap" />
+            <TextBlock Grid.Column="1" Text="{Binding BalanceAfter}" Classes="muted" TextWrapping="Wrap" ToolTip.Tip="{Binding BalanceAfter}" />
           </Grid>
-          <DataGrid ItemsSource="{Binding Allocations}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260">
+          <ItemsControl ItemsSource="{Binding Allocations}" IsVisible="{Binding Phone}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="4,8">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8" infra:Adaptive.StackBelow="230">
+                      <StackPanel Spacing="2"><TextBlock Text="Imputé" Classes="caption" TextWrapping="Wrap" /><TextBlock Text="{Binding Amount}" FontWeight="SemiBold" TextWrapping="Wrap" /></StackPanel>
+                      <StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Reste après" Classes="caption" TextWrapping="Wrap" /><TextBlock Text="{Binding Remaining}" TextWrapping="Wrap" /></StackPanel>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <DataGrid AutomationProperties.Name="Répartition du versement" ItemsSource="{Binding Allocations}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260" IsVisible="{Binding NotPhone}">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" MinWidth="140" />
               <DataGridTextColumn Header="Imputé" Binding="{Binding Amount}" Width="Auto" MinWidth="140" />
@@ -202,12 +227,14 @@
       <!-- Reçu enregistré -->
       <Border Classes="card" IsVisible="{Binding HasReceipt}">
         <StackPanel Spacing="10">
-          <TextBlock Text="Versement enregistré" Classes="heading" Foreground="{DynamicResource ToneGreen}" />
+          <TextBlock Text="Versement enregistré sur cet appareil" Classes="heading" Foreground="{DynamicResource ToneGreen}" />
           <TextBlock Text="{Binding ReceiptText}" TextWrapping="Wrap" />
+          <TextBlock Text="Le numéro LOCAL est un accusé provisoire. Le reçu officiel et son code de vérification seront disponibles après l'acceptation du serveur."
+                     Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasLocalReceipt}" />
           <Grid ColumnDefinitions="*,*,*" infra:Adaptive.StackBelow="700" Margin="0,8,0,0" ColumnSpacing="8">
-            <Button x:Name="PrintReceiptButton" Classes="primary" Command="{Binding PrintReceipt}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Imprimer le reçu" TextWrapping="Wrap" /></Button>
-            <Button x:Name="OpenReceiptButton" Grid.Column="1" Command="{Binding OpenReceipt}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Voir le reçu" TextWrapping="Wrap" /></Button>
-            <Button x:Name="NewPaymentButton" Grid.Column="2" Classes="ghost" Command="{Binding NewPayment}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Nouveau versement" TextWrapping="Wrap" /></Button>
+            <Button x:Name="PrintReceiptButton" AutomationProperties.Name="Imprimer le reçu" Classes="primary" Command="{Binding PrintReceipt}" IsVisible="{Binding !HasLocalReceipt}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Imprimer le reçu" TextWrapping="Wrap" /></Button>
+            <Button x:Name="OpenReceiptButton" AutomationProperties.Name="Voir le versement" Grid.Column="1" Command="{Binding OpenReceipt}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Voir le versement" TextWrapping="Wrap" /></Button>
+            <Button x:Name="NewPaymentButton" AutomationProperties.Name="Nouveau versement" Grid.Column="2" Classes="ghost" Command="{Binding NewPayment}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Nouveau versement" TextWrapping="Wrap" /></Button>
           </Grid>
         </StackPanel>
       </Border>

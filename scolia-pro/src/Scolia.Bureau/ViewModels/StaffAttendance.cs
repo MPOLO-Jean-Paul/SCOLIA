@@ -15,7 +15,7 @@ public sealed record StaffBilanRowVm(string Name, string Present, string Late, s
 
 /// <summary>
 /// Pointage du personnel (version 79) : signer l'entrée et la sortie, justifier une absence, et lire le bilan
-/// de la période. Une entrée à 08:00:00 ou après est signalée en retard.
+/// de la période. Une entrée strictement après 08:00:00 est signalée en retard.
 /// </summary>
 public sealed class StaffAttendancePage : PageViewModel
 {
@@ -104,6 +104,14 @@ public sealed class StaffAttendancePage : PageViewModel
         subtitle = $"{Format.Count(Members.Count, "membre actif", "membres actifs")} · du {Format.Date(from)} au {Format.Date(to)}";
         Raise(nameof(Subtitle));
         Selected = null;
+    }
+
+    internal bool PreviousMonth => previousMonth;
+
+    internal Task LoadForFlutterAsync(bool previous)
+    {
+        previousMonth = previous;
+        return LoadAsync();
     }
 
     private (DateOnly From, DateOnly To) PeriodOf(DateOnly today)

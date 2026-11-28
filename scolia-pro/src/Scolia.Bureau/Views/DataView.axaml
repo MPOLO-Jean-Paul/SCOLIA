@@ -4,17 +4,36 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.DataView">
   <Grid RowDefinitions="Auto,*">
-    <!-- Une ligne discrète au lieu d'un paragraphe : l'essentiel, sans encombrer la liste -->
-    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="2,0,0,10">
-      <mi:MaterialIcon Kind="ShieldCheckOutline" Width="16" Height="16" Foreground="{DynamicResource ToneGreen}" VerticalAlignment="Center" />
-      <TextBlock Classes="muted" VerticalAlignment="Center" TextWrapping="Wrap"
-                 Text="Sauvegarde automatique chaque jour. Une restauration garde d'abord une copie de la base actuelle." />
-    </StackPanel>
+    <!-- État de la protection, comme l'Historique des fichiers de Windows ou Time Machine : une phrase,
+         la dernière copie et le rythme automatique. Vert si la copie a moins d'un jour, orange sinon. -->
+    <Border Grid.Row="0" Classes="card" Padding="14,12" Margin="0,0,0,12">
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+        <Border Width="40" Height="40" CornerRadius="20" VerticalAlignment="Center" Background="{Binding StatusBrush}" Opacity="0.16" />
+        <mi:MaterialIcon Kind="{Binding StatusIcon}" Width="22" Height="22" Foreground="{Binding StatusBrush}"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+          <TextBlock Text="{Binding StatusTitle}" FontWeight="SemiBold" FontSize="{DynamicResource FsHeading}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding StatusDetail}" Classes="muted" TextWrapping="Wrap" />
+          <TextBlock Classes="caption" TextWrapping="Wrap"
+                     Text="Une restauration garde d'abord une copie de la base actuelle." />
+        </StackPanel>
+      </Grid>
+    </Border>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Fichier" Binding="{Binding Name}" Width="*" MinWidth="140" />
-        <DataGridTextColumn Header="Créée le" Binding="{Binding Created}" Width="Auto" MinWidth="190" />
-        <DataGridTextColumn Header="Taille" Binding="{Binding Size}" Width="Auto" MinWidth="110" />
+        <DataGridTemplateColumn Header="Sauvegarde" Width="*" MinWidth="200">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="12,0" ToolTip.Tip="{Binding Name}" Background="Transparent">
+                <mi:MaterialIcon Kind="{Binding Icon}" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding Kind}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              </Grid>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Créée le" Binding="{Binding Created}" Width="Auto" MinWidth="170" />
+        <DataGridTextColumn Header="Âge" Binding="{Binding Age}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="Taille" Binding="{Binding Size}" Width="Auto" MinWidth="100" />
       </DataGrid.Columns>
     </DataGrid>
     <c:EmptyState Grid.Row="1" Icon="DatabaseOutline" Title="Aucune sauvegarde pour l'instant" Hint="Cliquez sur « Sauvegarder » pour créer la première." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />

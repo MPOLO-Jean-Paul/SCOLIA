@@ -5,7 +5,6 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Threading;
 using Avalonia.VisualTree;
 
 namespace Scolia.Bureau.Infrastructure;
@@ -21,9 +20,11 @@ public enum HapticKind { Tap, Success, Error }
 public static class TouchFeedback
 {
     /// <summary>Durée de l'onde : assez longue pour être vue, assez courte pour ne jamais retenir l'œil.</summary>
-    public static readonly TimeSpan RippleTime = TimeSpan.FromMilliseconds(420);
+    public static readonly TimeSpan RippleTime = TimeSpan.FromMilliseconds(240);
 
     /// <summary>Branche l'onde sur tout l'écran ; <paramref name="enabled"/> suit le réglage « Animations ».</summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Control, RippleAdorner> Active = new();
+
     public static void Attach(Control root, Func<bool> enabled)
     {
         root.AddHandler(InputElement.PointerPressedEvent, (_, e) =>
@@ -61,26 +62,53 @@ public static class TouchFeedback
         var ripple = new RippleAdorner(origin, color, radius) { IsHitTestVisible = false };
         AdornerLayer.SetAdornedElement(ripple, target);
         AdornerLayer.SetIsClipEnabled(ripple, false);
+        // Au maximum une onde par cible ; les appuis répétés ne multiplient pas les timers.
+        if (Active.TryGetValue(target, out var previous)) previous.Stop();
+        Active.Add(target, ripple);
         layer.Children.Add(ripple);
-        ripple.Play(() => layer.Children.Remove(ripple));
+        ripple.Play(() =>
+        {
+            layer.Children.Remove(ripple);
+            if (Active.TryGetValue(target, out var current) && ReferenceEquals(current, ripple))
+                Active.Remove(target);
+        });
     }
 
     private sealed class RippleAdorner(Point origin, Color color, CornerRadius corner) : Control
     {
         private readonly Stopwatch watch = new();
-        private DispatcherTimer? timer;
+        private Action? completed;
 
         public void Play(Action done)
         {
+            completed = done;
+            DetachedFromVisualTree += OnDetached;
             watch.Start();
-            timer = new DispatcherTimer(TimeSpan.FromMilliseconds(15), DispatcherPriority.Render, (_, _) =>
+            if (TopLevel.GetTopLevel(this) is { } top)
+                top.RequestAnimationFrame(_ => Tick(top));
+            else Stop();
+        }
+
+        private void OnDetached(object? sender, VisualTreeAttachmentEventArgs e) => Stop();
+
+        private void Tick(TopLevel top)
+        {
+            if (completed is null) return;
+            if (!IsEffectivelyVisible || TopLevel.GetTopLevel(this) != top || watch.Elapsed >= RippleTime)
             {
-                InvalidateVisual();
-                if (watch.Elapsed < RippleTime) return;
-                timer?.Stop();
-                done();
-            });
-            timer.Start();
+                Stop();
+                return;
+            }
+            InvalidateVisual();
+            top.RequestAnimationFrame(_ => Tick(top));
+        }
+
+        public void Stop()
+        {
+            var done = completed;
+            completed = null;
+            DetachedFromVisualTree -= OnDetached;
+            done?.Invoke();
         }
 
         public override void Render(DrawingContext context)
@@ -90,8 +118,9 @@ public static class TouchFeedback
             var t = Math.Clamp(watch.Elapsed / RippleTime, 0, 1);
             // L'onde grandit vite puis ralentit ; elle s'efface pendant la seconde moitié.
             var grow = 1 - Math.Pow(1 - t, 3);
-            var far = new[] { bounds.TopLeft, bounds.TopRight, bounds.BottomLeft, bounds.BottomRight }
-                .Max(p => Math.Sqrt(Math.Pow(p.X - origin.X, 2) + Math.Pow(p.Y - origin.Y, 2)));
+            var dx = Math.Max(Math.Abs(origin.X), Math.Abs(bounds.Width - origin.X));
+            var dy = Math.Max(Math.Abs(origin.Y), Math.Abs(bounds.Height - origin.Y));
+            var far = Math.Sqrt(dx * dx + dy * dy);
             var alpha = t < 0.5 ? 1 : 1 - (t - 0.5) / 0.5;
             var brush = new SolidColorBrush(color, alpha);
             using var clip = context.PushClip(new RoundedRect(bounds, corner));

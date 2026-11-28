@@ -1,39 +1,59 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:c="using:Scolia.Bureau.Controls"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.MonthlyView">
   <Grid RowDefinitions="Auto,Auto,*">
     <!-- Critères : le mois d'abord, puis la promotion, l'état et la recherche -->
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <StackPanel Spacing="8">
+      <TextBlock Text="Filtres du suivi mensuel" Classes="heading" TextWrapping="Wrap" />
       <WrapPanel>
         <StackPanel Classes="field">
-          <TextBlock Text="Mois" Classes="fieldlabel" />
-          <ComboBox Width="200" ItemsSource="{Binding Months}" SelectedItem="{Binding Month}" />
+          <TextBlock Text="Mois" Classes="fieldlabel" TextWrapping="Wrap" />
+          <ComboBox Width="200" ItemsSource="{Binding Months}" SelectedItem="{Binding Month, Mode=TwoWay}" AutomationProperties.Name="Mois" />
         </StackPanel>
         <StackPanel Classes="field">
-          <TextBlock Text="Promotion" Classes="fieldlabel" />
-          <ComboBox Width="240" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+          <TextBlock Text="Promotion" Classes="fieldlabel" TextWrapping="Wrap" />
+          <ComboBox Width="240" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion, Mode=TwoWay}" AutomationProperties.Name="Promotion" />
         </StackPanel>
         <StackPanel Classes="field">
-          <TextBlock Text="État" Classes="fieldlabel" />
-          <ComboBox Width="190" ItemsSource="{Binding StateChoices}" SelectedItem="{Binding State}" />
+          <TextBlock Text="État" Classes="fieldlabel" TextWrapping="Wrap" />
+          <ComboBox Width="190" ItemsSource="{Binding StateChoices}" SelectedItem="{Binding State, Mode=TwoWay}" AutomationProperties.Name="État du paiement" />
         </StackPanel>
         <StackPanel Classes="field pagesearch">
-          <TextBlock Text="Rechercher" Classes="fieldlabel" />
-          <TextBox Classes="search clearButton" Width="240" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
+          <TextBlock Text="Rechercher" Classes="fieldlabel" TextWrapping="Wrap" />
+          <TextBox Classes="search clearButton" Width="240" Text="{Binding Search, Mode=TwoWay}" PlaceholderText="Nom ou matricule" AutomationProperties.Name="Rechercher par nom ou matricule" />
         </StackPanel>
       </WrapPanel>
+      <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" infra:Adaptive.StackBelow="620">
+          <TextBlock Text="{Binding ExportScope}" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" />
+          <WrapPanel Grid.Column="1" Orientation="Horizontal">
+            <Button Command="{Binding ExportExcel}" Classes="quiet" ToolTip.Tip="Exporter la sélection en Excel"><StackPanel Orientation="Horizontal" Spacing="5"><mi:MaterialIcon Kind="FileExcel" Width="18" Height="18" Foreground="{DynamicResource ToneGreen}" /><TextBlock Text="Excel" /></StackPanel></Button>
+            <Button Command="{Binding ExportPdf}" Classes="quiet" ToolTip.Tip="Exporter la sélection en PDF"><StackPanel Orientation="Horizontal" Spacing="5"><mi:MaterialIcon Kind="FilePdfBox" Width="18" Height="18" Foreground="{DynamicResource ToneRed}" /><TextBlock Text="PDF" /></StackPanel></Button>
+            <Button Command="{Binding ExportWord}" Classes="quiet" ToolTip.Tip="Exporter la sélection en Word"><StackPanel Orientation="Horizontal" Spacing="5"><mi:MaterialIcon Kind="FileDocumentOutline" Width="18" Height="18" Foreground="{DynamicResource ToneBlue}" /><TextBlock Text="Word" /></StackPanel></Button>
+          </WrapPanel>
+        </Grid>
+      </Border>
+      </StackPanel>
     </Border>
 
     <!-- Bilan du mois pour la promotion choisie -->
-    <ItemsControl Grid.Row="1" ItemsSource="{Binding Totals}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
+    <StackPanel Grid.Row="1" Spacing="5">
+    <TextBlock Text="Mensualité sélectionnée : seuls les versements affectés à ce mois sont comptés ci-dessous." Classes="muted" TextWrapping="Wrap" />
+    <ItemsControl ItemsSource="{Binding Totals}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
       <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
+        <ItemsPanelTemplate><infra:AdaptiveTiles MinItemWidth="170" /></ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>
     </ItemsControl>
+    <Border Background="{DynamicResource GroupBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
+      <TextBlock Text="{Binding ReceiptActivity}" TextWrapping="Wrap" Classes="muted" />
+    </Border>
+    </StackPanel>
 
-    <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" Margin="0,4,0,0">
+    <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" Margin="0,4,0,0" AutomationProperties.Name="Suivi mensuel des paiements">
       <DataGrid.Columns>
         <!-- Toujours visibles : qui, quelle promotion, ce qui reste, l'état et le reçu. Le détail des montants vient quand la place le permet. -->
         <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="96" />
@@ -56,7 +76,7 @@
         <DataGridTextColumn infra:GridPriority.Level="3" Header="Payé le" Binding="{Binding PaidOn}" Width="Auto" MinWidth="112" />
       </DataGrid.Columns>
     </DataGrid>
-    <c:EmptyState Grid.Row="2" Icon="CalendarCheck" Title="Aucun apprenant pour ces critères"
+    <c:EmptyState Grid.Row="2" Icon="CalendarCheck" Title="{infra:Terms 'Aucun apprenant pour ces critères'}"
                   Hint="Changez de mois, de promotion ou d'état." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

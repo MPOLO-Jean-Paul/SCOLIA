@@ -1,0 +1,20 @@
+name: scolia_flutter
+description: Module d'interface Android SCOLIA Pro.
+publish_to: none
+version: 0.1.0+1
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+flutter:
+  uses-material-design: true
+  module:
+    androidX: true
+    androidPackage: com.jpservices.scolia.flutterui
+    iosBundleIdentifier: com.jpservices.scolia.flutterui

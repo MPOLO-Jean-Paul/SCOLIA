@@ -19,6 +19,8 @@ public sealed class OutboxItem
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     /// <summary>Motif du refus du serveur, pour une opération passée en conflit.</summary>
     public string? Error { get; set; }
+    /// <summary>Copie chiffrée déposée en ligne : le serveur l'appliquera même si cet appareil ne le revoit pas.</summary>
+    public bool Deposited { get; set; }
 }
 
 /// <summary>Session gardée pour se connecter sans réseau : le compte, ses droits et l'empreinte du mot de passe.</summary>
@@ -59,26 +61,299 @@ public sealed class OfflineStore
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SCOLIA", "hors-ligne");
 
     /// <summary>Utilisateur dont les pages sont gardées : chaque compte ne relit que ce qu'il a lui-même consulté.</summary>
-    public string User { get; set; } = string.Empty;
+    private string currentUser = string.Empty;
+    private long searchRevision;
+    private readonly object readSnapshotSync = new();
+    private long readGeneration;
+    public long ReadGeneration => System.Threading.Interlocked.Read(ref readGeneration);
+    public string User
+    {
+        get => System.Threading.Volatile.Read(ref currentUser);
+        set
+        {
+            var previous = System.Threading.Interlocked.Exchange(ref currentUser, value ?? string.Empty);
+            if (!string.Equals(previous, value, StringComparison.Ordinal))
+                System.Threading.Interlocked.Increment(ref searchRevision);
+        }
+    }
+
+    /// <summary>
+    /// Révision locale du registre, utilisée pour ne pas reparcourir 10 000
+    /// apprenants à chaque frappe. Tout changement de compte invalide l'index.
+    /// </summary>
+    // Dernière décision de lecture seule reçue du serveur de l'établissement.
+    // Un poste hors ligne ne peut pas contourner une restriction déjà connue.
+    private static string LicenceKeyFor(string account) =>
+        "license:read-only:" + Convert.ToHexString(SHA256.HashData(
+            Encoding.UTF8.GetBytes(account.Trim().ToUpperInvariant())));
+    public bool IsLicenseReadOnlyFor(string account) =>
+        !string.IsNullOrWhiteSpace(account) &&
+        database.Read(LicenceKeyFor(account)) == "1";
+    public void SaveLicenseReadOnlyFor(string account, bool restricted)
+    {
+        if (string.IsNullOrWhiteSpace(account)) return;
+        database.Write(LicenceKeyFor(account), restricted ? "1" : "0");
+    }
+
+    public long SearchRevision => System.Threading.Interlocked.Read(ref searchRevision);
 
     private string CacheFolder => Path.Combine(root, "pages", Safe(User));
     private string OutboxFile => "envois.json";
     private string ConflictFile => "conflits.json";
     private string CredentialFile => "session.json";
     private const string LastAccountKey = "dernier-compte";
+    private const string KnownAccountsKey = "comptes-connus:v1";
+    private const string ForgottenAccountsKey = "comptes-retires:v1";
+    private static string CredentialKeyFor(string account) =>
+        "session:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(account.Trim().ToUpperInvariant())));
+    // Autorisation de reprise du pilote central liée à la session LOCALE.
+    // Une fermeture volontaire la désactive sans effacer le jumelage ECDSA
+    // ni les opérations en attente. L'absence de clé vaut toujours false.
+    private static string CentralBackgroundKeyFor(string account) =>
+        "central:background:authorized:" + Convert.ToHexString(
+            SHA256.HashData(Encoding.UTF8.GetBytes(account.Trim().ToUpperInvariant())));
+
+    public bool CanSyncCentralInBackgroundFor(string account) =>
+        !string.IsNullOrWhiteSpace(account) &&
+        database.Read(CentralBackgroundKeyFor(account)) == "1";
+
+    public void SetCentralBackgroundAllowedFor(string account, bool allowed)
+    {
+        if (string.IsNullOrWhiteSpace(account))
+            throw new ArgumentException("Compte de synchronisation requis.", nameof(account));
+        database.Write(CentralBackgroundKeyFor(account), allowed ? "1" : "0");
+    }
+
 
     private sealed record SavedPage(string Json, DateTime SavedAt, string? Path = null);
-    private string PagePrefix => "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(User.ToUpperInvariant()))) + ":";
-    private string PageKey(string path) => PagePrefix + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));
-    public IReadOnlyList<string> CachedPaths() => User.Length == 0 ? [] : database.ReadPrefix(PagePrefix, 32)
-        .Select(text => JsonSerializer.Deserialize<SavedPage>(text, Json)?.Path)
-        .OfType<string>().Where(path => path != "api/etablissement/logo").ToList();
+
+    // Point de reprise propre au compte et à cet établissement, conservé dans SQLite chiffré.
+    // L'époque change au redémarrage du serveur : aucune révision ne peut être confondue.
+    private static string SyncKeyFor(string user) =>
+        "sync:revision:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(user.ToUpperInvariant())));
+    public string? ReadSyncCheckpointFor(string user) =>
+        string.IsNullOrWhiteSpace(user) ? null : database.Read(SyncKeyFor(user));
+    public void SaveSyncCheckpointFor(string user, string checkpoint)
+    {
+        if (string.IsNullOrWhiteSpace(user)) return;
+        database.Write(SyncKeyFor(user), checkpoint);
+    }
+
+    // Curseur de préparation indépendant du flux "api/revision" et de l'outbox.
+    // Portée : emplacement du serveur (root), compte (haché), révision et droits.
+    // Seules les ressources obtenues intégralement sont marquées, APRÈS la
+    // sauvegarde réussie dans SQLite chiffré. Aucune liste d'élèves n'est exportée.
+    // Cloisonner les révisions de préparation par usage : une session disposant
+    // à la fois de droits scolaires et enseignants doit pouvoir répliquer ses
+    // deux espaces sans invalider le curseur de l'autre.
+    // v4 démarre une validation fraîche, sans effacer aucun cliché ni journal.
+    private static string PreparedScopeFor(string revision) =>
+        revision.EndsWith("|enseignant", StringComparison.Ordinal) ? "enseignant" :
+        revision.EndsWith("|finances", StringComparison.Ordinal) ? "finances" : "dossiers";
+
+    private static string PreparedPrefixFor(string user, string revision) =>
+        "preparation:v4:" + Convert.ToHexString(
+            SHA256.HashData(Encoding.UTF8.GetBytes(user.Trim().ToUpperInvariant()))) +
+        ":" + PreparedScopeFor(revision) + ":";
+
+    private static string PreparedRevisionKeyFor(string user, string revision) =>
+        PreparedPrefixFor(user, revision) + "revision";
+
+    private static string PreparedResourceKeyFor(string user, string revision, string path) =>
+        PreparedPrefixFor(user, revision) + "done:" + Convert.ToHexString(
+            SHA256.HashData(Encoding.UTF8.GetBytes(path)));
+
+    /// <summary>
+    /// Lorsqu'un nouvel état serveur arrive, repartir sur une validation complète
+    /// mais uniquement pour cette révision. Ne pas modifier le contenu du cache :
+    /// les GET/304 ne récupèrent pas à nouveau les JSON identiques.
+    /// </summary>
+    public void BeginPreparationFor(string user, string revision)
+    {
+        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(revision))
+            throw new ArgumentException("Compte et révision de préparation requis.");
+        lock (gate)
+        {
+            if (database.Read(PreparedRevisionKeyFor(user, revision)) == revision) return;
+            database.DeletePrefix(PreparedPrefixFor(user, revision));
+            database.Write(PreparedRevisionKeyFor(user, revision), revision);
+        }
+    }
+
+    /// <summary>Vrai seulement si cette ressource a déjà été vérifiée pour cette
+    /// révision ET demeure physiquement dans le cache du compte.</summary>
+    public bool WasPreparedFor(string user, string revision, string path)
+    {
+        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(path) ||
+            string.IsNullOrWhiteSpace(revision)) return false;
+        return database.Read(PreparedRevisionKeyFor(user, revision)) == revision
+            && database.Read(PreparedResourceKeyFor(user, revision, path)) == "ok";
+    }
+
+    /// <summary>Écriture durable après réception complète ; l'arrêt du programme,
+    /// une perte réseau ou un nouveau login conservent cette marque.</summary>
+    public void MarkPreparedFor(string user, string revision, string path)
+    {
+        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(revision) ||
+            string.IsNullOrWhiteSpace(path)) return;
+        lock (gate)
+        {
+            if (database.Read(PreparedRevisionKeyFor(user, revision)) == revision)
+                database.Write(PreparedResourceKeyFor(user, revision, path), "ok");
+        }
+    }
+
+    /// <summary>Une réponse HTTP 304 confirme la fraîcheur, sans réécrire l'index ni re-télécharger.</summary>
+    public void TouchPageFor(string user, string path, string json)
+    {
+        if (string.IsNullOrWhiteSpace(user)) return;
+        database.Write(PageKeyFor(user, path),
+            JsonSerializer.Serialize(new SavedPage(json, DateTime.Now, path), Json));
+    }
+    private static string PagePrefixFor(string account) =>
+        "page:" + Convert.ToHexString(SHA256.HashData(
+            Encoding.UTF8.GetBytes(account.Trim().ToUpperInvariant()))) + ":";
+    private string PagePrefix => PagePrefixFor(User);
+
+    /// <summary>Retire les copies de consultation après une modification des droits, sans toucher aux opérations à envoyer.</summary>
+    public void InvalidateReadSnapshotsFor(string account)
+    {
+        if (string.IsNullOrWhiteSpace(account)) return;
+        lock (readSnapshotSync)
+        {
+            System.Threading.Interlocked.Increment(ref readGeneration);
+            database.DeletePrefix(PagePrefixFor(account));
+            foreach (var scope in new[] { "droits|dossiers", "droits|finances", "droits|enseignant" })
+                database.DeletePrefix(PreparedPrefixFor(account, scope));
+            var legacy = Path.Combine(root, "pages", Safe(account));
+            if (Directory.Exists(legacy)) Directory.Delete(legacy, recursive: true);
+            System.Threading.Interlocked.Increment(ref searchRevision);
+        }
+    }
+
+    /// <summary>Une réponse commencée avec les anciens droits ne recrée pas les copies retirées.</summary>
+    public void SaveReadSnapshotFor(string account, string path, string json, bool unchanged, long generation)
+    {
+        lock (readSnapshotSync)
+        {
+            if (generation != ReadGeneration) return;
+            if (unchanged) TouchPageFor(account, path, json);
+            else SavePageFor(account, path, json);
+        }
+    }
+    private string PageKey(string path) => PageKeyFor(User, path);
+    private static string PageKeyFor(string user, string path) =>
+        "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(user.ToUpperInvariant()))) +
+        ":" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));
+    /// <summary>
+    /// Pages locales à réactualiser, les plus anciennes d'abord. Un classement par hash SQLite
+    /// retraitait toujours les mêmes 32 pages et laissait les autres périmées indéfiniment.
+    /// La lecture reste bornée aux 2048 chemins du compte courant ; le travail réseau est
+    /// limité séparément (24 pages par exécution WorkManager).
+    /// </summary>
+    public IReadOnlyList<string> CachedPaths(int limit = 32)
+    {
+        if (string.IsNullOrWhiteSpace(User) || limit <= 0) return [];
+        return database.ReadPrefix(PagePrefix, 2048)
+            .Select(text =>
+            {
+                try { return JsonSerializer.Deserialize<SavedPage>(text, Json); }
+                catch (JsonException) { return null; }
+            })
+            .OfType<SavedPage>()
+            .Where(p => !string.IsNullOrWhiteSpace(p.Path) && p.Path != "api/etablissement/logo")
+            .OrderBy(p => p.SavedAt)
+            .ThenBy(p => p.Path!, StringComparer.Ordinal)
+            .Take(Math.Min(limit, 128))
+            .Select(p => p.Path!)
+            .ToList();
+    }
 
     /// <summary>Pages chiffrées dans SQLite ; les anciennes pages sont migrées à leur première lecture.</summary>
-    public void SavePage(string path, string json)
+    public void SavePage(string path, string json) => SavePageFor(User, path, json);
+
+    /// <summary>
+    /// Récupère des pages de registre en une requête SQLite puis reconstitue
+    /// uniquement les clés du compte courant. Compatible avec l'ancien cache
+    /// JSON individuel encore présent après une migration non destructive.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> ReadPages(IReadOnlyList<string> paths)
     {
-        if (User.Length == 0) return;
-        database.Write(PageKey(path), JsonSerializer.Serialize(new SavedPage(json, DateTime.Now, path), Json));
+        var account = User;
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (account.Length == 0 || paths.Count == 0) return result;
+        var keys = paths.Select(path => (Path: path, Key: PageKeyFor(account, path))).ToArray();
+        var saved = database.ReadMany(keys.Select(x => x.Key).ToArray());
+        foreach (var item in keys)
+        {
+            if (!string.Equals(account, User, StringComparison.Ordinal)) break;
+            if (saved.TryGetValue(item.Key, out var stored))
+            {
+                var page = JsonSerializer.Deserialize<SavedPage>(stored, Json)
+                    ?? throw new InvalidDataException("Cache local invalide.");
+                result[item.Path] = page.Json;
+                continue;
+            }
+            // Migration à la demande, uniquement si la page existait réellement.
+            var file = Path.Combine(root, "pages", Safe(account),
+                Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(item.Path)))[..32] + ".json");
+            if (!File.Exists(file)) continue;
+            var json = File.ReadAllText(file);
+            SavePageFor(account, item.Path, json);
+            ArchiveLegacy(file);
+            result[item.Path] = json;
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Écrit sous le compte qui a déclenché la requête HTTP. Une connexion à
+    /// un autre compte pendant l'attente réseau ne peut pas transférer ses données.
+    /// </summary>
+    public void SavePageFor(string user, string path, string json)
+    {
+        if (string.IsNullOrWhiteSpace(user)) return;
+        database.Write(PageKeyFor(user, path),
+            JsonSerializer.Serialize(new SavedPage(json, DateTime.Now, path), Json));
+        if (string.Equals(user, User, StringComparison.Ordinal) &&
+            (path.StartsWith("api/apprenants", StringComparison.Ordinal) ||
+             path == "api/etablissement/promotions"))
+            System.Threading.Interlocked.Increment(ref searchRevision);
+    }
+
+    /// <summary>
+    /// Lecture-modification-écriture atomique d'une page JSON chiffrée.
+    /// SQLite sérialise les transactions même si deux instances du client
+    /// utilisent le même fichier hors-ligne.db. Une relève réseau ne peut
+    /// donc pas écraser une opération ajoutée pendant une attente HTTP.
+    /// Le callback doit rester synchrone et ne doit pas effectuer de réseau.
+    /// </summary>
+    public string UpdatePageFor(string user, string path, Func<string?, string> change)
+    {
+        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(path))
+            throw new ArgumentException("Compte et chemin de cache obligatoires.");
+        ArgumentNullException.ThrowIfNull(change);
+        var key = PageKeyFor(user, path);
+        string? updated = null;
+        database.Update([key], values =>
+        {
+            string? previous = null;
+            if (values[key] is { Length: > 0 } stored)
+            {
+                var page = JsonSerializer.Deserialize<SavedPage>(stored, Json)
+                    ?? throw new InvalidDataException("Cache local invalide.");
+                previous = page.Json;
+            }
+            updated = change(previous)
+                ?? throw new InvalidDataException("Mise à jour du cache invalide.");
+            values[key] = JsonSerializer.Serialize(
+                new SavedPage(updated, DateTime.Now, path), Json);
+        });
+        if (string.Equals(user, User, StringComparison.Ordinal) &&
+            (path.StartsWith("api/apprenants", StringComparison.Ordinal) ||
+             path == "api/etablissement/promotions"))
+            System.Threading.Interlocked.Increment(ref searchRevision);
+        return updated ?? throw new InvalidDataException("Cache local non enregistré.");
     }
 
     public (string Json, DateTime SavedAt)? ReadPage(string path)
@@ -98,7 +373,74 @@ public sealed class OfflineStore
         return (json, savedAt);
     }
 
+    /// <summary>
+    /// Un 403/404 du serveur invalide la copie locale de cette ressource :
+    /// la conservation hors ligne ne doit pas contourner une révocation explicite.
+    /// Le compte d'origine est conservé pour éviter d'effacer la copie d'un autre utilisateur.
+    /// </summary>
+    public void RemovePageFor(string user, string path)
+    {
+        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(path)) return;
+        database.Delete(PageKeyFor(user, path));
+        if (string.Equals(user, User, StringComparison.Ordinal) &&
+            path.StartsWith("api/apprenants", StringComparison.Ordinal))
+            System.Threading.Interlocked.Increment(ref searchRevision);
+        // Éviter la réimportation de l'ancien cache JSON après une suppression serveur.
+        var legacy = Path.Combine(root, "pages", Safe(user),
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)))[..32] + ".json");
+        if (File.Exists(legacy)) File.Delete(legacy);
+    }
+
     public IReadOnlyList<OutboxItem> Outbox() => Load(OutboxFile).Where(i => i.User == User).ToList();
+    public IReadOnlyList<OutboxItem> OutboxFor(string user) => Load(OutboxFile).Where(i => i.User == user).ToList();
+
+    /// <summary>
+    /// Comptes possédant des opérations non déposées ET un accès de dépôt
+    /// déjà remis par le serveur. Une seule lecture du journal partagé évite
+    /// de manquer les opérations d'un collègue lorsque l'écran est fermé.
+    /// Ce résultat n'accorde aucun droit supplémentaire : le dépôt valide
+    /// encore la délégation existante et le serveur revalide les permissions.
+    /// </summary>
+    public IReadOnlyList<string> AccountsAwaitingCloudDeposit()
+    {
+        return Load(OutboxFile)
+            .Where(item => !item.Deposited && !string.IsNullOrWhiteSpace(item.User))
+            .Select(item => item.User)
+            .Distinct(StringComparer.Ordinal)
+            .Where(account => !string.IsNullOrWhiteSpace(ReadCloudAccessFor(account)))
+            .ToArray();
+    }
+
+    /// <summary>
+    /// Comptes dont la boîte cloud contient des opérations DÉJÀ déposées,
+    /// dont on peut lire l'issue indépendamment de l'ancien PC. Le filtre de
+    /// délégation valide est appliqué ensuite par ScoliaClient.
+    /// </summary>
+    public IReadOnlyList<string> AccountsAwaitingCloudOutcome() =>
+        Load(OutboxFile)
+            .Where(item => item.Deposited && !string.IsNullOrWhiteSpace(item.User))
+            .Select(item => item.User)
+            .Distinct(StringComparer.Ordinal)
+            .Where(account => !string.IsNullOrWhiteSpace(ReadCloudAccessFor(account)))
+            .ToArray();
+
+    /// <summary>L'opération est en sécurité en ligne : elle reste dans la file jusqu'à son issue.</summary>
+    public void MarkDepositedFor(string user, string id) => Change((pending, _) =>
+    {
+        foreach (var item in pending.Where(i => i.Id == id && i.User == user)) item.Deposited = true;
+    });
+
+    // Accès de dépôt en ligne remis par le serveur au compte (jeton, clé de dépôt, délégation signée),
+    // gardé dans la base locale chiffrée et propre à chaque compte.
+    private static string CloudKeyFor(string user) =>
+        "nuage:depot:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(user.Trim().ToUpperInvariant())));
+    public string? ReadCloudAccessFor(string user) =>
+        string.IsNullOrWhiteSpace(user) ? null : database.Read(CloudKeyFor(user));
+    public void SaveCloudAccessFor(string user, string json)
+    {
+        if (string.IsNullOrWhiteSpace(user)) return;
+        database.Write(CloudKeyFor(user), json);
+    }
     public IReadOnlyList<OutboxItem> Conflicts() => Load(ConflictFile).Where(i => i.User == User).ToList();
 
     public void Enqueue(OutboxItem item)
@@ -107,11 +449,16 @@ public sealed class OfflineStore
         Change((pending, _) => { if (pending.All(i => i.Id != item.Id)) pending.Add(item); });
     }
 
-    public void Sent(string id) => Change((pending, _) => pending.RemoveAll(i => i.Id == id && i.User == User));
+    public void Sent(string id) => SentFor(User, id);
 
-    public void Refused(string id, string error) => Change((pending, conflicts) =>
+    /// <summary>Ne jamais solder la file du compte B lorsque l'envoi appartenait au compte A.</summary>
+    public void SentFor(string user, string id) =>
+        Change((pending, _) => pending.RemoveAll(i => i.Id == id && i.User == user));
+
+    public void Refused(string id, string error) => RefusedFor(User, id, error);
+    public void RefusedFor(string user, string id, string error) => Change((pending, conflicts) =>
     {
-        var item = pending.FirstOrDefault(i => i.Id == id && i.User == User);
+        var item = pending.FirstOrDefault(i => i.Id == id && i.User == user);
         if (item is null) return;
         item.Error = error;
         pending.Remove(item);
@@ -140,6 +487,7 @@ public sealed class OfflineStore
             values[OutboxFile] = JsonSerializer.Serialize(pending, Json);
             values[ConflictFile] = JsonSerializer.Serialize(conflicts, Json);
         });
+        System.Threading.Interlocked.Increment(ref searchRevision);
     }
 
     /// <summary>
@@ -163,10 +511,26 @@ public sealed class OfflineStore
         return ids;
     }
 
-    /// <summary>Garde la session d'un compte après une connexion réussie, avec une empreinte salée du mot de passe.</summary>
+    /// <summary>Les empreintes des comptes restent cloisonnées par utilisateur dans le SQLite chiffré.</summary>
+    private static OfflineCredential? DecodeCredential(string? value) =>
+        string.IsNullOrEmpty(value) ? null : JsonSerializer.Deserialize<OfflineCredential>(value, Json);
+
+    private OfflineCredential? ReadCredentialFor(string account)
+    {
+        if (string.IsNullOrWhiteSpace(account)) return null;
+        var scoped = DecodeCredential(database.Read(CredentialKeyFor(account)));
+        if (scoped is not null && string.Equals(scoped.UserName, account.Trim(), StringComparison.OrdinalIgnoreCase))
+            return scoped;
+        // Anciennes installations : conserver la session historique sans écraser ni croiser les comptes.
+        var legacy = DecodeCredential(database.Read(CredentialFile));
+        return legacy is not null && string.Equals(legacy.UserName, account.Trim(), StringComparison.OrdinalIgnoreCase)
+            ? legacy : null;
+    }
+
+    /// <summary>Sauvegarde une preuve locale par compte, après connexion réussie au serveur.</summary>
     public void SaveCredential(string userName, string password, SessionDto session, string sessionCookie = "")
     {
-        if (sessionCookie.Length == 0 && SavedCredential is { } previous && previous.UserName == session.UserName)
+        if (sessionCookie.Length == 0 && ReadCredentialFor(session.UserName) is { } previous)
             sessionCookie = previous.SessionCookie;
         var salt = RandomNumberGenerator.GetBytes(16);
         var credential = new OfflineCredential
@@ -178,19 +542,23 @@ public sealed class OfflineStore
             SavedAt = DateTime.Now,
             SessionCookie = sessionCookie,
         };
-        database.Write(CredentialFile, JsonSerializer.Serialize(credential, Json));
+        var serialized = JsonSerializer.Serialize(credential, Json);
+        // Garder la clé historique pour la compatibilité, et l'empreinte propre au compte
+        // afin qu'un nouvel utilisateur ne remplace pas le cache d'un collègue.
+        database.Update([CredentialFile, CredentialKeyFor(session.UserName)], values =>
+        {
+            values[CredentialFile] = serialized;
+            values[CredentialKeyFor(session.UserName)] = serialized;
+        });
     }
 
-    /// <summary>
-    /// Connexion sans réseau : accordée seulement au dernier compte connecté sur cet appareil, avec son mot de passe.
-    /// </summary>
+    /// <summary>Hors ligne : uniquement le compte demandé avec le bon secret ; jamais une autre identité.</summary>
     public SessionDto? OfflineLogin(string userName, string password)
     {
-        if (database.Read(CredentialFile) is not { Length: > 0 } credentialJson) return null;
         try
         {
-            var credential = JsonSerializer.Deserialize<OfflineCredential>(credentialJson, Json);
-            if (credential is null || !string.Equals(credential.UserName, userName.Trim(), StringComparison.OrdinalIgnoreCase)) return null;
+            var credential = ReadCredentialFor(userName);
+            if (credential is null) return null;
             var expected = Convert.FromBase64String(credential.Hash);
             var actual = Derive(password, Convert.FromBase64String(credential.Salt));
             if (!CryptographicOperations.FixedTimeEquals(expected, actual)) return null;
@@ -199,35 +567,203 @@ public sealed class OfflineStore
         catch (Exception ex) when (ex is IOException or JsonException or FormatException) { return null; }
     }
 
-    /// <summary>Reprise différée : cookie limité à la durée de session, jamais de mot de passe stocké.</summary>
-    public OfflineCredential? SavedCredential => database.Read(CredentialFile) is { Length: > 0 } text
-        ? JsonSerializer.Deserialize<OfflineCredential>(text, Json) : null;
+    /// <summary>Dernière session de l'appareil, sans droit automatique d'entrée.</summary>
+    public OfflineCredential? SavedCredential =>
+        ReadCredentialFor(LastAccount ?? string.Empty) ?? DecodeCredential(database.Read(CredentialFile));
 
     public void ClearBackgroundSession()
     {
-        database.Update([CredentialFile], values =>
+        string[] keys = string.IsNullOrWhiteSpace(User) ? [CredentialFile] : [CredentialFile, CredentialKeyFor(User)];
+        database.Update(keys, values =>
         {
-            if (values[CredentialFile] is not { Length: > 0 } text) return;
-            var saved = JsonSerializer.Deserialize<OfflineCredential>(text, Json);
-            if (saved is null) return;
-            saved.SessionCookie = string.Empty;
-            values[CredentialFile] = JsonSerializer.Serialize(saved, Json);
+            foreach (var key in keys)
+            {
+                var saved = DecodeCredential(values[key]);
+                if (saved is null || (User.Length > 0 &&
+                    !string.Equals(saved.UserName, User, StringComparison.OrdinalIgnoreCase))) continue;
+                saved.SessionCookie = string.Empty;
+                values[key] = JsonSerializer.Serialize(saved, Json);
+            }
         });
     }
 
-    /// <summary>Mémorise l'identifiant du dernier compte utilisé sur ce serveur, jamais son mot de passe.</summary>
+    /// <summary>
+    /// Fin de session explicite : désactive la reprise D1 et retire les
+    /// cookies HTTP persistants du compte dans UNE transaction SQLite.
+    /// Le compte hors ligne, les mots de passe dérivés et l'outbox demeurent.
+    /// Ne dépend jamais de User, qui peut déjà viser le compte suivant au
+    /// moment d'un changement rapide de session.
+    /// </summary>
+    public void SuspendBackgroundAccessFor(string account)
+    {
+        if (string.IsNullOrWhiteSpace(account))
+            throw new ArgumentException("Compte de déconnexion requis.", nameof(account));
+        var normalized = account.Trim();
+        var flag = CentralBackgroundKeyFor(normalized);
+        var keys = new[] { flag, CredentialFile, CredentialKeyFor(normalized) };
+        database.Update(keys, values =>
+        {
+            values[flag] = "0";
+            foreach (var key in keys.Skip(1))
+            {
+                var credential = DecodeCredential(values[key]);
+                if (credential is null ||
+                    !string.Equals(credential.UserName, normalized,
+                        StringComparison.OrdinalIgnoreCase))
+                    continue;
+                credential.SessionCookie = string.Empty;
+                values[key] = JsonSerializer.Serialize(credential, Json);
+            }
+        });
+    }
+
+    /// <summary>Le dernier identifiant utilisé, pas un jeton ni un mot de passe.</summary>
     public string? LastAccount => database.Read(LastAccountKey) is { Length: > 0 } user
-        ? user : SavedCredential?.UserName;
+        ? user : DecodeCredential(database.Read(CredentialFile))?.UserName;
+
+    /// <summary>Comptes déjà utilisés sur ce poste pour ce serveur, sans divulguer les comptes du serveur.</summary>
+    public IReadOnlyList<string> KnownAccounts
+    {
+        get
+        {
+            List<string> accounts;
+            try
+            {
+                var saved = database.Read(KnownAccountsKey);
+                accounts = string.IsNullOrWhiteSpace(saved)
+                    ? [] : JsonSerializer.Deserialize<List<string>>(saved, Json) ?? [];
+            }
+            catch (JsonException) { accounts = []; }
+            if (LastAccount is { Length: > 0 } last)
+                accounts.Insert(0, last);
+            return accounts.Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase).Take(10).ToArray();
+        }
+    }
 
     public void RememberAccount(string userName)
     {
-        if (!string.IsNullOrWhiteSpace(userName)) database.Write(LastAccountKey, userName.Trim());
+        if (string.IsNullOrWhiteSpace(userName)) return;
+        var account = userName.Trim();
+        database.Update([LastAccountKey, KnownAccountsKey, ForgottenAccountsKey], values =>
+        {
+            List<string> accounts;
+            try { accounts = JsonSerializer.Deserialize<List<string>>(values[KnownAccountsKey] ?? "[]", Json) ?? []; }
+            catch (JsonException) { accounts = []; }
+            var known = new[] { account }.Concat(accounts)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase).Take(10).ToArray();
+            values[LastAccountKey] = account;
+            values[KnownAccountsKey] = JsonSerializer.Serialize(known, Json);
+            values[ForgottenAccountsKey] = JsonSerializer.Serialize(
+                DeserializeAccounts(values[ForgottenAccountsKey])
+                    .Where(x => !string.Equals(x, account, StringComparison.OrdinalIgnoreCase)).ToArray(), Json);
+        });
     }
 
-    /// <summary>Un ancien mot de passe ne doit pas permettre la connexion hors ligne après restauration.</summary>
-    public void ForgetCredential() => database.Write(CredentialFile, string.Empty);
+    private static List<string> DeserializeAccounts(string? json)
+    {
+        try { return JsonSerializer.Deserialize<List<string>>(json ?? "[]", Json) ?? []; }
+        catch (JsonException) { return []; }
+    }
 
-    public bool HasCredential => database.Read(CredentialFile) is { Length: > 0 };
+    /// <summary>Empêche une proposition automatique du compte local déjà retiré.</summary>
+    public bool WasForgottenAccount(string userName) =>
+        !string.IsNullOrWhiteSpace(userName) &&
+        DeserializeAccounts(database.Read(ForgottenAccountsKey))
+            .Contains(userName.Trim(), StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Inclut les opérations du nouveau pilote D1 dans la vérification de
+    /// retrait d'un compte. Le chemin de chaque page est dans son enveloppe
+    /// SQLite chiffrée : il faut donc les déchiffrer uniquement à la demande,
+    /// jamais dans un index public. Les anciennes répliques v1 restent prises
+    /// en compte pour ne pas orpheliner une saisie non migrée.
+    /// </summary>
+    private bool HasPendingCentralSectionsFor(string account)
+    {
+        const int scanLimit = 4096;
+        var pages = database.ReadPrefix(PagePrefixFor(account), scanLimit);
+        // Si le compte dépasse cette borne, refuser le retrait plutôt que
+        // supposer à tort que la suite du cache n'a pas de modifications.
+        if (pages.Count == scanLimit) return true;
+        foreach (var stored in pages)
+        {
+            SavedPage? page;
+            try { page = JsonSerializer.Deserialize<SavedPage>(stored, Json); }
+            catch (JsonException) { return true; } // Cache illisible : refuser le retrait.
+            if (page is null) return true;
+            if (page.Path?.StartsWith("central:sections:v", StringComparison.Ordinal) != true)
+                continue;
+            try
+            {
+                using var doc = JsonDocument.Parse(page.Json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object ||
+                    !doc.RootElement.TryGetProperty("Pending", out var pending) ||
+                    pending.ValueKind != JsonValueKind.Array)
+                    return true;
+                if (pending.GetArrayLength() > 0) return true;
+            }
+            catch (JsonException) { return true; }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Oublie un compte sur cet appareil, et seulement lui : plus de suggestion ni de
+    /// connexion avec son ancienne preuve hors ligne. Les écritures en attente
+    /// interdisent ce retrait pour éviter de perdre leur auteur et leur reprise.
+    /// Le compte reste intact sur le serveur de l'établissement.
+    /// </summary>
+    public bool ForgetKnownAccount(string userName)
+    {
+        if (string.IsNullOrWhiteSpace(userName)) return false;
+        var account = userName.Trim();
+        if (Load(OutboxFile).Any(item =>
+                string.Equals(item.User, account, StringComparison.OrdinalIgnoreCase)) ||
+            Load(ConflictFile).Any(item =>
+                string.Equals(item.User, account, StringComparison.OrdinalIgnoreCase)) ||
+            HasPendingCentralSectionsFor(account))
+            return false;
+        ForgetCredential(account);
+        database.Update([LastAccountKey, KnownAccountsKey, ForgottenAccountsKey], values =>
+        {
+            List<string> accounts;
+            try { accounts = JsonSerializer.Deserialize<List<string>>(values[KnownAccountsKey] ?? "[]", Json) ?? []; }
+            catch (JsonException) { accounts = []; }
+            var forgotten = DeserializeAccounts(values[ForgottenAccountsKey]);
+            values[ForgottenAccountsKey] = JsonSerializer.Serialize(
+                new[] { account }.Concat(forgotten).Distinct(StringComparer.OrdinalIgnoreCase).Take(20).ToArray(), Json);
+            var remaining = accounts.Where(x => !string.Equals(x, account, StringComparison.OrdinalIgnoreCase))
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase).Take(10).ToList();
+            values[KnownAccountsKey] = JsonSerializer.Serialize(remaining, Json);
+            if (string.Equals(values[LastAccountKey], account, StringComparison.OrdinalIgnoreCase))
+                values[LastAccountKey] = remaining.FirstOrDefault() ?? string.Empty;
+        });
+        return true;
+    }
+
+    /// <summary>Une récupération invalide uniquement l'empreinte du compte concerné, sans effacer les autres.</summary>
+    public void ForgetCredential(string? userName = null)
+    {
+        var account = string.IsNullOrWhiteSpace(userName) ? (User.Length > 0 ? User : LastAccount) : userName.Trim();
+        if (string.IsNullOrWhiteSpace(account)) return;
+        var scopedKey = CredentialKeyFor(account);
+        // Réinitialiser un compte retire aussi son droit de travailler en
+        // arrière-plan jusqu'à une nouvelle authentification réussie.
+        database.Update([CredentialFile, scopedKey, CentralBackgroundKeyFor(account)], values =>
+        {
+            values[CentralBackgroundKeyFor(account)] = "0";
+            values[scopedKey] = string.Empty;
+            var previous = DecodeCredential(values[CredentialFile]);
+            if (previous is not null && string.Equals(previous.UserName, account, StringComparison.OrdinalIgnoreCase))
+                values[CredentialFile] = string.Empty;
+        });
+    }
+
+    public bool HasCredential => (database.Read(CredentialFile) is { Length: > 0 }) ||
+        database.ReadPrefix("session:", 1).Count > 0;
 
     private static byte[] Derive(string password, byte[] salt) =>
         Rfc2898DeriveBytes.Pbkdf2(Encoding.UTF8.GetBytes(password), salt, 100_000, HashAlgorithmName.SHA256, 32);

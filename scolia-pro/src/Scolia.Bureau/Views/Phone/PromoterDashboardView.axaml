@@ -1,0 +1,135 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.Phone.PromoterDashboardView">
+  <UserControl.Resources>
+    <DataTemplate x:Key="PhonePeriodRow">
+      <Border Background="{DynamicResource NeutralSoftBrush}" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+        <StackPanel Spacing="8">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBlock Text="{Binding Period}" Classes="mobilebody" FontWeight="SemiBold" />
+            <Border Grid.Column="1" Background="{DynamicResource AccentSoftBrush}" CornerRadius="8" Padding="7,3" IsVisible="{Binding IsCurrent}">
+              <TextBlock Text="En cours" Foreground="{DynamicResource AccentBrush}" FontSize="{DynamicResource FsCaption}" />
+            </Border>
+          </Grid>
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+            <TextBlock Text="Reste à régler" Classes="mobiledetail" IsVisible="{Binding !IsSettled}" />
+            <TextBlock Grid.Column="1" Text="{Binding Remaining}" Classes="mobilebody" FontWeight="SemiBold" TextAlignment="Right" IsVisible="{Binding !IsSettled}" />
+            <TextBlock Text="Réglé" Classes="mobilebody" Foreground="{DynamicResource ToneGreen}" FontWeight="Medium" IsVisible="{Binding IsSettled}" />
+          </Grid>
+          <ProgressBar Minimum="0" Maximum="1" Value="{Binding PaidShare, Mode=OneWay}" Height="6" MinHeight="6" CornerRadius="3" AutomationProperties.Name="Part réglée" />
+          <TextBlock Classes="mobiledetail">
+            <Run Text="Réglé : " /><Run Text="{Binding Paid, Mode=OneWay}" /><Run Text=" sur " /><Run Text="{Binding Due, Mode=OneWay}" />
+          </TextBlock>
+          <TextBlock Text="{Binding Collected, StringFormat='Encaissé pendant le mois : {0}'}" Classes="mobiledetail" IsVisible="{Binding HasCollected}" />
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <!-- Le cadre mobile possède l'unique défilement de la page. -->
+  <StackPanel Spacing="22" Margin="0,0,0,8">
+    <Border Classes="mobilecard" Background="{DynamicResource WelcomeBrush}">
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+        <Border Classes="mobileicon" VerticalAlignment="Top">
+          <Image Source="{Binding Glyph, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}" Width="28" Height="28" />
+        </Border>
+        <StackPanel Grid.Column="1" Spacing="6">
+          <TextBlock Text="Pilotage de l'établissement" Classes="mobilesection" />
+          <TextBlock Text="{Binding AsOf}" Classes="mobiledetail" />
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="EyeOutline" Width="16" Height="16" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+            <TextBlock Text="Lecture seule" Classes="mobiledetail" />
+          </StackPanel>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <c:DashboardFilters DataContext="{Binding Filters}" />
+    <Border Classes="band"><TextBlock Text="{Binding SelectionTotal}" FontWeight="SemiBold" TextWrapping="Wrap" /></Border>
+
+    <Border Classes="mobilecard" Background="{DynamicResource OrangeSoftBrush}" IsVisible="{Binding HasAttention}">
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+        <mi:MaterialIcon Kind="AlertCircleOutline" Width="20" Height="20" Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Top" Margin="0,2,0,0" />
+        <StackPanel Grid.Column="1" Spacing="6">
+          <TextBlock Text="À surveiller" Classes="mobilebody" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding Attention}" Classes="mobiledetail" Foreground="{DynamicResource Text2Brush}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <StackPanel Spacing="8">
+      <TextBlock Text="En bref" Classes="mobilesection" />
+      <ItemsControl ItemsSource="{Binding Kpis}" ItemTemplate="{StaticResource PhoneMetricTile}" Margin="-4,0,-4,0">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><infra:AdaptiveTiles MinItemWidth="140" MaxColumns="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+      </ItemsControl>
+    </StackPanel>
+
+    <Expander Classes="mobileexpander">
+      <Expander.Header>
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="4,8">
+          <mi:MaterialIcon Kind="CalendarMonthOutline" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Text="Situation mois par mois" Classes="mobilebody" FontWeight="Medium" />
+        </Grid>
+      </Expander.Header>
+      <StackPanel Spacing="10" Margin="12,4,12,12">
+        <TextBlock Text="Règlements des échéances et encaissements de l'établissement." Classes="mobiledetail" />
+        <ItemsControl ItemsSource="{Binding SchoolPeriods}" ItemTemplate="{StaticResource PhonePeriodRow}" />
+      </StackPanel>
+    </Expander>
+
+    <StackPanel Spacing="12" IsVisible="{Binding HasPromotions}">
+      <TextBlock Text="Situation par promotion" Classes="mobilesection" />
+      <ItemsControl ItemsSource="{Binding Promotions}">
+        <ItemsControl.ItemTemplate><DataTemplate>
+          <Border Classes="mobilecard" Margin="0,0,0,12">
+            <StackPanel Spacing="14">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{Binding Code}" Classes="mobilesection" />
+                  <TextBlock Text="{Binding Name}" Classes="mobiledetail" />
+                </StackPanel>
+                <Border Grid.Column="1" Background="{DynamicResource AccentSoftBrush}" CornerRadius="10" Padding="10,7" VerticalAlignment="Top" MaxWidth="130">
+                  <StackPanel Spacing="3">
+                    <TextBlock Text="Effectif" FontSize="{DynamicResource FsCaption}" Foreground="{DynamicResource AccentBrush}" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Students}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+              </Grid>
+              <StackPanel Spacing="7">
+                <TextBlock Text="{Binding YearShareText}" Classes="mobilebody" FontWeight="Medium" />
+                <ProgressBar Minimum="0" Maximum="1" Value="{Binding YearShare, Mode=OneWay}" Height="7" MinHeight="7" CornerRadius="4" />
+                <TextBlock Text="{Binding LateDebtors}" Classes="mobiledetail" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="14">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="Encaissé aujourd'hui" Classes="mobiledetail" />
+                  <TextBlock Text="{Binding CollectedToday}" Classes="mobilebody" FontWeight="SemiBold" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4">
+                  <TextBlock Text="Encaissé ce mois" Classes="mobiledetail" />
+                  <TextBlock Text="{Binding CollectedMonth}" Classes="mobilebody" FontWeight="SemiBold" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Spacing="4">
+                  <TextBlock Text="Reste à percevoir" Classes="mobiledetail" />
+                  <TextBlock Text="{Binding Outstanding}" Classes="mobilebody" FontWeight="SemiBold" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                  <TextBlock Text="Déjà exigible" Classes="mobiledetail" />
+                  <TextBlock Text="{Binding Overdue}" Classes="mobilebody" FontWeight="SemiBold" Foreground="{DynamicResource ToneOrange}" IsVisible="{Binding HasOverdue}" />
+                  <TextBlock Text="Rien" Classes="mobilebody" FontWeight="Medium" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding !HasOverdue}" />
+                </StackPanel>
+              </Grid>
+              <Expander Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                <Expander.Header><TextBlock Text="Détail par mois" Classes="mobilebody" FontWeight="Medium" /></Expander.Header>
+                <ItemsControl ItemsSource="{Binding Periods}" ItemTemplate="{StaticResource PhonePeriodRow}" />
+              </Expander>
+            </StackPanel>
+          </Border>
+        </DataTemplate></ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

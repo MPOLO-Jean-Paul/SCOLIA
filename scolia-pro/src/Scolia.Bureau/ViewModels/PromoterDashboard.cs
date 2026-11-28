@@ -15,7 +15,10 @@ public sealed record PromoterPromotionRowVm(string Code, string Name, string Stu
     string CollectedToday, string CollectedMonth, string CollectedYear, string Outstanding, string Overdue, bool HasOverdue,
     double YearShare, string YearShareText, IReadOnlyList<PromoterPeriodRowVm> Periods);
 
-public sealed record PromoterKpiVm(string Label, string Value, string Detail, MaterialIconKind Icon, IBrush Brush);
+public sealed record PromoterKpiVm(string Label, string Value, string Detail, MaterialIconKind Icon, IBrush Brush)
+{
+    public string Hint => Detail;
+}
 
 /// <summary>
 /// Pilotage réservé au Promoteur : aucun reçu, numéro de téléphone, nom d'apprenant,
@@ -28,9 +31,19 @@ public sealed class PromoterDashboardPage : PageViewModel
     private string subtitle = "Consultation uniquement";
     private string asOf = string.Empty;
     private string attention = string.Empty;
+    private string selectionTotal = "Chargement de la sélection…";
+    private string? loadedQuery, selectionKey;
+    public DashboardFiltersVm Filters { get; } = new();
+    public string SelectionTotal { get => selectionTotal; private set => Set(ref selectionTotal, value); }
 
     public PromoterDashboardPage(ShellViewModel shell) : base(shell)
     {
+        Action("Exporter la sélection", MaterialIconKind.FileExport, () => Filters.ExportAsync(Shell, true, loadedQuery, selectionKey));
+        Filters.Changed += () =>
+        {
+            ClearSelection("Actualisation de la sélection…");
+            _ = Shell.Run(() => Filters.RefreshLatestAsync(RefreshAsync, () => loadedQuery == Filters.Query));
+        };
         ActionRefresh();
     }
 
@@ -51,10 +64,27 @@ public sealed class PromoterDashboardPage : PageViewModel
     public override async Task LoadAsync()
     {
         if (!Shell.Can(Ribbon.Perm.PilotageRead)) return;
-        var data = await Shell.Api.GetAsync<PromoterDashboardDto>("api/pilotage/synthese");
+        loadedQuery = selectionKey = null;
+        string query;
+        PromoterDashboardDto data;
+        try
+        {
+            await Filters.EnsureAsync(Shell.Api, promoter: true);
+            query = Filters.Query;
+            data = await Shell.Api.GetAsync<PromoterDashboardDto>("api/pilotage/synthese" + query);
+        }
+        catch
+        {
+            ClearSelection("Sélection indisponible. Utilisez Actualiser pour réessayer.");
+            throw;
+        }
+        if (query != Filters.Query) return;
+        loadedQuery = query;
+        selectionKey = data.SelectionKey;
         var currency = Shell.Session?.CurrencySymbol ?? "FC";
-        string Money(decimal amount) => amount.ToString("N0", French) + " " + currency;
+        string Money(decimal amount) => Format.Money(amount, currency);
         string Count(int count) => count.ToString("N0", French);
+        SelectionTotal = $"Total de la sélection · {Format.Count(data.ActiveStudents, Shell.StudentTerms.Singular, Shell.StudentTerms.Plural)} · {Money(data.CollectedTotal)} encaissés · {Money(data.Outstanding)} à percevoir";
         var currentLabel = $"{French.TextInfo.ToTitleCase(data.AsOf.ToString("MMMM", French))} {data.AsOf.Year}";
 
         PromoterPeriodRowVm Period(string label, decimal due, decimal paid, decimal remaining, decimal collected) =>
@@ -71,14 +101,18 @@ public sealed class PromoterDashboardPage : PageViewModel
 
         var allPeriods = data.Promotions.SelectMany(p => p.Periods).ToList();
         var yearShare = Share(allPeriods);
-        var latePart = data.ActiveStudents > 0 ? (double)data.StudentsOverdue / data.ActiveStudents : 0;
+        // Le retard se mesure parmi les payants : les apprenants pris en charge ont leur propre total.
+        var payers = data.PayingStudents > 0 || data.SponsoredStudents > 0 ? data.PayingStudents : data.ActiveStudents;
+        var latePart = payers > 0 ? (double)data.StudentsOverdue / payers : 0;
 
         var nextKpis = new[]
         {
-            new PromoterKpiVm("Apprenants actifs", Count(data.ActiveStudents),
-                Format.Count(data.Promotions.Count, "promotion", "promotions"), MaterialIconKind.AccountGroup, ThemeBrush.Get("ToneIndigo")),
+            new PromoterKpiVm($"{Shell.StudentTerms.PluralTitle} actifs", Count(data.ActiveStudents),
+                data.SponsoredStudents > 0
+                    ? $"{Format.Count(data.PayingStudents, "payant", "payants")} · {data.SponsoredStudents} pris en charge ({Money(data.SponsoredAmount)})"
+                    : Format.Count(data.Promotions.Count, "promotion", "promotions"), MaterialIconKind.AccountGroup, ThemeBrush.Get("ToneIndigo")),
             new PromoterKpiVm("En retard de paiement", Count(data.StudentsOverdue),
-                data.StudentsOverdue == 0 ? "Tout le monde est à jour" : $"{latePart:P0} des apprenants · {Money(data.Overdue)} exigibles",
+                data.StudentsOverdue == 0 ? "Tous les payants sont à jour" : $"{latePart:P0} des payants · {Money(data.Overdue)} exigibles",
                 MaterialIconKind.AlertCircleOutline, ThemeBrush.Get(data.StudentsOverdue == 0 ? "ToneGreen" : "ToneOrange")),
             new PromoterKpiVm("Encaissé aujourd'hui", Money(data.CollectedToday), "Reçus validés du jour",
                 MaterialIconKind.HandCoin, ThemeBrush.Get("ToneGreen")),
@@ -93,7 +127,7 @@ public sealed class PromoterDashboardPage : PageViewModel
         var nextPromotions = data.Promotions.Select(p =>
         {
             var share = Share(p.Periods);
-            return new PromoterPromotionRowVm(p.Code, p.Name, Count(p.ActiveStudents),
+            return new PromoterPromotionRowVm(p.Code, p.Name, Count(p.ActiveStudents) + (p.SponsoredStudents > 0 ? $" dont {p.SponsoredStudents} pris en charge" : string.Empty),
                 p.StudentsOverdue == 0 ? "Aucun retard" : Format.Count(p.StudentsOverdue, "en retard", "en retard"), p.StudentsOverdue > 0,
                 Money(p.CollectedToday), Money(p.CollectedThisMonth), Money(p.CollectedTotal),
                 Money(p.Outstanding), Money(p.Overdue), p.Overdue > 0, share, $"Année réglée à {share:P0}",
@@ -110,24 +144,22 @@ public sealed class PromoterDashboardPage : PageViewModel
             ? string.Empty
             : $"{Money(data.Overdue)} déjà exigibles ne sont pas réglés. La promotion {worst.Code} en porte le plus : {Money(worst.Overdue)}.";
 
-        Replace(Kpis, nextKpis);
-        Replace(Promotions, nextPromotions);
-        Replace(SchoolPeriods, nextSchool);
+        CollectionSync.Apply(Kpis, nextKpis);
+        CollectionSync.Apply(Promotions, nextPromotions,
+            static (before, after) => (before with { Periods = after.Periods }) == after && before.Periods.SequenceEqual(after.Periods));
+        CollectionSync.Apply(SchoolPeriods, nextSchool);
         Raise(nameof(HasPromotions));
         subtitle = $"Année {data.AcademicYear}";
         Raise(nameof(Subtitle));
         AsOf = $"Situation au {data.AsOf:dd/MM/yyyy} à {DateTime.Now:HH:mm} · mise à jour automatique";
     }
 
-    /// <summary>Remplace le contenu d'une liste sans la vider quand rien n'a changé : pas de clignotement au rafraîchissement.</summary>
-    private static void Replace<T>(ObservableCollection<T> target, IReadOnlyList<T> items)
+    private void ClearSelection(string message)
     {
-        if (target.SequenceEqual(items)) return;
-        for (var i = 0; i < items.Count; i++)
-        {
-            if (i < target.Count) { if (!Equals(target[i], items[i])) target[i] = items[i]; }
-            else target.Add(items[i]);
-        }
-        while (target.Count > items.Count) target.RemoveAt(target.Count - 1);
+        loadedQuery = selectionKey = null;
+        SelectionTotal = message;
+        Kpis.Clear(); Promotions.Clear(); SchoolPeriods.Clear();
+        Attention = AsOf = string.Empty;
+        Raise(nameof(HasPromotions));
     }
 }

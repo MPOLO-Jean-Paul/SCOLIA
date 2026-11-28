@@ -6,6 +6,7 @@ using Material.Icons;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.Ribbon;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -27,17 +28,28 @@ public sealed class StaffPage : PageViewModel
 
     public StaffPage(ShellViewModel shell) : base(shell)
     {
-        Action("Nouveau membre", MaterialIconKind.AccountPlus, () => NewMemberAsync(Shell), primary: true);
-        Action("Modifier le membre", MaterialIconKind.AccountEdit, EditMemberAsync, open: true);
-        Action("Préparer la paie", MaterialIconKind.CalendarPlus, PreparePayrollAsync);
+        showPayroll = CanManagePayroll && !CanManageStaff;
+        if (CanManageStaff)
+        {
+            Action("Nouveau membre", MaterialIconKind.AccountPlus, () => NewMemberAsync(Shell), primary: true);
+            Action("Modifier le membre", MaterialIconKind.AccountEdit, EditMemberAsync, open: true);
+        }
+        if (CanManagePayroll)
+        {
+            Action("Préparer la paie", MaterialIconKind.CalendarPlus, PreparePayrollAsync, primary: !CanManageStaff);
+            Action("Modifier le bulletin", MaterialIconKind.Pencil, EditPayslipAsync, row: true);
+            Action("Payer le salaire", MaterialIconKind.CashCheck, PayAsync, row: true);
+            if (!CanManageStaff) Action("Salaire de base", MaterialIconKind.CashEdit, ChangeSalaryAsync, row: true);
+        }
         Action("Pointage et bilan", MaterialIconKind.ClockCheck, () => Shell.Open(() => new StaffAttendancePage(Shell)));
-        Action("Modifier le bulletin", MaterialIconKind.Pencil, EditPayslipAsync, row: true);
-        Action("Payer le salaire", MaterialIconKind.CashCheck, PayAsync, row: true);
         periodChoice = Periods.FirstOrDefault(p => p.Value == period);
         ActionRefresh();
     }
 
-    public override string Title => "Personnel et paie";
+    public override string Title => CanManagePayroll ? "Personnel et paie" : "Personnel";
+    public bool CanManageStaff => Shell.Can(Perm.StaffManage);
+    public bool CanManagePayroll => Shell.Can(Perm.PayrollManage);
+    public string StaffEmptyHint => CanManageStaff ? "Ajoutez le premier avec « Nouveau membre »." : "Le secrétariat crée les fiches du personnel avant la préparation de la paie.";
     public override string Subtitle => subtitle;
     public override MaterialIconKind Glyph => MaterialIconKind.BriefcaseOutline;
 
@@ -50,6 +62,7 @@ public sealed class StaffPage : PageViewModel
         get => showPayroll;
         set
         {
+            if (value && !CanManagePayroll) return;
             if (!Set(ref showPayroll, value)) return;
             RaiseEmptyStates();
             _ = Shell.Run(RefreshAsync);
@@ -136,11 +149,21 @@ public sealed class StaffPage : PageViewModel
             Staff.Clear();
             foreach (var s in rows)
                 Staff.Add(new StaffRowVm(s.Id, s.Number, Format.FullName(s.LastName, s.MiddleName, s.FirstName), s.Function, s.Phone ?? "—",
-                    Format.Date(s.HireDate), Money(s.BaseSalary), s.IsActive ? "Actif" : "Inactif", ThemeBrush.Get(s.IsActive ? "ToneGreen" : "ToneNeutral"), s));
+                    Format.Date(s.HireDate), CanManagePayroll ? Money(s.BaseSalary) : string.Empty, s.IsActive ? "Actif" : "Inactif", ThemeBrush.Get(s.IsActive ? "ToneGreen" : "ToneNeutral"), s));
             subtitle = $"{Format.Count(rows.Count(r => r.IsActive), "membre actif", "membres actifs")} sur {rows.Count}";
         }
         RaiseEmptyStates();
         Raise(nameof(Subtitle));
+    }
+
+    internal async Task LoadForFlutterAsync(bool payroll, string? month)
+    {
+        var requested = string.IsNullOrEmpty(month) ? period : month;
+        periodChoice = Periods.FirstOrDefault(p => p.Value == requested)
+            ?? throw new ArgumentException("Mois de paie invalide.");
+        period = requested;
+        showPayroll = payroll;
+        await LoadAsync();
     }
 
     private bool TryPeriod(out string key)
@@ -154,11 +177,11 @@ public sealed class StaffPage : PageViewModel
     {
         var form = new FormViewModel("Nouveau membre", "Le numéro de dossier est attribué automatiquement.", async f =>
         {
-            await shell.Api.SendAsync(HttpMethod.Post, "api/personnel", StaffBody(f));
+            await shell.Api.SendAsync(HttpMethod.Post, "api/personnel", StaffBody(f, shell.Can(Perm.PayrollManage)));
             shell.Notify("Membre ajouté au personnel.");
             return true;
         });
-        AddStaffFields(form, null);
+        AddStaffFields(form, null, shell.Can(Perm.PayrollManage));
         if (await shell.Ask(form) && shell.Current is StaffPage page) await page.RefreshAsync();
     }
 
@@ -172,11 +195,11 @@ public sealed class StaffPage : PageViewModel
         var s = SelectedStaff.Source;
         var form = new FormViewModel("Modifier le membre", $"Dossier {s.Number}", async f =>
         {
-            await Shell.Api.SendAsync(HttpMethod.Put, $"api/personnel/{s.Id}", StaffBody(f));
+            await Shell.Api.SendAsync(HttpMethod.Put, $"api/personnel/{s.Id}", StaffBody(f, CanManagePayroll));
             Shell.Notify("Dossier enregistré.");
             return true;
         });
-        AddStaffFields(form, s);
+        AddStaffFields(form, s, CanManagePayroll);
         if (await Shell.Ask(form)) await RefreshAsync();
     }
 
@@ -217,9 +240,9 @@ public sealed class StaffPage : PageViewModel
             Shell.Notify("Bulletin mis à jour.");
             return true;
         });
-        form.Add("primes", "Primes et indemnités", FieldKind.Amount, p.Allowances.ToString("0"));
-        form.Add("retenues", "Retenues", FieldKind.Amount, p.Deductions.ToString("0"));
-        form.Add("avances", "Avances déjà versées", FieldKind.Amount, p.Advances.ToString("0"));
+        form.Add("primes", "Primes et indemnités", FieldKind.Amount, p.Allowances.ToString("0.##", CultureInfo.InvariantCulture));
+        form.Add("retenues", "Retenues", FieldKind.Amount, p.Deductions.ToString("0.##", CultureInfo.InvariantCulture));
+        form.Add("avances", "Avances déjà versées", FieldKind.Amount, p.Advances.ToString("0.##", CultureInfo.InvariantCulture));
         form.Add("note", "Observation", FieldKind.Multiline, p.Note);
         if (await Shell.Ask(form)) await RefreshAsync();
     }
@@ -248,7 +271,22 @@ public sealed class StaffPage : PageViewModel
         if (await Shell.Ask(form)) await RefreshAsync();
     }
 
-    private static void AddStaffFields(FormViewModel form, StaffDto? s)
+    private async Task ChangeSalaryAsync()
+    {
+        var id = ShowPayroll ? SelectedPayroll?.Source.StaffMemberId : SelectedStaff?.Id;
+        if (id is null) { Shell.Notify("Choisissez un membre ou un bulletin de paie."); return; }
+        var member = (await Shell.Api.GetAsync<List<StaffDto>>("api/personnel")).FirstOrDefault(s => s.Id == id)
+            ?? throw new InvalidOperationException("Le membre n'est plus disponible. Actualisez la liste.");
+        var form = new FormViewModel("Salaire de base", $"{Format.FullName(member.LastName, member.MiddleName, member.FirstName)} · Les bulletins déjà préparés sont conservés.", async f =>
+        {
+            await Shell.Api.SendAsync(HttpMethod.Put, $"api/personnel/{member.Id}/salaire", new { baseSalary = f.Amount("salaire") });
+            return true;
+        });
+        form.Add("salaire", "Salaire de base", FieldKind.Amount, member.BaseSalary.ToString("0.##", CultureInfo.InvariantCulture), required: true);
+        if (await Shell.Ask(form)) await RefreshAsync();
+    }
+
+    private static void AddStaffFields(FormViewModel form, StaffDto? s, bool managesPayroll)
     {
         form.Add("nom", "Nom", value: s?.LastName, required: true);
         form.Add("postNom", "Post-nom", value: s?.MiddleName);
@@ -259,11 +297,12 @@ public sealed class StaffPage : PageViewModel
         form.Add("email", "E-mail", value: s?.Email);
         form.AddDay("embauche", "Date d'embauche", s?.HireDate ?? DateOnly.FromDateTime(DateTime.Today), required: true);
         form.AddDay("sortie", "Fin d'activité (facultatif)", s?.ExitDate);
-        form.Add("salaire", "Salaire de base", FieldKind.Amount, s is null ? string.Empty : s.BaseSalary.ToString("0"), required: true);
+        if (managesPayroll)
+            form.Add("salaire", "Salaire de base", FieldKind.Amount, s is null ? string.Empty : s.BaseSalary.ToString("0.##", CultureInfo.InvariantCulture), required: true);
         form.AddFlag("actif", "Membre actif", s?.IsActive ?? true);
     }
 
-    private static object StaffBody(FormViewModel f) => new
+    private static object StaffBody(FormViewModel f, bool managesPayroll) => new
     {
         lastName = f.Text("nom"),
         middleName = f.Text("postNom"),
@@ -274,7 +313,7 @@ public sealed class StaffPage : PageViewModel
         email = f.OptionalText("email"),
         hireDate = f.Day("embauche"),
         exitDate = f.Day("sortie"),
-        baseSalary = f.Amount("salaire"),
+        baseSalary = managesPayroll ? f.Amount("salaire") : 0,
         isActive = f.Flag("actif"),
     };
 }
@@ -284,10 +323,17 @@ public sealed record YearRowVm(Guid Id, string Label, string Period, string Stat
     IBrush StatusBrush, string Deadline, AcademicYearDto Source);
 
 /// <summary>Section d'enseignement dans la liste des paramètres.</summary>
-public sealed record SectionRowVm(Guid Id, string Code, string Name, string Active, SectionDto Source);
+public sealed record SectionRowVm(Guid Id, string Code, string Name, string Active, SectionDto Source, string Promotions = "", string Students = "")
+{
+    public string StatusLabel => Source.IsActive ? "Active" : "Inactive";
+    public IBrush StatusBrush => ThemeBrush.Get(Source.IsActive ? "ToneGreen" : "ToneOrange");
+}
+
+/// <summary>Catégorie de frais du catalogue : nom, montant, échéance proposée et promotions qui l'appliquent.</summary>
+public sealed record FeeCategoryRowVm(Guid Id, string Name, string Amount, string DueDate, string Promotions, string Active, FeeCategoryDto Source);
 
 /// <summary>Promotion dans la liste des paramètres, avec ses frais.</summary>
-public sealed record PromotionRowVm(Guid Id, string Code, string Name, string Section, string Level, string Students, string Monthly, string Annual, string Active, PromotionDto Source);
+public sealed record PromotionRowVm(Guid Id, string Code, string Name, string Section, string Level, string Students, string Monthly, string Annual, string Active, PromotionDto Source, string FeeLabel = "Mensualité");
 
 /// <summary>Paramètres de l'établissement : identité, années scolaires, sections et promotions.</summary>
 /// <summary>Pastille d'une couleur d'accent : un clic l'applique, une coche marque la couleur choisie.</summary>
@@ -307,6 +353,7 @@ public sealed class SettingsPage : PageViewModel
     private YearRowVm? selectedYear;
     private SectionRowVm? selectedSection;
     private PromotionRowVm? selectedPromotion;
+    private FeeCategoryRowVm? selectedCategory;
     private string subtitle = string.Empty;
     private FormViewModel? schoolForm;
     private bool mobileDetailsShown;
@@ -316,6 +363,13 @@ public sealed class SettingsPage : PageViewModel
     public bool SettingsDetailVisible => !Phone || mobileDetailsShown;
     public RelayCommand<BackstageItemVm> OpenMobileSection { get; }
     public RelayCommand BackToMobileSections { get; }
+    /// <summary>Actions directes, accessibles sans le menu « … » sur Android.</summary>
+    public AsyncCommand ConfigureBackupSchedule { get; }
+    public AsyncCommand BrowseBackups { get; }
+    public AsyncCommand CreateSection { get; }
+    public RelayCommand<SectionRowVm> EditSectionOnPhone { get; }
+    public AsyncCommand CreatePromotion { get; }
+    public RelayCommand<PromotionRowVm> EditPromotionOnPhone { get; }
 
     /// <summary>Le bouton retour système Android revient d'abord aux familles de réglages.</summary>
     public bool TryBackToMobileSections()
@@ -343,8 +397,17 @@ public sealed class SettingsPage : PageViewModel
                 new BackstageItemVm("annees", "Années scolaires", MaterialIconKind.Calendar, "ToneRed"),
                 new BackstageItemVm("sections", "Sections", MaterialIconKind.ViewGrid, "ToneIndigo"),
                 new BackstageItemVm("promotions", "Promotions et frais", MaterialIconKind.School, "ToneBlue"),
+                new BackstageItemVm("frais", "Catégories de frais", MaterialIconKind.TagMultipleOutline, "ToneGreen"),
             ]
             : [];
+        if (Shell.IsServerComputer && Shell.Can(Perm.SettingsWrite))
+            SchoolSections = [.. SchoolSections,
+                new BackstageItemVm("licence", "Licence SCOLIA Pro",
+                    MaterialIconKind.ShieldLockOutline, "ToneBlue")];
+        if (Shell.Can(Perm.SettingsWrite) && Shell.Can(Perm.BackupManage))
+            SchoolSections = [.. SchoolSections, new BackstageItemVm("sauvegardes", "Sauvegardes", MaterialIconKind.DatabaseExport, "ToneGreen")];
+        ConfigureBackupSchedule = new AsyncCommand(() => Shell.Run(() => DataPage.ConfigureBackupsAsync(Shell)));
+        BrowseBackups = new AsyncCommand(() => Shell.Open(() => new DataPage(Shell)));
         PosteSections =
         [
             new BackstageItemVm("apparence", "Thème et couleurs", MaterialIconKind.Palette, "TonePurple"),
@@ -353,19 +416,29 @@ public sealed class SettingsPage : PageViewModel
             new BackstageItemVm("animations", "Animations et fluidité", MaterialIconKind.AnimationPlay, "ToneOrange"),
             new BackstageItemVm("sons", "Sons", MaterialIconKind.VolumeHigh, "TonePink"),
         ];
-        // La sécurité du compte (mot de passe, biométrie) appartient à la personne, pas à l'appareil :
-        // elle se règle à un seul endroit, « Mon compte ». Un ancien lien vers « securite » y mène.
-        if (open == "securite")
+        // Sur Windows, la sécurité et les informations du logiciel appartiennent
+        // explicitement aux Paramètres (pas au menu Compte).
+        if (!Preferences.MobileLayout)
+            PosteSections =
+            [
+                .. PosteSections,
+                new BackstageItemVm("securite", "Sécurité du compte", MaterialIconKind.ShieldLockOutline, "ToneOrange"),
+                new BackstageItemVm("apropos", "À propos et mises à jour", MaterialIconKind.InformationOutline, "ToneIndigo"),
+            ];
+        else
         {
-            open = null;
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            PosteSections = [.. PosteSections.Where(s => s.Value != "fenetres")];
+            // Conserver le parcours historique Android (mot de passe et biométrie).
+            if (open == "securite")
             {
-                Shell.OpenBackstage();
-                Shell.Backstage.Section = Shell.Backstage.Items.First(i => i.Value == "mot-de-passe");
-            });
+                open = null;
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    Shell.OpenBackstage();
+                    Shell.Backstage.Section = Shell.Backstage.Items.First(i => i.Value == "mot-de-passe");
+                });
+            }
         }
-        // Sur le mobile, l'application occupe tout l'écran : la taille de fenêtre, le volet et le ruban n'existent pas.
-        if (Preferences.MobileLayout) PosteSections = [.. PosteSections.Where(s => s.Value != "fenetres")];
         var all = SchoolSections.Concat(PosteSections).ToList();
         section = all.FirstOrDefault(s => s.Value == open) ?? all[0];
         // Ouverture ciblée depuis une autre fonctionnalité : afficher directement la rubrique.
@@ -378,11 +451,32 @@ public sealed class SettingsPage : PageViewModel
             RefreshMobileSectionVisibility();
         });
         BackToMobileSections = new RelayCommand(() => TryBackToMobileSections());
+        CreateSection = new AsyncCommand(() => Shell.Run(NewSectionAsync));
+        EditSectionOnPhone = new RelayCommand<SectionRowVm>(row =>
+        {
+            if (row is null) return;
+            SelectedSection = row;
+            _ = Shell.Run(() => EditSectionAsync(row.Source));
+        });
+        CreatePromotion = new AsyncCommand(() => Shell.Run(() => NewPromotionAsync(Shell)));
+        EditPromotionOnPhone = new RelayCommand<PromotionRowVm>(row =>
+        {
+            if (row is null) return;
+            SelectedPromotion = row;
+            _ = Shell.Run(() => PromotionFormAsync(Shell, row.Source));
+        });
         OpenAccountSecurity = new RelayCommand(() =>
         {
-            Shell.OpenBackstage();
-            Shell.Backstage.Section = Shell.Backstage.Items.First(item => item.Value == "mot-de-passe");
+            if (!Preferences.MobileLayout)
+                Section = PosteSections.First(item => item.Value == "securite");
+            else
+            {
+                Shell.OpenBackstage();
+                Shell.Backstage.Section = Shell.Backstage.Items.First(item => item.Value == "mot-de-passe");
+            }
         });
+        AboutModel = new AboutViewModel(shell);
+        if (section?.Value == "securite" && !Preferences.MobileLayout) ActivateSecurity();
         Swatches = Preferences.AccentSwatches.Select(a => new AccentSwatchVm(a.Key, a.Label, new SolidColorBrush(a.Color),
             new RelayCommand(() => { Prefs.Accent = a.Key; RaiseSwatches(); }), () => Prefs.Accent == a.Key)).ToList();
         ResetPrefs = new RelayCommand(() => { Prefs.Reset(); RaisePrefs(); Shell.Notify("Réglages de ce poste rétablis."); });
@@ -395,6 +489,14 @@ public sealed class SettingsPage : PageViewModel
     public IReadOnlyList<AccentSwatchVm> Swatches { get; }
     public RelayCommand ResetPrefs { get; }
     public RelayCommand OpenAccountSecurity { get; }
+    public BackstageViewModel SecurityModel => Shell.Backstage;
+    public AboutViewModel AboutModel { get; }
+    public SchoolLicenseViewModel License => Shell.License;
+    public bool CanCheckWindowsUpdates => Shell.Backstage.CanCheckWindowsUpdates;
+    public AsyncCommand CheckWindowsUpdates => Shell.Backstage.CheckWindowsUpdates;
+    private void ActivateSecurity() =>
+        Shell.Backstage.Section = new BackstageItemVm("mot-de-passe", "Sécurité du compte",
+            MaterialIconKind.ShieldLockOutline, "ToneOrange");
     public RelayCommand<string> TestSound { get; }
 
     /// <summary>Montre une bannière d'exemple : la personne voit ce qu'elle recevra d'un autre poste.</summary>
@@ -475,12 +577,20 @@ public sealed class SettingsPage : PageViewModel
             case "sections":
                 Action("Nouvelle section", MaterialIconKind.ViewGridPlus, NewSectionAsync, primary: true);
                 Action("Modifier", MaterialIconKind.Pencil, EditSelectedAsync, open: true);
+                Action("Supprimer", MaterialIconKind.Delete, DeleteSectionAsync, row: true);
                 break;
             case "promotions":
                 Action("Nouvelle promotion", MaterialIconKind.FolderPlus, () => NewPromotionAsync(Shell), primary: true);
                 Action("Modifier", MaterialIconKind.Pencil, EditSelectedAsync, open: true);
                 Action("Supprimer", MaterialIconKind.Delete, DeletePromotionAsync, row: true);
                 break;
+            case "frais":
+                Action("Nouvelle catégorie", MaterialIconKind.TagPlusOutline, () => CategoryFormAsync(Shell, null), primary: true);
+                Action("Modifier", MaterialIconKind.Pencil, EditSelectedAsync, open: true);
+                Action("Supprimer", MaterialIconKind.Delete, DeleteCategoryAsync, row: true);
+                break;
+            case "licence":
+                return; // Les actions de licence restent dans sa propre fiche.
             case "etablissement":
                 Action("Changer le logo", MaterialIconKind.Image, ChangeLogoAsync);
                 break;
@@ -512,9 +622,11 @@ public sealed class SettingsPage : PageViewModel
         set
         {
             if (!Set(ref section, value)) return;
-            foreach (var name in new[] { nameof(IsSchool), nameof(IsYears), nameof(IsSections), nameof(IsPromotions), nameof(IsAppearance), nameof(IsText),
-                         nameof(IsWindows), nameof(IsAnimations), nameof(IsSounds), nameof(IsSecurity), nameof(IsPoste), nameof(ShowResetLink), nameof(SchoolSection), nameof(PosteSection), nameof(SectionTitle), nameof(SectionHint) })
+            foreach (var name in new[] { nameof(IsSchool), nameof(IsBackupSchedule), nameof(IsYears), nameof(IsSections), nameof(IsPromotions), nameof(IsFees), nameof(IsAppearance), nameof(IsText),
+                         nameof(IsWindows), nameof(IsAnimations), nameof(IsSounds), nameof(IsSecurity), nameof(IsAbout), nameof(IsLicense), nameof(IsPoste), nameof(ShowResetLink), nameof(SchoolSection), nameof(PosteSection), nameof(SectionTitle), nameof(SectionHint) })
                 Raise(name);
+            if (value?.Value == "securite" && !Preferences.MobileLayout) ActivateSecurity();
+            if (value?.Value == "licence") _ = License.RefreshAsync();
             RebuildActions();
             if (value is not null) _ = Shell.Run(RefreshAsync);
         }
@@ -525,21 +637,26 @@ public sealed class SettingsPage : PageViewModel
         "annees" => SelectedYear,
         "sections" => SelectedSection,
         "promotions" => SelectedPromotion,
+        "frais" => SelectedCategory,
         _ => null,
     };
 
-    protected override bool HasRows => section?.Value is "annees" or "sections" or "promotions";
+    protected override bool HasRows => section?.Value is "annees" or "sections" or "promotions" or "frais";
 
+    public bool IsBackupSchedule => section?.Value == "sauvegardes";
     public bool IsSchool => section?.Value == "etablissement";
+    public bool IsLicense => section?.Value == "licence";
     public bool IsYears => section?.Value == "annees";
     public bool IsSections => section?.Value == "sections";
     public bool IsPromotions => section?.Value == "promotions";
+    public bool IsFees => section?.Value == "frais";
     public bool IsAppearance => section?.Value == "apparence";
     public bool IsText => section?.Value == "texte";
     public bool IsWindows => section?.Value == "fenetres";
     public bool IsAnimations => section?.Value == "animations";
     public bool IsSounds => section?.Value == "sons";
     public bool IsSecurity => section?.Value == "securite";
+    public bool IsAbout => section?.Value == "apropos";
     public bool IsPoste => PosteSections.Contains(section!);
     /// <summary>Lien « Rétablir » en bas de page sur le téléphone ; sur l'ordinateur, le bouton de l'en-tête suffit.</summary>
     public bool ShowResetLink => IsPoste && Platform.IsMobile;
@@ -549,15 +666,19 @@ public sealed class SettingsPage : PageViewModel
     public string SectionHint => section?.Value switch
     {
         "etablissement" => "Ce qui figure sur les reçus, les listes et les cartes d'accès.",
+        "sauvegardes" => "Fréquence des copies locales et en ligne, conservation et accès aux sauvegardes.",
+        "licence" => "Échéance, jours restants et statut du serveur SCOLIA. Aucun dossier scolaire n'est envoyé à JP-Services.",
         "annees" => "Les années scolaires, leurs mois de paiement et l'année courante.",
         "sections" => "Les filières de l'établissement, qui regroupent les promotions.",
         "promotions" => "Les classes, leur code de 4 caractères, leur mensualité et leurs frais.",
+        "frais" => "Les frais autres que la mensualité (inscription, examen, tenue…) et leur montant. Seules les catégories créées ici existent.",
         "apparence" => Platform.IsMobile ? "Clair, sombre ou selon l'appareil, et la couleur des boutons et des sélections." : "Clair, sombre ou selon Windows, et la couleur des boutons et des sélections.",
         "texte" => "La police et la taille du texte de toute l'interface.",
         "fenetres" => "La fenêtre au lancement et ce qui entoure les pages.",
         "animations" => "Fondus, transitions entre pages et écran d'ouverture.",
         "sons" => "Un son discret à chaque action, et les bannières des autres postes.",
-        "securite" => "Mot de passe du compte et connexion biométrique de cet appareil.",
+        "securite" => "Mot de passe, code d'accès et biométrie du compte.",
+        "apropos" => "Informations du logiciel, éditeur, assistance et recherche des mises à jour officielles.",
         _ => string.Empty,
     };
 
@@ -566,7 +687,11 @@ public sealed class SettingsPage : PageViewModel
     public AsyncCommand EditSelectedCalendar => editSelectedCalendar ??= new AsyncCommand(() => Shell.Run(EditYearScheduleAsync));
     private AsyncCommand? editSelectedCalendar;
     public ObservableCollection<SectionRowVm> SectionRows { get; } = [];
+    public bool HasSectionRows => SectionRows.Count > 0;
+    public bool HasNoSections => SectionRows.Count == 0;
     public ObservableCollection<PromotionRowVm> Promotions { get; } = [];
+    public bool HasPromotionRows => Promotions.Count > 0;
+    public bool HasNoPromotions => Promotions.Count == 0;
     public YearRowVm? SelectedYear
     {
         get => selectedYear;
@@ -577,9 +702,17 @@ public sealed class SettingsPage : PageViewModel
         : $"Année {selectedYear.Label}{(selectedYear.IsCurrent ? " · courante" : string.Empty)}";
     public SectionRowVm? SelectedSection { get => selectedSection; set => Set(ref selectedSection, value); }
     public PromotionRowVm? SelectedPromotion { get => selectedPromotion; set => Set(ref selectedPromotion, value); }
+    public ObservableCollection<FeeCategoryRowVm> Categories { get; } = [];
+    public FeeCategoryRowVm? SelectedCategory { get => selectedCategory; set => Set(ref selectedCategory, value); }
 
     public override async Task LoadAsync()
     {
+        if (IsBackupSchedule)
+        {
+            subtitle = "Fréquences et copies de sauvegarde";
+            Raise(nameof(Subtitle));
+            return;
+        }
         if (IsPoste)
         {
             subtitle = "Réglages de ce poste";
@@ -597,6 +730,9 @@ public sealed class SettingsPage : PageViewModel
                 break;
             case "promotions":
                 await LoadPromotionsAsync();
+                break;
+            case "frais":
+                await LoadCategoriesAsync();
                 break;
             default:
                 await LoadSchoolAsync();
@@ -631,6 +767,9 @@ public sealed class SettingsPage : PageViewModel
                 cardZone = f.OptionalText("zone"),
                 cardInstitute = f.OptionalText("institut"),
                 cardAddress = f.OptionalText("adresse-institut"),
+                province = f.Has("province") ? f.OptionalText("province") : s.Province,
+                commune = f.Has("commune") ? f.OptionalText("commune") : s.Commune,
+                officialCode = f.Has("code-ecole") ? f.OptionalText("code-ecole") : s.OfficialCode,
             });
             Shell.Notify("Établissement enregistré. Les reçus suivants utilisent ces informations.");
             return true;
@@ -653,13 +792,20 @@ public sealed class SettingsPage : PageViewModel
         form.Add("indicatif", "Indicatif téléphonique", value: s.PhoneCountryCode, required: true, hint: "243 pour la RDC, utilisé par les relances WhatsApp");
         form.AddFlag("entiers", "Montants en unités entières", s.WholeAmountsOnly);
         form.Add("pied", "Mention en bas des reçus", FieldKind.Multiline, s.ReceiptFooter);
-        form.AddHeader("Cartes d'accès", "En-tête officiel imprimé sur les cartes des apprenants.");
+        form.AddHeader("Cartes d'accès", $"En-tête officiel imprimé sur les cartes des {Shell.StudentTerms.Plural}.");
         form.Add("ministere", "Ministère", value: s.CardMinistry);
         form.Add("direction", "Direction", value: s.CardDirection);
         form.Add("division", "Division provinciale", value: s.CardDivision);
         form.Add("zone", "Zone de santé", value: s.CardZone);
         form.Add("institut", "Institut", value: s.CardInstitute);
         form.Add("adresse-institut", "Adresse de l'institut", value: s.CardAddress);
+        if (InstitutionProfiles.UsesSchoolCycles(s.InstitutionType))
+        {
+            form.AddHeader("Bulletins officiels", "Identification de l'école imprimée sur les bulletins du primaire et du secondaire.");
+            form.Add("province", "Province", value: s.Province, hint: "Ex. Kinshasa");
+            form.Add("commune", "Commune ou territoire", value: s.Commune, hint: "Ex. Lingwala");
+            form.Add("code-ecole", "Code de l'école", value: s.OfficialCode, hint: "Code attribué par l'EPST, imprimé case par case");
+        }
         SchoolForm = form;
         subtitle = $"{s.Name} · {s.CurrencyCode}";
         Raise(nameof(Subtitle));
@@ -692,9 +838,14 @@ public sealed class SettingsPage : PageViewModel
     private async Task LoadSectionsAsync()
     {
         var sections = await Shell.Api.GetAsync<List<SectionDto>>("api/etablissement/sections");
+        var previouslySelectedId = SelectedSection?.Id;
         SectionRows.Clear();
         foreach (var s in sections)
-            SectionRows.Add(new SectionRowVm(s.Id, s.Code, s.Name, s.IsActive ? "Oui" : "Non", s));
+            SectionRows.Add(new SectionRowVm(s.Id, s.Code, s.Name, s.IsActive ? "Oui" : "Non", s,
+                Format.Count(s.PromotionCount, "promotion", "promotions"), Format.Count(s.StudentCount, Shell.StudentTerms.Singular, Shell.StudentTerms.Plural)));
+        SelectedSection = SectionRows.FirstOrDefault(s => s.Id == previouslySelectedId);
+        Raise(nameof(HasSectionRows));
+        Raise(nameof(HasNoSections));
         subtitle = Format.Count(sections.Count, "section", "sections");
         Raise(nameof(Subtitle));
     }
@@ -702,12 +853,75 @@ public sealed class SettingsPage : PageViewModel
     private async Task LoadPromotionsAsync()
     {
         var promotions = await Shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions");
+        var previouslySelectedId = SelectedPromotion?.Id;
         Promotions.Clear();
+        var university = Shell.Session?.InstitutionType == InstitutionProfiles.SuperieurLmd;
         foreach (var p in promotions)
             Promotions.Add(new PromotionRowVm(p.Id, p.Code, p.Name, p.SectionName ?? "—", $"{p.Level}", $"{p.StudentCount}",
-                Money(p.MonthlyFee), Money(p.AnnualTotal), p.IsActive ? "Oui" : "Non", p));
+                university ? $"{p.Fees.Count(f => LmdInstallmentPlan.IsTranche(f.Label))} tranche(s)" : Money(p.MonthlyFee), Money(p.AnnualTotal), p.IsActive ? "Oui" : "Non", p, university ? "Échéancier" : "Mensualité"));
+        SelectedPromotion = Promotions.FirstOrDefault(p => p.Id == previouslySelectedId);
+        Raise(nameof(HasPromotionRows));
+        Raise(nameof(HasNoPromotions));
         subtitle = Format.Count(promotions.Count, "promotion", "promotions");
         Raise(nameof(Subtitle));
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        var categories = await Shell.Api.GetAsync<List<FeeCategoryDto>>("api/etablissement/categories-frais");
+        Categories.Clear();
+        foreach (var c in categories)
+            Categories.Add(new FeeCategoryRowVm(c.Id, c.Name, Money(c.Amount), c.DueDate is { } d ? Format.Date(d) : "À la rentrée",
+                Format.Count(c.PromotionCount, "promotion", "promotions"), c.IsActive ? "Oui" : "Non", c));
+        subtitle = categories.Count == 0
+            ? "Aucune catégorie : seules les mensualités sont facturées"
+            : Format.Count(categories.Count, "catégorie de frais", "catégories de frais");
+        Raise(nameof(Subtitle));
+    }
+
+    /// <summary>Création ou modification d'une catégorie de frais, appliquée si besoin à toutes les promotions de l'année.</summary>
+    public static async Task CategoryFormAsync(ShellViewModel shell, FeeCategoryDto? existing)
+    {
+        var form = new FormViewModel(existing is null ? "Nouvelle catégorie de frais" : "Modifier la catégorie",
+            "Par exemple : frais d'inscription, frais d'examen, tenue, carte d'élève. La mensualité se règle dans chaque promotion.", async f =>
+        {
+            var body = new
+            {
+                name = f.Text("nom"),
+                amount = f.Amount("montant"),
+                dueDate = f.Day("echeance"),
+                isActive = f.Flag("actif"),
+                applyToPromotions = f.Flag("appliquer"),
+            };
+            if (existing is null) await shell.Api.SendAsync(HttpMethod.Post, "api/etablissement/categories-frais", body);
+            else await shell.Api.SendAsync(HttpMethod.Put, $"api/etablissement/categories-frais/{existing.Id}", body);
+            shell.Notify(f.Flag("appliquer") ? "Catégorie enregistrée et appliquée aux promotions de l'année." : "Catégorie enregistrée.");
+            return true;
+        });
+        form.Add("nom", "Nom de la catégorie", value: existing?.Name, required: true);
+        form.Add("montant", "Montant", FieldKind.Amount, existing?.Amount.ToString("0.##", CultureInfo.InvariantCulture), required: true);
+        form.AddDay("echeance", "Échéance (facultative)", existing?.DueDate);
+        form.AddFlag("actif", "Catégorie active", existing?.IsActive ?? true);
+        form.AddFlag("appliquer", existing is null ? "Appliquer à toutes les promotions de l'année courante" : "Mettre à jour le montant dans toutes les promotions de l'année courante",
+            existing is null);
+        if (await shell.Ask(form) && shell.Current is SettingsPage page) await page.RefreshAsync();
+    }
+
+    private async Task DeleteCategoryAsync()
+    {
+        if (section?.Value != "frais" || SelectedCategory is null)
+        {
+            Shell.Notify("Sélectionnez une catégorie de frais.");
+            return;
+        }
+        var c = SelectedCategory;
+        if (!await Shell.Confirm("Supprimer la catégorie",
+                $"« {c.Name} » sera retirée de toutes les promotions. Une catégorie déjà encaissée ne peut pas être supprimée : désactivez-la.",
+                "Supprimer", danger: true))
+            return;
+        await Shell.Api.SendAsync(HttpMethod.Delete, $"api/etablissement/categories-frais/{c.Id}");
+        Shell.Notify("Catégorie supprimée.");
+        await RefreshAsync();
     }
 
     private async Task EditSelectedAsync()
@@ -716,6 +930,9 @@ public sealed class SettingsPage : PageViewModel
         {
             case "promotions" when SelectedPromotion is not null:
                 await PromotionFormAsync(Shell, SelectedPromotion.Source);
+                break;
+            case "frais" when SelectedCategory is not null:
+                await CategoryFormAsync(Shell, SelectedCategory.Source);
                 break;
             case "sections" when SelectedSection is not null:
                 await EditSectionAsync(SelectedSection.Source);
@@ -728,14 +945,17 @@ public sealed class SettingsPage : PageViewModel
 
     private async Task EditSectionAsync(SectionDto s)
     {
-        var form = new FormViewModel("Modifier la section", $"Code {s.Code}", async f =>
+        var form = new FormViewModel("Modifier la section",
+            "Les promotions existantes restent liées à cette section, même si elle est désactivée.", async f =>
         {
-            await Shell.Api.SendAsync(HttpMethod.Put, $"api/etablissement/sections/{s.Id}", new { code = f.Text("code"), name = f.Text("nom"), isActive = f.Flag("actif") });
+            if (!ValidateSectionForm(f)) return false;
+            await Shell.Api.SendAsync(HttpMethod.Put, $"api/etablissement/sections/{s.Id}",
+                new { code = f.Text("code"), name = f.Text("nom"), isActive = f.Flag("actif") });
             Shell.Notify("Section enregistrée.");
             return true;
         });
-        form.Add("code", "Code", value: s.Code, required: true);
-        form.Add("nom", "Nom", value: s.Name, required: true);
+        form.Add("code", "Code de la section", value: s.Code, required: true, hint: "12 caractères maximum, par exemple INF ou ACC.");
+        form.Add("nom", "Désignation", value: s.Name, required: true, hint: "Nom complet de la filière.");
         form.AddFlag("actif", "Section active", s.IsActive);
         if (await Shell.Ask(form)) await RefreshAsync();
     }
@@ -807,16 +1027,54 @@ public sealed class SettingsPage : PageViewModel
         Shell.Notify("Logo mis à jour. Il figure désormais sur l'écran de connexion, les reçus, les listes et les cartes.");
     }
 
+    private async Task DeleteSectionAsync()
+    {
+        if (section?.Value != "sections" || SelectedSection is null)
+        {
+            Shell.Notify("Sélectionnez une section à supprimer.");
+            return;
+        }
+        var s = SelectedSection;
+        if (!await Shell.Confirm("Supprimer la section",
+                $"La section {s.Name} sera supprimée. Une section qui regroupe des promotions, même d'années passées, ne peut pas l'être : désactivez-la.",
+                "Supprimer", danger: true))
+            return;
+        await Shell.Api.SendAsync(HttpMethod.Delete, $"api/etablissement/sections/{s.Id}");
+        Shell.Notify($"Section {s.Name} supprimée.");
+        await RefreshAsync();
+    }
+
+    /// <summary>Contrôles lisibles sur mobile avant l'appel à l'API (qui vérifie aussi unicité et droits).</summary>
+    public static bool ValidateSectionForm(FormViewModel form)
+    {
+        if (form.Text("code").Length is < 1 or > 12)
+        {
+            form.Find("code").Error = "Le code doit contenir entre 1 et 12 caractères.";
+            form.Fail("Vérifiez le code de la section.");
+            return false;
+        }
+        if (form.Text("nom").Length is < 1 or > 120)
+        {
+            form.Find("nom").Error = "La désignation doit contenir entre 1 et 120 caractères.";
+            form.Fail("Vérifiez la désignation de la section.");
+            return false;
+        }
+        return true;
+    }
+
     private async Task NewSectionAsync()
     {
-        var form = new FormViewModel("Nouvelle section", "Une section regroupe des promotions.", async f =>
+        var form = new FormViewModel("Nouvelle section",
+            "Créez une filière, puis associez-y les promotions dans « Promotions et frais ».", async f =>
         {
-            await Shell.Api.SendAsync(HttpMethod.Post, "api/etablissement/sections", new { code = f.Text("code"), name = f.Text("nom"), isActive = f.Flag("actif") });
-            Shell.Notify("Section créée.");
+            if (!ValidateSectionForm(f)) return false;
+            await Shell.Api.SendAsync(HttpMethod.Post, "api/etablissement/sections",
+                new { code = f.Text("code"), name = f.Text("nom"), isActive = f.Flag("actif") });
+            Shell.Notify("Section créée. Elle est disponible pour les promotions.");
             return true;
         });
-        form.Add("code", "Code", required: true);
-        form.Add("nom", "Nom", required: true);
+        form.Add("code", "Code de la section", required: true, hint: "12 caractères maximum, par exemple INF ou ACC.");
+        form.Add("nom", "Désignation", required: true, hint: "Exemple : Sciences infirmières.");
         form.AddFlag("actif", "Section active", true);
         if (await Shell.Ask(form)) await RefreshAsync();
     }
@@ -965,27 +1223,95 @@ public sealed class SettingsPage : PageViewModel
     /// <summary>Boîte de création ou de modification d'une promotion.</summary>
     public static async Task PromotionFormAsync(ShellViewModel shell, PromotionDto? existing)
     {
+        var form = await CreatePromotionFormAsync(shell, existing);
+        if (form is not null && await shell.Ask(form) && shell.Current is SettingsPage page) await page.RefreshAsync();
+    }
+
+    internal static async Task<FormViewModel?> CreatePromotionFormAsync(ShellViewModel shell, PromotionDto? existing)
+    {
         var sections = await shell.Api.GetAsync<List<SectionDto>>("api/etablissement/sections");
-        var sectionChoices = sections.Select(s => new ChoiceItem(s.Id.ToString(), $"{s.Code} · {s.Name}")).ToList();
-        var inscription = existing?.Fees.FirstOrDefault(f => f.Kind == "Inscription");
-        var examen = existing?.Fees.FirstOrDefault(f => f.Kind == "Examen");
+        // Une section désactivée n'est plus proposée, sauf si la promotion y est déjà rattachée.
+        var sectionChoices = sections.Where(s => s.IsActive || s.Id == existing?.SectionId)
+            .Select(s => new ChoiceItem(s.Id.ToString(), s.IsActive ? $"{s.Code} · {s.Name}" : $"{s.Code} · {s.Name} (désactivée)")).ToList();
+        // Les autres frais viennent du catalogue : une ligne par catégorie créée, avec son montant pour cette promotion.
+        List<FeeCategoryDto> categories;
+        try { categories = await shell.Api.GetAsync<List<FeeCategoryDto>>("api/etablissement/categories-frais"); }
+        catch (ApiException) { categories = []; }
+        var applied = existing?.Fees.Where(f => f.CategoryId is not null).ToDictionary(f => f.CategoryId!.Value) ?? [];
+        var shown = categories.Where(c => c.IsActive || applied.ContainsKey(c.Id)).ToList();
+        // Un complexe réunit plusieurs niveaux : il faut sélectionner le cycle de
+        // chaque classe, sans le déduire du code ou de la section.
+        var plan = await shell.Api.GetAsync<SchoolCycleConfigurationDto>("api/etablissement/cycles");
+        var schoolUsesCycles = InstitutionProfiles.UsesSchoolCycles(plan.InstitutionType);
+        var schoolIsPublic = plan.Governance == "Public";
+        var allowsZeroMonthly = schoolUsesCycles || schoolIsPublic
+            || plan.InstitutionType == InstitutionProfiles.SuperieurLmd;
+        if (schoolIsPublic) shown.Clear();
+        var activeCycles = plan.Cycles.Where(c => c.IsActive).ToList();
+        if (schoolUsesCycles && activeCycles.Count == 0)
+        {
+            shell.Notify("Configurez d'abord les cycles dans Paramètres > Cycles scolaires avant de créer une classe.");
+            return null;
+        }
+        var cycleChoices = activeCycles.Select(c =>
+            new ChoiceItem(c.Id.ToString(), c.Name)).ToList();
+        // Université : chaque promotion appartient à une filière, un parcours ou une spécialité.
+        var university = plan.InstitutionType == InstitutionProfiles.SuperieurLmd;
+        var school = university ? await shell.Api.GetAsync<SchoolDto>("api/etablissement") : null;
+        var wholeAmounts = school?.WholeAmountsOnly ?? false;
+        var currency = school?.CurrencySymbol ?? "$";
+        var academicFees = existing?.Fees.Where(f => LmdInstallmentPlan.IsTranche(f.Label)).OrderBy(f => f.DueDate).ToList() ?? [];
+        var annualTotal = academicFees.Sum(f => f.Amount);
+        if (university) shown.RemoveAll(c => LmdInstallmentPlan.IsTranche(c.Name));
+        var filiereChoices = university
+            ? (await shell.Api.GetAsync<List<LmdStructureDto>>("api/etablissement/lmd/structures"))
+                .Where(u => u.IsActive && u.Kind is "Filiere" or "Pathway" or "Speciality")
+                .Select(u => new ChoiceItem(u.Id.ToString(), u.Name)).ToList()
+            : [];
 
         var form = new FormViewModel(existing is null ? "Nouvelle promotion" : "Modifier la promotion",
-            "Les frais ponctuels sont facultatifs : indiquez un montant pour les créer.", async f =>
+            schoolIsPublic
+                ? "Public : gestion de la classe sans frais exigibles. Une décision réglementaire sera nécessaire pour activer la perception."
+                : university ? "Les frais académiques annuels sont propres à cette promotion et répartis en tranches décroissantes."
+                : allowsZeroMonthly
+                    ? "Associez la classe au bon cycle ; vous pouvez laisser la mensualité à zéro si elle ne s'applique pas."
+                    : "La mensualité est obligatoire. Pour chaque catégorie, laissez le montant vide si elle ne concerne pas cette classe.", async f =>
         {
-            var fees = new List<object>();
-            foreach (var (key, kind, label, dayKey) in new[] { ("inscription", "Inscription", "Frais d'inscription", "inscriptionEcheance"), ("examen", "Examen", "Frais d'examen", "examenEcheance") })
+            var monthly = university ? 0m : f.Amount("mensualite");
+            decimal total = 0;
+            int count = 0;
+            bool newPlan = false;
+            if (university && !schoolIsPublic)
             {
-                var amount = f.Amount(key);
-                if (amount <= 0) continue;
-                var due = f.Day(dayKey);
-                if (due is null)
+                total = f.Amount("annuel");
+                count = int.Parse(f.ChoiceValue("tranches") ?? "3", CultureInfo.InvariantCulture);
+                newPlan = academicFees.Count == 0 || total != annualTotal || count != academicFees.Count;
+                if (newPlan)
                 {
-                    f.Find(dayKey).Error = "Indiquez l'échéance de ces frais.";
-                    return false;
+                    try { _ = LmdInstallmentPlan.Split(total, count, wholeAmounts); }
+                    catch (ArgumentException ex) { f.Find("annuel").Error = ex.Message; return false; }
                 }
-                fees.Add(new { kind, label, amount, dueDate = due });
+                else monthly = existing?.MonthlyFee ?? 0m;
             }
+            if (!university && (schoolIsPublic ? monthly != 0 : allowsZeroMonthly ? monthly < 0 : monthly <= 0))
+            {
+                f.Find("mensualite").Error = schoolIsPublic
+                    ? "Aucune mensualité scolaire publique sans autorisation : indiquez zéro."
+                    : allowsZeroMonthly ? "La mensualité ne peut pas être négative." : "La mensualité est obligatoire.";
+                return false;
+            }
+            var fees = new List<object>();
+            foreach (var category in shown)
+            {
+                var amount = f.Amount($"categorie-{category.Id:N}");
+                // Une tranche universitaire garde son échéance quand la promotion est modifiée.
+                DateOnly? due = category.Name.StartsWith("Frais académiques — ", StringComparison.Ordinal) &&
+                                applied.TryGetValue(category.Id, out var tranche) ? tranche.DueDate : null;
+                if (amount > 0) fees.Add(new { categoryId = category.Id, amount, dueDate = due });
+            }
+            if (university && !newPlan && !schoolIsPublic)
+                foreach (var tranche in academicFees)
+                    fees.Add(new { categoryId = tranche.CategoryId, amount = tranche.Amount, dueDate = (DateOnly?)tranche.DueDate });
             int? capacity = Format.TryAmount(f.Text("capacite"), out var cap) ? (int?)(int)cap : null;
             var body = new
             {
@@ -996,8 +1322,14 @@ public sealed class SettingsPage : PageViewModel
                 capacity,
                 isActive = f.Flag("actif"),
                 nextPromotionCode = f.OptionalText("suivante"),
-                monthlyFee = f.Amount("mensualite"),
+                schoolCycleId = schoolUsesCycles && f.ChoiceValue("cycle") is { } selected
+                    ? Guid.Parse(selected) : (Guid?)null,
+                academicUnitId = university && f.ChoiceValue("filiere") is { Length: > 0 } unit
+                    ? Guid.Parse(unit) : (Guid?)null,
+                monthlyFee = monthly,
+                lmdAnnualFee = newPlan ? new { annualTotal = total, count } : null,
                 oneTimeFees = fees,
+                managesCategories = true,
             };
             if (existing is null) await shell.Api.SendAsync(HttpMethod.Post, "api/etablissement/promotions", body);
             else await shell.Api.SendAsync(HttpMethod.Put, $"api/etablissement/promotions/{existing.Id}", body);
@@ -1006,19 +1338,65 @@ public sealed class SettingsPage : PageViewModel
         });
         form.Add("code", "Code (4 caractères)", value: existing?.Code, required: true);
         form.Add("nom", "Désignation", value: existing?.Name, required: true);
+        if (schoolUsesCycles)
+            form.AddChoice("cycle", "Cycle scolaire", cycleChoices,
+                existing?.SchoolCycleId?.ToString() ?? (cycleChoices.Count == 1 ? cycleChoices[0].Value : null),
+                required: true);
+        if (university)
+            form.AddChoice("filiere", "Filière, parcours ou spécialité", filiereChoices,
+                existing?.AcademicUnitId?.ToString(), required: filiereChoices.Count > 0);
         form.AddChoice("section", "Section", sectionChoices, existing?.SectionId?.ToString());
-        form.Add("niveau", "Niveau", FieldKind.Amount, existing?.Level.ToString() ?? "1", required: true);
+        form.Add("niveau", university ? "Niveau (1 à 3 : L1 à L3 ; 4 et 5 : M1, M2)" : "Niveau", FieldKind.Amount,
+            existing?.Level.ToString() ?? "1", required: true);
         form.Add("capacite", "Capacité", FieldKind.Amount, existing?.Capacity?.ToString());
         form.Add("suivante", "Promotion suivante", value: existing?.NextPromotionCode, hint: "Code de la promotion de l'année suivante");
-        form.Add("mensualite", "Mensualité", FieldKind.Amount, existing?.MonthlyFee.ToString("0"), required: true);
+        if (university && !schoolIsPublic)
+        {
+            form.AddHeader("Frais académiques de la promotion", "La première tranche est la plus élevée. Les suivantes diminuent ; le total est conservé.");
+            form.Add("annuel", $"Total annuel ({currency})", FieldKind.Amount,
+                annualTotal > 0 ? annualTotal.ToString("0.##", CultureInfo.InvariantCulture) : null, required: true);
+            form.AddChoice("tranches", "Nombre de tranches", Enumerable.Range(1, LmdInstallmentPlan.MaxCount)
+                .Select(n => new ChoiceItem(n.ToString(CultureInfo.InvariantCulture), $"{n} tranche(s)")).ToList(),
+                (academicFees.Count > 0 ? academicFees.Count : 3).ToString(CultureInfo.InvariantCulture), required: true);
+        }
+        else if (!university) form.Add("mensualite", schoolIsPublic ? "Mensualité (public : zéro)"
+            : allowsZeroMonthly ? "Mensualité (0 si non appliquée)" : "Mensualité (obligatoire)",
+            FieldKind.Amount,
+            existing is { MonthlyFee: > 0 } ? existing.MonthlyFee.ToString("0.##", CultureInfo.InvariantCulture)
+                : allowsZeroMonthly ? "0" : null, required: true);
         form.AddFlag("actif", "Promotion active", existing?.IsActive ?? true);
-        form.Add("inscription", "Frais d'inscription (montant)", FieldKind.Amount, inscription?.Amount.ToString("0"));
-        form.AddDay("inscriptionEcheance", "Échéance des frais d'inscription", inscription?.DueDate);
-        form.Add("examen", "Frais d'examen (montant)", FieldKind.Amount, examen?.Amount.ToString("0"));
-        form.AddDay("examenEcheance", "Échéance des frais d'examen", examen?.DueDate);
+        form.AddHeader("Autres frais", shown.Count == 0
+            ? "Aucune catégorie de frais n'est créée. Créez les frais d'inscription ou d'examen dans Configuration, Catégories de frais si nécessaires."
+            : "Montant de chaque catégorie pour cette promotion. Vide : la catégorie ne s'applique pas.");
+        foreach (var category in shown)
+        {
+            var value = applied.TryGetValue(category.Id, out var item) ? item.Amount
+                : existing is null && category.IsActive ? category.Amount : (decimal?)null;
+            form.Add($"categorie-{category.Id:N}", category.Name + (category.IsActive ? string.Empty : " (désactivée)"), FieldKind.Amount,
+                value?.ToString("0.##", CultureInfo.InvariantCulture), hint: $"Montant du catalogue : {Format.Money(category.Amount, shell.Session?.CurrencySymbol ?? string.Empty)}");
+        }
         await PredictPromotionAsync(shell, form, sections, existing);
+        if (university && !schoolIsPublic)
+        {
+            var annualField = form.Find("annuel");
+            var previous = form.Changed;
+            void Preview()
+            {
+                var total = form.Amount("annuel");
+                var count = int.Parse(form.ChoiceValue("tranches") ?? "3", CultureInfo.InvariantCulture);
+                if (academicFees.Count > 0 && total == annualTotal && count == academicFees.Count)
+                {
+                    annualField.Hint = "Plan existant conservé : " + string.Join(" · ", academicFees.Select((f, i) => $"T{i + 1} : {f.Amount:0.##} {currency}"));
+                    return;
+                }
+                try { annualField.Hint = string.Join(" · ", LmdInstallmentPlan.Split(total, count, wholeAmounts).Select((a, i) => $"T{i + 1} : {a:0.##} {currency}")); }
+                catch (ArgumentException ex) { annualField.Hint = ex.Message; }
+            }
+            form.Changed = field => { previous?.Invoke(field); if (field.Key is "annuel" or "tranches") Preview(); };
+            Preview();
+        }
 
-        if (await shell.Ask(form) && shell.Current is SettingsPage page) await page.RefreshAsync();
+        return form;
     }
 
     /// <summary>
@@ -1118,6 +1496,7 @@ public sealed class UsersPage : PageViewModel
         Action("Nouvel utilisateur", MaterialIconKind.AccountPlus, () => NewUserAsync(Shell), primary: true);
         Action("Modifier", MaterialIconKind.AccountEdit, EditAsync, open: true);
         Action("Réinitialiser le mot de passe", MaterialIconKind.KeyChange, ResetPasswordAsync, row: true);
+        Action("Retirer l'accès au serveur", MaterialIconKind.AccountCancel, RevokeServerAccountAsync, row: true, danger: true);
         ActionRefresh();
     }
 
@@ -1141,10 +1520,25 @@ public sealed class UsersPage : PageViewModel
         Raise(nameof(Subtitle));
     }
 
+    /// <summary>Fiches des enseignants en activité, pour relier un compte enseignant à ses cours attribués.</summary>
+    private static async Task<IReadOnlyList<ChoiceItem>> TeacherChoicesAsync(ShellViewModel shell) =>
+        (await shell.Api.GetAsync<List<TeacherDto>>("api/enseignants")).Select(t => new ChoiceItem(t.Id.ToString(), $"{t.Nom} · {t.Function}")).ToList();
+
+    private static Guid? TeacherLink(FormViewModel f) =>
+        f.ChoiceValue("role") == "Enseignant" && f.ChoiceValue("enseignant") is { Length: > 0 } id ? Guid.Parse(id) : null;
+
     /// <summary>Formulaire de création d'un compte nominatif.</summary>
     public static async Task NewUserAsync(ShellViewModel shell)
     {
-        var form = new FormViewModel("Nouvel utilisateur", "Secrétariat : administration. Comptabilité : encaissements et caisse. Promoteur : consultation d'indicateurs agrégés, sans modification. Le mot de passe provisoire devra être changé à la première connexion.", async f =>
+        var form = await CreateUserFormAsync(shell);
+        if (await shell.Ask(form) && shell.Current is UsersPage page) await page.RefreshAsync();
+    }
+
+    internal static async Task<FormViewModel> CreateUserFormAsync(ShellViewModel shell)
+    {
+        if (!shell.Can(Perm.UsersManage)) throw new UnauthorizedAccessException("Gestion des comptes non autorisée.");
+        var teachers = await TeacherChoicesAsync(shell);
+        var form = new FormViewModel("Nouvel utilisateur", "Secrétariat : administration. Comptabilité : encaissements et caisse. Promoteur : consultation d'indicateurs agrégés, sans modification. Enseignant : encodage et remise des cotes de ses seuls cours, par code anonyme. Le mot de passe provisoire devra être changé à la première connexion.", async f =>
         {
             await shell.Api.SendAsync(HttpMethod.Post, "api/utilisateurs", new
             {
@@ -1152,6 +1546,8 @@ public sealed class UsersPage : PageViewModel
                 displayName = f.Text("nom"),
                 role = f.ChoiceValue("role"),
                 password = f.Text("motDePasse"),
+                staffMemberId = TeacherLink(f),
+                juryAccess = f.ChoiceValue("role") == "Enseignant" && f.Flag("jury"),
             });
             shell.Notify("Compte créé.");
             return true;
@@ -1159,9 +1555,11 @@ public sealed class UsersPage : PageViewModel
         form.Add("identifiant", "Identifiant", required: true);
         form.Add("nom", "Nom complet", required: true);
         form.AddChoice("role", "Rôle", Labels.Roles, "Secretariat", required: true);
+        form.AddChoice("enseignant", "Fiche enseignant (rôle Enseignant seulement)", teachers);
+        form.AddFlag("jury", "Membre du jury : encode aussi les épreuves du jury (rôle Enseignant)", false);
         form.Add("motDePasse", "Code provisoire", FieldKind.Secret, required: true,
             hint: AccessCode.Hint + " La personne choisira le sien à sa première connexion.");
-        if (await shell.Ask(form) && shell.Current is UsersPage page) await page.RefreshAsync();
+        return form;
     }
 
     private async Task EditAsync()
@@ -1171,7 +1569,13 @@ public sealed class UsersPage : PageViewModel
             Shell.Notify("Sélectionnez un compte.");
             return;
         }
-        var u = Selected.Source;
+        var form = await EditUserFormAsync(Selected.Source);
+        if (await Shell.Ask(form)) await RefreshAsync();
+    }
+
+    internal async Task<FormViewModel> EditUserFormAsync(UserDto u)
+    {
+        if (!Shell.Can(Perm.UsersManage)) throw new UnauthorizedAccessException("Gestion des comptes non autorisée.");
         var form = new FormViewModel("Modifier le compte", $"Identifiant {u.UserName}", async f =>
         {
             await Shell.Api.SendAsync(HttpMethod.Put, $"api/utilisateurs/{u.Id}", new
@@ -1179,14 +1583,48 @@ public sealed class UsersPage : PageViewModel
                 displayName = f.Text("nom"),
                 role = f.ChoiceValue("role"),
                 isActive = f.Flag("actif"),
+                staffMemberId = TeacherLink(f),
+                juryAccess = f.ChoiceValue("role") == "Enseignant" && f.Flag("jury"),
             });
             Shell.Notify("Compte enregistré.");
             return true;
         });
+        var teachers = await TeacherChoicesAsync(Shell);
         form.Add("nom", "Nom complet", value: u.DisplayName, required: true);
         form.AddChoice("role", "Rôle", Labels.Roles, u.Role, required: true);
+        form.AddChoice("enseignant", "Fiche enseignant (rôle Enseignant seulement)", teachers, u.StaffMemberId?.ToString());
+        // Privilège, pas un compte : le retirer laisse en place les cotes du jury déjà encodées.
+        form.AddFlag("jury", "Membre du jury : encode aussi les épreuves du jury (rôle Enseignant)", u.JuryAccess);
         form.AddFlag("actif", "Compte actif", u.IsActive);
-        if (await Shell.Ask(form)) await RefreshAsync();
+        return form;
+    }
+
+    /// <summary>
+    /// Retrait côté serveur : désactivation auditée et invalidation des sessions.
+    /// Le compte et ses historiques ne sont pas effacés ; un gestionnaire pourra
+    /// le réactiver dans Modifier après vérification de son titulaire.
+    /// </summary>
+    private async Task RevokeServerAccountAsync()
+    {
+        if (Selected?.Source is not { } user) return;
+        if (!user.IsActive)
+        {
+            Shell.Notify("Ce compte n'a déjà plus d'accès au serveur.");
+            return;
+        }
+        if (!await Shell.Confirm("Retirer l'accès serveur",
+                $"Désactiver le compte « {user.UserName} » sur l'ordinateur principal ? Ses sessions connectées seront invalidées et ses nouvelles opérations refusées. Les notes et historiques restent conservés.",
+                "Retirer l'accès", danger: true)) return;
+        await Shell.Api.SendAsync(HttpMethod.Put, $"api/utilisateurs/{user.Id}", new
+        {
+            displayName = user.DisplayName,
+            role = user.Role,
+            isActive = false,
+            staffMemberId = user.StaffMemberId,
+            juryAccess = user.JuryAccess,
+        });
+        Shell.Notify($"Accès serveur du compte « {user.UserName} » désactivé sans supprimer ses données.");
+        await RefreshAsync();
     }
 
     private async Task ResetPasswordAsync()
@@ -1196,7 +1634,13 @@ public sealed class UsersPage : PageViewModel
             Shell.Notify("Sélectionnez un compte.");
             return;
         }
-        var u = Selected.Source;
+        var form = ResetUserForm(Selected.Source);
+        if (await Shell.Ask(form)) await RefreshAsync();
+    }
+
+    internal FormViewModel ResetUserForm(UserDto u)
+    {
+        if (!Shell.Can(Perm.UsersManage)) throw new UnauthorizedAccessException("Gestion des comptes non autorisée.");
         var form = new FormViewModel("Réinitialiser le mot de passe",
             $"Compte {u.UserName} · L'accès actuel sera remplacé. Les sessions existantes seront invalidées.", async f =>
         {
@@ -1224,6 +1668,6 @@ public sealed class UsersPage : PageViewModel
             hint: AccessCode.Hint + " À remettre uniquement au titulaire du compte.");
         form.Add("confirmation", "Confirmer le nouveau code", FieldKind.Secret, required: true,
             hint: "Ressaisissez exactement le même code pour éviter les erreurs.");
-        if (await Shell.Ask(form)) await RefreshAsync();
+        return form;
     }
 }

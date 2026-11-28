@@ -19,8 +19,8 @@ public sealed record CardExportResult(byte[] Bytes, string FileName, int Cards, 
 /// </summary>
 public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, ICurrentUser user, IDocumentService documents)
 {
-    private sealed record CandidateRow(Guid EnrollmentId, string Matricule, string LastName, string MiddleName, string FirstName, string Promotion,
-        EnrollmentStatus Effective, bool Duplicate);
+    private sealed record CandidateRow(Guid EnrollmentId, Guid PromotionId, string Matricule, string LastName, string MiddleName, string FirstName, string Promotion,
+        EnrollmentStatus Effective, bool Duplicate, bool HasAnonymousCode);
 
     public async Task<IReadOnlyList<CardCandidateDto>> CandidatesAsync(Guid? promotionId, string? search, bool includeLeft, CancellationToken ct = default)
     {
@@ -31,7 +31,9 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
             .Where(r => term.Length == 0 || TextKey.Normalize($"{r.Matricule} {r.LastName} {r.MiddleName} {r.FirstName}").Contains(term, StringComparison.Ordinal))
             .OrderBy(r => r.Promotion).ThenBy(r => r.LastName).ThenBy(r => r.FirstName)
             .Select(r => new CardCandidateDto(r.EnrollmentId, r.Matricule, Name(r), r.Promotion, Labels.Of(r.Effective),
-                StudentCardRules.Eligible(r.Effective, includeLeft), StudentCardRules.IdentityComplete(r.LastName, r.FirstName), r.Duplicate))
+                StudentCardRules.Eligible(r.Effective, includeLeft),
+                StudentCardRules.IdentityComplete(r.LastName, r.FirstName), r.Duplicate,
+                r.HasAnonymousCode))
             .ToList();
     }
 
@@ -49,6 +51,8 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         var year = await YearContext.CurrentAsync(db, ct);
         var rows = await CandidateRowsAsync(year, null, requested, ct);
         var selected = rows
+            // Sans code anonyme, la carte est imprimée avec la rubrique MATRICULE laissée vide ; le code est relu à
+            // chaque export, si bien qu'une carte réimprimée après la génération des codes le porte automatiquement.
             .Where(r => StudentCardRules.Eligible(r.Effective, input.IncludeLeft) && StudentCardRules.IdentityComplete(r.LastName, r.FirstName) && !r.Duplicate)
             .OrderBy(r => r.Promotion).ThenBy(r => r.LastName).ThenBy(r => r.FirstName)
             .ToList();
@@ -66,22 +70,31 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         if (school.Logo is not { Length: > 0 })
             throw new DomainException("cartes",
                 "Le logo de votre établissement n'est pas configuré. Ajoutez-le dans Paramètres > Établissement avant d'imprimer les cartes d'accès.");
-        // Les cartes reprennent l'identité propre à l'établissement actif, jamais un nom ou un sceau ITM imposé.
+        // Couleur unique par identifiant de promotion, y compris pour
+        // deux cycles qui reutilisent le meme code de classe (ex. P1).
+        // La liste complete de l'annee stabilise les exports partiels.
+        var promotionIds = await db.Promotions.AsNoTracking()
+            .Where(p => p.AcademicYearId == year.Id).Select(p => p.Id).ToListAsync(ct);
+        var bands = StudentCardRules.PromotionBandColors(
+            promotionIds.Select(id => id.ToString("D")));
+        // Les cartes reprennent l'identité et le logo propres à l'établissement actif. Le cachet n'est pas imprimé :
+        // l'établissement appose son cachet original à la main sur la carte imprimée.
         var header = new SchoolCardHeader(
-            CardHeaderDefaults.Or(school.Country, CardHeaderDefaults.Country),
-            CardHeaderDefaults.Or(school.CardMinistry, CardHeaderDefaults.Ministry),
-            CardHeaderDefaults.Or(school.CardDirection, CardHeaderDefaults.Direction),
-            CardHeaderDefaults.Or(school.CardDivision, CardHeaderDefaults.Division),
-            CardHeaderDefaults.Or(school.CardZone, CardHeaderDefaults.CityZone),
+            school.Country ?? string.Empty,
+            school.CardMinistry,
+            school.CardDirection,
+            school.CardDivision,
+            school.CardZone ?? school.City,
             CardHeaderDefaults.Or(school.CardInstitute, school.Name),
-            CardHeaderDefaults.Or(school.CardAddress, school.Address ?? string.Empty),
-            school.Logo);
+            CardHeaderDefaults.Or(school.CardAddress, school.Address ?? school.City ?? string.Empty),
+            school.Logo,
+            school.Phone, school.Email, school.Website, school.Motto);
         var cards = new List<CardItem>();
         foreach (var r in selected)
         {
             var qr = $"{school.Name} | {session} | {year.Label} | {r.Matricule} | {Name(r)} | {r.Promotion}";
             for (var i = 0; i < copies; i++)
-                cards.Add(new CardItem(r.LastName, r.MiddleName, r.FirstName, r.Promotion, StudentCardRules.ColorOf(r.Promotion), qr, r.Matricule));
+                cards.Add(new CardItem(r.LastName, r.MiddleName, r.FirstName, r.Promotion, bands.GetValueOrDefault(r.PromotionId.ToString("D"), StudentCardRules.BandPalette[0]), qr, r.Matricule));
         }
 
         var word = string.Equals(input.Format, "docx", StringComparison.OrdinalIgnoreCase);
@@ -112,24 +125,39 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
     /// <summary>Inscriptions de l'année avec leur statut effectif (la discipline compte) et le signalement des matricules répétés.</summary>
     private async Task<List<CandidateRow>> CandidateRowsAsync(AcademicYear year, Guid? promotionId, IReadOnlyCollection<Guid>? only, CancellationToken ct)
     {
-        var items = (await (from e in db.Enrollments.AsNoTracking()
-                            join s in db.Students.AsNoTracking() on e.StudentId equals s.Id
-                            join p in db.Promotions.AsNoTracking() on e.PromotionId equals p.Id
-                            where e.AcademicYearId == year.Id && (promotionId == null || e.PromotionId == promotionId)
-                            select new { e.Id, e.Status, s.Matricule, s.LastName, s.MiddleName, s.FirstName, Promotion = p.Code })
-                           .ToListAsync(ct))
-            .Where(x => only is null || only.Contains(x.Id))
+        // Le contrôle des matricules est global sur l'année : un filtre de promotion ou
+        // une sélection d'export ne doit jamais dissimuler un doublon situé ailleurs.
+        var yearRows = await (from e in db.Enrollments.AsNoTracking()
+                              join s in db.Students.AsNoTracking() on e.StudentId equals s.Id
+                              join p in db.Promotions.AsNoTracking() on e.PromotionId equals p.Id
+                              where e.AcademicYearId == year.Id
+                              select new { e.Id, e.PromotionId, e.Status, s.Matricule, s.LastName,
+                                           s.MiddleName, s.FirstName, Promotion = p.Code, Section = p.Section != null ? p.Section.Code : null })
+                             .ToListAsync(ct);
+        var allIds = yearRows.Select(x => x.Id).ToList();
+        var codes = await db.AnonymousCodes.AsNoTracking()
+            .Where(c => c.AcademicYearId == year.Id && c.IsActive && allIds.Contains(c.EnrollmentId))
+            .Select(c => new { c.EnrollmentId, c.Code })
+            .ToDictionaryAsync(c => c.EnrollmentId, c => c.Code, ct);
+        // Le code anonyme ACTIF prime sur l'ancien matricule interne.
+        var repeated = StudentCardRules.DuplicateMatricules(
+            yearRows.Select(x => codes.GetValueOrDefault(x.Id) ?? string.Empty));
+        var items = yearRows
+            .Where(x => (promotionId is null || x.PromotionId == promotionId)
+                        && (only is null || only.Contains(x.Id)))
             .ToList();
         var ids = items.Select(x => x.Id).ToList();
         var decisions = (await db.DisciplineDecisions.AsNoTracking()
             .Where(d => ids.Contains(d.EnrollmentId) && d.State == DecisionState.Validee).ToListAsync(ct))
             .GroupBy(d => d.EnrollmentId).ToDictionary(g => g.Key, g => g.ToList());
         var today = clock.Today;
-        var repeated = items.GroupBy(x => x.Matricule).Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
         return items.Select(x => new CandidateRow(
-            x.Id, x.Matricule, x.LastName, x.MiddleName, x.FirstName, x.Promotion,
+            // Code anonyme actif, ou rien : la référence technique (INF101…) n'apparaît jamais sur une carte.
+            x.Id, x.PromotionId, codes.GetValueOrDefault(x.Id) ?? string.Empty,
+            x.LastName, x.MiddleName, x.FirstName, x.Promotion,
             DisciplineRules.EffectiveStatus(x.Status, decisions.TryGetValue(x.Id, out var mine) ? mine : [], today),
-            repeated.Contains(x.Matricule))).ToList();
+            repeated.Contains(codes.GetValueOrDefault(x.Id) ?? string.Empty),
+            codes.ContainsKey(x.Id))).ToList();
     }
 
     private static string Name(CandidateRow r) => string.Join(' ', new[] { r.LastName, r.MiddleName, r.FirstName }.Where(x => !string.IsNullOrWhiteSpace(x)));

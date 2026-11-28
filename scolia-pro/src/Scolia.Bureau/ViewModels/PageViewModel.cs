@@ -68,7 +68,11 @@ public abstract class PageViewModel : Observable
     private const int MaxVisible = 2;
     /// <summary>Nombre de boutons fixé par la largeur de la fenêtre ; -1 tant qu'elle ne l'a pas mesuré.</summary>
     private int visibleCount = -1;
+    private IReadOnlyList<ActionVm>? headerActions;
+    private IReadOnlyList<ActionVm>? visibleActions;
+    private IReadOnlyList<ActionVm>? moreActions;
     private bool busy;
+    private bool lastLoadSucceeded;
     private TaskCompletionSource? refreshCompletion;
 
     protected PageViewModel(ShellViewModel shell)
@@ -76,10 +80,16 @@ public abstract class PageViewModel : Observable
         Shell = shell;
         Actions.CollectionChanged += (_, _) =>
         {
+            headerActions = null;
+            visibleActions = null;
+            moreActions = null;
+            Raise(nameof(HeaderActions));
             Raise(nameof(VisibleActions));
             Raise(nameof(MoreActions));
             Raise(nameof(HasMoreActions));
             Raise(nameof(HasHeaderActions));
+            Raise(nameof(PrimaryAction));
+            Raise(nameof(HasPrimaryAction));
         };
     }
 
@@ -90,24 +100,33 @@ public abstract class PageViewModel : Observable
     public virtual string Heading => Title;
     public virtual string Subtitle => string.Empty;
     public virtual MaterialIconKind Glyph => MaterialIconKind.FileDocumentOutline;
+    public MaterialIconKind FeatureGlyph => FeatureVisuals.ForPage(GetType(), Glyph);
     public ObservableCollection<ActionVm> Actions { get; } = [];
     /// <summary>L'action principale et les plus courantes, affichées en boutons.</summary>
-    public IReadOnlyList<ActionVm> VisibleActions => HeaderActions.Take(Shown).ToList();
+    public IReadOnlyList<ActionVm> VisibleActions => visibleActions ??= Array.AsReadOnly(HeaderActions.Take(Shown).ToArray());
     /// <summary>Les autres actions, rangées dans le menu « Plus » pour garder un en-tête net.</summary>
-    public IReadOnlyList<ActionVm> MoreActions => HeaderActions.Skip(Shown).ToList();
+    public IReadOnlyList<ActionVm> MoreActions => moreActions ??= Array.AsReadOnly(HeaderActions.Skip(Shown).ToArray());
     public bool HasMoreActions => Shown < HeaderActions.Count;
 
     /// <summary>Actions de l'en-tête : toutes, sauf celles réservées au clic droit sur une ligne.</summary>
     /// <remarks>L'action principale vient toujours en tête : en fenêtre étroite, c'est elle qui reste visible.</remarks>
-    public IReadOnlyList<ActionVm> HeaderActions => Actions.Where(a => !a.MenuOnly).OrderByDescending(a => a.IsPrimary).ToList();
-    public bool HasHeaderActions => Actions.Any(a => !a.MenuOnly);
+    public IReadOnlyList<ActionVm> HeaderActions => headerActions ??=
+        Array.AsReadOnly(Actions.Where(a => !a.MenuOnly).OrderByDescending(a => a.IsPrimary).ToArray());
+    public bool HasHeaderActions => HeaderActions.Count > 0;
+
+    /// <summary>
+    /// Action principale de la page (« Nouvelle section », « Nouvelle inscription »…) : sur le téléphone, un bouton visible
+    /// dans la barre, comme le bouton d'ajout de la barre de navigation d'iOS, au lieu d'être caché dans « ⋯ ».
+    /// </summary>
+    public ActionVm? PrimaryAction => Actions.FirstOrDefault(a => a.IsPrimary && !a.Row && !a.MenuOnly);
+    public bool HasPrimaryAction => PrimaryAction is not null;
 
     /// <summary>Nombre de boutons affichés : la place mesurée, ou par défaut trois boutons et le menu pour les autres.</summary>
     private int Shown
     {
         get
         {
-            var count = Actions.Count(a => !a.MenuOnly);
+            var count = HeaderActions.Count;
             return visibleCount >= 0 ? Math.Min(visibleCount, count) : count <= MaxVisible + 1 ? count : MaxVisible;
         }
     }
@@ -120,7 +139,11 @@ public abstract class PageViewModel : Observable
     {
         count = Math.Clamp(count, 0, MaxVisible + 1);
         if (count == visibleCount) return;
+        var previous = Shown;
         visibleCount = count;
+        if (previous == Shown) return;
+        visibleActions = null;
+        moreActions = null;
         Raise(nameof(VisibleActions));
         Raise(nameof(MoreActions));
         Raise(nameof(HasMoreActions));
@@ -156,11 +179,13 @@ public abstract class PageViewModel : Observable
     /// </summary>
     public async Task RefreshQuietlyAsync()
     {
+        // Une actualisation déjà couverte ne doit pas relancer la restauration de sélection.
+        if (refreshCompletion is not null) return;
         var selected = GetType().GetProperty("Selected");
         var before = selected?.GetValue(this);
         var key = Identity(before);
         await RefreshCoreAsync(quiet: true);
-        if (selected is not { CanWrite: true } || before is null || key is null) return;
+        if (!lastLoadSucceeded || selected is not { CanWrite: true } || before is null || key is null) return;
         // Une autre ligne a été choisie pendant la requête : la décision du lecteur prime.
         if (selected.GetValue(this) is { } now && !ReferenceEquals(now, before)) return;
         foreach (var property in GetType().GetProperties())
@@ -200,23 +225,42 @@ public abstract class PageViewModel : Observable
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         refreshCompletion = completion;
         if (!quiet) Busy = true;
-        if (!quiet && !loadedOnce)
-            _ = Task.Delay(SkeletonDelay).ContinueWith(_ => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            {
-                if (Busy && !loadedOnce) ShowSkeleton = true;
-            }), TaskScheduler.Default);
-        try { await LoadAsync(); }
+        using var skeletonCancellation = !quiet && !loadedOnce ? new CancellationTokenSource() : null;
+        if (skeletonCancellation is not null)
+            _ = ShowSkeletonAfterDelayAsync(completion, skeletonCancellation.Token);
+        lastLoadSucceeded = false;
+        try
+        {
+            await LoadAsync();
+            lastLoadSucceeded = true;
+        }
         catch (ApiException ex) { if (!quiet) Shell.Notify(ex.Message); }
         catch (HttpRequestException) { if (!quiet) Shell.Notify("Le serveur SCOLIA ne répond pas."); }
         catch (Exception ex) when (ex is not OperationCanceledException) { if (!quiet) Shell.Notify($"Erreur inattendue : {ex.Message}"); }
         finally
         {
+            skeletonCancellation?.Cancel();
             if (!quiet) Busy = false;
             loadedOnce = true;
             ShowSkeleton = false;
             refreshCompletion = null;
             completion.TrySetResult();
         }
+    }
+
+    private async Task ShowSkeletonAfterDelayAsync(TaskCompletionSource completion, CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(SkeletonDelay, token);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (!token.IsCancellationRequested && ReferenceEquals(refreshCompletion, completion) &&
+                    Busy && !loadedOnce && ReferenceEquals(Shell.Current, this))
+                    ShowSkeleton = true;
+            });
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
     }
 
     /// <summary>Imprime le document affiché, quand l'écran en a un.</summary>
@@ -276,7 +320,10 @@ public abstract class PageViewModel : Observable
         Actions.Add(new ActionVm("Actualiser", MaterialIconKind.Refresh, new AsyncCommand(async () =>
         {
             await RefreshAsync();
-            Shell.Notify($"{Title} : données à jour.");
+            if (!lastLoadSucceeded) return;
+            Shell.Notify(Shell.Api.IsOnline
+                ? $"{Title} : données à jour."
+                : $"{Title} : dernière copie disponible sur cet appareil · hors ligne.");
         })));
 
     /// <summary>Date d'un sélecteur de calendrier, ou aujourd'hui.</summary>
@@ -305,7 +352,7 @@ public static class Choices
     public static ChoiceItem Promotion(PromotionDto p) => new(p.Id.ToString(), $"{p.Code} · {p.Name}");
 
     public static ChoiceItem Student(StudentListItem s) =>
-        new(s.EnrollmentId?.ToString() ?? string.Empty, $"{s.Matricule} · {Infrastructure.Format.FullName(s.LastName, s.MiddleName, s.FirstName)}");
+        new(s.EnrollmentId?.ToString() ?? string.Empty, Infrastructure.Format.CodeAndName(s.Matricule, Infrastructure.Format.FullName(s.LastName, s.MiddleName, s.FirstName)));
 
     public static IReadOnlyList<ChoiceItem> Categories(IEnumerable<string> names) =>
         names.Select(n => new ChoiceItem(n, n)).ToList();

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Scolia.Application.Abstractions;
 using Scolia.Application.Common;
@@ -13,17 +14,27 @@ namespace Scolia.Application.Services;
 /// <summary>Encaissement, reçus, annulations et vérification d'authenticité.</summary>
 public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, ICurrentUser user, AccountService accounts, IDocumentService documents)
 {
+    // Seules les informations connues lors de l'émission sont figées ; les anciens reçus restent lisibles sans inventer un historique.
+    private sealed record PrintSnapshot(string StudentName, string Matricule, string PromotionCode, string AcademicYear,
+        string MaskedName, string CurrencyCode, string CurrencySymbol, decimal BalanceAfter, IReadOnlyList<AllocationPreview> Allocations);
+
+    private static PrintSnapshot? Snapshot(Receipt receipt) => receipt.PrintSnapshotJson is { Length: > 0 } json
+        ? JsonSerializer.Deserialize<PrintSnapshot>(json) : null;
+
     private static readonly (PaymentMethod, string)[] MethodLabels =
         [(PaymentMethod.Especes, "Espèces"), (PaymentMethod.Especes, "Cash"), (PaymentMethod.MobileMoney, "Mobile Money"), (PaymentMethod.Cheque, "Chèque")];
 
     public static PaymentMethod ParseMethod(string? value) => EnumText.Parse(value, "method", MethodLabels);
 
     /// <summary>Aperçu d'un règlement : les mois choisis. Sans mois choisi, aucune répartition n'est proposée.</summary>
-    public async Task<PaymentPreview> PreviewAsync(Guid enrollmentId, IReadOnlyList<Guid>? items, CancellationToken ct = default)
+    public Task<PaymentPreview> PreviewAsync(Guid enrollmentId, IReadOnlyList<Guid>? items, CancellationToken ct = default) =>
+        PreviewAsync(enrollmentId, items, null, ct);
+
+    public async Task<PaymentPreview> PreviewAsync(Guid enrollmentId, IReadOnlyList<Guid>? items, decimal? amount, CancellationToken ct = default)
     {
         var data = await accounts.ForEnrollmentAsync(enrollmentId, null, ct);
         if (items is not { Count: > 0 }) return new PaymentPreview([], data.Account.Balance);
-        return BuildPreview(data.Account, PaymentAllocator.Months(data.Account, items));
+        return BuildPreview(data.Account, PaymentAllocator.Months(data.Account, items, amount));
     }
 
     private static PaymentPreview BuildPreview(StudentAccount account, IReadOnlyList<(Guid FeeItemId, decimal Amount)> plan)
@@ -37,7 +48,7 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     }
 
     public static async Task<DateOnly?> LastClosingAsync(IAppDbContext db, CancellationToken ct) =>
-        await db.CashClosings.AsNoTracking().OrderByDescending(c => c.Date).Select(c => (DateOnly?)c.Date).FirstOrDefaultAsync(ct);
+        (await CashLock.LastAsync(db, ct))?.Date;
 
     public static async Task<string> NextNumberAsync(IAppDbContext db, string prefix, int year, CancellationToken ct)
     {
@@ -54,10 +65,26 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
 
     public Task<ReceiptDto> CreateAsync(PaymentRequest input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
+        await EffectivePermissions.RequireAsync(db, user, Permissions.PaymentsCreate, ct);
         if (!string.IsNullOrWhiteSpace(input.IdempotencyKey))
         {
-            var existing = await db.Receipts.AsNoTracking().Where(r => r.IdempotencyKey == input.IdempotencyKey).Select(r => (Guid?)r.Id).FirstOrDefaultAsync(ct);
-            if (existing is not null) return await GetAsync(existing.Value, ct);
+            var existing = await db.Receipts.AsNoTracking().Include(r => r.Allocations)
+                .FirstOrDefaultAsync(r => r.IdempotencyKey == input.IdempotencyKey, ct);
+            if (existing is not null)
+            {
+                // Une clé identifie un encaissement précis, pas simplement une requête HTTP.
+                // Un autre poste ne peut pas la réutiliser pour une personne ou un montant différent.
+                var requestedItems = input.FeeItemIds?.ToHashSet() ?? [];
+                if (existing.Status != OperationStatus.Valide)
+                    throw new ConflictException("Ce reçu a été annulé. Créez un nouvel encaissement avec une autre référence.");
+                if (existing.EnrollmentId != input.EnrollmentId || existing.Amount != input.Amount
+                    || existing.Method != ParseMethod(input.Method)
+                    || (input.Date.HasValue && existing.Date != input.Date.Value)
+                    || !string.Equals(Clean(existing.Reference), Clean(input.Reference), StringComparison.Ordinal)
+                    || existing.Allocations.Any(a => !requestedItems.Contains(a.FeeItemId)))
+                    throw new ConflictException("Cette référence d'encaissement a déjà servi pour un paiement différent. Actualisez la caisse avant de recommencer.");
+                return await GetAsync(existing.Id, ct);
+            }
         }
         var school = await YearContext.SchoolAsync(db, ct);
         var method = ParseMethod(input.Method);
@@ -68,20 +95,20 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
                 "Indiquez la référence de la transaction (Mobile Money, banque ou chèque).")
             .Require(input.Note is null || input.Note.Length <= 500, "note", "Observation trop longue.");
         v.ThrowIfInvalid();
-        var lastClosing = await LastClosingAsync(db, ct);
-        if (lastClosing is not null && date <= lastClosing)
-            throw new DomainException("date", $"La caisse est arrêtée jusqu'au {lastClosing:dd/MM/yyyy} : choisissez une date postérieure.");
+        var lastClosing = await CashLock.LastAsync(db, ct);
+        if (CashLock.RefusesNew(lastClosing, date, clock.Today))
+            throw new DomainException("date", $"La caisse est arrêtée jusqu'au {lastClosing!.Date:dd/MM/yyyy} : choisissez une date postérieure.");
 
         var data = await accounts.ForEnrollmentAsync(input.EnrollmentId, null, ct);
         var year = await db.AcademicYears.AsNoTracking().FirstAsync(y => y.Id == data.Enrollment.AcademicYearId, ct);
         if (year.Status == AcademicYearStatus.Closed) throw new DomainException("annee", $"L'année {year.Label} est clôturée.");
-        // Un paiement se fait par mois complet : sans mois choisi, il n'est pas enregistré.
+        // Paiement partiel autorisé : chaque versement est imputé aux mois choisis par ancienneté.
         if (input.FeeItemIds is not { Count: > 0 })
-            throw new DomainException("rubriques", "Sélectionnez les mois payés : un paiement se fait par mois complet.");
-        var plan = PaymentAllocator.Months(data.Account, input.FeeItemIds);
+            throw new DomainException("rubriques", "Sélectionnez les mois ou les frais payés.");
+        var plan = PaymentAllocator.Months(data.Account, input.FeeItemIds, input.Amount);
         var total = plan.Sum(p => p.Amount);
         if (input.Amount != total)
-            throw new DomainException("montant", $"Les mois choisis valent {Money.Display(total, school.CurrencySymbol)}. La liste a changé : actualisez-la avant d'encaisser.");
+            throw new DomainException("montant", $"Les rubriques choisies valent {Money.Display(total, school.CurrencySymbol)}. La liste a changé : actualisez-la avant d'encaisser.");
         Money.EnsureValid(total, school.WholeAmountsOnly, "amount");
 
         var receipt = new Receipt
@@ -95,13 +122,21 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             Amount = total,
             Method = method,
             Reference = Clean(input.Reference),
-            PayerName = Clean(input.PayerName),
-            PayerPhone = IdentityRules.NormalizePhone(input.PayerPhone),
+            // Figé à la date de l'encaissement : modifier plus tard les parents
+            // dans le dossier ne doit pas réécrire les informations du reçu.
+            PayerName = Clean(input.PayerName) ?? Clean(data.Enrollment.Student?.GuardianName),
+            PayerPhone = IdentityRules.NormalizePhone(input.PayerPhone) ?? data.Enrollment.Student?.GuardianPhone,
             Note = Clean(input.Note),
             CashierName = user.Name,
             IdempotencyKey = Clean(input.IdempotencyKey),
         };
         foreach (var (feeItemId, amount) in plan) receipt.Allocations.Add(new ReceiptAllocation { ReceiptId = receipt.Id, FeeItemId = feeItemId, Amount = amount });
+        var student = data.Enrollment.Student!;
+        var code = AnonymousDisplay.Of(await AnonymousDisplay.CodesAsync(db, [receipt.EnrollmentId], ct), receipt.EnrollmentId);
+        var preview = BuildPreview(data.Account, plan);
+        var masked = $"{student.LastName} {(student.FirstName.Length > 0 ? student.FirstName[0] + "." : string.Empty)}";
+        receipt.PrintSnapshotJson = JsonSerializer.Serialize(new PrintSnapshot(student.FullName, code, data.Promotion.Code, year.Label,
+            masked, school.CurrencyCode, school.CurrencySymbol, data.Account.Balance - total, preview.Allocations));
         db.Receipts.Add(receipt);
         audit.Record("paiement.encaisse", "Recu", receipt.Id.ToString(),
             $"Reçu {receipt.Number} : {Money.Display(receipt.Amount, school.CurrencySymbol)} pour {data.Enrollment.Student!.Matricule} ({Labels.Of(method)}).",
@@ -112,13 +147,13 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
 
     public Task<ReceiptDto> CancelAsync(Guid id, string reason, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
-        if (!user.HasPermission(Permissions.PaymentsCancel)) throw new DomainException("droits", "Vous n'êtes pas autorisé à annuler un reçu.");
+        await EffectivePermissions.RequireAsync(db, user, Permissions.PaymentsCancel, ct);
         if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 5) throw new DomainException("reason", "Le motif d'annulation est obligatoire (5 caractères minimum).");
         var receipt = await db.Receipts.FirstOrDefaultAsync(r => r.Id == id, ct) ?? throw new NotFoundException("Reçu introuvable.");
         if (receipt.Status == OperationStatus.Annule) throw new ConflictException("Ce reçu est déjà annulé.");
-        var lastClosing = await LastClosingAsync(db, ct);
-        if (lastClosing is not null && receipt.Date <= lastClosing)
-            throw new DomainException("date", $"Ce reçu appartient à une caisse arrêtée le {lastClosing:dd/MM/yyyy}. Enregistrez une correction comptable.");
+        var lastClosing = await CashLock.LastAsync(db, ct);
+        if (CashLock.Covers(lastClosing, receipt.Date, receipt.CreatedAtUtc))
+            throw new DomainException("date", $"Ce reçu appartient à une caisse arrêtée le {lastClosing!.Date:dd/MM/yyyy}. Enregistrez une correction comptable.");
         receipt.Status = OperationStatus.Annule;
         receipt.CancelledAtUtc = clock.UtcNow;
         receipt.CancelledBy = user.Name;
@@ -131,6 +166,20 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     public async Task<ReceiptDto> GetAsync(Guid id, CancellationToken ct = default)
     {
         var r = await db.Receipts.AsNoTracking().Include(x => x.Allocations).FirstOrDefaultAsync(x => x.Id == id, ct) ?? throw new NotFoundException("Reçu introuvable.");
+        if (Snapshot(r) is { } issued)
+        {
+            // Le détail de gestion conserve le libellé courant de la rubrique.
+            // Le PDF réutilise exclusivement la répartition figée à l'émission.
+            var ids = r.Allocations.Select(a => a.FeeItemId).ToList();
+            var currentLabels = await db.FeeItems.AsNoTracking().Where(f => ids.Contains(f.Id))
+                .ToDictionaryAsync(f => f.Id, f => f.Label, ct);
+            var currentAllocations = issued.Allocations.Select(a =>
+                currentLabels.TryGetValue(a.FeeItemId, out var label) ? a with { Label = label } : a).ToList();
+            return new ReceiptDto(r.Id, r.Number, r.VerificationCode, r.Date, r.StudentId, issued.Matricule, issued.StudentName,
+                issued.PromotionCode, issued.AcademicYear, r.Amount, Labels.Of(r.Method), r.Reference, r.PayerName, r.PayerPhone,
+                r.Note, r.CashierName, r.Status == OperationStatus.Valide ? "Valide" : "Annulé", r.CancelledAtUtc,
+                r.CancelledBy, r.CancellationReason, currentAllocations, r.CreatedAtUtc);
+        }
         var student = await db.Students.AsNoTracking().FirstAsync(s => s.Id == r.StudentId, ct);
         var info = await (from e in db.Enrollments.AsNoTracking()
                           join p in db.Promotions.AsNoTracking() on e.PromotionId equals p.Id
@@ -141,11 +190,13 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var labels = await db.FeeItems.AsNoTracking().Where(f => itemIds.Contains(f.Id)).ToDictionaryAsync(f => f.Id, f => (f.Label, f.DueDate), ct);
         var allocations = r.Allocations.OrderBy(a => labels.GetValueOrDefault(a.FeeItemId).DueDate)
             .Select(a => new AllocationPreview(a.FeeItemId, labels.GetValueOrDefault(a.FeeItemId).Label ?? "?", a.Amount, 0)).ToList();
-        // Le versement garde le payeur saisi à l'époque. À défaut, le reçu montre le tuteur actuel de l'apprenant :
-        // une correction du dossier se répercute donc aussi sur les reçus déjà enregistrés.
+        // Les nouveaux versements mémorisent le payeur au moment de l'encaissement.
+        // Sur les reçus historiques sans payeur enregistré, conserver la compatibilité avec le tuteur actuel.
         var payerName = r.PayerName ?? student.GuardianName;
         var payerPhone = r.PayerPhone ?? student.GuardianPhone;
-        return new ReceiptDto(r.Id, r.Number, r.VerificationCode, r.Date, r.StudentId, student.Matricule, student.FullName, info.Code, info.Label, r.Amount,
+        // Le reçu désigne l'apprenant par son code anonyme ; la référence technique reste interne au versement.
+        var code = AnonymousDisplay.Of(await AnonymousDisplay.CodesAsync(db, [r.EnrollmentId], ct), r.EnrollmentId);
+        return new ReceiptDto(r.Id, r.Number, r.VerificationCode, r.Date, r.StudentId, code, student.FullName, info.Code, info.Label, r.Amount,
             Labels.Of(r.Method), r.Reference, payerName, payerPhone, r.Note, r.CashierName, r.Status == OperationStatus.Valide ? "Valide" : "Annulé",
             r.CancelledAtUtc, r.CancelledBy, r.CancellationReason, allocations, r.CreatedAtUtc);
     }
@@ -175,10 +226,12 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var validAmounts = await query.Where(x => x.r.Status == OperationStatus.Valide).Select(x => x.r.Amount).ToListAsync(ct);
         var pageSize = Math.Clamp(q.PageSize, 1, 1000);
         var page = Math.Max(1, q.Page);
-        var rows = await query.OrderByDescending(x => x.r.Date).ThenByDescending(x => x.r.Number).Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(x => new ReceiptSummaryRow(x.r.Id, x.r.Number, x.r.Date, x.s.Matricule, x.s.LastName + " " + x.s.MiddleName + " " + x.s.FirstName, x.p.Code,
-                x.r.Amount, x.r.Method, x.r.Status, x.r.CashierName, x.r.Reference))
+        var found = await query.OrderByDescending(x => x.r.Date).ThenByDescending(x => x.r.Number).Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(x => new { Row = new ReceiptSummaryRow(x.r.Id, x.r.Number, x.r.Date, string.Empty, x.s.LastName + " " + x.s.MiddleName + " " + x.s.FirstName, x.p.Code,
+                x.r.Amount, x.r.Method, x.r.Status, x.r.CashierName, x.r.Reference), x.r.EnrollmentId })
             .ToListAsync(ct);
+        var receiptCodes = await AnonymousDisplay.CodesAsync(db, found.Select(x => x.EnrollmentId), ct);
+        var rows = found.Select(x => x.Row with { Matricule = AnonymousDisplay.Of(receiptCodes, x.EnrollmentId) }).ToList();
         return new PagedResult<ReceiptSummaryRow>(rows, total, page, pageSize, validAmounts.Sum());
     }
 
@@ -189,8 +242,11 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         if (normalized.Length is < 8 or > 16) return new ReceiptVerification(false, null, null, null, null, null, null, null);
         var r = await db.Receipts.AsNoTracking().FirstOrDefaultAsync(x => x.VerificationCode == normalized, ct);
         if (r is null) return new ReceiptVerification(false, null, null, null, null, null, null, null);
-        var s = await db.Students.AsNoTracking().FirstAsync(x => x.Id == r.StudentId, ct);
         var school = await YearContext.SchoolAsync(db, ct);
+        if (Snapshot(r) is { } issued)
+            return new ReceiptVerification(true, r.Number, r.Date, r.Amount, issued.MaskedName, school.Name,
+                r.Status == OperationStatus.Valide ? "Valide" : "Annulé", issued.CurrencySymbol);
+        var s = await db.Students.AsNoTracking().FirstAsync(x => x.Id == r.StudentId, ct);
         var masked = $"{s.LastName} {(s.FirstName.Length > 0 ? s.FirstName[0] + "." : string.Empty)}";
         return new ReceiptVerification(true, r.Number, r.Date, r.Amount, masked, school.Name, r.Status == OperationStatus.Valide ? "Valide" : "Annulé", school.CurrencySymbol);
     }
@@ -200,18 +256,20 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var receipt = await GetAsync(id, ct);
         var school = await YearContext.SchoolAsync(db, ct);
         var full = await db.Receipts.AsNoTracking().FirstAsync(r => r.Id == id, ct);
-        var account = await accounts.ForEnrollmentAsync(full.EnrollmentId, null, ct);
-        return documents.Receipt(new ReceiptDocument(Header(school), receipt.Number, receipt.Date, receipt.StudentName, receipt.Matricule, receipt.PromotionCode,
-            receipt.AcademicYear, receipt.Amount, FrenchNumbers.Amount(receipt.Amount, FrenchNumbers.CurrencyName(school.CurrencyCode)), receipt.Method,
-            receipt.Reference, receipt.PayerName, receipt.Cashier, receipt.Allocations.Select(a => (a.Label, a.Amount)).ToList(), account.Account.Balance,
-            $"{verificationBaseUrl.TrimEnd('/')}/verifier/{receipt.VerificationCode}", receipt.Status != "Valide", receipt.CancellationReason));
+        var issued = Snapshot(full);
+        var balance = issued?.BalanceAfter ?? (await accounts.ForEnrollmentAsync(full.EnrollmentId, null, ct)).Account.Balance;
+        var header = Header(school) with { CurrencySymbol = issued?.CurrencySymbol ?? school.CurrencySymbol };
+        return documents.Receipt(new ReceiptDocument(header, receipt.Number, receipt.Date, receipt.StudentName, AnonymousDisplay.Printed(receipt.Matricule), receipt.PromotionCode,
+            receipt.AcademicYear, receipt.Amount, FrenchNumbers.Amount(receipt.Amount, FrenchNumbers.CurrencyName(issued?.CurrencyCode ?? school.CurrencyCode)), receipt.Method,
+            receipt.Reference, receipt.PayerName, receipt.Cashier, (issued?.Allocations ?? receipt.Allocations).Select(a => (a.Label, a.Amount)).ToList(), balance,
+            $"{verificationBaseUrl.TrimEnd('/')}/verifier/{receipt.VerificationCode}", receipt.Status != "Valide", receipt.CancellationReason, issued is not null));
     }
 
     public async Task<byte[]> StatementPdfAsync(Guid enrollmentId, CancellationToken ct = default)
     {
         var school = await YearContext.SchoolAsync(db, ct);
         var dto = await accounts.AccountDtoAsync(enrollmentId, ct);
-        return documents.Statement(new StatementDocument(Header(school), dto.FullName, dto.Matricule, dto.PromotionCode, dto.AcademicYear, clock.Today,
+        return documents.Statement(new StatementDocument(Header(school), dto.FullName, AnonymousDisplay.Printed(dto.Matricule), dto.PromotionCode, dto.AcademicYear, clock.Today,
             dto.Lines, dto.Receipts, dto.TotalNet, dto.TotalPaid, dto.Balance, dto.Overdue));
     }
 

@@ -40,9 +40,16 @@ public static class PhoneFields
         // Un champ de largeur fixe s'étire sur toute la largeur de son bloc.
         foreach (var input in band.GetVisualDescendants().OfType<Control>().Where(IsInput).ToList())
         {
-            if (double.IsNaN(input.Width)) continue;
-            input.SetValue(Layoutable.WidthProperty, double.NaN, BindingPriority.Animation);
-            input.SetValue(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Stretch, BindingPriority.Animation);
+            // Les minimums desktop ne doivent pas imposer 280 points sur un
+            // téléphone de 320 points après les marges. Ne pas toucher aux
+            // éditeurs internes des templates (date, liste, recherche).
+            if (input.TemplatedParent is not null) continue;
+            if (!double.IsNaN(input.Width))
+                input.SetValue(Layoutable.WidthProperty, double.NaN, BindingPriority.Animation);
+            if (input.MinWidth > 0)
+                input.SetValue(Layoutable.MinWidthProperty, 0d, BindingPriority.Animation);
+            if (input.HorizontalAlignment != HorizontalAlignment.Stretch)
+                input.SetValue(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Stretch, BindingPriority.Animation);
         }
     }
 
@@ -62,10 +69,16 @@ public static class PhoneFields
         foreach (var child in wrap.Children.OfType<Control>())
         {
             if (child is not Panel || !child.GetVisualDescendants().OfType<Control>().Any(IsInput)) continue;
-            var room = Math.Max(0, Math.Floor(width / columns) - child.Margin.Left - child.Margin.Right);
-            child.SetValue(Layoutable.WidthProperty, room, BindingPriority.Animation);
+            var room = FieldWidth(width, columns, child.Margin.Left + child.Margin.Right);
+            if (child.MinWidth > room)
+                child.SetValue(Layoutable.MinWidthProperty, room, BindingPriority.Animation);
+            if (double.IsNaN(child.Width) || Math.Abs(child.Width - room) > 0.5)
+                child.SetValue(Layoutable.WidthProperty, room, BindingPriority.Animation);
         }
     }
+
+    public static double FieldWidth(double width, int columns, double margins) =>
+        !double.IsFinite(width) || columns <= 0 ? 0 : Math.Max(0, Math.Floor(width / columns) - Math.Max(0, margins));
 
     private static bool IsInput(Control c) =>
         c is TextBox or ComboBox or DatePicker or CalendarDatePicker or NumericUpDown or AutoCompleteBox;

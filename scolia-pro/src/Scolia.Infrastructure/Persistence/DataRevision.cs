@@ -7,6 +7,8 @@ namespace Scolia.Infrastructure.Persistence;
 public sealed class DataRevision
 {
     private long value;
+    /// <summary>Une réouverture du serveur invalide les anciens points de reprise, même à révision zéro.</summary>
+    public string Epoch { get; } = Guid.NewGuid().ToString("N");
 
     public long Value => Interlocked.Read(ref value);
 

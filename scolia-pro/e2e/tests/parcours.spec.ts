@@ -58,13 +58,15 @@ test('recherche et fiche apprenant', async () => {
   await page.getByRole('button', { name: 'Apprenants', exact: true }).click();
   await page.getByLabel('Recherche').fill('INF101');
   await expect(page.locator('table.data tbody tr')).toHaveCount(1);
+  await expect(page.locator('table.data tbody tr .tag-code')).toHaveText('');
   await page.locator('table.data tbody tr').first().click();
+  await expect(page).toHaveURL(/\/apprenants\/[^/]+$/);
   await expect(page.getByText('Situation financière')).toBeVisible();
-  await expect(page.locator('.tag-code').first()).toHaveText('INF101');
+  await expect(page.locator('.identity .tag-code')).toHaveText('');
 });
 
 // Nom absent des données de démonstration, tirées au hasard : pas d'homonyme possible.
-test('inscription d’un nouvel apprenant avec matricule automatique', async () => {
+test('inscription d’un nouvel apprenant sans code anonyme attribué', async () => {
   await page.goto('/apprenants');
   await page.getByRole('button', { name: 'Nouvelle inscription' }).click();
   const dialog = page.getByRole('dialog');
@@ -78,7 +80,7 @@ test('inscription d’un nouvel apprenant avec matricule automatique', async () 
   await dialog.getByLabel('Promotion').selectOption({ label: 'TLM1 — Première année' });
   await dialog.getByRole('button', { name: 'Enregistrer l’inscription' }).click();
   await expect(page.getByRole('heading', { name: 'TSHIAMALA KANYINDA Esther' })).toBeVisible();
-  await expect(page.locator('.tag-code').first()).toHaveText(/^TLM1\d{2}$/);
+  await expect(page.locator('.identity .tag-code')).toHaveText('');
 });
 
 test('encaissement réparti et reçu numéroté', async () => {

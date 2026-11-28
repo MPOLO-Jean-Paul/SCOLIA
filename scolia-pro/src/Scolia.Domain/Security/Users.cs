@@ -1,9 +1,12 @@
 using Scolia.Domain.Common;
+using Scolia.Domain.School;
 
 namespace Scolia.Domain.Security;
 
 /// <summary>Rôles persistés : ne jamais réutiliser ni renuméroter les valeurs historiques.</summary>
-public enum Role { Administrateur = 0, Direction = 1, Secretariat = 2, Comptabilite = 3, Enseignant = 4, Promoteur = 5 }
+public enum Role { Administrateur = 0, Direction = 1, Secretariat = 2, Comptabilite = 3, Enseignant = 4, Promoteur = 5,
+    /// <summary>Étudiant d'une université : consulte ses seuls résultats publiés.</summary>
+    Etudiant = 6 }
 
 public sealed class AppUser : Entity
 {
@@ -17,6 +20,15 @@ public sealed class AppUser : Entity
     public int FailedLoginCount { get; set; }
     public DateTime? LockoutEndUtc { get; set; }
     public DateTime? LastLoginUtc { get; set; }
+    /// <summary>Compte enseignant : fiche du personnel dont il encode les cours attribués (délibération).</summary>
+    public Guid? StaffMemberId { get; set; }
+    /// <summary>
+    /// Privilège jury d'un compte enseignant : il encode aussi les épreuves du jury (le jury est un comité).
+    /// Ce n'est pas un compte à part ; le retirer ne touche à aucune cote déjà encodée.
+    /// </summary>
+    public bool JuryAccess { get; set; }
+    /// <summary>Compte étudiant : dossier dont il consulte les seuls résultats publiés.</summary>
+    public Guid? StudentId { get; set; }
     /// <summary>Change à chaque modification de sécurité : invalide les sessions ouvertes.</summary>
     public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
 }
@@ -26,6 +38,7 @@ public static class Permissions
 {
     public const string StudentsRead = "apprenants.lire";
     public const string StudentsWrite = "apprenants.ecrire";
+    public const string StudentFinanceRead = "apprenants.situation-financiere";
     public const string PaymentsRead = "paiements.lire";
     public const string PaymentsCreate = "paiements.encaisser";
     public const string PaymentsCancel = "paiements.annuler";
@@ -41,34 +54,65 @@ public static class Permissions
     public const string AcademicsWrite = "scolarite.ecrire";
     public const string AcademicsRead = "scolarite.lire";
     public const string StaffManage = "personnel.gerer";
+    public const string StaffRead = "personnel.lire";
+    public const string PayrollManage = "paie.gerer";
+    public const string SponsorshipManage = "prises-en-charge.gerer";
     public const string DisciplineCancel = "discipline.annuler";
+    /// <summary>Jury : décisions motivées, clôture et réouverture des délibérations, codes anonymes.</summary>
+    public const string DeliberationManage = "deliberation.gerer";
+    /// <summary>Enseignant : encode et remet les cotes de ses seuls cours attribués, par code anonyme, sans voir les noms.</summary>
+    public const string MarksEncode = "cotes.encoder";
+    /// <summary>Membre du jury : encode les épreuves du jury de toutes les promotions, sans en devenir titulaire.</summary>
+    public const string JuryEncode = "jury.encoder";
+    /// <summary>Étudiant : ses propres résultats publiés, rien d'autre. Jamais accordé à un autre rôle.</summary>
+    public const string OwnResultsRead = "resultats.consulter";
 
     public static readonly IReadOnlyList<string> All =
     [
         StudentsRead, StudentsWrite, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose,
-        ReportsRead, PilotageRead, SettingsWrite, UsersManage, AuditRead, BackupManage, AcademicsWrite, AcademicsRead, StaffManage, DisciplineCancel,
+        ReportsRead, PilotageRead, SettingsWrite, UsersManage, AuditRead, BackupManage, AcademicsWrite, AcademicsRead, StaffManage, DisciplineCancel, DeliberationManage,
+        MarksEncode, JuryEncode, OwnResultsRead, StudentFinanceRead, StaffRead, PayrollManage, SponsorshipManage,
     ];
 
     /// <summary>Les seuls rôles qu'on attribue.</summary>
-    public static readonly IReadOnlyList<Role> Assignable = [Role.Secretariat, Role.Comptabilite, Role.Promoteur];
+    public static readonly IReadOnlyList<Role> Assignable = [Role.Secretariat, Role.Comptabilite, Role.Promoteur, Role.Enseignant];
 
     /// <summary>Le secrétariat est l'administrateur : ses fonctions, le paramétrage, les utilisateurs, les sauvegardes et le journal.
     /// La comptabilité garde les finances.</summary>
-    public static IReadOnlyCollection<string> For(Role role) => role switch
+    public static IReadOnlyCollection<string> For(Role role, SchoolManagementMode managementMode = SchoolManagementMode.Mixte) => role switch
     {
-        Role.Secretariat or Role.Administrateur or Role.Direction => All,
-        Role.Comptabilite => [StudentsRead, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose, ReportsRead, AuditRead, BackupManage],
+        // Le secrétariat a tout, sauf l'espace enseignant (« mes cours ») qui n'a de sens que relié à une fiche du personnel.
+        // Le secrétariat n'encode pas et ne consulte pas « ses » résultats : ces droits sont personnels.
+        Role.Secretariat or Role.Administrateur or Role.Direction => All.Where(p => p != MarksEncode && p != OwnResultsRead
+            && (managementMode == SchoolManagementMode.Mixte || !AccountingOperations.Contains(p))).ToList(),
+        Role.Comptabilite when managementMode == SchoolManagementMode.Separee =>
+            [StudentsRead, StudentFinanceRead, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose, ReportsRead, AuditRead, BackupManage,
+                StaffRead, PayrollManage, SponsorshipManage],
+        Role.Comptabilite => [StudentsRead, StudentFinanceRead, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose, ReportsRead, AuditRead, BackupManage],
         // Seul le tableau de bord agrégé est autorisé côté API ; personnalisation d'affichage stockée sur l'appareil.
         Role.Promoteur => [PilotageRead],
+        // Portail enseignant d'ITMCD : uniquement l'encodage de ses cours ; le service vérifie l'attribution à chaque appel.
+        Role.Enseignant => [MarksEncode],
+        Role.Etudiant => [OwnResultsRead],
         _ => [],
     };
+
+    /// <summary>Droits effectifs d'un compte : ceux de son rôle, plus le privilège jury accordé à un enseignant.</summary>
+    public static IReadOnlyCollection<string> For(AppUser user, SchoolManagementMode managementMode = SchoolManagementMode.Mixte) =>
+        user.Role == Role.Enseignant && user.JuryAccess ? [.. For(user.Role, managementMode), JuryEncode] : For(user.Role, managementMode);
+
+    private static readonly HashSet<string> AccountingOperations =
+        [PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose, ReportsRead, PilotageRead, PayrollManage, SponsorshipManage];
+
+    public static string Label(AppUser user) => user.Role == Role.Enseignant && user.JuryAccess ? "Enseignant · membre du jury" : Label(user.Role);
 
     public static string Label(Role role) => role switch
     {
         Role.Secretariat or Role.Administrateur or Role.Direction => "Secrétariat",
         Role.Comptabilite => "Comptabilité",
         Role.Promoteur => "Promoteur / Responsable",
-        Role.Enseignant => "Enseignant (ancien rôle)",
+        Role.Enseignant => "Enseignant",
+        Role.Etudiant => "Étudiant",
         _ => role.ToString(),
     };
 }

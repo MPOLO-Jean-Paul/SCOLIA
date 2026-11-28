@@ -6,13 +6,12 @@
              x:DataType="infra:TailscaleInstaller">
   <!-- Assistant Tailscale commun à la configuration, à la connexion et au réseau : un seul dessin, partout pareil.
        Téléchargement et installation se font depuis SCOLIA ; on ne sort que pour se connecter au compte Tailscale. -->
-  <Grid IsVisible="{Binding IsOpen}" Background="#CC091326">
-    <Border Classes="card" MaxWidth="460" Margin="16" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center"
-            Background="{DynamicResource SurfaceBrush}" CornerRadius="18" infra:Adaptive.FitDialog="True">
+  <Grid IsVisible="{Binding IsOpen}" Background="{DynamicResource ScrimBrush}">
+    <Border Classes="dialogsurface" MaxWidth="460" Margin="16" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center" infra:Adaptive.FitDialog="True">
       <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="12">
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-            <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}"><mi:MaterialIcon Kind="ShieldCheckOutline" /></Border>
+            <Border Classes="appicon medium" Background="{DynamicResource SurfaceBrush}"><mi:MaterialIcon Kind="ShieldCheckOutline" /></Border>
             <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding DialogTitle}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
               <TextBlock Text="{Binding Step}" Classes="muted" TextWrapping="Wrap" />
@@ -53,7 +52,7 @@
           <Button Classes="primary" Command="{Binding DownloadAndInstall}" IsVisible="{Binding CanDownload}"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="Download" Width="18" Height="18" />
+              <mi:MaterialIcon Kind="DownloadOutline" Width="18" Height="18" />
               <TextBlock Text="Télécharger et installer" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
             </StackPanel>
           </Button>
@@ -64,8 +63,8 @@
               <TextBlock Text="Configurer Tailscale" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
             </StackPanel>
           </Button>
-          <Button Content="Vérifier à nouveau" Command="{Binding Verify}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-          <Button Classes="ghost" Content="Passer par le magasin officiel" Command="{Binding OpenStore}" IsVisible="{Binding ShowStoreFallback}"
+          <Button infra:Icons.Lead="Refresh" Content="Vérifier à nouveau" Command="{Binding Verify}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          <Button infra:Icons.Lead="StorefrontOutline" Classes="ghost" Content="Passer par le magasin officiel" Command="{Binding OpenStore}" IsVisible="{Binding ShowStoreFallback}"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
           <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
                      Text="Le fichier vient du site officiel de Tailscale et son empreinte est vérifiée. Le système demande toujours votre accord pour installer l'application et activer le VPN." />

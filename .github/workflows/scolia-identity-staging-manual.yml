@@ -1,0 +1,117 @@
+# Aucun déclenchement automatique, aucune route du domaine de production.
+# À exécuter UNIQUEMENT après création de l'environnement GitHub protégé
+# "scolia-staging" et des bindings/secrets côté Cloudflare.
+name: SCOLIA Identity - déployer en préproduction (manuel)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Taper STAGING_ONLY (aucune base scolaire réelle)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scolia-identity-staging
+  cancel-in-progress: false
+
+jobs:
+  deployment-staging:
+    if: ${{ inputs.confirmation == 'STAGING_ONLY' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: scolia-staging
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SCOLIA_STAGING_D1_ID: ${{ vars.SCOLIA_STAGING_D1_ID }}
+      SCOLIA_STAGING_RL_INVITE_NS: ${{ vars.SCOLIA_STAGING_RL_INVITE_NS }}
+      SCOLIA_STAGING_RL_SOURCE_NS: ${{ vars.SCOLIA_STAGING_RL_SOURCE_NS }}
+      SCOLIA_STAGING_PAIRING_AUTH_KEY: ${{ secrets.SCOLIA_STAGING_PAIRING_AUTH_KEY }}
+      SCOLIA_STAGING_AUTH_HMAC_KEY: ${{ secrets.SCOLIA_STAGING_AUTH_HMAC_KEY }}
+    steps:
+      - name: Cloner la branche validée
+        uses: actions/checkout@v5
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Installer Python pour vérifier D1
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Refuser les comptes Cloudflare et D1 non configurés
+        shell: bash
+        run: |
+          set -euo pipefail
+          for key in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID \
+            SCOLIA_STAGING_D1_ID SCOLIA_STAGING_RL_INVITE_NS \
+            SCOLIA_STAGING_RL_SOURCE_NS; do
+            if [[ -z "${!key:-}" ]]; then
+              echo "::error::Missing protected staging variable: $key"
+              exit 1
+            fi
+          done
+
+      - name: Vérifier les clés de préproduction avant toute migration ou publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          const pair = process.env.SCOLIA_STAGING_PAIRING_AUTH_KEY || "";
+          const session = process.env.SCOLIA_STAGING_AUTH_HMAC_KEY || "";
+          if (![pair, session].every(value => /^[A-Za-z0-9_-]{43,256}$/.test(value)) ||
+              pair === session) {
+            console.error("::error::Staging requires two distinct protected base64url signing keys.");
+            process.exit(1);
+          }
+          for (const value of [pair, session]) {
+            const bytes = Buffer.from(value, "base64url");
+            if (bytes.length < 32 ||
+                bytes.toString("base64url") !== value) {
+              console.error("::error::Invalid staging signing key encoding or length.");
+              process.exit(1);
+            }
+          }
+          NODE
+
+      - name: Exécuter les tests JS de sécurité et d'authentification
+        working-directory: scolia-pro/deploy/cloudflare-central
+        run: npm test
+
+      - name: Tester schéma et intégrité des contraintes D1
+        run: python -m unittest discover -s scolia-pro/tests -p 'test_cloudflare_*schema.py' -v
+
+      - name: Générer la configuration staging (sans secrets ni domaine production)
+        working-directory: scolia-pro/deploy/cloudflare-central
+        run: node scripts/prepare-staging-config.mjs
+
+      - name: Appliquer uniquement les migrations sur D1 de préproduction
+        working-directory: scolia-pro/deploy/cloudflare-central
+        run: npx --yes wrangler@4 d1 migrations apply scolia-identity-staging --remote --config wrangler.staging.toml
+
+      - name: Déployer seulement le Worker staging (pas de domaine de production)
+        working-directory: scolia-pro/deploy/cloudflare-central
+        run: npx --yes wrangler@4 deploy --config wrangler.staging.toml
+
+      - name: Installer la clé temporaire de jumelage dans le Worker staging
+        working-directory: scolia-pro/deploy/cloudflare-central
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$SCOLIA_STAGING_PAIRING_AUTH_KEY" |
+            npx --yes wrangler@4 secret put SCOLIA_PAIRING_AUTH_KEY --config wrangler.staging.toml
+
+      - name: Installer la clé de session distincte dans le Worker staging
+        working-directory: scolia-pro/deploy/cloudflare-central
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$SCOLIA_STAGING_AUTH_HMAC_KEY" |
+            npx --yes wrangler@4 secret put SCOLIA_AUTH_HMAC_KEY --config wrangler.staging.toml

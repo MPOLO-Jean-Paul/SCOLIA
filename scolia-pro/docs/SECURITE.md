@@ -35,12 +35,19 @@ des flux financiers. Les risques retenus sont :
 Les droits sont attribués par rôle et vérifiés côté serveur sur chaque point d'API.
 L'interface masque les menus, mais ce masquage n'est pas la protection réelle.
 
-Deux comptes, comme dans la version 79. Le secrétariat est l'administrateur.
+Le secrétariat administre l'établissement. Dans **Compte → Type de gestion**, il choisit une organisation commune à l'école : gestion mixte (valeur historique par défaut) ou gestion séparée. Le changement est authentifié, journalisé et réversible ; il exige un compte Comptabilité actif pour activer la séparation.
 
 | Rôle | Périmètre principal |
 |---|---|
-| Secrétariat | Tout : apprenants, encaissements, scolarité, personnel, et aussi le paramétrage, les utilisateurs, les sauvegardes et le journal d'audit |
-| Comptabilité | Encaissements, annulations, dépenses, arrêté de caisse, journal et rapports. Pas de paramétrage ni de gestion des comptes |
+| Secrétariat en gestion mixte | Fonctionnement historique : apprenants, encaissements, scolarité, personnel, paie, paramétrage, utilisateurs, sauvegardes et audit |
+| Secrétariat en gestion séparée | Dossiers et scolarité, administration du personnel, consultation financière individuelle, paramétrage, utilisateurs, sauvegardes et audit. Aucune opération de caisse, paie ou prise en charge |
+| Comptabilité | Encaissements, annulations, dépenses, arrêtés, journal et rapports. En gestion séparée : prises en charge, salaires et paie, avec consultation du personnel. Aucun paramétrage ni administration des comptes |
+| Promoteur | Indicateurs agrégés, sans dossier individuel ni écriture |
+| Enseignant | Encodage de ses cours attribués ; privilège jury uniquement s'il lui est accordé |
+
+Les sessions et délégations du secrétariat et de la comptabilité sont révoquées lors d'un changement de mode ; la session du responsable qui effectue le choix est renouvelée immédiatement. Les écritures financières vérifient de nouveau le rôle, le mode et l'empreinte de session après acquisition du verrou d'écriture : une requête autorisée avant le changement ne peut écrire ensuite avec des droits retirés. Les anciennes copies de consultation locales sont invalidées sans supprimer la file des opérations à synchroniser.
+
+Le cadre détaillé figure dans [Types de gestion](CADRE_METIER_TYPES_GESTION.md).
 
 Une base d'une version précédente est convertie au démarrage. Les comptes Administrateur et Direction deviennent Secrétariat. Un ancien compte Enseignant est désactivé ; le secrétariat peut le réactiver en lui donnant l'un des deux rôles.
 
@@ -106,8 +113,14 @@ la cause sans révéler de détail technique interne : la pile d'appel reste dan
 - Par défaut, SCOLIA n'écoute que sur ce poste (`localhost`).
 - L'accès réseau est une action explicite (onglet Fichier, rubrique « Poste et réseau », avec l'autorisation administrateur Windows).
   Il ouvre le port uniquement sur les profils réseau privé et de domaine.
-- Le trafic est en HTTP sur le réseau local de l'établissement. Pour un accès depuis l'extérieur,
-  placez SCOLIA derrière un reverse proxy HTTPS ou un tunnel VPN : ne l'exposez jamais directement sur Internet.
+- Le trafic est en HTTP sur le réseau local de l'établissement : **il n'est pas chiffré par HTTPS**.
+  L'interface le rappelle avant l'activation. Ne partagez que sur un réseau privé de confiance,
+  jamais sur un Wi-Fi public. Le pare-feu Windows et les permissions SCOLIA ne remplacent pas
+  le chiffrement du transport.
+- Pour un accès depuis l'extérieur, placez SCOLIA derrière un reverse proxy HTTPS authentifié
+  ou un tunnel VPN (par exemple Tailscale) : ne l'exposez jamais directement sur Internet.
+- La migration vers un TLS local authentifié, sans rompre les installations existantes,
+  reste un chantier distinct (issue GitHub n° 37). Ces avertissements n'en sont pas un substitut.
 
 ## Signalement d'une faille
 

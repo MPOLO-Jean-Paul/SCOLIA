@@ -5,216 +5,369 @@
              xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.HomeView">
   <UserControl.Styles>
-    <Style Selector="TextBlock.greeting"><Setter Property="FontSize" Value="{DynamicResource FsDisplay}" /></Style>
-    <Style Selector="TextBlock.kpivalue"><Setter Property="FontSize" Value="{DynamicResource FsTitle}" /></Style>
-    <!-- Pastille du bandeau : fond blanc translucide, texte blanc -->
-    <Style Selector="Border.herochip">
-      <Setter Property="Background" Value="#26FFFFFF" />
-      <Setter Property="CornerRadius" Value="14" />
-      <Setter Property="Padding" Value="11,5" />
-    </Style>
-    <Style Selector="Border.herochip TextBlock"><Setter Property="Foreground" Value="White" /></Style>
-    <!-- Action du bandeau : bouton blanc, texte de la couleur d'accent -->
-    <Style Selector="Button.heroaction">
-      <Setter Property="Background" Value="White" />
-      <Setter Property="Foreground" Value="#0B4FC4" />
-      <Setter Property="CornerRadius" Value="12" />
-      <Setter Property="Padding" Value="16,0" />
-      <Setter Property="Height" Value="40" />
-      <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="BorderThickness" Value="0" />
-    </Style>
-    <Style Selector="Button.heroaction:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#E8F0FF" />
-    </Style>
-    <!-- Pastille cliquable : le bouton ne dessine rien, la pastille s'éclaircit au survol -->
-    <Style Selector="Button.bare">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="0" />
-    </Style>
-    <Style Selector="Button.bare:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="Transparent" />
-    </Style>
-    <Style Selector="Button.bare:pointerover Border.herochip"><Setter Property="Background" Value="#40FFFFFF" /></Style>
-    <!-- Outil : tuile compacte, l'icône à gauche, le nom et une ligne de description -->
-    <Style Selector="Button.tooltile">
+    <Style Selector="Border.pbiPanel">
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="14" />
-      <Setter Property="Padding" Value="14,12" />
-      <Setter Property="HorizontalAlignment" Value="Stretch" />
-      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     </Style>
-    <Style Selector="Button.tooltile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Border.pbiInfo">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Padding" Value="11,9" />
+    </Style>
+    <Style Selector="TextBlock.pbiTitle">
+      <Setter Property="FontSize" Value="{DynamicResource FsDisplay}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.pbiSection">
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.pbiMuted">
+      <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+      <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    </Style>
+    <Style Selector="Button.pbiAction">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="MinHeight" Value="72" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.pbiAction:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.pbiAction:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <Style Selector="LayoutTransformControl.anim Button.pbiAction /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.12" Easing="{x:Static infra:Motion.Smooth}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.pbiMetric">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+      <Setter Property="Padding" Value="16" />
+      <Setter Property="MinHeight" Value="128" />
+      <Setter Property="Margin" Value="5,4" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.pbiMetric:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     </Style>
+    <Style Selector="Button.pbiRow">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="10,8" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.pbiRow:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.pbiAction:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.pbiMetric:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.pbiRow:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <Style Selector="Button.pbiState">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+      <Setter Property="Padding" Value="10,11" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
   </UserControl.Styles>
-  <ScrollViewer>
-    <StackPanel Spacing="16" Margin="0,0,6,12">
 
-      <!-- Bienvenue : bandeau aux couleurs de SCOLIA, la date, la salutation, l'état du poste et deux actions -->
-      <Border CornerRadius="18" ClipToBounds="True">
-        <Border.Background>
-          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-            <GradientStop Offset="0" Color="#1565E0" />
-            <GradientStop Offset="0.6" Color="#0B4FC4" />
-            <GradientStop Offset="1" Color="#0E2A5C" />
-          </LinearGradientBrush>
-        </Border.Background>
-        <Grid ColumnDefinitions="*,Auto" Margin="24,20" infra:Adaptive.StackBelow="640">
-          <StackPanel Spacing="3" VerticalAlignment="Center">
-            <TextBlock Text="{Binding DateLine}" Foreground="#CFE0FF" />
-            <TextBlock Text="{Binding Greeting}" Classes="greeting" Foreground="White" FontWeight="Bold" TextWrapping="Wrap" />
-            <TextBlock Text="{Binding AccountContextLine}" Foreground="#DCE8FF" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
-            <WrapPanel Margin="0,10,0,0">
-              <Border Classes="herochip" IsVisible="{Binding HasCashLine}" Margin="0,0,8,6">
-                <StackPanel Orientation="Horizontal" Spacing="7">
-                  <Ellipse Width="10" Height="10" Fill="{Binding CashBrush}" Stroke="White" StrokeThickness="1.5" VerticalAlignment="Center" />
-                  <TextBlock Text="{Binding CashLine}" FontWeight="SemiBold" />
-                </StackPanel>
-              </Border>
-              <Button Classes="bare" Command="{Binding Network}" Margin="0,0,8,6" ToolTip.Tip="Réseau et activité">
-                <Border Classes="herochip">
-                  <StackPanel Orientation="Horizontal" Spacing="7">
-                    <Ellipse Width="10" Height="10" Fill="{Binding Sync.StatusBrush}" Stroke="White" StrokeThickness="1.5" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding Sync.PeersText}" Opacity="0.85" />
-                  </StackPanel>
-                </Border>
-              </Button>
-            </WrapPanel>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="14" Margin="8,12,12,24" MaxWidth="1440" HorizontalAlignment="Stretch">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBlock Text="Accueil" Classes="pbiTitle" />
+        <Button Grid.Column="1" Classes="toolicon" Command="{Binding Refresh}" ToolTip.Tip="Actualiser l’accueil"
+                AutomationProperties.Name="Actualiser l’accueil" VerticalAlignment="Center">
+          <mi:MaterialIcon Kind="Refresh" Width="18" Height="18" />
+        </Button>
+      </Grid>
+      <Border Classes="card" Padding="16" Background="{DynamicResource WelcomeBrush}">
+      <Grid x:Name="WelcomeLayout" ColumnDefinitions="*,Auto" ColumnSpacing="12"
+            infra:Adaptive.StackBelow="610">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+            <Border Width="60" Height="54" CornerRadius="{DynamicResource RadiusCard}" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
+              <Image Source="{DynamicResource ScoliaMark}" Width="34" Height="34" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+              <TextBlock Text="{Binding HeaderSchoolLine}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding AccountContextLine}" Classes="pbiMuted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+        <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center"
+              HorizontalAlignment="Right" MaxWidth="320">
+          <StackPanel Spacing="3" VerticalAlignment="Center" MinWidth="0">
+            <TextBlock x:Name="WelcomeGreeting" Text="{Binding Greeting}" ToolTip.Tip="{Binding Greeting}" FontWeight="SemiBold"
+                       FontSize="13" TextAlignment="Right" TextTrimming="CharacterEllipsis" MaxLines="1" />
+            <TextBlock Text="{Binding DateLine}" Classes="pbiMuted" TextAlignment="Right"
+                       TextTrimming="CharacterEllipsis" MaxLines="1" ToolTip.Tip="{Binding DateLine}" />
           </StackPanel>
-          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" Margin="16,0,0,0">
-            <ItemsControl ItemsSource="{Binding QuickActions}" VerticalAlignment="Center">
+          <Border x:Name="WelcomeAvatar" Grid.Column="1" Width="42" Height="42" CornerRadius="21"
+                  Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource LineBrush}"
+                  BorderThickness="1">
+            <TextBlock Text="{Binding Initials}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
+          </Border>
+        </Grid>
+      </Grid>
+      </Border>
+
+      <Border Classes="pbiPanel" Padding="4">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" infra:Adaptive.StackBelow="580">
+          <Button Classes="pbiState" Command="{Binding Network}" ToolTip.Tip="{Binding Sync.StatusDetail}" AutomationProperties.Name="{Binding Sync.StatusText}">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+              <mi:MaterialIcon Kind="{Binding Sync.StatusIcon}" Foreground="{Binding Sync.StatusBrush}"
+                               Width="24" Height="24" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Spacing="4">
+                <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Sync.StatusHint}" Classes="pbiMuted" TextWrapping="Wrap" MaxLines="2" />
+              </StackPanel>
+              <PathIcon Grid.Column="2" Data="{x:Static infra:HomeGlyphs.Chevron}" Width="14" Height="14" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+            </Grid>
+          </Button>
+          <Border Grid.Column="1" Classes="pbiInfo" MaxWidth="310" IsVisible="{Binding HasCashLine}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <mi:MaterialIcon Kind="CashRegister" Width="22" Height="22" Foreground="{Binding CashBrush}" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Spacing="3">
+                <TextBlock Text="Situation de la caisse" Classes="pbiMuted" />
+                <TextBlock Text="{Binding CashLine}" FontWeight="SemiBold" TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
+          </Border>
+        </Grid>
+      </Border>
+
+      <Grid x:Name="HomeSettingsPanels" ColumnDefinitions="*,*" ColumnSpacing="12" infra:Adaptive.StackBelow="700">
+        <StackPanel Spacing="12">
+          <Border Classes="pbiPanel" Padding="4" VerticalAlignment="Top" IsVisible="{Binding !!Tools.Count}">
+            <StackPanel Spacing="3">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="12,5,6,3" MinHeight="38">
+                <TextBlock Text="Actions rapides" Classes="pbiSection" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Classes="link" Content="{Binding AllToolsLabel}" Command="{Binding ShowAllTools}"
+                        ToolTip.Tip="Afficher les fonctionnalités autorisées du compte" />
+              </Grid>
+              <Border Height="1" Background="{DynamicResource LineBrush}" />
+              <ItemsControl x:Name="WelcomeQuickActions" ItemsSource="{Binding QuickActions}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><StackPanel Spacing="2" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="pbiAction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding ShortTitle}">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <Border Classes="workspaceglyph">
+                        <Grid>
+                          <Border CornerRadius="7" Background="{Binding Brush}" Opacity="0.14" IsHitTestVisible="False" />
+                          <Image Source="{Binding Icon, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+                        </Grid>
+                      </Border>
+                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding ShortTitle}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"
+                                     MaxLines="2" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ShortTitle}" />
+                          <TextBlock Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <PathIcon Grid.Column="2" Classes="workspacechevron" Data="{x:Static infra:HomeGlyphs.Chevron}" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+          <Border Classes="pbiPanel" Padding="12" IsVisible="{Binding HasKpis}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Indicateurs de l'établissement" Classes="pbiSection" />
+              <ItemsControl ItemsSource="{Binding Kpis}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <infra:AdaptiveTiles MinItemWidth="190" MaxColumns="2" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="pbiMetric" Command="{Binding Open}" ToolTip.Tip="Ouvrir l’indicateur" AutomationProperties.Name="{Binding Label}">
+                      <ContentControl Content="{Binding}" ContentTemplate="{StaticResource DesktopMetricContent}" />
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+        <Border Grid.Column="1" Classes="pbiPanel" Padding="4" VerticalAlignment="Top" IsVisible="{Binding !!MoreTools.Count}">
+          <StackPanel Spacing="3">
+            <Grid Margin="12,5,6,3" MinHeight="38">
+              <TextBlock Text="Outils recommandés" Classes="pbiSection" VerticalAlignment="Center" />
+            </Grid>
+            <Border Height="1" Background="{DynamicResource LineBrush}" />
+            <ItemsControl x:Name="FeatureCards" ItemsSource="{Binding MoreTools}">
               <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
+                <ItemsPanelTemplate><StackPanel Spacing="2" /></ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Button Classes="heroaction" Command="{Binding Open}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <mi:MaterialIcon Kind="{Binding Icon}" Width="18" Height="18" Foreground="#0B4FC4" />
-                      <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
-                    </StackPanel>
+                  <Button Classes="pbiAction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}" AutomationProperties.Name="{Binding Title}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                      <Border Classes="workspaceglyph">
+                        <Grid>
+                          <Border CornerRadius="7" Background="{Binding Brush}" Opacity="0.14" IsHitTestVisible="False" />
+                          <Image Source="{Binding Icon, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+                        </Grid>
+                      </Border>
+                      <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"
+                                   MaxLines="2" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
+                        <TextBlock Text="{Binding Description}" Classes="pbiMuted" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <PathIcon Grid.Column="2" Classes="workspacechevron" Data="{x:Static infra:HomeGlyphs.Chevron}" />
+                    </Grid>
                   </Button>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </StackPanel>
-        </Grid>
+        </Border>
+      </Grid>
+
+      <Border Classes="pbiInfo" IsVisible="{Binding OverviewUnavailable}">
+        <TextBlock Text="Les indicateurs ne sont pas disponibles pour le moment. Vos outils restent accessibles." Classes="pbiMuted" TextWrapping="Wrap" />
+      </Border>
+      <!-- Panneau complet de navigation, accessible même quand le volet gauche est réduit. -->
+      <Border Classes="pbiPanel" IsVisible="{Binding AllToolsVisible}" Padding="15">
+        <StackPanel Spacing="11">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Toutes les fonctionnalités" Classes="pbiSection" />
+            <Button Grid.Column="1" Classes="link" Content="Réduire" Command="{Binding ShowAllTools}" />
+          </Grid>
+          <ItemsControl ItemsSource="{Binding AllToolGroups}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Spacing="7" Margin="0,4,0,10">
+                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" />
+                  <ItemsControl ItemsSource="{Binding Items}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <infra:AdaptiveTiles MinItemWidth="170" MaxColumns="4" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Button Classes="pbiRow" Command="{Binding Open}" Margin="0,0,7,6">
+                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                            <mi:MaterialIcon Kind="{Binding Icon}" Width="18" Height="18"
+                                             Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding Label}" FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis" MaxLines="1"
+                                       VerticalAlignment="Center" />
+                          </Grid>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
       </Border>
 
-      <!-- Quatre indicateurs : un clic ouvre la page qui détaille le chiffre -->
-      <ItemsControl ItemsSource="{Binding Kpis}" IsVisible="{Binding HasKpis}" Margin="0,0,-12,0">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="190" /></ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate>
-            <Button Classes="cardbutton" Command="{Binding Open}" Margin="0,0,12,0" ToolTip.Tip="Ouvrir le détail">
-              <Border Classes="toolcard" MinHeight="0" Padding="16,14">
-                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
-                  <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                  <Border Grid.Column="1" Grid.RowSpan="2" Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Top" Margin="10,0,0,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                  <TextBlock Grid.Row="1" Text="{Binding Value}" Classes="kpivalue" FontWeight="Bold" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" />
-                  <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" />
-                </Grid>
-              </Border>
-            </Button>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-
-      <!-- Outils : tuiles compactes, un clic ouvre l'outil -->
-      <StackPanel Spacing="8">
-        <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Text="Outils" Classes="heading" VerticalAlignment="Center" />
-          <Button Grid.Column="1" Classes="link" Content="Afficher tous les outils" Command="{Binding ShowAllTools}" />
-        </Grid>
-        <ItemsControl ItemsSource="{Binding MoreTools}" Margin="0,0,-12,0">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="190" /></ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate>
-              <Button Classes="tooltile" Command="{Binding Open}" Margin="0,0,12,0" ToolTip.Tip="{Binding Description}">
-                <Grid ColumnDefinitions="Auto,*,Auto">
-                  <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center" Margin="0,0,12,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                  <!-- Un titre net ; l'explication reste dans l'info-bulle, au survol -->
-                  <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                  <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
-                </Grid>
-              </Button>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </StackPanel>
-
-      <!-- Derniers reçus, et à côté ce qui reste à faire aujourd'hui -->
-      <Grid ColumnDefinitions="2*,16,*" infra:Adaptive.StackBelow="760">
-        <StackPanel Spacing="8">
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="Derniers reçus" Classes="heading" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="1" Text="{Binding TodayLine}" Classes="muted" VerticalAlignment="Center" IsVisible="{Binding HasTodayLine}" />
-          </Grid>
-          <Border Classes="card" Padding="0">
-            <StackPanel>
-              <Grid ColumnDefinitions="2*,3*,1.3*,1.4*" Margin="16,10,16,8">
-                <TextBlock Text="Reçu" Classes="colhead" />
-                <TextBlock Grid.Column="1" Text="Apprenant" Classes="colhead" />
-                <TextBlock Grid.Column="2" Text="Date" Classes="colhead" />
-                <TextBlock Grid.Column="3" Text="Montant" Classes="colhead" TextAlignment="Right" />
+      <!-- Activité récente : uniquement si les données ont été chargées. -->
+      <Grid ColumnDefinitions="2*,*" ColumnSpacing="14" infra:Adaptive.StackBelow="820" IsVisible="{Binding OverviewAvailable}">
+        <Border Classes="pbiPanel" Padding="16">
+          <StackPanel Spacing="11">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <TextBlock Text="Récents · Encaissements" Classes="pbiSection" />
+              <TextBlock Grid.Column="1" Text="{Binding TodayLine}" Classes="pbiMuted"
+                         IsVisible="{Binding HasTodayLine}" VerticalAlignment="Center" />
+            </Grid>
+            <Border Background="{DynamicResource GroupBrush}" CornerRadius="6" Padding="10,7">
+              <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
+                <TextBlock Text="Dossier / Référence" Classes="pbiMuted" FontWeight="SemiBold" />
+                <TextBlock x:Name="RecentAmountHeader" Grid.Column="1" Text="Montant" Classes="pbiMuted" FontWeight="SemiBold"
+                           TextAlignment="Right" />
               </Grid>
-              <Border Height="1" Background="{DynamicResource LineBrush}" />
-              <ItemsControl ItemsSource="{Binding Receipts}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <Button Classes="row" Command="{Binding Open}" ToolTip.Tip="Ouvrir le reçu">
-                      <Grid ColumnDefinitions="2*,3*,1.3*,1.4*">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                          <mi:MaterialIcon Kind="ReceiptTextOutline" Width="18" Height="18" Foreground="{DynamicResource TonePurple}" />
-                          <TextBlock Text="{Binding Number}" VerticalAlignment="Center" />
-                        </StackPanel>
-                        <TextBlock Grid.Column="1" Text="{Binding Student}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Grid.Column="2" Text="{Binding Date}" Classes="muted" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="3" Text="{Binding Amount}" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right" />
-                      </Grid>
-                    </Button>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-              <c:EmptyState Icon="ReceiptTextOutline" Title="Aucun reçu récent" Hint="Les derniers encaissements apparaîtront ici." IsVisible="{Binding !Receipts.Count}" Margin="24" />
-            </StackPanel>
-          </Border>
-        </StackPanel>
+            </Border>
+            <ItemsControl x:Name="RecentReceiptRows" ItemsSource="{Binding Receipts}" HorizontalAlignment="Stretch">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="pbiRow" Command="{Binding Open}" ToolTip.Tip="Ouvrir le reçu" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="10,8">
+                    <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
+                      <StackPanel Spacing="3" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Student}" FontWeight="SemiBold"
+                                   TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" ToolTip.Tip="{Binding Student}" />
+                        <WrapPanel Orientation="Horizontal">
+                          <TextBlock Text="{Binding Number}" Classes="pbiMuted" Margin="0,0,10,0" />
+                          <TextBlock Text="{Binding Date}" Classes="pbiMuted" />
+                        </WrapPanel>
+                      </StackPanel>
+                      <TextBlock x:Name="RecentAmountValue" Grid.Column="1" Text="{Binding Amount}" FontWeight="SemiBold"
+                                 TextAlignment="Right" VerticalAlignment="Center"
+                                 TextWrapping="Wrap" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <c:EmptyState Icon="ReceiptTextOutline" Title="Aucun reçu récent"
+                          Hint="Les encaissements de l'établissement apparaîtront ici."
+                          IsVisible="{Binding !Receipts.Count}" />
+          </StackPanel>
+        </Border>
 
-        <StackPanel Grid.Column="2" Spacing="8">
-          <TextBlock Text="{Binding TasksTitle}" Classes="heading" />
-          <Border Classes="card" Padding="6">
-            <StackPanel>
-              <ItemsControl ItemsSource="{Binding Tasks}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <Button Classes="listrow" Command="{Binding Open}" Padding="10,8">
-                      <Grid ColumnDefinitions="Auto,*,Auto">
-                        <Border Classes="appicon" Background="{Binding Brush}" VerticalAlignment="Center" Margin="0,0,10,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                          <TextBlock Classes="wrap2" Text="{Binding Text}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                          <TextBlock Text="{Binding Detail}" Classes="wrap2 muted" TextTrimming="CharacterEllipsis" />
-                        </StackPanel>
-                        <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
-                      </Grid>
-                    </Button>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-              <c:EmptyState Icon="CheckCircleOutline" Title="Rien en attente" Hint="La caisse, l'appel et les rendez-vous du jour sont à jour." IsVisible="{Binding !HasTasks}" Margin="16" />
-            </StackPanel>
-          </Border>
-        </StackPanel>
+        <Border Grid.Column="1" Classes="pbiPanel" Padding="16">
+          <StackPanel Spacing="11">
+            <TextBlock Text="{Binding TasksTitle}" Classes="pbiSection" />
+            <ItemsControl ItemsSource="{Binding Tasks}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="pbiRow" Command="{Binding Open}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                      <mi:MaterialIcon Kind="{Binding Icon}" Width="21" Height="21"
+                                       Foreground="{Binding Brush}" VerticalAlignment="Center" />
+                      <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Text}" FontWeight="SemiBold"
+                                   TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding Detail}" Classes="pbiMuted"
+                                   TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <c:EmptyState Icon="CheckCircleOutline" Title="Aucune tâche affichée"
+                          Hint="Les tâches connues de la journée apparaissent ici."
+                          IsVisible="{Binding !HasTasks}" />
+          </StackPanel>
+        </Border>
       </Grid>
     </StackPanel>
   </ScrollViewer>

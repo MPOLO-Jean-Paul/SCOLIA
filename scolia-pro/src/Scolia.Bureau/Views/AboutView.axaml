@@ -3,8 +3,48 @@
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.AboutView">
+  <UserControl.Styles>
+    <Style Selector="Border.aboutcontacticon">
+      <Setter Property="Width" Value="40" /><Setter Property="Height" Value="40" />
+      <Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="8" />
+      <Setter Property="ClipToBounds" Value="True" />
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.aboutcontacticon Image, Border.aboutcontacticon mi|MaterialIcon">
+      <Setter Property="Width" Value="24" /><Setter Property="Height" Value="24" />
+      <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.aboutcontactaction">
+      <Setter Property="Width" Value="44" /><Setter Property="Height" Value="44" />
+      <Setter Property="MinWidth" Value="44" /><Setter Property="MinHeight" Value="44" />
+      <Setter Property="Padding" Value="12" /><Setter Property="Margin" Value="0" />
+      <Setter Property="BorderThickness" Value="0" /><Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.aboutcontactaction mi|MaterialIcon">
+      <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.aboutcontacts TextBlock">
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="Grid.aboutcontactrow"><Setter Property="ColumnSpacing" Value="10" /></Style>
+    <Style Selector="Border.aboutcontacts">
+      <Setter Property="Margin" Value="24,0,24,0" /><Setter Property="Padding" Value="16,6" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Border.aboutcontacts">
+      <Setter Property="Margin" Value="12,0,12,0" />
+      <Setter Property="Padding" Value="10,6" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Grid.aboutcontactrow">
+      <Setter Property="ColumnSpacing" Value="8" />
+    </Style>
+  </UserControl.Styles>
   <!-- À propos : présentation de SCOLIA, puis l'éditeur et le développeur, comme dans la version 79 -->
-  <Border Classes="card" infra:Adaptive.FitDialog="True" Width="560" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True" BoxShadow="0 12 40 0 #33000000">
+  <Border Classes="dialogsurface" infra:Adaptive.FitDialog="True" Width="560">
     <!-- Sur un écran bas, la fiche défile au lieu d'être coupée -->
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
     <StackPanel>
@@ -12,10 +52,10 @@
         <StackPanel HorizontalAlignment="Center" Spacing="6" Margin="28,20,28,6">
           <Image Source="{DynamicResource ScoliaMark}" Width="64" Height="64" HorizontalAlignment="Center" />
           <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,6,0,0" />
-          <TextBlock Text="{Binding Tagline}" Foreground="{DynamicResource Text2Brush}" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding Tagline}" Foreground="{DynamicResource Text2Brush}" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
           <Border Classes="chip" HorizontalAlignment="Center" Padding="10,3" Margin="0,4,0,0"><TextBlock Text="{Binding VersionLine}" /></Border>
         </StackPanel>
-        <Button Classes="closex" Command="{Binding Close}" HorizontalAlignment="Right" Margin="0,14,14,0"><mi:MaterialIcon Kind="Close" /></Button>
+        <Button Classes="closex" Command="{Binding Close}" AutomationProperties.Name="Fermer À propos" HorizontalAlignment="Right" Margin="0,14,14,0"><PathIcon Data="{x:Static infra:HomeGlyphs.Dismiss}" /></Button>
       </Grid>
 
       <TextBlock Text="{Binding Description}" TextWrapping="Wrap" TextAlignment="Center" Classes="muted" Margin="32,10,32,12" />
@@ -30,48 +70,79 @@
       <TextBlock Text="{Binding Accounts}" Classes="muted" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="32,4,32,16" />
 
       <!-- Éditeur et développeur -->
-      <Border Classes="card" Margin="24,0,24,0" Padding="16,6">
+      <Border Classes="card aboutcontacts">
         <StackPanel>
-          <Grid ColumnDefinitions="Auto,*" Margin="0,10">
-            <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}" Margin="0,0,12,0"><mi:MaterialIcon Kind="OfficeBuildingOutline" /></Border>
+          <Grid Classes="aboutcontactrow" ColumnDefinitions="44,*,44" Margin="0,10">
+            <Border x:Name="AboutPublisherIcon" Classes="aboutcontacticon"><Image Source="{DynamicResource FluentArtworkBuilding}" Stretch="Uniform" /></Border>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
               <TextBlock Text="Éditeur" Classes="muted" />
-              <TextBlock Text="{Binding Publisher}" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding Publisher}" FontWeight="SemiBold" TextWrapping="Wrap" />
             </StackPanel>
           </Grid>
           <Border Height="1" Background="{DynamicResource LineBrush}" />
-          <Grid ColumnDefinitions="Auto,*" Margin="0,10">
-            <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" Margin="0,0,12,0"><mi:MaterialIcon Kind="AccountTie" /></Border>
+          <Grid Classes="aboutcontactrow" ColumnDefinitions="44,*,44" Margin="0,10">
+            <Border x:Name="AboutDeveloperIcon" Classes="aboutcontacticon"><Image Source="{DynamicResource FluentArtworkPerson}" Stretch="Uniform" /></Border>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
               <TextBlock Text="{Binding Role}" Classes="muted" />
-              <TextBlock Text="{Binding Developer}" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding Developer}" FontWeight="SemiBold" TextWrapping="Wrap" />
             </StackPanel>
           </Grid>
           <Border Height="1" Background="{DynamicResource LineBrush}" />
-          <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,10">
-            <Border Classes="appicon medium" Background="{DynamicResource ToneGreen}" Margin="0,0,12,0"><mi:MaterialIcon Kind="Whatsapp" /></Border>
+          <Grid Classes="aboutcontactrow" ColumnDefinitions="44,*,44" Margin="0,10">
+            <Border x:Name="AboutPhoneIcon" Classes="aboutcontacticon" Background="{DynamicResource GreenSoftBrush}"><mi:MaterialIcon Kind="Whatsapp" Foreground="{DynamicResource ToneGreen}" /></Border>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
               <TextBlock Text="Téléphone et WhatsApp" Classes="muted" />
-              <TextBlock Text="{Binding Phone}" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding Phone}" FontWeight="SemiBold" TextWrapping="Wrap" />
             </StackPanel>
-            <Button Grid.Column="2" Classes="small" Content="Écrire" ToolTip.Tip="Écrire sur WhatsApp" Command="{Binding OpenWhatsApp}" VerticalAlignment="Center" />
+            <Button Grid.Column="2" Classes="aboutcontactaction" ToolTip.Tip="Écrire sur WhatsApp" AutomationProperties.Name="Écrire sur WhatsApp" Command="{Binding OpenWhatsApp}" VerticalAlignment="Center"><mi:MaterialIcon Kind="MessageTextOutline" Width="20" Height="20" /></Button>
           </Grid>
           <Border Height="1" Background="{DynamicResource LineBrush}" />
-          <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,10">
-            <Border Classes="appicon medium" Background="{DynamicResource ToneOrange}" Margin="0,0,12,0"><mi:MaterialIcon Kind="EmailOutline" /></Border>
+          <Grid Classes="aboutcontactrow" ColumnDefinitions="44,*,44" Margin="0,10">
+            <Border x:Name="AboutEmailIcon" Classes="aboutcontacticon"><Image Source="{DynamicResource FluentArtworkMail}" Stretch="Uniform" /></Border>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
               <TextBlock Text="E-mail" Classes="muted" />
-              <TextBlock Text="{Binding Email}" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding Email}" FontWeight="SemiBold" TextWrapping="Wrap" ToolTip.Tip="{Binding Email}" />
             </StackPanel>
-            <Button Grid.Column="2" Classes="small" Content="Écrire" ToolTip.Tip="Écrire un e-mail" Command="{Binding WriteEmail}" VerticalAlignment="Center" />
+            <Button Grid.Column="2" Classes="aboutcontactaction" ToolTip.Tip="Écrire un e-mail" AutomationProperties.Name="Écrire un e-mail" Command="{Binding WriteEmail}" VerticalAlignment="Center"><mi:MaterialIcon Kind="SendOutline" Width="20" Height="20" /></Button>
           </Grid>
+          <Border Height="1" Background="{DynamicResource LineBrush}" />
+          <Grid Classes="aboutcontactrow" ColumnDefinitions="44,*,44" Margin="0,10">
+            <Border x:Name="AboutWebsiteIcon" Classes="aboutcontacticon"><Image Source="{DynamicResource FluentArtworkGlobe}" Stretch="Uniform" /></Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock Text="Site Internet" Classes="muted" />
+              <TextBlock Text="{Binding Website}" FontWeight="SemiBold" TextWrapping="Wrap" ToolTip.Tip="{Binding Website}" />
+            </StackPanel>
+            <Button Grid.Column="2" Classes="aboutcontactaction" ToolTip.Tip="Ouvrir le site de JP-Services" AutomationProperties.Name="Ouvrir le site de JP-Services" Command="{Binding OpenWebsite}" VerticalAlignment="Center"><mi:MaterialIcon Kind="OpenInNew" Width="20" Height="20" /></Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- Recherche manuelle Android accessible aussi depuis « À propos », sans passer par le réseau. -->
+      <Border Classes="card" IsVisible="{Binding CanCheckPhoneUpdates}" Margin="24,12,24,0">
+        <StackPanel Spacing="9">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <mi:MaterialIcon Kind="Update" Width="20" Height="20" VerticalAlignment="Center" Foreground="{DynamicResource AccentBrush}" />
+            <TextBlock Grid.Column="1" Text="Mises à jour Android" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </Grid>
+          <TextBlock Text="{Binding PhoneUpdateStatus}" Classes="muted" TextWrapping="Wrap" />
+          <Button x:Name="AboutCheckUpdates" Classes="primary" Command="{Binding CheckPhoneUpdates}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" MinHeight="44">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <mi:MaterialIcon Kind="Update" Width="20" Height="20" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="Rechercher les mises à jour" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Grid>
+          </Button>
         </StackPanel>
       </Border>
 
       <!-- Sur le téléphone, le copyright passe au-dessus des boutons -->
       <Grid ColumnDefinitions="*,Auto,Auto" Margin="24,16,24,22" infra:Adaptive.StackBelow="440">
         <TextBlock Text="{Binding Copyright}" Classes="muted" VerticalAlignment="Center" TextWrapping="Wrap" />
-        <Button Grid.Column="1" Content="Copier les coordonnées" Command="{Binding CopyContacts}" Margin="0,0,8,0" />
+        <Button x:Name="AboutCopyContacts" Grid.Column="1" Command="{Binding CopyContacts}" Margin="0,0,8,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <mi:MaterialIcon Kind="ContentCopy" Width="20" Height="20" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="Copier les coordonnées" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
         <Button Grid.Column="2" Classes="primary" Content="Fermer" Command="{Binding Close}" />
       </Grid>
     </StackPanel>

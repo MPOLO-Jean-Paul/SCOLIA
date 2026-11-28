@@ -31,6 +31,28 @@ public class AccordionAndAudioTests
     }
 
     [Fact]
+    public void Gestion_des_deliberations_rassemble_enseignants_cours_et_jury()
+    {
+        var groups = new[]
+        {
+            new NavGroupVm("", Array.Empty<NavItemVm>()),
+            new NavGroupVm("Secrétariat", Array.Empty<NavItemVm>()),
+            new NavGroupVm("Scolarité", Array.Empty<NavItemVm>()),
+            new NavGroupVm("Enseignants et cours", Array.Empty<NavItemVm>()),
+            new NavGroupVm("Délibération", Array.Empty<NavItemVm>()),
+            new NavGroupVm("Finances", Array.Empty<NavItemVm>()),
+        };
+        var blocks = Sidebar.Blocks(groups);
+        Assert.Equal(["VUE D’ENSEMBLE", "GESTION SCOLAIRE", "GESTION DES DÉLIBÉRATIONS", "GESTION FINANCIÈRE"], blocks.Select(b => b.Title).ToArray());
+        Assert.Equal(["Enseignants et cours", "Délibération"], blocks[2].Groups.Select(g => g.Title).ToArray());
+        Assert.DoesNotContain(blocks[1].Groups, g => g.Title == "Délibération");
+
+        // L'enseignant : son accueil puis son espace, dans leur propre bloc.
+        var teacher = Sidebar.Blocks([new NavGroupVm("", Array.Empty<NavItemVm>()), new NavGroupVm("Espace enseignant", Array.Empty<NavItemVm>())]);
+        Assert.Equal(["VUE D’ENSEMBLE", "ESPACE ENSEIGNANT"], teacher.Select(b => b.Title).ToArray());
+    }
+
+    [Fact]
     public void Un_accordeon_de_navigation_ferme_les_autres()
     {
         var groups = new List<NavGroupVm>();

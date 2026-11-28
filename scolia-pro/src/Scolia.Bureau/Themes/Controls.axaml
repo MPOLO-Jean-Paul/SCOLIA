@@ -4,50 +4,71 @@
         xmlns:mi="using:Material.Icons.Avalonia">
 
   <Styles.Resources>
-    <!-- Indicateur : libellé, chiffre, précision. Pas d'icône ni de couleur décorative, comme les tableaux de bord d'Office. -->
+    <!-- Même composition pour les indicateurs des quatre métiers sur ordinateur. -->
+    <DataTemplate x:Key="DesktopMetricContent">
+      <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="7">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <TextBlock Text="{Binding Label}" Classes="metriclabel" VerticalAlignment="Center" TextWrapping="Wrap" />
+          <Border Grid.Column="1" Classes="metricicon">
+            <Image Source="{Binding Icon, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}" Width="24" Height="24" Stretch="Uniform" />
+          </Border>
+        </Grid>
+        <TextBlock Grid.Row="1" Text="{Binding Value}" Classes="metricvalue" TextWrapping="Wrap" ToolTip.Tip="{Binding Value}" />
+        <TextBlock Grid.Row="2" Text="{Binding Hint}" Classes="metricdetail" TextWrapping="Wrap" />
+      </Grid>
+    </DataTemplate>
     <DataTemplate x:Key="KpiTile">
       <Border Classes="tile" Margin="0,0,12,12">
-        <StackPanel Spacing="2">
-          <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" />
-          <TextBlock Text="{Binding Value}" Classes="kpi" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
-          <TextBlock Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" />
-        </StackPanel>
+        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource DesktopMetricContent}" />
       </Border>
     </DataTemplate>
   </Styles.Resources>
 
   <!-- Base : police du système, couleurs et tailles des Réglages de macOS. -->
-  <Style Selector="TemplatedControl">
+  <!-- Typographie homogène : une seule famille, texte courant en Medium (500) pour un trait plein et lisible,
+       titres en SemiBold, textes secondaires en Regular dans la couleur atténuée. Rendu en niveaux de gris avec
+       un lissage léger : le même trait doux sur Windows et Android, aligné avec les icônes. -->
+  <Style Selector=":is(TemplatedControl)">
     <Setter Property="FontFamily" Value="{DynamicResource UiFont}" />
     <Setter Property="FontSize" Value="{DynamicResource FsBase}" />
-    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="FontWeight" Value="{DynamicResource BodyWeight}" />
   </Style>
   <Style Selector="TextBlock">
     <Setter Property="FontFamily" Value="{DynamicResource UiFont}" />
     <Setter Property="FontSize" Value="{DynamicResource FsBase}" />
+    <Setter Property="FontWeight" Value="{DynamicResource BodyWeight}" />
   </Style>
 
   <Style Selector="Window">
     <Setter Property="Background" Value="{DynamicResource BgBrush}" />
   </Style>
+  <!-- Défilement à inertie au pavé tactile et au toucher, comme sur macOS -->
+  <Style Selector="ScrollViewer">
+    <Setter Property="IsScrollInertiaEnabled" Value="True" />
+  </Style>
 
   <!-- Typographie -->
   <!-- Le texte hérite de son contrôle : un bouton clair conserve son texte foncé en thème sombre. -->
   <Style Selector="TextBlock.title">
+    <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="FontSize" Value="{DynamicResource FsTitle}" />
     <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="-0.2" />
   </Style>
   <Style Selector="TextBlock.heading">
+    <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="FontSize" Value="{DynamicResource FsHeading}" />
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
   <Style Selector="TextBlock.muted">
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+    <Setter Property="FontWeight" Value="Normal" />
   </Style>
   <Style Selector="TextBlock.caption">
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     <Setter Property="FontSize" Value="{DynamicResource FsCaption}" />
+    <Setter Property="FontWeight" Value="Normal" />
   </Style>
   <Style Selector="TextBlock.kpi">
     <Setter Property="FontSize" Value="{DynamicResource FsTitle}" />
@@ -68,23 +89,42 @@
     <Setter Property="Padding" Value="14,4" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
-    <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
+    <Setter Property="Background" Value="{DynamicResource ButtonFillBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ButtonStrokeBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource ButtonStroke}" />
     <Setter Property="FontWeight" Value="Medium" />
+    <!-- Pas de BrushTransition globale : au changement de thème, les couleurs
+         doivent basculer immédiatement pour conserver le contraste WCAG.
+         Seule l'opacité peut être animée sans interférence avec la palette. -->
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.14" Easing="{x:Static infra:Motion.Spring}" />
+      </Transitions>
+    </Setter>
+    <!-- Lecteurs d'écran (Narrateur, TalkBack) : un bouton-icône est nommé par son info-bulle.
+         Un nom explicite ou un texte de bouton reste prioritaire. -->
+    <Setter Property="AutomationProperties.Name" Value="{Binding $self.(ToolTip.Tip)}" />
   </Style>
   <Style Selector="Button:pointerover">
     <Setter Property="Background" Value="{DynamicResource ButtonHoverBrush}" />
   </Style>
   <Style Selector="Button:pressed">
-    <Setter Property="Background" Value="{DynamicResource LineStrongBrush}" />
+    <Setter Property="Background" Value="{DynamicResource ButtonPressedBrush}" />
+  </Style>
+  <!-- Le filet d'élévation reste au survol et à l'appui (le thème Fluent le remplacerait par le sien) -->
+  <Style Selector="Button:not(.primary):not(.danger):pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource ButtonStrokeBrush}" />
+  </Style>
+  <Style Selector="Button:not(.primary):not(.danger):pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource ButtonStrokeBrush}" />
   </Style>
   <!-- Bouton de barre d'outils : transparent, gris au survol -->
   <Style Selector="Button.quiet">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
     <Setter Property="Padding" Value="10,4" />
     <Setter Property="FontWeight" Value="Normal" />
   </Style>
@@ -114,7 +154,7 @@
     <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
     <Setter Property="Padding" Value="16,4" />
   </Style>
   <Style Selector="Button.primary:pointerover">
@@ -129,17 +169,26 @@
   <Style Selector="Button.primary TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
   </Style>
+  <Style Selector="Button.primary mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+  </Style>
   <Style Selector="Button.danger TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource OnDangerBrush}" />
   </Style>
+  <Style Selector="Button.danger mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource OnDangerBrush}" />
+  </Style>
   <Style Selector="Button.destructive TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
+  </Style>
+  <Style Selector="Button.destructive mi|MaterialIcon">
     <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
   </Style>
   <Style Selector="Button.danger">
     <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource OnDangerBrush}" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
     <Setter Property="Padding" Value="16,4" />
   </Style>
   <Style Selector="Button.danger:pointerover">
@@ -173,8 +222,8 @@
        macOS modernes / Material 3. Les écrans de connexion et de veille gardent leur verre
        translucide (.w11.onbrand). Les recherches et champs intégrés restent indépendants. -->
   <Style Selector="TextBox">
-    <Setter Property="MinHeight" Value="44" />
-    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="MinHeight" Value="{DynamicResource FieldHeight}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     <Setter Property="PlaceholderForeground" Value="{DynamicResource MutedBrush}" />
@@ -185,21 +234,28 @@
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Padding" Value="14,8" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
+    <!-- Indication de focus animée en 120 ms : aucune largeur de champ ne change. -->
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.12" Easing="{x:Static infra:Motion.Smooth}" />
+      </Transitions>
+    </Setter>
   </Style>
   <Style Selector="TextBox:pointerover">
     <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
   </Style>
+  <!-- Focus WinUI : filet d'accent et trait inférieur de 2 px -->
   <Style Selector="TextBox:focus">
     <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="BorderThickness" Value="1,1,1,2" />
   </Style>
   <!-- Recherche : le même champ partout, celui du menu. Pilule grise, loupe bleue, croix pour effacer. -->
   <Style Selector="TextBox.search">
-    <Setter Property="CornerRadius" Value="23" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSearch}" />
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="MinHeight" Value="{DynamicResource SearchHeight}" />
     <Setter Property="Padding" Value="2,0,6,0" />
     <Setter Property="FontSize" Value="15" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -258,7 +314,7 @@
   <!-- Listes et dates des formulaires : même champ Windows 11 que le texte -->
   <Style Selector="ComboBox.w11, CalendarDatePicker.w11">
     <Setter Property="MinHeight" Value="40" />
-    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
     <Setter Property="BorderThickness" Value="0,0,0,1" />
@@ -284,7 +340,7 @@
        Sélecteurs spécifiques + bordure interne du template pour rendre le changement visible. -->
   <Style Selector="TextBox.w11:not(.onbrand)">
     <Setter Property="MinHeight" Value="44" />
-    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
@@ -311,7 +367,7 @@
   </Style>
   <Style Selector="ComboBox.w11, CalendarDatePicker.w11">
     <Setter Property="MinHeight" Value="44" />
-    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
@@ -354,10 +410,10 @@
   <Style Selector="TextBox.w11.onbrand:disabled /template/ Border#PART_BorderElement">
     <Setter Property="Background" Value="#1FFFFFFF" />
   </Style>
-  <Style Selector="TextBox.w11.onbrand /template/ TextBlock#PART_Watermark">
+  <Style Selector="TextBox.w11.onbrand /template/ TextBlock#PART_Placeholder">
     <Setter Property="Foreground" Value="#C8FFFFFF" />
   </Style>
-  <Style Selector="TextBox.w11.onbrand:focus /template/ TextBlock#PART_Watermark">
+  <Style Selector="TextBox.w11.onbrand:focus /template/ TextBlock#PART_Placeholder">
     <Setter Property="Foreground" Value="#A6FFFFFF" />
   </Style>
   <!-- Boutons ronds dans le champ (œil, flèche) et boutons de verre sur le fond bleu -->
@@ -426,12 +482,14 @@
   <Style Selector="Border.googlebar.pill">
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSearch}" />
     <Setter Property="Padding" Value="2,0,4,0" />
-    <Setter Property="MinHeight" Value="46" />
+    <Setter Property="MinHeight" Value="{DynamicResource SearchBarHeight}" />
   </Style>
+  <!-- Focus : filet d'accent et trait inférieur de 2 px, comme la zone de recherche de Windows 11 -->
   <Style Selector="Border.googlebar.pill:focus-within">
     <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="1,1,1,2" />
   </Style>
   <Style Selector="TextBox.searchfield">
     <Setter Property="BorderThickness" Value="0" />
@@ -443,7 +501,7 @@
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
   <Style Selector="Border.googlebar.pill TextBox.searchfield">
-    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontSize" Value="{DynamicResource FsSearch}" />
   </Style>
   <Style Selector="TextBox.searchfield /template/ Border#PART_BorderElement">
     <Setter Property="BorderThickness" Value="0" />
@@ -460,7 +518,7 @@
   <Style Selector="Button.baricon">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusIconButton}" />
     <Setter Property="Padding" Value="0" />
     <Setter Property="Width" Value="44" />
     <Setter Property="Height" Value="44" />
@@ -499,7 +557,7 @@
     <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="Padding" Value="12,6" />
     <Setter Property="MinHeight" Value="32" />
     <Setter Property="Margin" Value="0,0,6,6" />
@@ -516,16 +574,18 @@
   </Style>
   <!-- Contenu de la recherche : titres de rubrique, lignes, tuiles et pastille de sorte -->
   <Style Selector="TextBlock.searchsection">
-    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontSize" Value="13" />
     <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Margin" Value="20,18,20,8" />
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    <Setter Property="Margin" Value="10,10,10,6" />
   </Style>
   <Style Selector="Button.searchrow">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="0" />
-    <Setter Property="Padding" Value="20,10" />
-    <Setter Property="MinHeight" Value="60" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusRow}" />
+    <Setter Property="Margin" Value="2,0" />
+    <Setter Property="Padding" Value="12,9" />
+    <Setter Property="MinHeight" Value="56" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -537,18 +597,19 @@
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
   </Style>
   <Style Selector="Button.searchtile">
-    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-    <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="18" />
-    <Setter Property="Padding" Value="12,0,8,0" />
-    <Setter Property="Height" Value="72" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="Padding" Value="11,9" />
+    <Setter Property="MinHeight" Value="64" />
     <Setter Property="Margin" Value="4" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
   <Style Selector="Button.searchtile /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
   </Style>
   <Style Selector="Button.searchtile:pointerover /template/ ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
@@ -561,7 +622,7 @@
   </Style>
   <Style Selector="ComboBox, CalendarDatePicker">
     <Setter Property="MinHeight" Value="44" />
-    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
@@ -581,7 +642,7 @@
        :not(.onbrand) garantit que connexion, récupération et verrouillage restent inchangés. -->
   <Style Selector="TextBox.w11:not(.onbrand), ComboBox.w11, CalendarDatePicker.w11">
     <Setter Property="MinHeight" Value="44" />
-    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
@@ -590,7 +651,7 @@
     <Setter Property="Padding" Value="14,7" />
   </Style>
   <Style Selector="TextBox.w11:not(.onbrand) /template/ Border#PART_BorderElement">
-    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
@@ -617,31 +678,123 @@
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
   </Style>
 
-  <!-- Blocs de réglages macOS : gris clair, coins de 12 px, sans trait ni ombre -->
-  <Style Selector="Border.card">
+  <!-- Accueil partagé : le secrétariat et le compte enseignant utilisent désormais
+       les mêmes composants natifs. HomeView peut garder ses styles de proximité. -->
+  <Style Selector="Border.desktopwelcome">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="BoxShadow" Value="0 5 24 0 #12000000" />
+  </Style>
+  <Style Selector="Button.heroaction">
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="Padding" Value="12,9" />
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.heroaction:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+    <!-- Blocs de réglages macOS : gris clair, coins de 12 px, sans trait ni ombre -->
+  <!-- Carte façon SCOLIA Console : blanche sur le fond clair, cernée d'un filet fin et d'une ombre à peine visible. -->
+  <Style Selector="Border.card">
+    <Setter Property="infra:Reveal.Enabled" Value="True" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="Padding" Value="16" />
+  </Style>
+  <Style Selector="TextBlock.workspaceheading">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Margin" Value="12,12,12,9" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="Border.workspaceglyph">
+    <Setter Property="Width" Value="34" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.workspaceglyph > PathIcon">
+    <Setter Property="Width" Value="20" />
+    <Setter Property="Height" Value="20" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="PathIcon.workspacechevron">
+    <Setter Property="Width" Value="14" />
+    <Setter Property="Height" Value="14" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="Button.workspacerow">
+    <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="Padding" Value="10,8" />
+    <Setter Property="MinHeight" Value="52" />
+  </Style>
+  <Style Selector="Button.workspacerow:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+  <Style Selector="Button.workspacerow:pressed /template/ ContentPresenter#PART_ContentPresenter,
+                   Button.workspacerow:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+  </Style>
+  <Style Selector="LayoutTransformControl.anim Button.workspacerow /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.12" Easing="{x:Static infra:Motion.Smooth}" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <!-- Les mêmes blocs de contenu sont utilisés par l'accueil du secrétariat
+       et l'espace enseignant, sans variation de surface ou de rayon. -->
+  <Style Selector="Border.desktopgroup">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="BoxShadow" Value="0 0 0 0 #00000000" />
     <Setter Property="Padding" Value="16" />
   </Style>
   <Style Selector="Border.tile">
-    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-    <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="infra:Reveal.Enabled" Value="True" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="Padding" Value="16,12" />
   </Style>
   <!-- Icône façon Android 16 et macOS : pictogramme blanc plein sur un carré très arrondi de couleur franche.
        Un reflet clair en haut et une ombre douce lui donnent du relief, en clair comme en sombre. -->
+  <!-- Tuiles d'icônes : aplat net, sans reflet ; pictogramme centré sur des pixels entiers (24 − 16 = 8, 30 − 18 = 12,
+       42 − 24 = 18) et coloré en blanc ou en noir selon le contraste avec la tuile (infra:TileGlyph). -->
   <Style Selector="Border.appicon">
     <Setter Property="Width" Value="24" />
     <Setter Property="Height" Value="24" />
     <Setter Property="CornerRadius" Value="7" />
     <Setter Property="VerticalAlignment" Value="Center" />
-    <Setter Property="BoxShadow" Value="inset 0 8 9 -7 #47FFFFFF, 0 1 2 0 #24000000" />
+    <Setter Property="BoxShadow" Value="0 1 2 0 #24000000" />
+    <Setter Property="infra:TileGlyph.Enabled" Value="True" />
   </Style>
   <Style Selector="Border.appicon > mi|MaterialIcon">
-    <Setter Property="Width" Value="15" />
-    <Setter Property="Height" Value="15" />
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
     <Setter Property="Foreground" Value="{DynamicResource OnToneBrush}" />
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="VerticalAlignment" Value="Center" />
@@ -650,21 +803,107 @@
     <Setter Property="Width" Value="42" />
     <Setter Property="Height" Value="42" />
     <Setter Property="CornerRadius" Value="12" />
-    <Setter Property="BoxShadow" Value="inset 0 14 14 -11 #47FFFFFF, 0 2 5 0 #26000000" />
+    <Setter Property="BoxShadow" Value="0 2 5 0 #26000000" />
   </Style>
   <Style Selector="Border.appicon.large > mi|MaterialIcon">
-    <Setter Property="Width" Value="25" />
-    <Setter Property="Height" Value="25" />
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
   </Style>
   <Style Selector="Border.appicon.medium">
     <Setter Property="Width" Value="30" />
     <Setter Property="Height" Value="30" />
     <Setter Property="CornerRadius" Value="9" />
-    <Setter Property="BoxShadow" Value="inset 0 10 11 -8 #47FFFFFF, 0 1 3 0 #24000000" />
+    <Setter Property="BoxShadow" Value="0 1 3 0 #24000000" />
   </Style>
   <Style Selector="Border.appicon.medium > mi|MaterialIcon">
     <Setter Property="Width" Value="18" />
     <Setter Property="Height" Value="18" />
+  </Style>
+  <!-- Avatar de fonctionnalité (accueil) : disque de couleur franche et son pictogramme, entouré d'un halo doux
+       de la même teinte, avec un léger reflet. Le pictogramme garde le contrôle de contraste des tuiles. -->
+  <Style Selector="Grid.featureavatar">
+    <Setter Property="Width" Value="60" />
+    <Setter Property="Height" Value="60" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style Selector="Grid.featureavatar > Ellipse.halo">
+    <Setter Property="Opacity" Value="0.16" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="Grid.featureavatar > Border.appicon.avatar">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="BoxShadow" Value="0 3 8 0 #26000000" />
+  </Style>
+  <Style Selector="Grid.featureavatar > Border.appicon.avatar > mi|MaterialIcon">
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+  </Style>
+  <Style Selector="Grid.featureavatar > Ellipse.sheen">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Fill">
+      <LinearGradientBrush StartPoint="20%,0%" EndPoint="60%,70%">
+        <GradientStop Offset="0" Color="#47FFFFFF" />
+        <GradientStop Offset="0.55" Color="#00FFFFFF" />
+      </LinearGradientBrush>
+    </Setter>
+  </Style>
+  <!-- Avatar des lignes (état, caisse, aperçu, reçus) : même dessin, à la taille des lignes -->
+  <Style Selector="Grid.featureavatar.mini">
+    <Setter Property="Width" Value="38" />
+    <Setter Property="Height" Value="38" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Grid.featureavatar.mini > Border.appicon.avatar, Grid.featureavatar.mini > Ellipse.sheen">
+    <Setter Property="Width" Value="30" />
+    <Setter Property="Height" Value="30" />
+  </Style>
+  <Style Selector="Grid.featureavatar.mini > Border.appicon.avatar">
+    <Setter Property="CornerRadius" Value="15" />
+    <Setter Property="BoxShadow" Value="0 2 5 0 #22000000" />
+  </Style>
+  <Style Selector="Grid.featureavatar.mini > Border.appicon.avatar > mi|MaterialIcon">
+    <Setter Property="Width" Value="17" />
+    <Setter Property="Height" Value="17" />
+  </Style>
+  <Style Selector="Grid.featureavatar.small">
+    <Setter Property="Width" Value="50" />
+    <Setter Property="Height" Value="50" />
+  </Style>
+  <Style Selector="Grid.featureavatar.small > Border.appicon.avatar, Grid.featureavatar.small > Ellipse.sheen">
+    <Setter Property="Width" Value="38" />
+    <Setter Property="Height" Value="38" />
+  </Style>
+  <Style Selector="Grid.featureavatar.small > Border.appicon.avatar">
+    <Setter Property="CornerRadius" Value="19" />
+  </Style>
+  <Style Selector="Grid.featureavatar.small > Border.appicon.avatar > mi|MaterialIcon">
+    <Setter Property="Width" Value="20" />
+    <Setter Property="Height" Value="20" />
+  </Style>
+  <!-- Avatars des pages d'accès : voir Themes/Auth.axaml -->
+  <!-- Carte d'avatar de l'accueil : numéro discret dans le bandeau, illustration prête à s'animer -->
+  <Style Selector="TextBlock.cardnumber">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    <Setter Property="Opacity" Value="0.7" />
+  </Style>
+  <!-- Petit avatar illustré des listes de l'accueil (aperçu, à faire, reçus) -->
+  <Style Selector="Image.rowillustration">
+    <Setter Property="Width" Value="40" /><Setter Property="Height" Value="40" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Image.featureillustration">
+    <Setter Property="RenderTransformOrigin" Value="50%,60%" />
+    <Setter Property="RenderTransform" Value="none" />
   </Style>
   <!-- Barre de filtres : les critères posés directement sur le fond, sans encadré -->
   <Style Selector="Border.band, Border.filterbar">
@@ -694,12 +933,12 @@
 
   <!-- Téléphone : une carte par ligne de tableau -->
   <Style Selector="Border.phonecard">
-    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="Padding" Value="14,12,8,12" />
     <Setter Property="Margin" Value="0,0,0,8" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
   </Style>
   <Style Selector="Border.phonecard.selected">
     <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
@@ -721,8 +960,8 @@
   <Style Selector="Button.phoneshowmore">
     <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
-    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
+    <Setter Property="MinHeight" Value="48" />
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
   <Style Selector="Button.phonemore">
@@ -741,16 +980,19 @@
   <Style Selector="TextBlock.fieldlabel">
     <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
     <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
   <!-- Titre de rubrique : texte gras ordinaire, comme les en-têtes des Paramètres de Windows -->
   <Style Selector="TextBlock.section">
+    <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="Margin" Value="0,4,0,0" />
   </Style>
   <!-- Étiquette neutre : critère requis, format, catégorie -->
   <Style Selector="Border.chip">
     <Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Padding" Value="6,1" />
   </Style>
   <Style Selector="Border.chip > TextBlock">
@@ -762,7 +1004,7 @@
     <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Padding" Value="2" />
   </Style>
   <Style Selector="RadioButton.segment">
@@ -787,6 +1029,98 @@
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
 
+  <!-- SCOLIA Pro : champs métier compacts, assortis au sélecteur « Dossiers du personnel / Paie mensuelle ».
+       Un champ éditable conserve sa sémantique (mois = liste déroulante, date = calendrier),
+       mais il n'utilise plus la grande capsule de 44 dp. Les écrans d'identification
+       (.onbrand), recherche (.search / .searchfield) et saisie de code (.code)
+       conservent leur présentation et leur accessibilité propres. -->
+  <Style Selector="ComboBox, CalendarDatePicker, NumericUpDown">
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="ComboBox">
+    <Setter Property="Padding" Value="11,4" />
+  </Style>
+  <Style Selector="ComboBox.w11, CalendarDatePicker.w11">
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="ComboBox /template/ Border#Background, ComboBox.w11 /template/ Border#Background">
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="ComboBox:pointerover /template/ Border#Background, ComboBox.w11:pointerover /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
+  </Style>
+  <Style Selector="ComboBox:focus-within, CalendarDatePicker:focus-within">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+  </Style>
+  <!-- Exclure explicitement les champs de connexion bleu cobalt :
+       un sélecteur métier trop spécifique remplaçait leur fond par Surface2Brush,
+       alors que le texte demeurait blanc (champ blanc sur blanc). -->
+  <Style Selector="TextBox:not(.onbrand):not(.authfield):not(.iosauthfield):not(.ioslockfield):not(.search):not(.searchfield):not(.code)">
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="11,5" />
+  </Style>
+  <Style Selector="TextBox.w11:not(.onbrand):not(.code)">
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="11,5" />
+  </Style>
+  <Style Selector="TextBox.w11:not(.onbrand):not(.code) /template/ Border#PART_BorderElement">
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FieldLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="TextBox.w11:not(.onbrand):not(.code):pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
+  </Style>
+  <Style Selector="TextBox.w11:not(.onbrand):not(.code):focus /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+  </Style>
+  <Style Selector="CalendarDatePicker /template/ TextBox#PART_TextBox">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="Padding" Value="4,2" />
+  </Style>
+  <Style Selector="CalendarDatePicker /template/ TextBox#PART_TextBox /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <!-- La zone de texte interne d'un champ de date ne dessine jamais son propre cadre : seul le champ entier
+       porte le contour (sinon un second cadre apparaît sur les champs blancs). -->
+  <Style Selector="CalendarDatePicker /template/ TextBox#PART_TextBox:not(.onbrand)">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="CalendarDatePicker /template/ TextBox#PART_TextBox:pointerover /template/ Border#PART_BorderElement, CalendarDatePicker /template/ TextBox#PART_TextBox:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+
   <!-- Bouton compact des cartes et des lignes -->
   <Style Selector="Button.small">
     <Setter Property="MinHeight" Value="28" />
@@ -801,7 +1135,7 @@
     <Setter Property="Margin" Value="10,0" />
   </Style>
   <Style Selector="Border.badge">
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Padding" Value="8,2" />
   </Style>
   <Style Selector="TextBlock.badge">
@@ -811,12 +1145,14 @@
 
   <!-- Tableaux : liste posée dans un bloc gris arrondi, traits fins entre les lignes, sélection bleu pâle -->
   <Style Selector="DataGrid">
+    <Setter Property="infra:Reveal.Enabled" Value="True" />
     <Setter Property="infra:GridPriority.Adaptive" Value="True" />
     <Setter Property="infra:RowMenu.Enabled" Value="True" />
     <Setter Property="infra:PhoneCards.Enabled" Value="True" />
-    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-    <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="RowHeight" Value="{DynamicResource RowHeight}" />
     <Setter Property="GridLinesVisibility" Value="{DynamicResource GridLines}" />
     <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource LineBrush}" />
@@ -825,18 +1161,31 @@
     <Setter Property="CanUserResizeColumns" Value="True" />
     <Setter Property="CanUserSortColumns" Value="True" />
   </Style>
+  <!-- Un interrupteur verrouillé mais ouvert reste lisible comme « ouvert » : couleur d'accent atténuée, pas le gris du fermé. -->
+  <Style Selector="ToggleSwitch:checked:disabled /template/ Border#SwitchKnobBounds">
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="Opacity" Value="0.5" />
+  </Style>
+  <Style Selector="ToggleSwitch:checked:disabled /template/ Ellipse#SwitchKnobOn">
+    <Setter Property="Fill" Value="White" />
+  </Style>
   <Style Selector="DataGridColumnHeader">
-    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Background" Value="{DynamicResource TableHeadBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <!-- Le titre de colonne commence au même endroit que le texte des cellules -->
-    <Setter Property="Padding" Value="22,4,8,4" />
+    <Setter Property="Padding" Value="{DynamicResource TableHeaderPadding}" />
     <Setter Property="MinWidth" Value="0" />
   </Style>
+  <!-- Tableaux denses : le chiffre et le nom restent en Regular, l'en-tête porte la graisse -->
+  <!-- Cellule trop étroite : points de suspension, jamais un mot coupé net -->
+  <Style Selector="DataGridCell TextBlock"><Setter Property="FontWeight" Value="Normal" /><Setter Property="TextTrimming" Value="CharacterEllipsis" /><Setter Property="ToolTip.Tip" Value="{Binding $self.Text}" /></Style>
   <Style Selector="DataGridColumnHeader TextBlock">
     <Setter Property="TextWrapping" Value="NoWrap" />
-    <Setter Property="TextTrimming" Value="None" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="ToolTip.Tip" Value="{Binding $self.Text}" />
   </Style>
   <Style Selector="DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
     <Setter Property="Fill" Value="{DynamicResource AccentSoftBrush}" />
@@ -874,6 +1223,26 @@
   <Style Selector="ProgressBar.slim /template/ Border#PART_Indicator">
     <Setter Property="CornerRadius" Value="2" />
   </Style>
+  <!-- Jauge des tableaux de bord : 8 px, coins pleins, piste teintée -->
+  <Style Selector="ProgressBar.meter">
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="8" />
+    <Setter Property="Height" Value="8" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" />
+  </Style>
+  <Style Selector="ProgressBar.meter /template/ Border#ProgressBarTrack"><Setter Property="CornerRadius" Value="4" /></Style>
+  <Style Selector="ProgressBar.meter /template/ Border#PART_Indicator"><Setter Property="CornerRadius" Value="4" /></Style>
+  <!-- Tuile d'icône des indicateurs -->
+  <Style Selector="Border.kpiicon">
+    <Setter Property="Width" Value="36" /><Setter Property="Height" Value="36" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+  </Style>
+  <Style Selector="Border.kpiicon > mi|MaterialIcon">
+    <Setter Property="Width" Value="20" /><Setter Property="Height" Value="20" />
+    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.kpiicon"><Setter Property="Width" Value="30" /><Setter Property="Height" Value="30" /></Style>
   <Style Selector="ProgressBar.warn">
     <Setter Property="Foreground" Value="{DynamicResource ToneOrange}" />
   </Style>
@@ -886,11 +1255,15 @@
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="Padding" Value="6,5" />
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="FontWeight" Value="Normal" />
   </Style>
   <Style Selector="Button.listrow:pointerover">
     <Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" />
+  </Style>
+  <!-- Réponse à l'appui stable : ni déplacement, ni redimensionnement des lignes. -->
+  <Style Selector="Button.listrow:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.searchrow:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.searchtile:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
   </Style>
 
   <!-- Listes de choix : la sélection prend le bleu tonal de la charte -->
@@ -925,7 +1298,7 @@
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Padding" Value="14,6" />
   </Style>
   <Style Selector="Button.tab.selected">
@@ -957,7 +1330,7 @@
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Padding" Value="6,4" />
     <Setter Property="MinHeight" Value="0" />
   </Style>
@@ -999,7 +1372,7 @@
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusRow}" />
     <Setter Property="Padding" Value="10,4" />
     <Setter Property="MinHeight" Value="30" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -1026,19 +1399,30 @@
   <Style Selector="Button.toolicon:pointerover">
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
   </Style>
+  <!-- État clavier : filet visible, sans modifier la taille de la commande. -->
+  <Style Selector="Button.toolicon:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="Button.toolicon:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+  </Style>
   <!-- Flèches retour et suivant groupées dans une capsule, comme la barre d'outils des Réglages -->
   <Style Selector="Border.navcapsule">
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="Padding" Value="2" />
     <Setter Property="BoxShadow" Value="0 1 3 0 #14000000" />
   </Style>
   <Style Selector="Border.navcapsule Button">
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="CornerRadius" Value="14" />
-    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Width" Value="36" /><Setter Property="Height" Value="32" />
+    <Setter Property="Padding" Value="6" />
     <Setter Property="MinHeight" Value="0" />
   </Style>
   <Style Selector="Border.navcapsule Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
@@ -1051,21 +1435,22 @@
   <!-- Volet latéral natif : une seule surface, peu d'ombre et des groupes clairs. -->
   <Style Selector="Border.sidebar">
     <Setter Property="Background" Value="{DynamicResource SidebarBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SidebarStrokeBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="16" />
-    <Setter Property="BoxShadow" Value="0 1 5 0 #10000000" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="BoxShadow" Value="{DynamicResource SidebarShadow}" />
   </Style>
   <!-- Blocs métier continus inspirés des réglages natifs, sans séparateur au-dessus du premier outil. -->
   <Style Selector="TextBlock.navblocktitle">
+    <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     <Setter Property="Margin" Value="12,7,0,3" />
   </Style>
   <Style Selector="Border.navaccordion">
-    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Background" Value="{DynamicResource NavItemBrush}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="ClipToBounds" Value="True" />
   </Style>
   <Style Selector="Button.navcategory">
@@ -1076,7 +1461,7 @@
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="MinHeight" Value="32" />
     <Setter Property="Padding" Value="8,4" />
-    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
   </Style>
   <Style Selector="Button.navcategory:pointerover">
@@ -1090,15 +1475,23 @@
     <Setter Property="HorizontalContentAlignment" Value="Left" />
     <Setter Property="Padding" Value="8,0,10,0" />
     <Setter Property="MinHeight" Value="30" />
-    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="FontWeight" Value="Normal" />
   </Style>
   <Style Selector="Button.navitem:pointerover">
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
   </Style>
-  <Style Selector="Button.navitem.selected">
+  <Style Selector="Button.navitem:focus-visible /template/ ContentPresenter#PART_ContentPresenter,
+                   Button.navcategory:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+  </Style>
+  <!-- Sélection du volet de Windows 11 : fond discret et pastille d'accent de 3 × 16 px à gauche -->
+  <Style Selector="Button.navitem.selected">
+    <Setter Property="Background" Value="{DynamicResource NavSelectedBrush}" />
     <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.navitem.selected Border.navmark">
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
   </Style>
 
   <Style Selector="Border.navmark">
@@ -1125,18 +1518,34 @@
   <Style Selector="Border.scrim">
     <Setter Property="Background" Value="{DynamicResource ScrimBrush}" />
   </Style>
+  <Style Selector="Border.dialogsurface">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="BoxShadow" Value="0 8 24 0 #29000000" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.dialogsurface">
+    <Setter Property="BoxShadow" Value="none" />
+  </Style>
+  <Style Selector="Border.fullscreendialog Border.dialogsurface">
+    <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+  </Style>
   <!-- Bannière d'alerte : carte claire qui descend du haut, comme les notifications d'Android 16 -->
   <Style Selector="Border.alertbanner">
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="BoxShadow" Value="0 8 24 0 #33000000" />
     <Setter Property="ClipToBounds" Value="True" />
   </Style>
   <Style Selector="Border.alertbanner[IsVisible=True]">
     <Style.Animations>
-      <Animation Duration="0:0:0.28" Easing="CubicEaseOut" FillMode="Both">
+      <Animation Duration="0:0:0.28" Easing="{x:Static infra:Motion.Spring}" FillMode="Both">
         <KeyFrame Cue="0%"><Setter Property="TranslateTransform.Y" Value="-28" /><Setter Property="Opacity" Value="0" /></KeyFrame>
         <KeyFrame Cue="100%"><Setter Property="TranslateTransform.Y" Value="0" /><Setter Property="Opacity" Value="1" /></KeyFrame>
       </Animation>
@@ -1154,7 +1563,7 @@
   </Style>
   <Style Selector="Border.snackbar">
     <Setter Property="Background" Value="{DynamicResource SnackbarBrush}" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="BoxShadow" Value="0 4 12 0 #26000000" />
     <Setter Property="Padding" Value="16,12" />
     <Setter Property="MaxWidth" Value="520" />
@@ -1171,7 +1580,7 @@
   <!-- Bouton « Menu » en tête de la barre, comme dans Acrobat -->
   <Style Selector="Button.menubutton">
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Padding" Value="10,5" />
     <Setter Property="Margin" Value="0,0,6,6" />
     <Setter Property="FontWeight" Value="SemiBold" />
@@ -1211,7 +1620,7 @@
   </Style>
   <Style Selector="Button.tabclose">
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
     <Setter Property="Padding" Value="3" />
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Margin" Value="0,0,6,0" />
@@ -1234,21 +1643,40 @@
   </Style>
   <!-- Carte d'outil de l'accueil -->
   <Style Selector="Border.toolcard">
-    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="infra:Reveal.Enabled" Value="True" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="Padding" Value="18,18,18,16" />
     <Setter Property="MinHeight" Value="170" />
+    <Setter Property="BoxShadow" Value="0 0 0 0 #00000000" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.18" Easing="{x:Static infra:Motion.Spring}" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.18" Easing="{x:Static infra:Motion.Smooth}" />
+      </Transitions>
+    </Setter>
   </Style>
+  <!-- Élévation au survol, façon Material/Flutter : l'ombre s'élargit doucement, le filet se renforce. -->
   <Style Selector="Border.toolcard:pointerover">
-    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
+    <Setter Property="BoxShadow" Value="0 0 0 0 #00000000" />
   </Style>
-  <!-- Bouton Fermer des fenêtres : une croix ronde et discrète en haut à droite, comme sur macOS -->
+  <!-- Carte de fonctionnalité de l'accueil : avatar, titre et description sur deux lignes -->
+  <Style Selector="Border.toolcard.feature">
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="16,16,16,14" />
+  </Style>
+  <Style Selector="Border.toolcard.feature.compact">
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="13,13,13,12" />
+  </Style>
+  <!-- Commande de fermeture des panneaux de l'application. -->
   <Style Selector="Button.closex">
     <Setter Property="Width" Value="28" />
     <Setter Property="Height" Value="28" />
-    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
     <Setter Property="Padding" Value="0" />
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
     <Setter Property="BorderThickness" Value="0" />
@@ -1265,13 +1693,34 @@
   <Style Selector="Button.closex:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource SidebarSelectedBrush}" />
   </Style>
+  <Style Selector="Border.dialogsurface Button.closex">
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="AutomationProperties.Name" Value="Fermer" />
+  </Style>
+  <Style Selector="Border.dialogsurface Button.closex PathIcon">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.dialogsurface Button.closex">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="44" />
+  </Style>
+  <Style Selector="Border.dialogsurface Button.closex:focus-visible /template/ ContentPresenter#PART_ContentPresenter,
+                   Border.dialogsurface Button.closex:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+  </Style>
 
   <!-- Carte cliquable : le bouton s'efface, la carte porte le survol -->
   <Style Selector="Button.cardbutton">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Padding" Value="0" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="Cursor" Value="Hand" />
@@ -1314,23 +1763,21 @@
   <Style Selector="Border.titlerow TextBlock.muted">
     <Setter Property="Foreground" Value="{DynamicResource HeaderMutedBrush}" />
   </Style>
-  <!-- Connexion : la barre de titre prend le bleu du bandeau de l'établissement, juste en dessous -->
-  <Style Selector="Border.titlerow.onbrand">
-    <Setter Property="Background">
-      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-        <GradientStop Offset="0" Color="#1565E0" />
-        <GradientStop Offset="1" Color="#0C47B0" />
-      </LinearGradientBrush>
-    </Setter>
+  <!-- Écrans d'accès : prolonger le fond du formulaire dans le titre. -->
+  <Style Selector="Border.titlerow.authchrome, Border.titlerow.lockchrome">
+    <Setter Property="Background" Value="{DynamicResource BgBrush}" />
   </Style>
-  <Style Selector="Border.titlerow.onbrand TextBlock">
-    <Setter Property="Foreground" Value="White" />
+  <Style Selector="Border.titlerow.authchrome TextBlock, Border.titlerow.lockchrome TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+  </Style>
+  <Style Selector="Border.titlerow.lockchrome TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
   </Style>
   <Style Selector="Border.appheader">
     <Setter Property="Background" Value="{DynamicResource HeaderBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource HeaderLineBrush}" />
     <Setter Property="BorderThickness" Value="0,0,0,1" />
-    <Setter Property="Padding" Value="12,9,14,9" />
+    <Setter Property="Padding" Value="12,7,14,7" />
   </Style>
   <Style Selector="Border.appheader TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource HeaderTextBrush}" />
@@ -1369,6 +1816,7 @@
   </Style>
   <!-- Actions de la page dans le bandeau : blanc translucide ; l'action principale garde la couleur d'accent -->
   <Style Selector="Button.hdr:not(.primary):not(.danger)">
+    <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Background" Value="{DynamicResource HeaderControlBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource HeaderTextBrush}" />
   </Style>
@@ -1384,7 +1832,7 @@
     <Setter Property="Foreground" Value="{DynamicResource HeaderMutedBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource HeaderLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="17" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusChip}" />
     <Setter Property="Height" Value="34" />
     <Setter Property="Padding" Value="12,0,6,0" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -1411,9 +1859,10 @@
   </Style>
   <!-- Compte connecté : ses initiales et son nom, dans une capsule -->
   <Style Selector="Button.accountchip">
+    <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Background" Value="{DynamicResource HeaderControlBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource HeaderTextBrush}" />
-    <Setter Property="CornerRadius" Value="17" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusChip}" />
     <Setter Property="Padding" Value="4,3,12,3" />
     <Setter Property="MinHeight" Value="0" />
   </Style>
@@ -1438,13 +1887,13 @@
     <Setter Property="MinHeight" Value="50" />
     <Setter Property="MinWidth" Value="150" />
     <Setter Property="Padding" Value="22,0" />
-    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
     <Setter Property="FontSize" Value="16" />
   </Style>
   <!-- Téléphone : bouton « Filtres » qui déplie les filtres secondaires d'une liste -->
   <Style Selector="Button.filtertoggle">
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusRow}" />
     <Setter Property="MinHeight" Value="40" />
     <Setter Property="Padding" Value="12,0" />
     <Setter Property="Margin" Value="0,2,0,6" />
@@ -1458,7 +1907,7 @@
   <!-- Encadré de marche à suivre : une consigne courte, en bleu doux, au-dessus de ce qu'elle concerne -->
   <Style Selector="Border.guide">
     <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="Padding" Value="14,10" />
   </Style>
   <Style Selector="Border.guide mi|MaterialIcon"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /></Style>

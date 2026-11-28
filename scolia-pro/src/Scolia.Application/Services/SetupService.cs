@@ -39,11 +39,26 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
             .Require(!string.IsNullOrWhiteSpace(input.AdminDisplayName), "adminDisplayName", "Nom du compte secrétariat obligatoire.")
             .ThrowIfInvalid();
         PasswordPolicy.Validate(input.AdminPassword);
+        var institutionType = InstitutionProfiles.Canonicalize(string.IsNullOrWhiteSpace(input.InstitutionType) ? null : input.InstitutionType.Trim());
+        if (!InstitutionProfiles.IsKnown(institutionType))
+            throw new DomainException("typeEtablissement", "Type d'établissement inconnu.");
+        if (!InstitutionProfiles.IsEnabled(institutionType))
+            throw new DomainException("typeEtablissement", "Le type d'établissement demandé n'est pas activable.");
+        if (!Enum.TryParse<SchoolGovernanceKind>(input.Governance, true, out var governance)
+            || !Enum.IsDefined(governance))
+            throw new DomainException("governance", "Choisissez un régime privé ou public reconnu.");
+        // Les jeux d'essai ITM ne doivent jamais contaminer une école publique ou un cursus LMD.
+        if (input.LoadDemoData && (institutionType != InstitutionProfiles.ItmIm
+                                   || governance != SchoolGovernanceKind.Prive))
+            throw new DomainException("loadDemoData", "Les données de démonstration sont réservées à un ITM/IM privé.");
         var school = new SchoolProfile
         {
+            InstitutionType = institutionType, Governance = governance,
             Name = input.SchoolName.Trim(), ShortName = input.ShortName.Trim(), Motto = string.IsNullOrWhiteSpace(input.Motto) ? null : input.Motto.Trim(),
             City = input.City, Phone = IdentityRules.NormalizePhone(input.Phone), CurrencyCode = input.CurrencyCode.ToUpperInvariant(), CurrencySymbol = input.CurrencySymbol.Trim(),
             ReceiptFooter = "Conservez ce reçu. Son authenticité peut être vérifiée en scannant le code QR.",
+            // Le dollar se compte en cents ; le franc congolais reste en unités entières.
+            WholeAmountsOnly = !string.Equals(input.CurrencyCode, "USD", StringComparison.OrdinalIgnoreCase),
         };
         db.Schools.Add(school);
         if (input.LastOnTimeDay is < 1 or > 28)
@@ -54,6 +69,43 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
         var year = SchoolService.BuildYear(input.YearLabel, input.StartMonth, count, input.LastOnTimeDay + 1);
         year.IsCurrent = true;
         db.AcademicYears.Add(year);
+        // Le nouvel assistant peut déclarer les cycles du complexe dès l'installation.
+        // Un ancien client sans ce champ conserve le parcours Paramètres > Cycles scolaires.
+        // Aucun tarif n'est imposé ni mensualité facturée.
+        SchoolCycleKind? initialCycle = institutionType switch
+        {
+            InstitutionProfiles.Maternelle => SchoolCycleKind.Maternelle,
+            InstitutionProfiles.Primaire => SchoolCycleKind.Primaire,
+            InstitutionProfiles.Secondaire => SchoolCycleKind.Secondaire,
+            _ => null,
+        };
+        var initialCycles = new List<SchoolCycle>();
+        if (initialCycle is { } kind)
+            initialCycles.Add(new SchoolCycle { SchoolId = school.Id, Kind = kind, Name = kind.ToString() });
+        if (input.InitialSchoolCycles is not null)
+        {
+            if (institutionType != InstitutionProfiles.ComplexeScolaire)
+                throw new DomainException("cycleScolaire", "Le choix de plusieurs cycles est réservé au complexe scolaire.");
+            foreach (var code in input.InitialSchoolCycles)
+            {
+                if (!Enum.TryParse<SchoolCycleKind>(code, false, out var selected) ||
+                    !Enum.IsDefined(selected) || selected.ToString() != code)
+                    throw new DomainException("cycleScolaire", "Cycle scolaire inconnu.");
+                initialCycles.Add(new SchoolCycle { SchoolId = school.Id, Kind = selected, Name = code });
+            }
+            SchoolCycleRules.ValidateOffering(school, initialCycles);
+        }
+        else if (initialCycle is not null)
+            SchoolCycleRules.ValidateOffering(school, initialCycles);
+        foreach (var cycle in initialCycles)
+        {
+            db.SchoolCycles.Add(cycle);
+            db.SchoolCycleFeePolicies.Add(new SchoolCycleFeePolicy
+            {
+                SchoolCycleId = cycle.Id, AcademicYearId = year.Id,
+                ChargeMonthlyTuition = false, MonthlyAmount = 0,
+            });
+        }
         var admin = new AppUser
         {
             UserName = userName, NormalizedUserName = TextKey.Normalize(userName), DisplayName = input.AdminDisplayName.Trim(),
@@ -116,6 +168,10 @@ public static class DemoData
         var receiptNo = 0L;
         var cashier = "Démonstration";
         var assessmentsByPromotion = new Dictionary<Guid, List<Assessment>>();
+        // Démonstration : les autres frais passent par des catégories créées, comme dans un vrai établissement.
+        var registration = new FeeCategory { Name = "Frais d'inscription", NameKey = TextKey.Normalize("Frais d'inscription"), Amount = 25000, DueDate = year.StartDate.AddDays(14), Order = 1 };
+        var stateExam = new FeeCategory { Name = "Frais d'examen d'État", NameKey = TextKey.Normalize("Frais d'examen d'État"), Amount = 40000, DueDate = year.EndDate.AddDays(-45), Order = 2 };
+        db.FeeCategories.AddRange(registration, stateExam);
         foreach (var spec in specs)
         {
             var promotion = new Promotion
@@ -123,9 +179,9 @@ public static class DemoData
                 AcademicYearId = year.Id, Code = spec.Code, Name = spec.Name, SectionId = spec.Section.Id, Level = spec.Level, NextPromotionCode = spec.Next, Capacity = 40,
             };
             promotion.Fees.AddRange(SchoolService.MonthlyFees(promotion.Id, year, spec.Fee));
-            promotion.Fees.Add(new FeeItem { PromotionId = promotion.Id, Kind = FeeKind.Inscription, Label = "Frais d'inscription", Amount = 25000, DueDate = year.StartDate.AddDays(14), Order = 0 });
+            promotion.Fees.Add(new FeeItem { PromotionId = promotion.Id, Kind = FeeKind.Inscription, CategoryId = registration.Id, Label = registration.Name, Amount = registration.Amount, DueDate = registration.DueDate!.Value, Order = 0 });
             if (spec.Level == 3 || spec.Code == "ACC2")
-                promotion.Fees.Add(new FeeItem { PromotionId = promotion.Id, Kind = FeeKind.Examen, Label = "Frais d'examen d'État", Amount = 40000, DueDate = year.EndDate.AddDays(-45), Order = 101 });
+                promotion.Fees.Add(new FeeItem { PromotionId = promotion.Id, Kind = FeeKind.Examen, CategoryId = stateExam.Id, Label = stateExam.Name, Amount = stateExam.Amount, DueDate = stateExam.DueDate!.Value, Order = 101 });
             db.Promotions.Add(promotion);
 
             var course = 0;

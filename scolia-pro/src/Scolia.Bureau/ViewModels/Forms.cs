@@ -22,10 +22,10 @@ public sealed class FormField : Observable
     public FormField(string key, string label, FieldKind kind, bool required, string? hint)
     {
         Key = key;
-        Label = label;
+        Label = Vocabulary.Adapt(label);
         Kind = kind;
         Required = required;
-        this.hint = hint;
+        this.hint = hint is null ? null : Vocabulary.Adapt(hint);
     }
 
     private string? hint;
@@ -110,19 +110,31 @@ public sealed class FormViewModel : Observable
 
     public FormViewModel(string title, string subtitle = "", Func<FormViewModel, Task<bool>>? onSubmit = null)
     {
-        Title = title;
-        Subtitle = subtitle;
+        // Vocabulaire du profil : « élève » dans une école, « étudiant » dans une université.
+        Title = Vocabulary.Adapt(title);
+        Subtitle = Vocabulary.Adapt(subtitle);
         this.onSubmit = onSubmit;
         Submit = new AsyncCommand(SubmitAsync);
         Cancel = new RelayCommand(() => { if (!Busy) Close(false); });
-        Fields.CollectionChanged += (_, e) =>
-        {
-            foreach (FormField field in e.NewItems ?? Array.Empty<FormField>())
-                field.PropertyChanged += OnFieldChanged;
-        };
+        Fields.CollectionChanged += (_, _) => SyncFieldSubscriptions();
     }
 
     private bool reacting;
+    private readonly HashSet<FormField> subscribedFields = [];
+
+    private void SyncFieldSubscriptions()
+    {
+        // Remplacement, suppression et Clear : un champ retiré ne réveille plus
+        // le formulaire ; un champ réinséré ne reçoit jamais deux gestionnaires.
+        foreach (var field in subscribedFields.ToArray())
+        {
+            if (Fields.Contains(field)) continue;
+            field.PropertyChanged -= OnFieldChanged;
+            subscribedFields.Remove(field);
+        }
+        foreach (var field in Fields)
+            if (subscribedFields.Add(field)) field.PropertyChanged += OnFieldChanged;
+    }
 
     /// <summary>
     /// Une valeur change : les champs liés réagissent (<see cref="Changed"/>), puis chaque champ prédictif recalcule
@@ -206,7 +218,12 @@ public sealed class FormViewModel : Observable
     }
     public bool HasSubtitle => !string.IsNullOrEmpty(Subtitle);
     /// <summary>Texte libre affiché sous le titre, par exemple le détail d'une confirmation.</summary>
-    public string Message { get; init; } = string.Empty;
+    private string message = string.Empty;
+    public string Message
+    {
+        get => message;
+        set { if (Set(ref message, Vocabulary.Adapt(value))) Raise(nameof(HasMessage)); }
+    }
     public string SubmitText { get; init; } = "Enregistrer";
     public string CancelText { get; init; } = "Annuler";
     /// <summary>Formulaire posé dans une page : pas d'en-tête ni d'ombre, et les champs défilent avec la page.</summary>
@@ -251,7 +268,8 @@ public sealed class FormViewModel : Observable
     public FormField AddChoice(string key, string label, IReadOnlyList<ChoiceItem> options, string? value = null, bool required = false)
     {
         var field = new FormField(key, label, FieldKind.Choice, required, null) { Options = options };
-        field.Choice = options.FirstOrDefault(o => o.Value == value) ?? (required && options.Count > 0 ? options[0] : null);
+        field.Choice = options.FirstOrDefault(o => o.Value == value)
+            ?? (required && string.IsNullOrWhiteSpace(value) && options.Count == 1 ? options[0] : null);
         Fields.Add(field);
         return field;
     }
@@ -269,6 +287,8 @@ public sealed class FormViewModel : Observable
     }
 
     public FormField Find(string key) => Fields.First(f => f.Key == key);
+
+    public bool Has(string key) => Fields.Any(f => f.Key == key);
 
     public string Text(string key) => Find(key).Text.Trim();
 

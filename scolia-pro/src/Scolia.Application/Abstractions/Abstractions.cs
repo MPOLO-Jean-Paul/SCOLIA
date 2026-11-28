@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Scolia.Domain.Academics;
+using Scolia.Domain.Deliberation;
 using Scolia.Domain.Discipline;
 using Scolia.Domain.Finance;
 using Scolia.Domain.School;
@@ -12,11 +13,30 @@ namespace Scolia.Application.Abstractions;
 public interface IAppDbContext
 {
     DbSet<SchoolProfile> Schools { get; }
+    DbSet<SchoolCycle> SchoolCycles { get; }
+    DbSet<SchoolCycleFeePolicy> SchoolCycleFeePolicies { get; }
+    DbSet<SchoolCyclePeriod> SchoolCyclePeriods { get; }
+    DbSet<SchoolCycleAssessment> SchoolCycleAssessments { get; }
     DbSet<AcademicYear> AcademicYears { get; }
     DbSet<AcademicPeriod> Periods { get; }
+    DbSet<PedagogicalPeriod> PedagogicalPeriods { get; }
+    DbSet<AcademicStructureUnit> AcademicStructureUnits { get; }
+    DbSet<CurriculumItem> CurriculumItems { get; }
+    DbSet<AcademicRegulation> AcademicRegulations { get; }
+    DbSet<EpstConductMark> EpstConductMarks { get; }
+    DbSet<EpstDeliberation> EpstDeliberations { get; }
+    DbSet<EpstDecision> EpstDecisions { get; }
+    DbSet<EpstRepechageMark> EpstRepechageMarks { get; }
+    DbSet<NationalExamResult> NationalExamResults { get; }
+    DbSet<LmdMark> LmdMarks { get; }
+    DbSet<LmdDeliberation> LmdDeliberations { get; }
+    DbSet<LmdDecision> LmdDecisions { get; }
+    DbSet<LmdDebt> LmdDebts { get; }
+    DbSet<CurriculumAssignment> CurriculumAssignments { get; }
     DbSet<Section> Sections { get; }
     DbSet<Promotion> Promotions { get; }
     DbSet<FeeItem> FeeItems { get; }
+    DbSet<FeeCategory> FeeCategories { get; }
     DbSet<Student> Students { get; }
     DbSet<Enrollment> Enrollments { get; }
     DbSet<Sponsorship> Sponsorships { get; }
@@ -41,6 +61,13 @@ public interface IAppDbContext
     DbSet<PayrollEntry> Payroll { get; }
     DbSet<StaffAttendanceMark> StaffMarks { get; }
     DbSet<StaffDayJustification> StaffJustifications { get; }
+    DbSet<AnonymousCode> AnonymousCodes { get; }
+    DbSet<CourseMark> CourseMarks { get; }
+    DbSet<DeliberationSettings> DeliberationSettings { get; }
+    DbSet<DeliberationSession> DeliberationSessions { get; }
+    DbSet<JuryDecision> JuryDecisions { get; }
+    DbSet<DeliberationResult> DeliberationResults { get; }
+    DbSet<MarkSubmission> MarkSubmissions { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 
@@ -49,6 +76,8 @@ public interface ICurrentUser
 {
     Guid? Id { get; }
     string Name { get; }
+    /// <summary>Empreinte de la session authentifiée, lorsqu'elle existe.</summary>
+    string? SecurityStamp => null;
     bool HasPermission(string permission);
     string? IpAddress { get; }
     /// <summary>Identifiant stable du poste ou du téléphone qui envoie la requête, s'il se présente.</summary>
@@ -79,6 +108,18 @@ public interface IPasswordService
 }
 
 /// <summary>Production des documents imprimables (PDF).</summary>
+/// <summary>
+/// Documents scolaires EPST et LMD (bulletins, procès-verbaux, relevés). L'ordinateur serveur les produit avec
+/// QuestPDF ; un téléphone serveur avec Skia, déjà présent sur Android.
+/// </summary>
+public interface IAcademicDocumentService
+{
+    byte[] EpstBulletins(Dtos.EpstBulletinPrintDto document);
+    byte[] EpstPalmares(Dtos.EpstPalmaresPrintDto document);
+    byte[] LmdTranscripts(Dtos.LmdTranscriptPrintDto document);
+    byte[] LmdMinutes(Dtos.LmdTranscriptPrintDto document);
+}
+
 public interface IDocumentService
 {
     byte[] Receipt(ReceiptDocument document);
@@ -86,6 +127,8 @@ public interface IDocumentService
     byte[] Table(TableDocument document);
     /// <summary>Rapport à plusieurs parties : chiffres clés, puis un tableau par partie (rapport journalier).</summary>
     byte[] Report(ReportDocument document);
+    /// <summary>Plusieurs rapports dans un seul PDF, chacun commençant sur une nouvelle page (bulletins d'une promotion).</summary>
+    byte[] Reports(IReadOnlyList<ReportDocument> documents);
     byte[] ReportCard(ReportCardDocument document);
     byte[] StudentCards(CardDocument document);
     byte[] StudentCardsWord(CardDocument document);
@@ -94,6 +137,12 @@ public interface IDocumentService
 public interface ISpreadsheetService
 {
     byte[] Export(TableDocument document);
+
+    /// <summary>Plusieurs tableaux ordinaires, avec leurs colonnes et leurs totaux, dans un seul classeur.</summary>
+    byte[] ExportTables(IReadOnlyList<(string SheetName, TableDocument Document)> tables);
+
+    /// <summary>Un seul classeur Excel avec une feuille par promotion, sans export intermédiaire de données scolaires.</summary>
+    byte[] ExportGrids(IReadOnlyList<(string SheetName, TableDocument Document)> grids);
 }
 
 public sealed record SchoolHeader(string Name, string? Motto, string? Address, string? Phone, string? Email, byte[]? Logo, string CurrencySymbol, string? ReceiptFooter);
@@ -101,7 +150,7 @@ public sealed record SchoolHeader(string Name, string? Motto, string? Address, s
 public sealed record ReceiptDocument(
     SchoolHeader School, string Number, DateOnly Date, string StudentName, string Matricule, string Promotion, string AcademicYear,
     decimal Amount, string AmountInWords, string Method, string? Reference, string? PayerName, string Cashier,
-    IReadOnlyList<(string Label, decimal Amount)> Allocations, decimal BalanceAfter, string VerificationUrl, bool Cancelled, string? CancellationReason);
+    IReadOnlyList<(string Label, decimal Amount)> Allocations, decimal BalanceAfter, string VerificationUrl, bool Cancelled, string? CancellationReason, bool BalanceAtIssue = true);
 
 public sealed record StatementDocument(
     SchoolHeader School, string StudentName, string Matricule, string Promotion, string AcademicYear, DateOnly AsOf,
@@ -109,7 +158,10 @@ public sealed record StatementDocument(
     decimal TotalNet, decimal TotalPaid, decimal Balance, decimal Overdue);
 
 /// <summary>En-tête des cartes d'accès : les mentions officielles de l'établissement.</summary>
-public sealed record SchoolCardHeader(string Country, string? Ministry, string? Direction, string? Division, string? CityZone, string Institute, string? Address, byte[]? Logo);
+public sealed record SchoolCardHeader(
+    string Country, string? Ministry, string? Direction, string? Division, string? CityZone,
+    string Institute, string? Address, byte[]? Logo,
+    string? Phone = null, string? Email = null, string? Website = null, string? Motto = null);
 
 /// <summary>Une carte à imprimer. La couleur est celle de la promotion ; le QR contient l'identité, la classe, l'établissement, la session et l'année.</summary>
 public sealed record CardItem(string LastName, string MiddleName, string FirstName, string Classe, string Color, string QrText, string Matricule = "");
@@ -121,8 +173,9 @@ public sealed record ReportSection(string Title, IReadOnlyList<string> Columns, 
     IReadOnlyList<string>? Totals = null, string? Empty = null);
 
 /// <summary>Rapport à plusieurs parties : en-tête de l'établissement, chiffres clés en tuiles, puis les parties.</summary>
+/// <summary><c>OnePage</c> : le contenu est réduit pour tenir sur une seule page (bulletin), jamais coupé sur deux.</summary>
 public sealed record ReportDocument(SchoolHeader School, string Title, string? Subtitle, IReadOnlyList<(string Label, string Value)> Figures,
-    IReadOnlyList<ReportSection> Sections, string? Note = null);
+    IReadOnlyList<ReportSection> Sections, string? Note = null, bool OnePage = false, string? VerificationUrl = null);
 
 public sealed record TableDocument(SchoolHeader School, string Title, string? Subtitle, IReadOnlyList<string> Columns, IReadOnlyList<IReadOnlyList<string>> Rows, IReadOnlyList<string>? Totals = null, bool Landscape = false);
 

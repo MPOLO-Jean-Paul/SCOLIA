@@ -22,7 +22,7 @@ public sealed class SkiaDocumentService : IDocumentService
     private const string Green = "#15803D";
     private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
 
-    private static string M(decimal amount, string symbol) => amount.ToString("N0", Fr) + " " + symbol;
+    private static string M(decimal amount, string symbol) => Scolia.Domain.Finance.Money.Display(amount, symbol);
 
     private static PdfStyle S(float size, bool bold = false, string color = Ink, bool italic = false) => new(size, bold, italic, color);
 
@@ -115,7 +115,7 @@ public sealed class SkiaDocumentService : IDocumentService
             y = top;
             var mode = $"Mode de paiement : {d.Method}" + (string.IsNullOrWhiteSpace(d.Reference) ? string.Empty : $" · Réf. {d.Reference}");
             y += f.DrawText(mode, S(8.5f), f.Left, y, leftW);
-            y += f.DrawText($"Reste à payer pour l'année : {M(d.BalanceAfter, cur)}", S(8.5f, true, d.BalanceAfter > 0 ? Amber : Green), f.Left, y, leftW);
+            y += f.DrawText($"{(d.BalanceAtIssue ? "Reste à payer à l’émission" : "Solde actuel (ancien reçu, recalculé)")} : {M(d.BalanceAfter, cur)}", S(8.5f, true, d.BalanceAfter > 0 ? Amber : Green), f.Left, y, leftW);
             y += 14;
             y += f.DrawText($"Le caissier : {d.Cashier}", S(8.5f), f.Left, y, leftW);
             y += 18;
@@ -175,14 +175,14 @@ public sealed class SkiaDocumentService : IDocumentService
                 new[] { "Rubrique", "Échéance", "Montant", "Pris en charge", "Payé", "Reste", "Statut" }.Select(t => new PdfCell(t, Align: PdfAlign.Left)).ToList(),
                 d.Lines.Select(l => (IReadOnlyList<PdfCell>)
                 [
-                    new PdfCell(l.Label), new PdfCell(l.DueDate.ToString("dd/MM/yyyy", Fr)), new PdfCell(l.Amount.ToString("N0", Fr)),
-                    new PdfCell(l.Covered == 0 ? "—" : l.Covered.ToString("N0", Fr)), new PdfCell(l.Paid.ToString("N0", Fr)),
-                    new PdfCell(l.Remaining.ToString("N0", Fr), S(9, false, l.IsOverdue ? Red : Ink)),
+                    new PdfCell(l.Label), new PdfCell(l.DueDate.ToString("dd/MM/yyyy", Fr)), new PdfCell(Scolia.Domain.Finance.Money.Number(l.Amount)),
+                    new PdfCell(l.Covered == 0 ? "—" : Scolia.Domain.Finance.Money.Number(l.Covered)), new PdfCell(Scolia.Domain.Finance.Money.Number(l.Paid)),
+                    new PdfCell(Scolia.Domain.Finance.Money.Number(l.Remaining), S(9, false, l.IsOverdue ? Red : Ink)),
                     new PdfCell(l.Status, S(9, false, l.IsOverdue ? Red : Muted)),
                 ]),
                 S(9), Solid with { HeadStyle = S(8, true, "#FFFFFF"), Padding = 4 },
-                [new PdfCell("TOTAL NET À PAYER : " + M(d.TotalNet, cur), Span: 4, Align: PdfAlign.Left), new PdfCell(d.TotalPaid.ToString("N0", Fr)),
-                 new PdfCell(d.Balance.ToString("N0", Fr)), new PdfCell(string.Empty)]);
+                [new PdfCell("TOTAL NET À PAYER : " + M(d.TotalNet, cur), Span: 4, Align: PdfAlign.Left), new PdfCell(Scolia.Domain.Finance.Money.Number(d.TotalPaid)),
+                 new PdfCell(Scolia.Domain.Finance.Money.Number(d.Balance)), new PdfCell(string.Empty)]);
             f.Y += 16;
             f.Ensure(60);
             f.Y += f.DrawText("Reçus enregistrés", S(9, true, Navy), f.Left, f.Y, f.ContentWidth);
@@ -196,7 +196,7 @@ public sealed class SkiaDocumentService : IDocumentService
                     return (IReadOnlyList<PdfCell>)
                     [
                         new PdfCell(r.Number + (cancelled ? " (annulé)" : string.Empty), tone), new PdfCell(r.Date.ToString("dd/MM/yyyy", Fr)),
-                        new PdfCell(r.Allocations ?? string.Empty, S(8)), new PdfCell(r.Method), new PdfCell(r.Amount.ToString("N0", Fr), tone),
+                        new PdfCell(r.Allocations ?? string.Empty, S(8)), new PdfCell(r.Method), new PdfCell(Scolia.Domain.Finance.Money.Number(r.Amount), tone),
                     ];
                 }),
                 S(9), new PdfTableLook(S(8, true, Navy), null, Navy, false, 4, Navy));
@@ -232,6 +232,26 @@ public sealed class SkiaDocumentService : IDocumentService
     }
 
     // ---------- Rapport à plusieurs parties (rapport journalier) ----------
+
+    /// <summary>
+    /// Serveur du téléphone : les rapports se suivent dans un seul document, chacun sous son propre titre
+    /// (le rendu de l'ordinateur principal, lui, met chaque bulletin sur sa page).
+    /// </summary>
+    public byte[] Reports(IReadOnlyList<ReportDocument> documents)
+    {
+        if (documents.Count == 0) throw new ArgumentException("Aucun rapport à produire.", nameof(documents));
+        var first = documents[0];
+        var sections = new List<ReportSection>();
+        foreach (var d in documents)
+        {
+            var figures = d.Figures.Select(f => (IReadOnlyList<string>)new[] { f.Label, f.Value }).ToList();
+            sections.Add(new ReportSection($"{d.Title} — {d.Subtitle}", new[] { "Rubrique", "Valeur" }, figures));
+            sections.AddRange(d.Sections);
+            if (d.Note is { Length: > 0 } note)
+                sections.Add(new ReportSection("Observations", new[] { "Note" }, new List<IReadOnlyList<string>> { new[] { note } }));
+        }
+        return Report(new ReportDocument(first.School, first.Title, $"{documents.Count} document(s)", [], sections));
+    }
 
     public byte[] Report(ReportDocument d) => PdfFlow.Create(PdfFlow.A4Width, PdfFlow.A4Height, 28, f =>
     {
@@ -281,6 +301,15 @@ public sealed class SkiaDocumentService : IDocumentService
         {
             f.Y += 8;
             f.Paragraph(note, S(7.5f, color: "#64748B", italic: true));
+        }
+        if (d.VerificationUrl is { Length: > 0 } url)
+        {
+            f.Y += 8;
+            f.Ensure(64);
+            f.Image(DocumentService.QrPng(url), f.Left, f.Y, 60, 60, sharp: true);
+            f.DrawText("Vérifier ce document", S(8, true, Navy), f.Left + 70, f.Y + 18, f.ContentWidth - 70);
+            f.DrawText(url, S(7, color: "#64748B"), f.Left + 70, f.Y + 32, f.ContentWidth - 70);
+            f.Y += 64;
         }
     },
     Header(d.School, d.Title, d.Subtitle), Footer(null), 22);
@@ -340,18 +369,36 @@ public sealed class SkiaDocumentService : IDocumentService
     Header(d.School, "BULLETIN DE NOTES", $"Année scolaire {d.AcademicYear}"), Footer(null), 22);
 
     // ---------- Cartes d'accès ----------
+    // Même dessin que l'ordinateur (CardDesign) : en-tête centré et logo, « Session AAAA » souligné, identité,
+    // second logo, bande de filière, QR. Le cachet est apposé à la main.
 
-    private const string CardNavy = "#0B3B6F";
-    private const string CardInk = "#1B2430";
-    private const string CardMuted = "#5B6878";
-    private const string Frame = "#AEB8C5";
     private const string Guide = "#8A96A6";
     private static float Mm(float v) => v * 72f / 25.4f;
 
-    /// <summary>Huit cartes de 92 × 63 mm par A4, sur la même grille que les cartes de l'ordinateur, avec les repères de découpe.</summary>
+    private static readonly Dictionary<string, SkiaSharp.SKTypeface> CardSans = new(StringComparer.Ordinal);
+
+    private static SkiaSharp.SKTypeface CardFont(string file)
+    {
+        lock (CardSans)
+        {
+            if (CardSans.TryGetValue(file, out var cached)) return cached;
+            using var stream = typeof(DocumentService).Assembly.GetManifestResourceStream($"Scolia.Infrastructure.Documents.Fonts.{file}")
+                ?? throw new InvalidOperationException($"Police {file} introuvable.");
+            using var memory = new MemoryStream();
+            stream.CopyTo(memory);
+            var face = SkiaSharp.SKTypeface.FromData(SkiaSharp.SKData.CreateCopy(memory.ToArray())) ?? SkiaSharp.SKTypeface.Default;
+            CardSans[file] = face;
+            return face;
+        }
+    }
+
+    private static SkiaSharp.SKFont CardText(string file, float sizePt) =>
+        new(CardFont(file), sizePt) { Subpixel = true, LinearMetrics = true, Hinting = SkiaSharp.SKFontHinting.None, Edging = SkiaSharp.SKFontEdging.Antialias };
+
+    /// <summary>Huit cartes ID-1 par A4, sur la même grille que les cartes de l'ordinateur, avec les repères de découpe.</summary>
     public byte[] StudentCards(CardDocument d)
     {
-        var seal = d.Header.Logo is { Length: > 0 } logo ? logo :
+        var logo = d.Header.Logo is { Length: > 0 } own ? own :
             throw new InvalidOperationException("Le logo de l'établissement est nécessaire pour créer ses cartes d'accès.");
         var pages = Enumerable.Range(0, StudentCardRules.PagesFor(d.Cards.Count))
             .Select(p => d.Cards.Skip(p * StudentCardRules.CardsPerPage).Take(StudentCardRules.CardsPerPage).ToList()).ToList();
@@ -367,83 +414,134 @@ public sealed class SkiaDocumentService : IDocumentService
                     var (row, col) = (i / 2, i % 2);
                     var x = Mm(StudentCardRules.MarginMm + col * (StudentCardRules.CardWidthMm + StudentCardRules.ColumnGapMm));
                     var y = Mm(StudentCardRules.MarginMm + row * (StudentCardRules.CardHeightMm + StudentCardRules.RowGapMm));
-                    Card(f, d, cards[i], seal, x, y);
+                    Card(f, d, cards[i], logo, x, y);
                 }
                 CutLines(f);
             }
         });
     }
 
-    private static void Card(PdfFlow f, CardDocument d, CardItem card, byte[] seal, float x, float y)
+    private static void Card(PdfFlow f, CardDocument d, CardItem card, byte[] logo, float x, float y)
     {
+        var canvas = f.Canvas;
         var w = Mm(StudentCardRules.CardWidthMm);
         var h = Mm(StudentCardRules.CardHeightMm);
-        var radius = Mm(2.4f);
-        f.Canvas.Save();
-        using (var clip = new SkiaSharp.SKPath())
+        f.Fill(x, y, w, h, CardDesign.Paper);
+        f.Stroke(x, y, w, h, CardDesign.Frame, 0.4f);
+
+        // En-tête centré : logo, nom, service, filet, contacts ; le bloc de texte est centré sur le logo.
+        var header = d.Header;
+        f.Image(logo, x + Mm(CardDesign.HeaderLeftMm), y + Mm(CardDesign.HeaderTopMm + (CardDesign.HeaderHeightMm - CardDesign.LogoMm) / 2),
+            Mm(CardDesign.LogoMm), Mm(CardDesign.LogoMm));
+        var textX = x + Mm(CardDesign.HeaderTextLeftMm);
+        var textW = Mm(CardDesign.HeaderTextMm);
+        var name = CardDesign.SchoolName(header);
+        using var nameFont = CardText("LiberationSerif-Regular.ttf", CardDesign.SchoolNamePt(name));
+        using var departmentFont = CardText("LiberationSerif-Regular.ttf", CardDesign.DepartmentPt);
+        using var contactFont = CardText("Roboto-Regular.ttf", CardDesign.ContactPt);
+        var nameLines = Wrap(name, nameFont, textW);
+        var department = CardDesign.Department(header);
+        var contacts = CardDesign.Contacts(header).SelectMany(l => Wrap(l, contactFont, textW)).ToList();
+        var nameStep = nameFont.Size * 1.05f;
+        var blockH = nameLines.Count * nameStep + (department is null ? 0 : departmentFont.Size * 1.25f)
+            + (contacts.Count == 0 ? 0 : Mm(0.9f) + contacts.Count * contactFont.Size * 1.12f);
+        var top = y + Mm(CardDesign.HeaderTopMm) + Math.Max(0, (Mm(CardDesign.HeaderHeightMm) - blockH) / 2);
+        var ink = PdfFlow.Color(CardDesign.HeaderInk);
+        var muted = PdfFlow.Color(CardDesign.HeaderMuted);
+        var line = top;
+        foreach (var text in nameLines)
         {
-            clip.AddRoundRect(SkiaSharp.SKRect.Create(x, y, w, h), radius, radius);
-            f.Canvas.ClipPath(clip, antialias: true);
-            f.Fill(x, y, w, h, "#FFFFFF");
-            // Bande de la promotion, en bas, sans texte.
-            f.Fill(x, y + h - Mm(3.4f), w, Mm(3.4f), card.Color.StartsWith('#') ? card.Color : "#" + card.Color);
+            line += nameStep;
+            Draw(canvas, text, textX, line - nameFont.Size * 0.2f, nameFont, ink, 0.02f);
         }
-        f.Canvas.Restore();
-        f.Stroke(x, y, w, h, Frame, 0.6f, radius);
-
-        // En-tête officiel : sceau à gauche, mentions centrées.
-        var top = y + Mm(1.5f);
-        var headH = Mm(15.6f);
-        f.Image(seal, x + Mm(3), top, Mm(12.5f), headH);
-        var mentions = new List<(string Text, PdfStyle Style)>();
-        void Mention(string? value, float size, bool bold, string color)
+        if (department is not null)
         {
-            if (!string.IsNullOrWhiteSpace(value)) mentions.Add((value.Trim().ToUpperInvariant(), new PdfStyle(size, bold, false, color)));
+            line += departmentFont.Size * 1.25f;
+            Draw(canvas, department, textX, line - departmentFont.Size * 0.25f, departmentFont, ink, 0.08f);
         }
-        Mention(d.Header.Country, 5f, true, CardInk);
-        Mention(d.Header.Ministry, 4.3f, false, CardMuted);
-        Mention(d.Header.Direction, 4.3f, false, CardMuted);
-        Mention(d.Header.Division, 4.3f, false, CardMuted);
-        Mention(d.Header.CityZone, 4.3f, false, CardMuted);
-        Mention(d.Header.Institute, 5.2f, true, CardNavy);
-        Mention(d.Header.Address, 4.3f, false, CardMuted);
-        var tx = x + Mm(3) + Mm(12.5f) + Mm(1.5f);
-        var tw = w - Mm(6) - Mm(14);
-        var textH = mentions.Sum(m => PdfFlow.TextHeight(m.Text, m.Style, tw) * 0.8f);
-        var my = top + Math.Max(0, (headH - textH) / 2);
-        foreach (var (text, style) in mentions) my += f.DrawText(text, style, tx, my, tw, PdfAlign.Center) * 0.8f;
-
-        // Bandeau du titre et de la session.
-        var ribbonY = top + headH + Mm(1);
-        f.Fill(x, ribbonY, w, Mm(6), CardNavy);
-        var titleStyle = new PdfStyle(7.6f, true, false, "#FFFFFF");
-        f.DrawText("CARTE D'ACCÈS", titleStyle, x + Mm(3), ribbonY + (Mm(6) - PdfFlow.LineHeight(titleStyle)) / 2, w / 2);
-        var session = $"SESSION {d.Session}";
-        var sessionStyle = new PdfStyle(session.Length > 24 ? 6.4f : session.Length > 20 ? 7f : 7.6f, true, false, "#FFFFFF");
-        f.DrawText(session, sessionStyle, x + w / 2, ribbonY + (Mm(6) - PdfFlow.LineHeight(sessionStyle)) / 2, w / 2 - Mm(3), PdfAlign.Right);
-
-        // Identité à gauche, QR de contrôle à droite.
-        var idY = ribbonY + Mm(6) + Mm(2.7f);
-        var idW = w - Mm(8) - Mm(19);
-        foreach (var (label, value) in new[] { ("NOM", card.LastName), ("POST-NOM", card.MiddleName), ("PRÉNOM", card.FirstName), ("CLASSE", card.Classe) })
+        if (contacts.Count > 0)
         {
-            var used = f.DrawSpans([($"{label} : ", new PdfStyle(5.6f, true, false, CardMuted)), (value, new PdfStyle(value.Length > 24 ? 6.8f : 7.8f, true, false, CardInk))], x + Mm(4), idY, idW);
-            idY += used + Mm(1.7f) - 2;
+            line += Mm(0.35f);
+            using (var rule = new SkiaSharp.SKPaint { Color = muted, StrokeWidth = 0.45f, IsAntialias = true })
+                canvas.DrawLine(textX, line, textX + textW, line, rule);
+            line += Mm(0.55f);
+            foreach (var text in contacts)
+            {
+                line += contactFont.Size * 1.12f;
+                Draw(canvas, text, textX, line - contactFont.Size * 0.22f, contactFont, muted, 0);
+            }
         }
-        var qrX = x + w - Mm(4) - Mm(19);
-        var qrY = ribbonY + Mm(6) + Mm(2.7f);
-        f.Image(DocumentService.QrPng(card.QrText), qrX, qrY, Mm(19), Mm(18.5f), sharp: true);
-        f.DrawText("QR de vérification", new PdfStyle(4.6f, false, false, CardMuted), qrX, qrY + Mm(18.5f), Mm(19), PdfAlign.Center);
 
-        // Bas de carte : l'année à gauche, le visa de la direction à droite.
-        var baseY = y + h - Mm(3.4f) - Mm(1.4f);
-        var yearStyle = new PdfStyle(5.2f, true, false, CardNavy);
-        f.DrawText($"Année scolaire {d.AcademicYear}", yearStyle, x + Mm(4), baseY - PdfFlow.LineHeight(yearStyle), w / 2);
-        var visaX = x + w - Mm(4) - Mm(30);
-        var visaStyle = new PdfStyle(4.2f, false, false, CardMuted);
-        var visaTop = baseY - PdfFlow.LineHeight(visaStyle);
-        f.Line(visaX, visaTop - Mm(0.6f), visaX + Mm(30), visaTop - Mm(0.6f), Frame, 0.4f);
-        f.DrawText("Visa de la direction", visaStyle, visaX, visaTop, Mm(30), PdfAlign.Center);
+        // QR de contrôle, discret dans le coin libre.
+        f.Image(DocumentService.QrPng(card.QrText), x + Mm(CardDesign.QrLeftMm), y + Mm(CardDesign.QrMarginMm), Mm(CardDesign.QrMm), Mm(CardDesign.QrMm), sharp: true);
+
+        // « Session 2026 » : grand, gras, souligné, centré.
+        using (var sessionFont = CardText("Montserrat-Bold.ttf", CardDesign.SessionPt))
+        {
+            var title = CardDesign.SessionTitle(d.Session);
+            var width = sessionFont.MeasureText(title);
+            var sx = x + (w - width) / 2;
+            var baseline = y + Mm(CardDesign.SessionTopMm) + sessionFont.Size * 0.95f;
+            var color = PdfFlow.Color(CardDesign.SessionInk);
+            Draw(canvas, title, sx, baseline, sessionFont, color, 0);
+            using var underline = new SkiaSharp.SKPaint { Color = color, StrokeWidth = sessionFont.Size * 0.075f, IsAntialias = true };
+            canvas.DrawLine(sx, baseline + sessionFont.Size * 0.14f, sx + width, baseline + sessionFont.Size * 0.14f, underline);
+        }
+
+        // Identité : trois lignes de même corps, capitales espacées.
+        var lines = CardDesign.Identity(card);
+        var identityPt = CardDesign.IdentityPt(card);
+        using (var probe = CardText("Montserrat-Medium.ttf", identityPt))
+        {
+            // Mesure réelle : la ligne la plus longue tient dans la largeur, sans renvoi à la ligne.
+            var widest = lines.Max(l => probe.MeasureText(l.Label + " : " + l.Value) + (l.Label.Length + 3 + l.Value.Length) * CardDesign.IdentityTracking * identityPt);
+            if (widest > Mm(CardDesign.IdentityWidthMm)) identityPt *= Mm(CardDesign.IdentityWidthMm) / widest;
+        }
+        using (var identityFont = CardText("Montserrat-Medium.ttf", identityPt))
+        {
+            var color = PdfFlow.Color(CardDesign.IdentityInk);
+            for (var i = 0; i < lines.Count; i++)
+            {
+                var baseline = y + Mm(CardDesign.IdentityTopMm + i * CardDesign.IdentityStepMm) + identityFont.Size * 1.0f;
+                Draw(canvas, lines[i].Label + " : " + lines[i].Value, x + Mm(CardDesign.IdentityLeftMm), baseline, identityFont, color, CardDesign.IdentityTracking);
+            }
+        }
+
+        // Second logo en bas à droite, et bande de couleur de la filière tout en bas.
+        f.Image(logo, x + Mm(CardDesign.BottomLogoLeftMm), y + Mm(CardDesign.BottomLogoTopMm), Mm(CardDesign.BottomLogoMm), Mm(CardDesign.BottomLogoMm));
+        f.Fill(x, y + Mm(CardDesign.BandTopMm), w, Mm(CardDesign.BandMm), card.Color.StartsWith('#') ? card.Color : "#" + card.Color);
+    }
+
+    /// <summary>Texte sur une ligne, avec un espacement entre les lettres (en cadratins).</summary>
+    private static void Draw(SkiaSharp.SKCanvas canvas, string text, float x, float baseline, SkiaSharp.SKFont font, SkiaSharp.SKColor color, float tracking)
+    {
+        using var paint = new SkiaSharp.SKPaint { Color = color, IsAntialias = true };
+        if (tracking <= 0)
+        {
+            canvas.DrawText(text, x, baseline, SkiaSharp.SKTextAlign.Left, font, paint);
+            return;
+        }
+        var extra = tracking * font.Size;
+        foreach (var c in text)
+        {
+            var glyph = c.ToString();
+            canvas.DrawText(glyph, x, baseline, SkiaSharp.SKTextAlign.Left, font, paint);
+            x += font.MeasureText(glyph) + extra;
+        }
+    }
+
+    private static List<string> Wrap(string text, SkiaSharp.SKFont font, float width)
+    {
+        var lines = new List<string>();
+        var current = string.Empty;
+        foreach (var word in text.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var candidate = current.Length == 0 ? word : current + " " + word;
+            if (current.Length > 0 && font.MeasureText(candidate) > width) { lines.Add(current); current = word; }
+            else current = candidate;
+        }
+        if (current.Length > 0) lines.Add(current);
+        return lines;
     }
 
     /// <summary>Repères de découpe en pointillés, au milieu des interstices : la coupe passe entre deux cartes.</summary>

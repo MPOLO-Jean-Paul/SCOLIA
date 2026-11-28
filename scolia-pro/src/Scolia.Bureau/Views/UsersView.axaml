@@ -2,11 +2,11 @@
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Scolia.Bureau.Views.UsersView">
-  <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+  <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" AutomationProperties.Name="Utilisateurs">
     <DataGrid.Columns>
       <DataGridTextColumn Header="Identifiant" Binding="{Binding UserName}" Width="Auto" MinWidth="150" />
       <DataGridTextColumn Header="Nom complet" Binding="{Binding DisplayName}" Width="*" MinWidth="140" />
-      <DataGridTextColumn Header="Rôle" Binding="{Binding Role}" Width="Auto" MinWidth="170" />
+      <DataGridTextColumn Header="Rôle" Binding="{Binding Role}" Width="Auto" MinWidth="230" />
       <DataGridTemplateColumn Header="Compte" Width="Auto" MinWidth="120">
         <DataGridTemplateColumn.CellTemplate>
           <DataTemplate>
