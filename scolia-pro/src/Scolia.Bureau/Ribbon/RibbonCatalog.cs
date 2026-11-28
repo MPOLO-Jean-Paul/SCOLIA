@@ -189,8 +189,8 @@ public static class RibbonCatalog
             new("personnel", "Personnel",
             [
                 Group("Personnel",
-                    Large(shell, "Personnel et paie", FeatureVisuals.ForPage<StaffPage>(), "Dossiers du personnel, bulletins mensuels et paiement des salaires.", () => shell.Open(() => new StaffPage(shell)), Neutral, perm: Perm.StaffManage),
-                    Large(shell, "Pointage", FeatureVisuals.ForPage<StaffAttendancePage>(), "Entrées et sorties du personnel, retards et bilan pour la paie.", () => shell.Open(() => new StaffAttendancePage(shell)), Neutral, perm: Perm.StaffManage),
+                    Large(shell, "Personnel et paie", FeatureVisuals.ForPage<StaffPage>(), "Dossiers du personnel, bulletins mensuels et paiement des salaires selon vos droits.", () => shell.Open(() => new StaffPage(shell)), Neutral, perm: Perm.StaffRead),
+                    Large(shell, "Pointage", FeatureVisuals.ForPage<StaffAttendancePage>(), "Entrées et sorties du personnel, retards et bilan pour la paie.", () => shell.Open(() => new StaffAttendancePage(shell)), Neutral, perm: Perm.StaffRead),
                     Small(shell, "Nouveau membre", AccountTieOutline, "Ajoute un membre du personnel.", () => StaffPage.NewMemberAsync(shell), Neutral, perm: Perm.StaffManage))
             ]),
             new("pilotage", "Pilotage",
@@ -346,6 +346,7 @@ public static class Perm
 {
     public const string StudentsRead = "apprenants.lire";
     public const string StudentsWrite = "apprenants.ecrire";
+    public const string StudentFinanceRead = "apprenants.situation-financiere";
     public const string PaymentsRead = "paiements.lire";
     public const string PaymentsCreate = "paiements.encaisser";
     public const string PaymentsCancel = "paiements.annuler";
@@ -361,6 +362,9 @@ public static class Perm
     public const string DisciplineCancel = "discipline.annuler";
     public const string AcademicsRead = "scolarite.lire";
     public const string StaffManage = "personnel.gerer";
+    public const string StaffRead = "personnel.lire";
+    public const string PayrollManage = "paie.gerer";
+    public const string SponsorshipManage = "prises-en-charge.gerer";
     public const string DeliberationManage = "deliberation.gerer";
     /// <summary>Compte enseignant : encodage et remise des cotes de ses seuls cours, par code anonyme.</summary>
     public const string MarksEncode = "cotes.encoder";

@@ -154,11 +154,15 @@ jobs:
           node-version: '22'
       - name: Vérifier les quatre métiers sur mobile et ordinateur, en clair, sombre et texte agrandi
         run: python3 scripts/verifier-finitions-roles.py
+      - name: Vérifier les quatre métiers en gestion séparée sur petits écrans et bureau
+        run: python3 scripts/verifier-finitions-roles.py --management-mode Separee --scenarios mobile-compact bureau-compact --output artifacts/finitions-roles-separees
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: SCOLIA_Finitions_Quatre_Metiers
-          path: scolia-pro/artifacts/finitions-roles/
+          path: |
+            scolia-pro/artifacts/finitions-roles/
+            scolia-pro/artifacts/finitions-roles-separees/
           if-no-files-found: ignore
           retention-days: 14
       - name: Verifier les regles de retard, les comptes et les API avec une base de test

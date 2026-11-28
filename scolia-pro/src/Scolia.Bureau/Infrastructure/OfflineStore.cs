@@ -63,6 +63,9 @@ public sealed class OfflineStore
     /// <summary>Utilisateur dont les pages sont gardées : chaque compte ne relit que ce qu'il a lui-même consulté.</summary>
     private string currentUser = string.Empty;
     private long searchRevision;
+    private readonly object readSnapshotSync = new();
+    private long readGeneration;
+    public long ReadGeneration => System.Threading.Interlocked.Read(ref readGeneration);
     public string User
     {
         get => System.Threading.Volatile.Read(ref currentUser);
@@ -211,6 +214,33 @@ public sealed class OfflineStore
         "page:" + Convert.ToHexString(SHA256.HashData(
             Encoding.UTF8.GetBytes(account.Trim().ToUpperInvariant()))) + ":";
     private string PagePrefix => PagePrefixFor(User);
+
+    /// <summary>Retire les copies de consultation après une modification des droits, sans toucher aux opérations à envoyer.</summary>
+    public void InvalidateReadSnapshotsFor(string account)
+    {
+        if (string.IsNullOrWhiteSpace(account)) return;
+        lock (readSnapshotSync)
+        {
+            System.Threading.Interlocked.Increment(ref readGeneration);
+            database.DeletePrefix(PagePrefixFor(account));
+            foreach (var scope in new[] { "droits|dossiers", "droits|finances", "droits|enseignant" })
+                database.DeletePrefix(PreparedPrefixFor(account, scope));
+            var legacy = Path.Combine(root, "pages", Safe(account));
+            if (Directory.Exists(legacy)) Directory.Delete(legacy, recursive: true);
+            System.Threading.Interlocked.Increment(ref searchRevision);
+        }
+    }
+
+    /// <summary>Une réponse commencée avec les anciens droits ne recrée pas les copies retirées.</summary>
+    public void SaveReadSnapshotFor(string account, string path, string json, bool unchanged, long generation)
+    {
+        lock (readSnapshotSync)
+        {
+            if (generation != ReadGeneration) return;
+            if (unchanged) TouchPageFor(account, path, json);
+            else SavePageFor(account, path, json);
+        }
+    }
     private string PageKey(string path) => PageKeyFor(User, path);
     private static string PageKeyFor(string user, string path) =>
         "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(user.ToUpperInvariant()))) +

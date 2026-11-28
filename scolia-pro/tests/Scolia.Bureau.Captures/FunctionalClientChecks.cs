@@ -398,6 +398,64 @@ internal static class FunctionalClientChecks
             startShell.Sync.Stop(); immediateShell.Sync.Stop();
         }
         finally { Environment.SetEnvironmentVariable("SCOLIA_SERVEUR", previousServer); }
+        Role("Secretariat", Perm.SettingsWrite);
+        server.StatusCode = 200;
+        server.Reply = _ => Task.FromResult<object>(new ManagementModeStatusDto("Mixte", 0, 1));
+        var management = new ManagementModePage(shell);
+        Wait(management.RefreshAsync());
+        management.SelectedMode = "Separee";
+        Check("Gestion séparée : un compte comptable actif est requis", management.Supported && management.NeedsAccountant && !management.CanApply);
+        Check("Compte : le secrétariat retrouve le type de gestion", shell.Backstage.Items.Any(item => item.Value == "gestion"));
+        server.Reply = _ => Task.FromResult<object>(new ManagementModeStatusDto("Mixte", 1, 1));
+        Wait(management.RefreshAsync());
+        management.SelectedMode = "Separee";
+        var modeWrites = server.Writes.Count;
+        var choosingMode = management.Apply.ExecuteAsync();
+        Until(() => shell.Dialog is FormViewModel);
+        var codeDialog = (FormViewModel)shell.Dialog!;
+        Check("Type de gestion : le choix seul n'envoie aucune modification", server.Writes.Count == modeWrites && codeDialog.Find("code")?.Kind == FieldKind.Secret);
+        codeDialog.Cancel.Execute(null);
+        Wait(choosingMode);
+        Check("Type de gestion : annuler conserve le mode du serveur", server.Writes.Count == modeWrites);
+        Role("Comptabilite");
+        Check("Compte : la comptabilité ne modifie pas l'organisation", !ManagementModePage.CanAccess(shell) && !shell.Backstage.Items.Any(item => item.Value == "gestion"));
+        Role("Secretariat", Perm.SettingsWrite);
+        server.StatusCode = 404;
+        var oldManagement = new ManagementModePage(shell);
+        Wait(oldManagement.RefreshAsync());
+        Check("Type de gestion : un ancien serveur est expliqué", !oldManagement.Supported && !oldManagement.CanApply && oldManagement.Notice.Contains("Mettez à jour", StringComparison.Ordinal));
+        var restricted = shell.Session! with { Permissions = [Perm.StaffManage, Perm.StudentsWrite, Perm.PaymentsRead], PermissionPolicyVersion = 2 };
+        typeof(ShellViewModel).GetField("session", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(shell, restricted);
+        Check("Droits récents : aucun privilège comptable n'est déduit de l'administration", !shell.Can(Perm.PayrollManage) && !shell.Can(Perm.SponsorshipManage));
+        typeof(ShellViewModel).GetField("session", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(shell, restricted with { PermissionPolicyVersion = 0 });
+        Check("Ancien serveur mixte : les fonctions historiques restent accessibles", shell.Can(Perm.StudentFinanceRead) && shell.Can(Perm.PayrollManage) && shell.Can(Perm.SponsorshipManage));
+        Role("Secretariat", Perm.SettingsWrite);
+        server.StatusCode = 200;
+        var cacheRoot = Path.Combine(Path.GetTempPath(), "scolia-mode-cache-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(server.Address, cacheRoot) { User = "test" };
+            api.Offline = store;
+            store.SavePage("api/paiements", "{\"items\":[]}");
+            store.Enqueue(new OutboxItem { User = "test", Key = Guid.NewGuid().ToString("N"), Path = "api/paiements", Label = "Opération à conserver" });
+            store.SaveCredential("test", "Code2026!", shell.Session!);
+            var oldRead = Signal();
+            server.Reply = async _ => { await oldRead.Task; return new { items = Array.Empty<object>() }; };
+            var readCount = server.Reads.Count;
+            var readingOldRights = api.GetAsync<JsonElement>("api/rapports/tableau-de-bord?lecture=ancienne");
+            Until(() => server.Reads.Count > readCount);
+            store.InvalidateReadSnapshotsFor("test");
+            oldRead.SetResult();
+            Wait(readingOldRights);
+            Check("Droits : une réponse ancienne ne recrée pas les copies retirées", store.ReadPage("api/paiements") is null
+                && store.ReadPage("api/rapports/tableau-de-bord?lecture=ancienne") is null);
+            Check("Droits : les opérations à synchroniser restent conservées", store.Outbox().Count == 1 && store.HasCredential);
+        }
+        finally
+        {
+            api.Offline = null;
+            try { Directory.Delete(cacheRoot, recursive: true); } catch (IOException) { }
+        }
         File.WriteAllLines(Path.Combine(output, "fonctionnement-verifie.txt"), report);
         Console.WriteLine(string.Join(Environment.NewLine, report));
     }

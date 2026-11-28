@@ -79,6 +79,19 @@ public static class ScoliaEndpoints
             await SessionFactory.SignInAsync(http, user);
             return Results.Ok(await SessionFactory.DescribeAsync(db, user, ct));
         }).RequireRateLimiting("connexion");
+        api.MapGet("/organisation/gestion", async (ManagementModeService management, HttpContext http, CancellationToken ct) =>
+        {
+            http.Response.Headers.CacheControl = "no-store";
+            return await management.ReadAsync(ct);
+        }).RequireAuthorization(Permissions.SettingsWrite);
+        api.MapPut("/organisation/gestion", async (ManagementModeChange input, ManagementModeService management,
+            ScoliaDbContext db, HttpContext http, CancellationToken ct) =>
+        {
+            var user = await management.ChangeAsync(input, ct);
+            await SessionFactory.SignInAsync(http, user);
+            http.Response.Headers.CacheControl = "no-store";
+            return await SessionFactory.DescribeAsync(db, user, ct);
+        }).RequireAuthorization(Permissions.SettingsWrite).RequireRateLimiting("connexion");
         // Restauration depuis la connexion : code confidentiel détenu par le responsable du serveur.
         api.MapPost("/session/recuperation", async Task<IResult> (RecoveryInput input, RecoveryKeyStore codes,
             UserService users, CancellationToken ct) =>
@@ -516,19 +529,19 @@ public static class ScoliaEndpoints
             .RequireAuthorization(Permissions.StudentsWrite);
         e.MapPut("/{id:guid}/promotion", async (Guid id, [FromBody] EnrollRequest input, StudentService s, CancellationToken ct) => { await s.ChangePromotionAsync(id, input.PromotionId, ct); return Results.NoContent(); })
             .RequireAuthorization(Permissions.StudentsWrite);
-        e.MapGet("/{id:guid}/compte", (Guid id, AccountService a, CancellationToken ct) => a.AccountDtoAsync(id, ct)).RequireAuthorization(Permissions.PaymentsRead);
+        e.MapGet("/{id:guid}/compte", (Guid id, AccountService a, CancellationToken ct) => a.AccountDtoAsync(id, ct)).RequireAuthorization(Permissions.StudentFinanceRead);
         e.MapGet("/{id:guid}/releve.pdf", async (Guid id, PaymentService p, CancellationToken ct) => new InlineFileResult(await p.StatementPdfAsync(id, ct), Pdf, "releve.pdf"))
-            .RequireAuthorization(Permissions.PaymentsRead);
-        e.MapGet("/{id:guid}/prises-en-charge", (Guid id, SponsorshipService s, CancellationToken ct) => s.ListAsync(id, ct)).RequireAuthorization(Permissions.PaymentsRead);
+            .RequireAuthorization(Permissions.StudentFinanceRead);
+        e.MapGet("/{id:guid}/prises-en-charge", (Guid id, SponsorshipService s, CancellationToken ct) => s.ListAsync(id, ct)).RequireAuthorization(Permissions.StudentFinanceRead);
         e.MapPost("/{id:guid}/prises-en-charge", (Guid id, SponsorshipUpsert input, SponsorshipService s, CancellationToken ct) => s.UpsertAsync(id, null, input, ct))
-            .RequireAuthorization(Permissions.StudentsWrite);
+            .RequireAuthorization(Permissions.SponsorshipManage);
         e.MapPut("/{id:guid}/prises-en-charge/{sid:guid}", (Guid id, Guid sid, SponsorshipUpsert input, SponsorshipService s, CancellationToken ct) => s.UpsertAsync(id, sid, input, ct))
-            .RequireAuthorization(Permissions.StudentsWrite);
+            .RequireAuthorization(Permissions.SponsorshipManage);
         e.MapPost("/{id:guid}/prises-en-charge/{sid:guid}/fin", async (Guid id, Guid sid, CancelRequest input, SponsorshipService s, CancellationToken ct) =>
         {
             await s.EndAsync(id, sid, input.Reason, ct);
             return Results.NoContent();
-        }).RequireAuthorization(Permissions.StudentsWrite);
+        }).RequireAuthorization(Permissions.SponsorshipManage);
 
         api.MapGet("/prises-en-charge", (SponsorshipService s, CancellationToken ct) => s.AllAsync(ct)).RequireAuthorization(Permissions.PaymentsRead);
         api.MapGet("/reinscriptions/plan", (Guid anneeId, StudentService s, CancellationToken ct) => s.ReEnrollmentPlanAsync(anneeId, ct)).RequireAuthorization(Permissions.StudentsWrite);
@@ -901,21 +914,22 @@ public static class ScoliaEndpoints
 
     private static void MapStaff(RouteGroupBuilder api)
     {
-        var g = api.MapGroup("/personnel").RequireAuthorization(Permissions.StaffManage);
+        var g = api.MapGroup("/personnel").RequireAuthorization(Permissions.StaffRead);
         // Pointage : signatures d'entrée et de sortie, justifications, statut des journées et bilan pour la paie.
-        g.MapPost("/{id:guid}/signature/{kind}", (Guid id, string kind, StaffAttendanceService s, CancellationToken ct) => s.MarkAsync(id, kind, ct));
+        g.MapPost("/{id:guid}/signature/{kind}", (Guid id, string kind, StaffAttendanceService s, CancellationToken ct) => s.MarkAsync(id, kind, ct)).RequireAuthorization(Permissions.StaffManage);
         g.MapGet("/{id:guid}/pointage", (Guid id, DateOnly du, DateOnly au, StaffAttendanceService s, CancellationToken ct) => s.DaysAsync(id, du, au, ct));
-        g.MapPost("/{id:guid}/justifications", (Guid id, StaffJustifyRequest input, StaffAttendanceService s, CancellationToken ct) => s.JustifyAsync(id, input.Date, input.Reason, ct));
-        g.MapPost("/justifications/{id:guid}/annulation", (Guid id, StaffCancelRequest input, StaffAttendanceService s, CancellationToken ct) => s.CancelJustificationAsync(id, input.Reason, ct));
+        g.MapPost("/{id:guid}/justifications", (Guid id, StaffJustifyRequest input, StaffAttendanceService s, CancellationToken ct) => s.JustifyAsync(id, input.Date, input.Reason, ct)).RequireAuthorization(Permissions.StaffManage);
+        g.MapPost("/justifications/{id:guid}/annulation", (Guid id, StaffCancelRequest input, StaffAttendanceService s, CancellationToken ct) => s.CancelJustificationAsync(id, input.Reason, ct)).RequireAuthorization(Permissions.StaffManage);
         g.MapGet("/pointage/bilan", (DateOnly du, DateOnly au, StaffAttendanceService s, CancellationToken ct) => s.BilanAsync(du, au, ct));
         g.MapGet("/pointage/jour", (DateOnly date, StaffAttendanceService s, CancellationToken ct) => s.DayOfAllAsync(date, ct));
         g.MapGet("", (StaffService s, CancellationToken ct) => s.ListAsync(ct));
-        g.MapPost("", (StaffUpsert input, StaffService s, CancellationToken ct) => s.UpsertAsync(null, input, ct));
-        g.MapPut("/{id:guid}", (Guid id, StaffUpsert input, StaffService s, CancellationToken ct) => s.UpsertAsync(id, input, ct));
-        g.MapGet("/paie/{periode}", (string periode, StaffService s, CancellationToken ct) => s.PayrollAsync(periode, ct));
-        g.MapPost("/paie/{periode}/preparation", async (string periode, StaffService s, CancellationToken ct) => Results.Ok(new { crees = await s.GenerateAsync(periode, ct) }));
-        g.MapPut("/paie/bulletins/{id:guid}", (Guid id, PayrollUpdate input, StaffService s, CancellationToken ct) => s.UpdateEntryAsync(id, input, ct));
-        g.MapPost("/paie/bulletins/{id:guid}/paiement", (Guid id, string? mode, StaffService s, CancellationToken ct) => s.PayAsync(id, mode ?? "Especes", ct));
+        g.MapPost("", (StaffUpsert input, StaffService s, CancellationToken ct) => s.UpsertAsync(null, input, ct)).RequireAuthorization(Permissions.StaffManage);
+        g.MapPut("/{id:guid}", (Guid id, StaffUpsert input, StaffService s, CancellationToken ct) => s.UpsertAsync(id, input, ct)).RequireAuthorization(Permissions.StaffManage);
+        g.MapPut("/{id:guid}/salaire", (Guid id, StaffSalaryUpdate input, StaffService s, CancellationToken ct) => s.ChangeSalaryAsync(id, input, ct)).RequireAuthorization(Permissions.PayrollManage);
+        g.MapGet("/paie/{periode}", (string periode, StaffService s, CancellationToken ct) => s.PayrollAsync(periode, ct)).RequireAuthorization(Permissions.PayrollManage);
+        g.MapPost("/paie/{periode}/preparation", async (string periode, StaffService s, CancellationToken ct) => Results.Ok(new { crees = await s.GenerateAsync(periode, ct) })).RequireAuthorization(Permissions.PayrollManage);
+        g.MapPut("/paie/bulletins/{id:guid}", (Guid id, PayrollUpdate input, StaffService s, CancellationToken ct) => s.UpdateEntryAsync(id, input, ct)).RequireAuthorization(Permissions.PayrollManage);
+        g.MapPost("/paie/bulletins/{id:guid}/paiement", (Guid id, string? mode, StaffService s, CancellationToken ct) => s.PayAsync(id, mode ?? "Especes", ct)).RequireAuthorization(Permissions.PayrollManage);
         api.MapGet("/enseignants", (TeachingService s, CancellationToken ct) => s.AvailableTeachersAsync(ct))
             .RequireAuthorization(Permissions.AcademicsRead);
     }

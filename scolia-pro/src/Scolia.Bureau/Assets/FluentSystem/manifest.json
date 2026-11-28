@@ -1062,6 +1062,15 @@
       "sha256": "1f84a9a5b2a63773d8549654e1a3c3fce8e7975cc3e3f15cec068ace857a26cd"
     },
     {
+      "name": "Money Settings",
+      "variant": "regular",
+      "path": "assets/Money Settings/SVG/ic_fluent_money_settings_24_regular.svg",
+      "aliases": [
+        "CashEdit"
+      ],
+      "sha256": "95077c9061819393fadf30d42ab7b8c1ec9c206c94765c0d61b8dc8829cbdf06"
+    },
+    {
       "name": "More Horizontal",
       "variant": "regular",
       "path": "assets/More Horizontal/SVG/ic_fluent_more_horizontal_24_regular.svg",
@@ -1834,6 +1843,3825 @@
         "Wifi"
       ],
       "sha256": "07c836aa844c26399802e2bcc6b7e2405150078d458a312bbb680480f29f59d0"
+    }
+  ],
+  "optical": [
+    {
+      "name": "Add",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Add/SVG/ic_fluent_add_16_regular.svg",
+      "aliases": [
+        "Plus"
+      ],
+      "sha256": "838584fda66d156ccd0421641c52a6c98ac106b6027d50916d7e489792055ce1"
+    },
+    {
+      "name": "Alert",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Alert/SVG/ic_fluent_alert_16_regular.svg",
+      "aliases": [
+        "BellOutline",
+        "BellRingOutline"
+      ],
+      "sha256": "f2e759d2a687ac6768a3b31870d4799d22670ad13c9d764d8008aaf8618d5a6f"
+    },
+    {
+      "name": "Approvals App",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Approvals App/SVG/ic_fluent_approvals_app_16_regular.svg",
+      "aliases": [
+        "Gavel"
+      ],
+      "sha256": "b7f17fbb61d0e14bc7b72fddacaeac6e40ef6a11ccae50136f1012ecf5263620"
+    },
+    {
+      "name": "Apps",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Apps/SVG/ic_fluent_apps_16_regular.svg",
+      "aliases": [
+        "DotsGrid",
+        "Grid",
+        "ViewGridPlus"
+      ],
+      "sha256": "c9b7c06435aa2dbb04db076b36a129b071a824281fa0479cf5cbfb35ebea62dc"
+    },
+    {
+      "name": "Archive",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Archive/SVG/ic_fluent_archive_16_regular.svg",
+      "aliases": [
+        "Archive"
+      ],
+      "sha256": "61a1220840f1031e6cf9aef22611ce1ee684c08fc8caddcd0be0c3242831d50a"
+    },
+    {
+      "name": "Arrow Clockwise",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Arrow Clockwise/SVG/ic_fluent_arrow_clockwise_16_regular.svg",
+      "aliases": [
+        "Update"
+      ],
+      "sha256": "67adf8f5e2ac0081bd82e1117645a14de86105b9f07010c071c6ab4c090876f5"
+    },
+    {
+      "name": "Arrow Counterclockwise",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Arrow Counterclockwise/SVG/ic_fluent_arrow_counterclockwise_16_regular.svg",
+      "aliases": [
+        "BackupRestore",
+        "Restore"
+      ],
+      "sha256": "376c5ba59928ae888ec7a7044e23e956b9fc707058b1a8421e4b37fed77b5ef2"
+    },
+    {
+      "name": "Arrow Download",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Arrow Download/SVG/ic_fluent_arrow_download_16_regular.svg",
+      "aliases": [
+        "ArrowDownBoldCircleOutline",
+        "CloudDownload",
+        "Download",
+        "DownloadOutline"
+      ],
+      "sha256": "843a60ca44e0ab9e5eacefe8e21cde68a83f56ed3e088921d19ff93ac32d273c"
+    },
+    {
+      "name": "Arrow Left",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Arrow Left/SVG/ic_fluent_arrow_left_16_regular.svg",
+      "aliases": [
+        "ArrowLeft"
+      ],
+      "sha256": "60d62363274c047c96ce1f4ff9057f84ace2bbd2911686092d8ba4244d1b82bb"
+    },
+    {
+      "name": "Arrow Right",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Arrow Right/SVG/ic_fluent_arrow_right_16_regular.svg",
+      "aliases": [
+        "ArrowRight"
+      ],
+      "sha256": "742472cb8601bb1f555394011604c5494ea5601760901bf6d61c17728bd784f2"
+    },
+    {
+      "name": "Arrow Swap",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Arrow Swap/SVG/ic_fluent_arrow_swap_16_regular.svg",
+      "aliases": [
+        "SwapHorizontal"
+      ],
+      "sha256": "694f340f9a539df15749a82868dd48be5ed6ad9385a34d163ff67849ebcfa72f"
+    },
+    {
+      "name": "Arrow Sync",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Arrow Sync/SVG/ic_fluent_arrow_sync_16_regular.svg",
+      "aliases": [
+        "Autorenew",
+        "Loading",
+        "Refresh",
+        "Sync"
+      ],
+      "sha256": "e526206630f77c37ff85cb472bd7f0e157e3d53edba9f97966fa27503e94bdf2"
+    },
+    {
+      "name": "Arrow Up Left",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Arrow Up Left/SVG/ic_fluent_arrow_up_left_16_regular.svg",
+      "aliases": [
+        "ArrowTopLeft"
+      ],
+      "sha256": "1652128b1430e03afd6616ff76f2d50ca8bfacc6c0b8d01d99deabe66f17f7c8"
+    },
+    {
+      "name": "Arrow Upload",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Arrow Upload/SVG/ic_fluent_arrow_upload_16_regular.svg",
+      "aliases": [
+        "Publish",
+        "Upload"
+      ],
+      "sha256": "e4d23907f4b78441189909ad901fb915212b5ef614d071d3ed7e585cd81d0e40"
+    },
+    {
+      "name": "Book",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Book/SVG/ic_fluent_book_16_regular.svg",
+      "aliases": [
+        "BookOpenPageVariantOutline",
+        "BookOpenVariantOutline"
+      ],
+      "sha256": "2f321d91fcf3a0195c783376397e0789ee9ac3b7350d5939622a226711634a9e"
+    },
+    {
+      "name": "Book Contacts",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Book Contacts/SVG/ic_fluent_book_contacts_16_regular.svg",
+      "aliases": [
+        "AccountTieVoiceOutline"
+      ],
+      "sha256": "bdcdce9b0e7987b8fdfdea9ca21afa14e0da8bd620f3219b88413622ee0c475b"
+    },
+    {
+      "name": "Book Open",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Book Open/SVG/ic_fluent_book_open_16_regular.svg",
+      "aliases": [
+        "BookOpenVariant"
+      ],
+      "sha256": "ac68a30ce69b741e4a0be2c73ec8e87e4f59dbcae780c1657e04a4d12bf70464"
+    },
+    {
+      "name": "Briefcase",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Briefcase/SVG/ic_fluent_briefcase_16_regular.svg",
+      "aliases": [
+        "Briefcase",
+        "BriefcaseOutline"
+      ],
+      "sha256": "acc8a3648aeb6a98383e50e66fdf5e9c545fa98e9013ba9422b4a82440bfcb4e"
+    },
+    {
+      "name": "Building",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Building/SVG/ic_fluent_building_16_regular.svg",
+      "aliases": [
+        "OfficeBuilding",
+        "OfficeBuildingOutline"
+      ],
+      "sha256": "fb20054aa3c6e69b748848d61bc8bcd8eb418faeaa9af99d0e27fb75b3fc5914"
+    },
+    {
+      "name": "Building Government",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Building Government/SVG/ic_fluent_building_government_16_regular.svg",
+      "aliases": [
+        "SchoolOutline"
+      ],
+      "sha256": "14c1982f3ef7ef3a9db43330d0e3d8dcb4b1f6de4c25ec39a7cf4f4e6262b4f5"
+    },
+    {
+      "name": "Building Shop",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Building Shop/SVG/ic_fluent_building_shop_16_regular.svg",
+      "aliases": [
+        "StorefrontOutline"
+      ],
+      "sha256": "7fc4302d87b0da4b74e0d431d3b571a6a1c49ff86acf4b7d154b2b79ebe28872"
+    },
+    {
+      "name": "Calendar",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Calendar/SVG/ic_fluent_calendar_16_regular.svg",
+      "aliases": [
+        "Calendar",
+        "CalendarMonth",
+        "CalendarMonthOutline",
+        "CalendarToday"
+      ],
+      "sha256": "24af58b6b67cb7b0121c2859ee8f79e1ae7ae2b3fc5f072b389106b73f87ecc3"
+    },
+    {
+      "name": "Calendar Add",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Calendar Add/SVG/ic_fluent_calendar_add_16_regular.svg",
+      "aliases": [
+        "CalendarPlus",
+        "CalendarPlusOutline"
+      ],
+      "sha256": "7bc584b09e2bb0b8dd6b5342ac813af2179ac8c42ff481db1e2b845e7ff086db"
+    },
+    {
+      "name": "Calendar Cancel",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Calendar Cancel/SVG/ic_fluent_calendar_cancel_16_regular.svg",
+      "aliases": [
+        "CalendarRemove"
+      ],
+      "sha256": "78057cd043bc6935326454390b08f042a39d459fe8a242c8d219801d4cbb3dec"
+    },
+    {
+      "name": "Calendar Checkmark",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Calendar Checkmark/SVG/ic_fluent_calendar_checkmark_16_regular.svg",
+      "aliases": [
+        "CalendarCheck"
+      ],
+      "sha256": "c0408a8a29fcfe6b4abed5b5c9b46e529637874a63bc5ca04bb0ed4f76b853d2"
+    },
+    {
+      "name": "Calendar Clock",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Calendar Clock/SVG/ic_fluent_calendar_clock_16_regular.svg",
+      "aliases": [
+        "CalendarClock"
+      ],
+      "sha256": "f1a26b9715e0ef2851fdfca2e5a3d7015c2ff1c6c650cd3f5dd703a5e1713c9b"
+    },
+    {
+      "name": "Calendar Edit",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Calendar Edit/SVG/ic_fluent_calendar_edit_16_regular.svg",
+      "aliases": [
+        "CalendarEdit",
+        "CalendarEditOutline"
+      ],
+      "sha256": "38d3eae7d72412221b83ca757199543bd7cacca970c7b40691e85ebe87a2de41"
+    },
+    {
+      "name": "Calendar LTR",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Calendar LTR/SVG/ic_fluent_calendar_ltr_16_regular.svg",
+      "aliases": [
+        "CalendarRange"
+      ],
+      "sha256": "24af58b6b67cb7b0121c2859ee8f79e1ae7ae2b3fc5f072b389106b73f87ecc3"
+    },
+    {
+      "name": "Calendar Lock",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Calendar Lock/SVG/ic_fluent_calendar_lock_16_regular.svg",
+      "aliases": [
+        "CalendarLock"
+      ],
+      "sha256": "48a9a064b2f6b203cd0af0de7a3b184718da8d87fa79e5cc9936c42ae56d7fa5"
+    },
+    {
+      "name": "Certificate",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Certificate/SVG/ic_fluent_certificate_16_regular.svg",
+      "aliases": [
+        "Certificate",
+        "CheckDecagramOutline"
+      ],
+      "sha256": "2a21adb8afdf20237ddb50d0dcf0de2094ba7cb958f8f44f94e38ef61f8ef2af"
+    },
+    {
+      "name": "Chart Multiple",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Chart Multiple/SVG/ic_fluent_chart_multiple_16_regular.svg",
+      "aliases": [
+        "ChartBox",
+        "ViewDashboard"
+      ],
+      "sha256": "bec56a08e06becc1bcc943f9bef94d3de4137c7687e8757960b8abfa1027cc96"
+    },
+    {
+      "name": "Chat",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Chat/SVG/ic_fluent_chat_16_regular.svg",
+      "aliases": [
+        "MessageText",
+        "MessageTextOutline"
+      ],
+      "sha256": "59ecb3e3bc75c84b16385f21a7a8ce2d6c03ed66d265dc040f62032805187c1c"
+    },
+    {
+      "name": "Checkbox Person",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Checkbox Person/SVG/ic_fluent_checkbox_person_16_regular.svg",
+      "aliases": [
+        "ClipboardCheck",
+        "ClipboardCheckOutline"
+      ],
+      "sha256": "ab7acbd28604497d4a323537966a3d5f69130a68c70b06a8ffa0906baf2bf8a7"
+    },
+    {
+      "name": "Checkbox Unchecked",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Checkbox Unchecked/SVG/ic_fluent_checkbox_unchecked_16_regular.svg",
+      "aliases": [
+        "CheckboxMultipleBlank"
+      ],
+      "sha256": "474c2b224afeec2a522542335ab93bf5cdf0dda6b3b525347eec254be0cb44b1"
+    },
+    {
+      "name": "Checkmark",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Checkmark/SVG/ic_fluent_checkmark_16_regular.svg",
+      "aliases": [
+        "Check",
+        "CheckAll"
+      ],
+      "sha256": "50a932f604e19c291c7ea3e0be927a39c053c389ec006ade5001b87416c1a119"
+    },
+    {
+      "name": "Checkmark Circle",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Checkmark Circle/SVG/ic_fluent_checkmark_circle_16_regular.svg",
+      "aliases": [
+        "CheckCircleOutline"
+      ],
+      "sha256": "6f47d9474b161cde686a78d36a771873c276960bc443e11e957b6671122b8248"
+    },
+    {
+      "name": "Chevron Down",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Chevron Down/SVG/ic_fluent_chevron_down_16_regular.svg",
+      "aliases": [
+        "ChevronDown"
+      ],
+      "sha256": "557155085ea09abe06bfe5f62a0f1c483b3bb5908f313cb480325b5a4a06487d"
+    },
+    {
+      "name": "Chevron Left",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Chevron Left/SVG/ic_fluent_chevron_left_16_regular.svg",
+      "aliases": [
+        "ChevronLeft"
+      ],
+      "sha256": "445984a4c287f7db0f8190c2d9fe27ce2823f9bfd416a2b5d4c610d108baea70"
+    },
+    {
+      "name": "Chevron Right",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Chevron Right/SVG/ic_fluent_chevron_right_16_regular.svg",
+      "aliases": [
+        "ChevronRight"
+      ],
+      "sha256": "0a997a0dfcaa64e7f2d29259378e03d239578aade640946dbef1760d7f9094b4"
+    },
+    {
+      "name": "Chevron Up",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Chevron Up/SVG/ic_fluent_chevron_up_16_regular.svg",
+      "aliases": [
+        "ChevronUp"
+      ],
+      "sha256": "b45ee2186e7f8f2a85c5f0a8dc6b03a82afd5c8ad82dd4214ea4a825a54d4b5b"
+    },
+    {
+      "name": "Circle",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Circle/SVG/ic_fluent_circle_16_regular.svg",
+      "aliases": [
+        "CircleOutline",
+        "RadioboxBlank"
+      ],
+      "sha256": "fc611d6a31c52b8dc096e53c2f6d3c3f14dcbe0be5093089474cdd2765fc8956"
+    },
+    {
+      "name": "Circle Multiple Hint Checkmark",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Circle Multiple Hint Checkmark/SVG/ic_fluent_circle_multiple_hint_checkmark_16_regular.svg",
+      "aliases": [
+        "CheckboxMultipleMarked"
+      ],
+      "sha256": "b68dd47161a2fd4c9add2eb8e6b766776071829d707f24f86c2671d769905639"
+    },
+    {
+      "name": "Circle",
+      "size": 16,
+      "variant": "filled",
+      "path": "assets/Circle/SVG/ic_fluent_circle_16_filled.svg",
+      "aliases": [
+        "Circle"
+      ],
+      "sha256": "efc73a2aeae0e79df80a39b8827f5b1662432c7779c2131eaf2845898ea4f4bd"
+    },
+    {
+      "name": "Clipboard",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Clipboard/SVG/ic_fluent_clipboard_16_regular.svg",
+      "aliases": [
+        "ClipboardAccount",
+        "ClipboardPlus"
+      ],
+      "sha256": "f9439ef58d11ab0f3265e0e32ce6420ccc1e0fe593067a3d57e4f661c90f13c2"
+    },
+    {
+      "name": "Clipboard Task",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Clipboard Task/SVG/ic_fluent_clipboard_task_16_regular.svg",
+      "aliases": [
+        "ClipboardList"
+      ],
+      "sha256": "998e894bd3d0332cbfb721554ce75dc7d592811c3784b563935d4b9ae20793ec"
+    },
+    {
+      "name": "Clock",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Clock/SVG/ic_fluent_clock_16_regular.svg",
+      "aliases": [
+        "ProgressClock"
+      ],
+      "sha256": "81525b7d6536d1d16d0e92bc3601971bc57845507d77e16d77c93623b6a7b65b"
+    },
+    {
+      "name": "Clock Alarm",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Clock Alarm/SVG/ic_fluent_clock_alarm_16_regular.svg",
+      "aliases": [
+        "ClockAlertOutline"
+      ],
+      "sha256": "1d91ab749be053303a339ccbb6f00f6584081ba00d9c7a48b1cb9bee804aefcb"
+    },
+    {
+      "name": "Cloud",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Cloud/SVG/ic_fluent_cloud_16_regular.svg",
+      "aliases": [
+        "Cloud",
+        "CloudOutline",
+        "CloudSync",
+        "CloudSyncOutline"
+      ],
+      "sha256": "c2f08713aff2c8d8d705a504e4d2dbdbac1fda19efc0341f44a09739f846ea20"
+    },
+    {
+      "name": "Cloud Archive",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Cloud Archive/SVG/ic_fluent_cloud_archive_16_regular.svg",
+      "aliases": [
+        "CloudLock",
+        "CloudLockOutline"
+      ],
+      "sha256": "f60d8635e3eaeef88b2d6dba083c509e3bbc6740e05b553b134e2947684026c8"
+    },
+    {
+      "name": "Cloud Arrow Up",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Cloud Arrow Up/SVG/ic_fluent_cloud_arrow_up_16_regular.svg",
+      "aliases": [
+        "CloudUpload",
+        "CloudUploadOutline"
+      ],
+      "sha256": "090f8d578c2504977e11e46b047ebb4c85d98d018b9370b28cb4efd2d38aae1c"
+    },
+    {
+      "name": "Cloud Checkmark",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Cloud Checkmark/SVG/ic_fluent_cloud_checkmark_16_regular.svg",
+      "aliases": [
+        "CloudCheckOutline"
+      ],
+      "sha256": "0391f32f3015cc654c96a5ba1ea14193acdacc024608c1329aa400571eb1da61"
+    },
+    {
+      "name": "Cloud Dismiss",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Cloud Dismiss/SVG/ic_fluent_cloud_dismiss_16_regular.svg",
+      "aliases": [
+        "CloudOffOutline"
+      ],
+      "sha256": "24805d32879e740b676373f3197f47b076c07538ec603cd0bd73b4b3d295758b"
+    },
+    {
+      "name": "Color",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Color/SVG/ic_fluent_color_16_regular.svg",
+      "aliases": [
+        "Palette",
+        "ThemeLightDark"
+      ],
+      "sha256": "676ff292fd5e093437630bb147e2f867436ab7407b1d25e3b5150d8971885c59"
+    },
+    {
+      "name": "Contact Card",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Contact Card/SVG/ic_fluent_contact_card_16_regular.svg",
+      "aliases": [
+        "BadgeAccount",
+        "CardAccountDetails",
+        "CardAccountDetailsOutline",
+        "FileAccountOutline"
+      ],
+      "sha256": "eefa3d18b2a8dec4550993b27c7b482295dc41feda5ceaee4494c7f7a2cfa4e2"
+    },
+    {
+      "name": "Copy",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Copy/SVG/ic_fluent_copy_16_regular.svg",
+      "aliases": [
+        "ContentCopy",
+        "FileMultiple"
+      ],
+      "sha256": "6e5400f0a2f3a590844b1461c61256ed033fda7994a6f0cf6dba12fbf11bb652"
+    },
+    {
+      "name": "Data Line",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Data Line/SVG/ic_fluent_data_line_16_regular.svg",
+      "aliases": [
+        "ChartLine",
+        "Finance"
+      ],
+      "sha256": "3b6b29358045dd3c9db18b1638d8d1861aa1c934c0f696b7f4a462bfc8a91001"
+    },
+    {
+      "name": "Data Pie",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Data Pie/SVG/ic_fluent_data_pie_16_regular.svg",
+      "aliases": [
+        "ChartArc",
+        "ChartDonut"
+      ],
+      "sha256": "040309ded204676c580bc739f8cebb2f87aaa0f6c6cb149b7226bb2787dc7d02"
+    },
+    {
+      "name": "Data Trending",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Data Trending/SVG/ic_fluent_data_trending_16_regular.svg",
+      "aliases": [
+        "ChartBar"
+      ],
+      "sha256": "e07d9f39a3dff2911c13d3b29999a01bf46c18fc6fbd61f5f5e8caa503743fee"
+    },
+    {
+      "name": "Database",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Database/SVG/ic_fluent_database_16_regular.svg",
+      "aliases": [
+        "DatabaseCheck",
+        "DatabaseCheckOutline",
+        "DatabaseExport",
+        "DatabaseExportOutline",
+        "DatabaseOutline"
+      ],
+      "sha256": "36d1f679ee342be8bd6c5833297e5552fa27e9bd494927b30880ec55c15f4713"
+    },
+    {
+      "name": "Delete",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Delete/SVG/ic_fluent_delete_16_regular.svg",
+      "aliases": [
+        "Delete",
+        "DeleteForeverOutline",
+        "DeleteSweep",
+        "DeleteSweepOutline",
+        "Eraser",
+        "TrashCanOutline"
+      ],
+      "sha256": "e125c6cdfbeac97db63733273f37fee408b22cd5d7012dd1fc516e380d64741c"
+    },
+    {
+      "name": "Desktop",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Desktop/SVG/ic_fluent_desktop_16_regular.svg",
+      "aliases": [
+        "DesktopTowerMonitor",
+        "MonitorEye"
+      ],
+      "sha256": "1f5f97b58a347fc4988c5a7be637c99daa94dc33356a6fd1ec3a8f77a08a7c5c"
+    },
+    {
+      "name": "Dismiss",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Dismiss/SVG/ic_fluent_dismiss_16_regular.svg",
+      "aliases": [
+        "Close"
+      ],
+      "sha256": "118c94c171be3364e5104983a97ba3d37d53b21ebc4d6f127eef31dc4aa76716"
+    },
+    {
+      "name": "Dismiss Circle",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Dismiss Circle/SVG/ic_fluent_dismiss_circle_16_regular.svg",
+      "aliases": [
+        "CloseCircle"
+      ],
+      "sha256": "2a757af86156515ef4ab1ef8efe6a84665a4f00e98ab878b441a3c2d5c8815d9"
+    },
+    {
+      "name": "Document",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Document/SVG/ic_fluent_document_16_regular.svg",
+      "aliases": [
+        "FileDocument"
+      ],
+      "sha256": "c06cbbf87a35ebe3fc4ef53e2df66eacfb8d404ab8dee8bd94aa2de2cc839b64"
+    },
+    {
+      "name": "Document Add",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Document Add/SVG/ic_fluent_document_add_16_regular.svg",
+      "aliases": [
+        "FileDocumentPlus"
+      ],
+      "sha256": "b490668c92910d144f605ffb8d0657ce435abdbb75088b9d40f64e5530c69dae"
+    },
+    {
+      "name": "Document Arrow Left",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Document Arrow Left/SVG/ic_fluent_document_arrow_left_16_regular.svg",
+      "aliases": [
+        "FileImportOutline"
+      ],
+      "sha256": "0931c25941464d55fa24a0eab1fe8323b8fb7b6618df4ed2f62acd003fbda802"
+    },
+    {
+      "name": "Document Arrow Right",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Document Arrow Right/SVG/ic_fluent_document_arrow_right_16_regular.svg",
+      "aliases": [
+        "FileExport"
+      ],
+      "sha256": "118a35756d7b8e4a737eb8312190872ce18f9b61acc99a98f1a6d184e1c5ac84"
+    },
+    {
+      "name": "Document Checkmark",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Document Checkmark/SVG/ic_fluent_document_checkmark_16_regular.svg",
+      "aliases": [
+        "FileCheck"
+      ],
+      "sha256": "4bf8a3600c607617ceb0f720d78d54bc2fdf00bce3610555dc6f303fd42e0b02"
+    },
+    {
+      "name": "Document Data",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Document Data/SVG/ic_fluent_document_data_16_regular.svg",
+      "aliases": [
+        "FileChart",
+        "FileChartOutline"
+      ],
+      "sha256": "14f1354d6951f8efbbb485317a1180c162e9a47b88712b2815a9a71cca3be55c"
+    },
+    {
+      "name": "Document Edit",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Document Edit/SVG/ic_fluent_document_edit_16_regular.svg",
+      "aliases": [
+        "PencilBoxMultipleOutline"
+      ],
+      "sha256": "821a0f27e68276b8fc0fa7918e8de0e463f11fad2c8a113827a79cca433d5338"
+    },
+    {
+      "name": "Document PDF",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Document PDF/SVG/ic_fluent_document_pdf_16_regular.svg",
+      "aliases": [
+        "FilePdfBox"
+      ],
+      "sha256": "63aa5e6c7996cedec1d9e178a09ba44cfc06519c833efd8ddfbb3fd826bf2cd2"
+    },
+    {
+      "name": "Document Search",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Document Search/SVG/ic_fluent_document_search_16_regular.svg",
+      "aliases": [
+        "FileFind"
+      ],
+      "sha256": "101f0a3d23446438cae68c5766ae86f27dd225f9160c08beecd823bf0b0c678c"
+    },
+    {
+      "name": "Document Signature",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Document Signature/SVG/ic_fluent_document_signature_16_regular.svg",
+      "aliases": [
+        "FileSign"
+      ],
+      "sha256": "0d849fc71eaca69ba7d48edccc76b448308c71ba17d0a73503c3f7b53b9f6573"
+    },
+    {
+      "name": "Document Table",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Document Table/SVG/ic_fluent_document_table_16_regular.svg",
+      "aliases": [
+        "FileExcel"
+      ],
+      "sha256": "a1d6656b1efc4a47671a783d94ebc9c419a574a9620cb0d949d3ad07903c79d3"
+    },
+    {
+      "name": "Document Text",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Document Text/SVG/ic_fluent_document_text_16_regular.svg",
+      "aliases": [
+        "FileDocumentOutline"
+      ],
+      "sha256": "684840218589a9ee6944eab54a2c77595b6c716a72db431e0e4c323598da0017"
+    },
+    {
+      "name": "Edit",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Edit/SVG/ic_fluent_edit_16_regular.svg",
+      "aliases": [
+        "Pen",
+        "Pencil",
+        "PencilBoxOutline",
+        "PencilOutline"
+      ],
+      "sha256": "3ffdb0cd6c612e23cd30b91e2d7c148f6b3703725006b876b7c6b1a6e2c8d98a"
+    },
+    {
+      "name": "Error Circle",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Error Circle/SVG/ic_fluent_error_circle_16_regular.svg",
+      "aliases": [
+        "AlertCircle",
+        "AlertCircleOutline"
+      ],
+      "sha256": "9bef918a67fda8895b79b0d3448f0bc0cf9d2fab12871d380d15e9690a9253f7"
+    },
+    {
+      "name": "Eye",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Eye/SVG/ic_fluent_eye_16_regular.svg",
+      "aliases": [
+        "Eye",
+        "EyeOutline"
+      ],
+      "sha256": "127a9466bb1ea78f05e0f8f2a2dba519ef689fc0ea0d08611e555b15f33247e1"
+    },
+    {
+      "name": "Eye Off",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Eye Off/SVG/ic_fluent_eye_off_16_regular.svg",
+      "aliases": [
+        "EyeOffOutline"
+      ],
+      "sha256": "043875e8728a06750a68090726f9a252915657b38b00e17f7f8b69808927cdee"
+    },
+    {
+      "name": "Filter",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Filter/SVG/ic_fluent_filter_16_regular.svg",
+      "aliases": [
+        "FilterOutline",
+        "FilterVariant"
+      ],
+      "sha256": "5be29292bdca3172d1e36aba80a47f00d46984f4b97231e742d4ef7174df8ec5"
+    },
+    {
+      "name": "Filter Dismiss",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Filter Dismiss/SVG/ic_fluent_filter_dismiss_16_regular.svg",
+      "aliases": [
+        "FilterRemove",
+        "FilterRemoveOutline"
+      ],
+      "sha256": "a58ab1928d01ad3e411bb2288cc063d60a92a319455f5615d6bd3500138e1822"
+    },
+    {
+      "name": "Fingerprint",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Fingerprint/SVG/ic_fluent_fingerprint_16_regular.svg",
+      "aliases": [
+        "Fingerprint"
+      ],
+      "sha256": "6195dce7d3d87f79343fdda53528c0c225448b800c2e26906835510fccb48c5e"
+    },
+    {
+      "name": "Folder Add",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Folder Add/SVG/ic_fluent_folder_add_16_regular.svg",
+      "aliases": [
+        "FolderPlus",
+        "FolderPlusOutline"
+      ],
+      "sha256": "06a9804d1e6828c74fa30160741223fd0f819abcbc0d22c1faa92fadcb062ae0"
+    },
+    {
+      "name": "Food Cake",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Food Cake/SVG/ic_fluent_food_cake_16_regular.svg",
+      "aliases": [
+        "CakeVariant"
+      ],
+      "sha256": "2fe89ceedc59e87c90a0e99ac56da507e3e1e0bb97f793e83cc405a5cd13d604"
+    },
+    {
+      "name": "Gauge",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Gauge/SVG/ic_fluent_gauge_16_regular.svg",
+      "aliases": [
+        "ViewDashboardOutline"
+      ],
+      "sha256": "e557d45e6cb976d7beb249ca1e307c1d693c67041d2aa76fd764f199cc820b1a"
+    },
+    {
+      "name": "Globe",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Globe/SVG/ic_fluent_globe_16_regular.svg",
+      "aliases": [
+        "Web"
+      ],
+      "sha256": "b1a1d2c0581a0254f4cdfd24dad0a59b46911dc3fe67cb34b88f4abb1487c3a9"
+    },
+    {
+      "name": "History",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/History/SVG/ic_fluent_history_16_regular.svg",
+      "aliases": [
+        "History"
+      ],
+      "sha256": "02f3c81c36fe70efcff7079167fbc34087bf0b5b218fe0205766905fa6cc5c2e"
+    },
+    {
+      "name": "Home",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Home/SVG/ic_fluent_home_16_regular.svg",
+      "aliases": [
+        "Home",
+        "HomeOutline"
+      ],
+      "sha256": "cf79b514500f3a7d75d2ddfae47cab8ceea333f96486f03bd900cf333acd57b8"
+    },
+    {
+      "name": "Image",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Image/SVG/ic_fluent_image_16_regular.svg",
+      "aliases": [
+        "Image",
+        "ImageOutline"
+      ],
+      "sha256": "8760446baa6e8f0108f59067728309f783d02138ed63c78596b402c328a52866"
+    },
+    {
+      "name": "InPrivate Account",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/InPrivate Account/SVG/ic_fluent_inprivate_account_16_regular.svg",
+      "aliases": [
+        "Incognito"
+      ],
+      "sha256": "834ff497ebc2269a636dda0120dbf327d6aa40818035886eed4657debde59401"
+    },
+    {
+      "name": "Info",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Info/SVG/ic_fluent_info_16_regular.svg",
+      "aliases": [
+        "Information",
+        "InformationOutline"
+      ],
+      "sha256": "6eebab59437401c1a57f6232b0d8597d378d64e3ff7107e727054a94f99ada3d"
+    },
+    {
+      "name": "Key",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Key/SVG/ic_fluent_key_16_regular.svg",
+      "aliases": [
+        "Key",
+        "KeyChain",
+        "KeyChange",
+        "KeyOutline"
+      ],
+      "sha256": "9d6b929f2677742be39fb44e729c0fcf249323acaf52ca143ab47d544bc8d51d"
+    },
+    {
+      "name": "Keyboard",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Keyboard/SVG/ic_fluent_keyboard_16_regular.svg",
+      "aliases": [
+        "Keyboard"
+      ],
+      "sha256": "51af9f27011763e70246ef2277b73970e9a1df73147d19e45616fe99147fb795"
+    },
+    {
+      "name": "Library",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Library/SVG/ic_fluent_library_16_regular.svg",
+      "aliases": [
+        "School"
+      ],
+      "sha256": "c00b3ffe753c256850108e9959d7f9411474fe7019ad80d34090f977de5b2915"
+    },
+    {
+      "name": "Lock Closed",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Lock Closed/SVG/ic_fluent_lock_closed_16_regular.svg",
+      "aliases": [
+        "Lock",
+        "LockCheck",
+        "LockCheckOutline",
+        "LockClock",
+        "LockOutline"
+      ],
+      "sha256": "2babf230d7e16fc2ae7105695b6f1bbee718cb2bf06ccdfef9c5cbbbcd6edf0a"
+    },
+    {
+      "name": "Lock Open",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Lock Open/SVG/ic_fluent_lock_open_16_regular.svg",
+      "aliases": [
+        "LockOpenVariant",
+        "LockOpenVariantOutline"
+      ],
+      "sha256": "6738aa2e2f922dcdcdf2a2e4efec26846973707449bc8053b3847746d017f086"
+    },
+    {
+      "name": "Mail",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Mail/SVG/ic_fluent_mail_16_regular.svg",
+      "aliases": [
+        "EmailOutline"
+      ],
+      "sha256": "98685b8ff93187fb89358e4f741875b5eeb287f66fda1b1dec2073954a447410"
+    },
+    {
+      "name": "Mic",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Mic/SVG/ic_fluent_mic_16_regular.svg",
+      "aliases": [
+        "Microphone",
+        "MicrophoneOutline"
+      ],
+      "sha256": "c7677f09c3e3b2668c932a32af09104457f4f28994b65e5a00623ba40b38e9a7"
+    },
+    {
+      "name": "Money",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Money/SVG/ic_fluent_money_16_regular.svg",
+      "aliases": [
+        "Cash",
+        "CashMultiple",
+        "CashRegister"
+      ],
+      "sha256": "e7fcdb66e37bb1576aaa9ca711fd510e691baaa2810d32e5632b1f3ca8b6c96b"
+    },
+    {
+      "name": "Money Hand",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Money Hand/SVG/ic_fluent_money_hand_16_regular.svg",
+      "aliases": [
+        "CashCheck",
+        "CashMinus",
+        "CashPlus"
+      ],
+      "sha256": "d8a5d0393fc8f3183835f42f593f2413ce065c3e6deda4f8e6712eb6ae77d418"
+    },
+    {
+      "name": "Money Settings",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Money Settings/SVG/ic_fluent_money_settings_16_regular.svg",
+      "aliases": [
+        "CashEdit"
+      ],
+      "sha256": "0830eeee5a8de46a15a3f5ef51dee0c35ad30c2df80321251d0d18860de89d16"
+    },
+    {
+      "name": "More Horizontal",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/More Horizontal/SVG/ic_fluent_more_horizontal_16_regular.svg",
+      "aliases": [
+        "DotsHorizontal",
+        "DotsHorizontalCircleOutline"
+      ],
+      "sha256": "81855d90e59ad24d898186ee7faf269c0fd2e84474b56194f91ff8300564b766"
+    },
+    {
+      "name": "Navigation",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Navigation/SVG/ic_fluent_navigation_16_regular.svg",
+      "aliases": [
+        "Menu"
+      ],
+      "sha256": "3388a8ac6d24c7fb12d67cf7bf14a9b66a8a9799b2de6773008d7f87865442c1"
+    },
+    {
+      "name": "Notebook",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Notebook/SVG/ic_fluent_notebook_16_regular.svg",
+      "aliases": [
+        "BookEducationOutline"
+      ],
+      "sha256": "8f677d902a1d53ced5d9ea7b9ff39c4ecac4803bda5955e7a840c7245d88d31f"
+    },
+    {
+      "name": "Open",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Open/SVG/ic_fluent_open_16_regular.svg",
+      "aliases": [
+        "OpenInNew"
+      ],
+      "sha256": "5cf368df06b7f2b84899a6b68257770510bd218639d4f77faa9cb015a9551322"
+    },
+    {
+      "name": "Options",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Options/SVG/ic_fluent_options_16_regular.svg",
+      "aliases": [
+        "Tune",
+        "TuneVariant"
+      ],
+      "sha256": "3911c8e20cd26cc620c6eb08070b749a008eadd9e48c221b7d5029bc831d0da2"
+    },
+    {
+      "name": "Organization",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Organization/SVG/ic_fluent_organization_16_regular.svg",
+      "aliases": [
+        "SitemapOutline"
+      ],
+      "sha256": "89fe221977a4abe2535df396c7df69e47235398ce00660816baf268d9da34f44"
+    },
+    {
+      "name": "Organization Horizontal",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Organization Horizontal/SVG/ic_fluent_organization_horizontal_16_regular.svg",
+      "aliases": [
+        "LanConnect"
+      ],
+      "sha256": "38202b7df8060869301d6fb0c7895b537276988b20a39f5ccc16aeadd220350c"
+    },
+    {
+      "name": "Panel Left",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Panel Left/SVG/ic_fluent_panel_left_16_regular.svg",
+      "aliases": [
+        "DockLeft"
+      ],
+      "sha256": "27c1864cb9790efe580a85a769decce68f2210a16a2931e22494cdb7709a83c3"
+    },
+    {
+      "name": "Password",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Password/SVG/ic_fluent_password_16_regular.svg",
+      "aliases": [
+        "FormTextboxPassword"
+      ],
+      "sha256": "f0524a0ad51f6b0fd055f4f40e5fcb45644b863895ca064485754ad4357abce6"
+    },
+    {
+      "name": "Payment",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Payment/SVG/ic_fluent_payment_16_regular.svg",
+      "aliases": [
+        "HandCoin"
+      ],
+      "sha256": "61997cb7476f949e45b44381bc6a336350ebfaca548177aa951765dd1366dd77"
+    },
+    {
+      "name": "People Add",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/People Add/SVG/ic_fluent_people_add_16_regular.svg",
+      "aliases": [
+        "AccountMultiplePlusOutline"
+      ],
+      "sha256": "2f30cf4d4fd33afc6bf66a2b01a28f1b9e5bbd4e8ce0bbfbc4860d60310b21e5"
+    },
+    {
+      "name": "People List",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/People List/SVG/ic_fluent_people_list_16_regular.svg",
+      "aliases": [
+        "HumanMaleBoard"
+      ],
+      "sha256": "0042864db900f806704b717abc19aae0c1a29e721c6f66700cdf4ce970baacee"
+    },
+    {
+      "name": "People Swap",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/People Swap/SVG/ic_fluent_people_swap_16_regular.svg",
+      "aliases": [
+        "AccountSwitch",
+        "AccountSwitchOutline"
+      ],
+      "sha256": "f95ec9032542238b9ddbd0e2f5c73a7cea0f815cd3e47bda23a04582b4456f7a"
+    },
+    {
+      "name": "People Sync",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/People Sync/SVG/ic_fluent_people_sync_16_regular.svg",
+      "aliases": [
+        "CalendarSync"
+      ],
+      "sha256": "64b524689d034e660da0a4721bfb9c9c82b436c18824c443fa3bf896d18c8168"
+    },
+    {
+      "name": "People Team",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/People Team/SVG/ic_fluent_people_team_16_regular.svg",
+      "aliases": [
+        "AccountGroup",
+        "AccountGroupOutline",
+        "AccountMultipleOutline"
+      ],
+      "sha256": "ec5d4ff723112e731af8b271e6ee241882e4ae78ba09bd6a6868d3cb8250c90d"
+    },
+    {
+      "name": "Person",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Person/SVG/ic_fluent_person_16_regular.svg",
+      "aliases": [
+        "Account",
+        "AccountCircleOutline",
+        "AccountOutline",
+        "AccountTie"
+      ],
+      "sha256": "754bd544efe27efb9262a53a33a9b562b9310b4b6bda185a5c95bdf938a80a41"
+    },
+    {
+      "name": "Person Add",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Person Add/SVG/ic_fluent_person_add_16_regular.svg",
+      "aliases": [
+        "AccountPlus",
+        "AccountPlusOutline"
+      ],
+      "sha256": "f061371e0445330313589cb8dc51fe7f1bfd4088434d0ac0660cebb3f334390d"
+    },
+    {
+      "name": "Person Arrow Back",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Person Arrow Back/SVG/ic_fluent_person_arrow_back_16_regular.svg",
+      "aliases": [
+        "AccountArrowDown"
+      ],
+      "sha256": "bcd57d399c75ed400801b771821a7f90174a130523a00bfb596b748fe73249cc"
+    },
+    {
+      "name": "Person Arrow Left",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Person Arrow Left/SVG/ic_fluent_person_arrow_left_16_regular.svg",
+      "aliases": [
+        "AccountArrowLeftOutline"
+      ],
+      "sha256": "40844693272e49fd11a061c5269a5f48496f8e21c165f3685e1d52d664b9f4a2"
+    },
+    {
+      "name": "Person Arrow Right",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Person Arrow Right/SVG/ic_fluent_person_arrow_right_16_regular.svg",
+      "aliases": [
+        "AccountArrowRight"
+      ],
+      "sha256": "cd670d9b96336dc2dcb129b84019f54c7bf4bb9ef7dc470d49c7d016343bf8c4"
+    },
+    {
+      "name": "Person Available",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Person Available/SVG/ic_fluent_person_available_16_regular.svg",
+      "aliases": [
+        "AccountCheck",
+        "AccountCheckOutline"
+      ],
+      "sha256": "00563842446f9bdda9c2f63a711c4550ea97e8e60c895a6644dc05fa22e7ca15"
+    },
+    {
+      "name": "Person Board",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Person Board/SVG/ic_fluent_person_board_16_regular.svg",
+      "aliases": [
+        "AccountSchool",
+        "AccountSchoolOutline"
+      ],
+      "sha256": "f9fc8dfdfd6d99aa2cf6672c8aa0da8d12aade7cbbc508b41a39641117489ca8"
+    },
+    {
+      "name": "Person Clock",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Person Clock/SVG/ic_fluent_person_clock_16_regular.svg",
+      "aliases": [
+        "AccountClock"
+      ],
+      "sha256": "82dad9425f478e040ddede06fccc8b7225257000879e3d3495be5ca62c9295a6"
+    },
+    {
+      "name": "Person Delete",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Person Delete/SVG/ic_fluent_person_delete_16_regular.svg",
+      "aliases": [
+        "AccountCancel",
+        "AccountCancelOutline",
+        "AccountMinus",
+        "AccountOffOutline",
+        "AccountRemove",
+        "AccountRemoveOutline"
+      ],
+      "sha256": "b65f4202315a5955d63c48cc993bb5b7c1e8e670f46ee938681826d77ae13e1c"
+    },
+    {
+      "name": "Person Edit",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Person Edit/SVG/ic_fluent_person_edit_16_regular.svg",
+      "aliases": [
+        "AccountEdit",
+        "Rename"
+      ],
+      "sha256": "c433f3b59109cdcd4262331f49b7b9cc1280c90a8ae650bae48227df73d2d437"
+    },
+    {
+      "name": "Person Key",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Person Key/SVG/ic_fluent_person_key_16_regular.svg",
+      "aliases": [
+        "AccountKey"
+      ],
+      "sha256": "faec027b3fc8e6f375e93abb39e261f1dda6bb55a6070f9ee038bfdff92c73e8"
+    },
+    {
+      "name": "Person Search",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Person Search/SVG/ic_fluent_person_search_16_regular.svg",
+      "aliases": [
+        "AccountSearchOutline"
+      ],
+      "sha256": "7ddbf94ee834fd2feaf2a5b0419f024de5c641ae589c258155ff9a0f87f6685e"
+    },
+    {
+      "name": "Person Star",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Person Star/SVG/ic_fluent_person_star_16_regular.svg",
+      "aliases": [
+        "AccountStarOutline"
+      ],
+      "sha256": "aafe29bf9e3fc21a0b04fdf5f1af16738d7239c180ec77e15559621e1e0e3efe"
+    },
+    {
+      "name": "Person Warning",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Person Warning/SVG/ic_fluent_person_warning_16_regular.svg",
+      "aliases": [
+        "AlertOctagon"
+      ],
+      "sha256": "9c44ef52f459ae19328c0a537b9c53029180a48dd596ad2f80840c564c1c86dc"
+    },
+    {
+      "name": "Phone",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Phone/SVG/ic_fluent_phone_16_regular.svg",
+      "aliases": [
+        "Cellphone",
+        "CellphoneCheck",
+        "CellphoneOff",
+        "CellphoneRemove",
+        "PhoneOutline"
+      ],
+      "sha256": "588ad012f6a419f0e74e4eac1d94a0982e3367101bdf12ec9d23076ba4f1c952"
+    },
+    {
+      "name": "Phone Laptop",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Phone Laptop/SVG/ic_fluent_phone_laptop_16_regular.svg",
+      "aliases": [
+        "CellphoneLink"
+      ],
+      "sha256": "f95c199213b5c9e5385226b6b0cae1c3918295549bc0fe87551622ab2c564d07"
+    },
+    {
+      "name": "Play Circle",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Play Circle/SVG/ic_fluent_play_circle_16_regular.svg",
+      "aliases": [
+        "AnimationPlay",
+        "PlayOutline"
+      ],
+      "sha256": "e8c9f6d9b4ccb7cf0ec71ea3e05fbf149a4bc95c188e24bc6d930235454daf96"
+    },
+    {
+      "name": "Plug Disconnected",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Plug Disconnected/SVG/ic_fluent_plug_disconnected_16_regular.svg",
+      "aliases": [
+        "LanDisconnect"
+      ],
+      "sha256": "f5556086f73ddd0282621f88a40ecfc8f501ada263f851edb6b5e43ff11a57a5"
+    },
+    {
+      "name": "Print",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Print/SVG/ic_fluent_print_16_regular.svg",
+      "aliases": [
+        "Printer"
+      ],
+      "sha256": "e49915c6a30796d14d3507226892fb364025e5ecfc2ffa3c6e819e2acd1f2a4f"
+    },
+    {
+      "name": "Question Circle",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Question Circle/SVG/ic_fluent_question_circle_16_regular.svg",
+      "aliases": [
+        "HelpCircleOutline"
+      ],
+      "sha256": "a0d44ac8f8c012c5850ab0c7b8e23d816008760cd13ccfdee0cdc76cbc7cd9e9"
+    },
+    {
+      "name": "Radio Button",
+      "size": 16,
+      "variant": "filled",
+      "path": "assets/Radio Button/SVG/ic_fluent_radio_button_16_filled.svg",
+      "aliases": [
+        "RadioboxMarked"
+      ],
+      "sha256": "91e360841cbbd559513d365a68a64fa74281b3004edc07fbf10a5e934a7c693b"
+    },
+    {
+      "name": "Receipt",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Receipt/SVG/ic_fluent_receipt_16_regular.svg",
+      "aliases": [
+        "Receipt",
+        "ReceiptText",
+        "ReceiptTextOutline",
+        "ReceiptTextRemoveOutline"
+      ],
+      "sha256": "f540ef381a387a6dd80aa4f3a5ec43627bb51a19f8a09e6c8b1e102b93792af2"
+    },
+    {
+      "name": "Save",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Save/SVG/ic_fluent_save_16_regular.svg",
+      "aliases": [
+        "ContentSave",
+        "ContentSaveOutline"
+      ],
+      "sha256": "cd9f751bfe5b3fdd2ccb239ba8e12e0619807fbb8c7b42591a20d98d64f602a7"
+    },
+    {
+      "name": "Scales",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Scales/SVG/ic_fluent_scales_16_regular.svg",
+      "aliases": [
+        "ScaleBalance"
+      ],
+      "sha256": "cea7911e0c053e70369201e050b01eba18286b181a765203f884591958fca60d"
+    },
+    {
+      "name": "Scan Person",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Scan Person/SVG/ic_fluent_scan_person_16_regular.svg",
+      "aliases": [
+        "AccountKeyOutline"
+      ],
+      "sha256": "42b8c6f8f8737f907585980e5ff11dc823b7714b22c6a9f2072423aea61e4f7f"
+    },
+    {
+      "name": "Search",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Search/SVG/ic_fluent_search_16_regular.svg",
+      "aliases": [
+        "Magnify"
+      ],
+      "sha256": "ecd3bbdde12dc18e8672317582ac61d9fb4dd4f2755e4279511fd5fa31e60040"
+    },
+    {
+      "name": "Send",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Send/SVG/ic_fluent_send_16_regular.svg",
+      "aliases": [
+        "SendOutline"
+      ],
+      "sha256": "d07735691628f1882e2c9d1b63bb0486e9a0f831bab46e5c5a8ad9a4827e144c"
+    },
+    {
+      "name": "Server",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Server/SVG/ic_fluent_server_16_regular.svg",
+      "aliases": [
+        "ServerOutline"
+      ],
+      "sha256": "a248d361ceafb5792dfa276e0da782b727b5c719bd51a4b177edc4b8cd2f688b"
+    },
+    {
+      "name": "Settings",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Settings/SVG/ic_fluent_settings_16_regular.svg",
+      "aliases": [
+        "Cog",
+        "CogOutline"
+      ],
+      "sha256": "40ff3be0796d839fcfa2876c9ee4c585260e884bc864aa523c9159a0134c06ba"
+    },
+    {
+      "name": "Share Android",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Share Android/SVG/ic_fluent_share_android_16_regular.svg",
+      "aliases": [
+        "ShareVariantOutline"
+      ],
+      "sha256": "b070619a45ac41ee0eb28cad81d1de12e880ca7e9557e222f4e789e108131205"
+    },
+    {
+      "name": "Shield",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Shield/SVG/ic_fluent_shield_16_regular.svg",
+      "aliases": [
+        "ShieldAccount",
+        "ShieldAccountOutline"
+      ],
+      "sha256": "16531c75a1249d953d2b7e4498827e14cda16d1999446a80d7470fe5f60d4dc1"
+    },
+    {
+      "name": "Shield Checkmark",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Shield Checkmark/SVG/ic_fluent_shield_checkmark_16_regular.svg",
+      "aliases": [
+        "ShieldCheck",
+        "ShieldCheckOutline"
+      ],
+      "sha256": "f7f747aa203f4af09a646ba0c045accac5fb197555dbd060477b6fc833895f0d"
+    },
+    {
+      "name": "Shield Dismiss",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Shield Dismiss/SVG/ic_fluent_shield_dismiss_16_regular.svg",
+      "aliases": [
+        "ShieldOff"
+      ],
+      "sha256": "ae34e448c2d45c85f421f1ab539da84fdeec1c63ac7cb706c0b04063206dfea2"
+    },
+    {
+      "name": "Shield Lock",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Shield Lock/SVG/ic_fluent_shield_lock_16_regular.svg",
+      "aliases": [
+        "ShieldLockOutline"
+      ],
+      "sha256": "273e46da76492e7dfb50fd8c46bebedb017bef23abff3db6f50344039a68a44c"
+    },
+    {
+      "name": "Shifts",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Shifts/SVG/ic_fluent_shifts_16_regular.svg",
+      "aliases": [
+        "ClockCheck",
+        "ClockCheckOutline"
+      ],
+      "sha256": "5656b7f3fdf597be8d725439aff20d905c211277f192cf28c4805007f565a87c"
+    },
+    {
+      "name": "Speaker 1",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Speaker 1/SVG/ic_fluent_speaker_1_16_regular.svg",
+      "aliases": [
+        "VolumeLow"
+      ],
+      "sha256": "15162793f10493ed9dfb2ab8b05541ddc0db4c55f2368e8b72ed472de4d5fa55"
+    },
+    {
+      "name": "Speaker 2",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Speaker 2/SVG/ic_fluent_speaker_2_16_regular.svg",
+      "aliases": [
+        "VolumeHigh"
+      ],
+      "sha256": "faa9b818ef3e58b75e22be248ff155c170a6162f7881f3cee159880dbe9d77f4"
+    },
+    {
+      "name": "Square",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Square/SVG/ic_fluent_square_16_regular.svg",
+      "aliases": [
+        "WindowMaximize"
+      ],
+      "sha256": "474c2b224afeec2a522542335ab93bf5cdf0dda6b3b525347eec254be0cb44b1"
+    },
+    {
+      "name": "Stop",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Stop/SVG/ic_fluent_stop_16_regular.svg",
+      "aliases": [
+        "Stop",
+        "StopOutline"
+      ],
+      "sha256": "2e9c10d1afd4d13a5396ae010106a3b89059fb0b8efa57f76847332d2fea9242"
+    },
+    {
+      "name": "Subtract",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Subtract/SVG/ic_fluent_subtract_16_regular.svg",
+      "aliases": [
+        "Minus"
+      ],
+      "sha256": "663f8030c439784943e978023348c52c5e24f629b4d85e85da70b61ffb3e5f6f"
+    },
+    {
+      "name": "Tag Add",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Tag Add/SVG/ic_fluent_tag_add_16_regular.svg",
+      "aliases": [
+        "TagPlusOutline"
+      ],
+      "sha256": "b4f270cc0e8825366b178272e5ee7191c0348533949e47d082faac3f17e658bd"
+    },
+    {
+      "name": "Tag Multiple",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Tag Multiple/SVG/ic_fluent_tag_multiple_16_regular.svg",
+      "aliases": [
+        "TagMultipleOutline"
+      ],
+      "sha256": "ed7dd30a092e456bf1d15499dee5bcad8c95bf1018ebceb0faad152ac6b9033a"
+    },
+    {
+      "name": "Text Font",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Text Font/SVG/ic_fluent_text_font_16_regular.svg",
+      "aliases": [
+        "FormatFont"
+      ],
+      "sha256": "17fb7bf64a7ebeb7ecce64b695165db729fcf32180151e8700f860d3a148e19d"
+    },
+    {
+      "name": "Text Number List LTR",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Text Number List LTR/SVG/ic_fluent_text_number_list_ltr_16_regular.svg",
+      "aliases": [
+        "FormatListNumbered"
+      ],
+      "sha256": "56a802d59903360d5c82c52aad59240be4ae631b719bd8aff8b2e36051589a81"
+    },
+    {
+      "name": "Timer",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Timer/SVG/ic_fluent_timer_16_regular.svg",
+      "aliases": [
+        "TimerSandComplete",
+        "TimerSandEmpty"
+      ],
+      "sha256": "332518c211bed7bc55c1844205b14d25ced16aa223d38559511432a18946cf09"
+    },
+    {
+      "name": "Trophy",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Trophy/SVG/ic_fluent_trophy_16_regular.svg",
+      "aliases": [
+        "Podium"
+      ],
+      "sha256": "c321b95e722cddd99a78921961be9a24bd316661bed7ec148023e917122bd37a"
+    },
+    {
+      "name": "Vault",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Vault/SVG/ic_fluent_vault_16_regular.svg",
+      "aliases": [
+        "Safe"
+      ],
+      "sha256": "e7ebdd4c8f2c08c9f4653230f6643702ba31515a0b2168e1cdb105a3ccd25894"
+    },
+    {
+      "name": "Wallet",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Wallet/SVG/ic_fluent_wallet_16_regular.svg",
+      "aliases": [
+        "Wallet",
+        "WalletOutline"
+      ],
+      "sha256": "adf03856fb3194b6ecf1a371a6f4d81c0b4fe8d3114cb6e7f5337c1573065fbd"
+    },
+    {
+      "name": "Wand",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Wand/SVG/ic_fluent_wand_16_regular.svg",
+      "aliases": [
+        "AutoFix"
+      ],
+      "sha256": "26714eccf816115f995e971ad68cb74de2e3ff6d094089b5287153080be82603"
+    },
+    {
+      "name": "Warning",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Warning/SVG/ic_fluent_warning_16_regular.svg",
+      "aliases": [
+        "AlertOctagonOutline",
+        "BatteryAlertVariantOutline",
+        "ShieldAlertOutline"
+      ],
+      "sha256": "8d14a9ce47d37e01b64e4487d65c4a7a96c620e1f7c73693ae0cdace3d9f1085"
+    },
+    {
+      "name": "Weather Moon",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Weather Moon/SVG/ic_fluent_weather_moon_16_regular.svg",
+      "aliases": [
+        "WeatherNight",
+        "WeatherNightOutline"
+      ],
+      "sha256": "4cb48217d150b762835860a35324984bd9c3cb74291030dd6e2ccdc27303c4d8"
+    },
+    {
+      "name": "Weather Sunny",
+      "size": 16,
+      "variant": "regular",
+      "path": "assets/Weather Sunny/SVG/ic_fluent_weather_sunny_16_regular.svg",
+      "aliases": [
+        "WeatherSunny"
+      ],
+      "sha256": "6d1e5f055c765779978e8c27611238eed8c265d70e90036ad172a89c8ee4baa5"
+    },
+    {
+      "name": "Add",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Add/SVG/ic_fluent_add_20_regular.svg",
+      "aliases": [
+        "Plus"
+      ],
+      "sha256": "fdf9fefaf083ff2349ac94afd47aab8ecb554650781c5797176b9d6ad3caee05"
+    },
+    {
+      "name": "Alert",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Alert/SVG/ic_fluent_alert_20_regular.svg",
+      "aliases": [
+        "BellOutline",
+        "BellRingOutline"
+      ],
+      "sha256": "71baa585b5effa33b12695c294e9b5301c141307caf125b865984f7217a6b7d3"
+    },
+    {
+      "name": "Approvals App",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Approvals App/SVG/ic_fluent_approvals_app_20_regular.svg",
+      "aliases": [
+        "Gavel"
+      ],
+      "sha256": "6199fb1d06875f07b9ec7e2301e55d6a3916c2e11ddb71bbb27a2a45649a27f1"
+    },
+    {
+      "name": "Apps",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Apps/SVG/ic_fluent_apps_20_regular.svg",
+      "aliases": [
+        "DotsGrid",
+        "Grid",
+        "ViewGridPlus"
+      ],
+      "sha256": "69554ad42b056af10fe104a7e4ece5fd71a15ba7c92a09eac0b5139383c3a62a"
+    },
+    {
+      "name": "Apps List Detail",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Apps List Detail/SVG/ic_fluent_apps_list_detail_20_regular.svg",
+      "aliases": [
+        "ViewGrid"
+      ],
+      "sha256": "af09aafaeba19922afa840b619aeabd9ed24a03cd521a8131a6ecce4d0375b71"
+    },
+    {
+      "name": "Archive",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Archive/SVG/ic_fluent_archive_20_regular.svg",
+      "aliases": [
+        "Archive"
+      ],
+      "sha256": "0796263c9ecd6addfaa49e6deb075499bb37951f74923a13bdc6bc8ba875c120"
+    },
+    {
+      "name": "Arrow Clockwise",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Arrow Clockwise/SVG/ic_fluent_arrow_clockwise_20_regular.svg",
+      "aliases": [
+        "Update"
+      ],
+      "sha256": "ab803364462aa202e1d26eb8fec8ff988c108f742e62b1442a0db4e0d3304800"
+    },
+    {
+      "name": "Arrow Counterclockwise",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Arrow Counterclockwise/SVG/ic_fluent_arrow_counterclockwise_20_regular.svg",
+      "aliases": [
+        "BackupRestore",
+        "Restore"
+      ],
+      "sha256": "34f7c4fe968e48e2bab176b5e4d9feb8247ace5b9d532a1954501b2e0dc46d0f"
+    },
+    {
+      "name": "Arrow Download",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Arrow Download/SVG/ic_fluent_arrow_download_20_regular.svg",
+      "aliases": [
+        "ArrowDownBoldCircleOutline",
+        "CloudDownload",
+        "Download",
+        "DownloadOutline"
+      ],
+      "sha256": "28e752ccfd95feb1850de1da3d170f34fd31765417d3431a7dbf3da89840ea33"
+    },
+    {
+      "name": "Arrow Enter Left",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Arrow Enter Left/SVG/ic_fluent_arrow_enter_left_20_regular.svg",
+      "aliases": [
+        "LoginVariant"
+      ],
+      "sha256": "5fe518e6862f427b77ae5466681d749a11a099a0fab658a31bae87113cd22739"
+    },
+    {
+      "name": "Arrow Left",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Arrow Left/SVG/ic_fluent_arrow_left_20_regular.svg",
+      "aliases": [
+        "ArrowLeft"
+      ],
+      "sha256": "db86c904f14b430f6100b1c6bfe7e9b44fdc0ab375bcbbf9c74d371c87389009"
+    },
+    {
+      "name": "Arrow Right",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Arrow Right/SVG/ic_fluent_arrow_right_20_regular.svg",
+      "aliases": [
+        "ArrowRight"
+      ],
+      "sha256": "b69b65ab472132acbe2ece874a387e5355a84181398572aecae827e4d043d622"
+    },
+    {
+      "name": "Arrow Swap",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Arrow Swap/SVG/ic_fluent_arrow_swap_20_regular.svg",
+      "aliases": [
+        "SwapHorizontal"
+      ],
+      "sha256": "d53268f524b3f8a2c562a4b8387b8aae98f8ee934c73c4fa239fd9830d6bbde1"
+    },
+    {
+      "name": "Arrow Sync",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Arrow Sync/SVG/ic_fluent_arrow_sync_20_regular.svg",
+      "aliases": [
+        "Autorenew",
+        "Loading",
+        "Refresh",
+        "Sync"
+      ],
+      "sha256": "1713352c66b798bd1bbf86467ab33e45ac615d8a18d3f79c50b195034a51ab9e"
+    },
+    {
+      "name": "Arrow Up Left",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Arrow Up Left/SVG/ic_fluent_arrow_up_left_20_regular.svg",
+      "aliases": [
+        "ArrowTopLeft"
+      ],
+      "sha256": "e4977b868d386760f9dbdb990213c4ea03272a1b89e6698a06e82b16985e1d96"
+    },
+    {
+      "name": "Arrow Upload",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Arrow Upload/SVG/ic_fluent_arrow_upload_20_regular.svg",
+      "aliases": [
+        "Publish",
+        "Upload"
+      ],
+      "sha256": "71fa5eb00acbd3475aeb83fc3a85d77eed7d537e0bbb0048cbe78261f3e64690"
+    },
+    {
+      "name": "Book",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Book/SVG/ic_fluent_book_20_regular.svg",
+      "aliases": [
+        "BookOpenPageVariantOutline",
+        "BookOpenVariantOutline"
+      ],
+      "sha256": "944d49f0e43bfb8d8d44e9d5a3c3475db8c9af4bb1cc48403461552a56635a4b"
+    },
+    {
+      "name": "Book Contacts",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Book Contacts/SVG/ic_fluent_book_contacts_20_regular.svg",
+      "aliases": [
+        "AccountTieVoiceOutline"
+      ],
+      "sha256": "ea073213f48e34aca7fcc6b64997022062f3e84ba27ff2f983e6eee43d0336c1"
+    },
+    {
+      "name": "Book Open",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Book Open/SVG/ic_fluent_book_open_20_regular.svg",
+      "aliases": [
+        "BookOpenVariant"
+      ],
+      "sha256": "902200bc2ca473ed6a3087029fb36638feeca826531e1f92a1d0da2a4a11cb96"
+    },
+    {
+      "name": "Briefcase",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Briefcase/SVG/ic_fluent_briefcase_20_regular.svg",
+      "aliases": [
+        "Briefcase",
+        "BriefcaseOutline"
+      ],
+      "sha256": "48e44a2123cdcfe575b224507f305a353ee6e15df1b2fc1e1be9c921c6d5f5b5"
+    },
+    {
+      "name": "Building",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Building/SVG/ic_fluent_building_20_regular.svg",
+      "aliases": [
+        "OfficeBuilding",
+        "OfficeBuildingOutline"
+      ],
+      "sha256": "0963dcce5305dd2e0380d7cb1c2f1b30db0992464d7cb072109c8e83fa981a4e"
+    },
+    {
+      "name": "Building Government",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Building Government/SVG/ic_fluent_building_government_20_regular.svg",
+      "aliases": [
+        "SchoolOutline"
+      ],
+      "sha256": "10f94d4c4c379b8f83cba1c9667c71fb69a29dd004f1c06b220338f84f8a5f51"
+    },
+    {
+      "name": "Building Shop",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Building Shop/SVG/ic_fluent_building_shop_20_regular.svg",
+      "aliases": [
+        "StorefrontOutline"
+      ],
+      "sha256": "17d3d33f13681e571ae3f6fde81b752c422a81e1f89378336c8a0fd2620cdd6e"
+    },
+    {
+      "name": "Calendar",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Calendar/SVG/ic_fluent_calendar_20_regular.svg",
+      "aliases": [
+        "Calendar",
+        "CalendarMonth",
+        "CalendarMonthOutline",
+        "CalendarToday"
+      ],
+      "sha256": "eefff0ad01757bbaf1b0ceefaa1f5f2da95dafd58be7616b733dcb6fc55ac9ac"
+    },
+    {
+      "name": "Calendar Add",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Calendar Add/SVG/ic_fluent_calendar_add_20_regular.svg",
+      "aliases": [
+        "CalendarPlus",
+        "CalendarPlusOutline"
+      ],
+      "sha256": "5c3d3d410f80e551b72e0d8c0c429b524424cad28afd663958ccf1255430b4cc"
+    },
+    {
+      "name": "Calendar Cancel",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Calendar Cancel/SVG/ic_fluent_calendar_cancel_20_regular.svg",
+      "aliases": [
+        "CalendarRemove"
+      ],
+      "sha256": "50afc29fecb444a073bd89c247897e9d982bdb227486b30cf253d2d951550cb9"
+    },
+    {
+      "name": "Calendar Checkmark",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Calendar Checkmark/SVG/ic_fluent_calendar_checkmark_20_regular.svg",
+      "aliases": [
+        "CalendarCheck"
+      ],
+      "sha256": "bcb9f99a0844f4e7123e4830f511ff694c8914a68a605e9002e8d49dd4dbeefd"
+    },
+    {
+      "name": "Calendar Clock",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Calendar Clock/SVG/ic_fluent_calendar_clock_20_regular.svg",
+      "aliases": [
+        "CalendarClock"
+      ],
+      "sha256": "a93917d0b3e3cb4d5220d9a656a10fccfa751b62524b56a8c3d964bad3fe7217"
+    },
+    {
+      "name": "Calendar Edit",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Calendar Edit/SVG/ic_fluent_calendar_edit_20_regular.svg",
+      "aliases": [
+        "CalendarEdit",
+        "CalendarEditOutline"
+      ],
+      "sha256": "362985b9f2fa7f66f8170164af53ca37644aa48c6d26f1100a3d01cd2c268096"
+    },
+    {
+      "name": "Calendar LTR",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Calendar LTR/SVG/ic_fluent_calendar_ltr_20_regular.svg",
+      "aliases": [
+        "CalendarRange"
+      ],
+      "sha256": "eefff0ad01757bbaf1b0ceefaa1f5f2da95dafd58be7616b733dcb6fc55ac9ac"
+    },
+    {
+      "name": "Calendar Lock",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Calendar Lock/SVG/ic_fluent_calendar_lock_20_regular.svg",
+      "aliases": [
+        "CalendarLock"
+      ],
+      "sha256": "27e4ee4b35ac9010da46722a28686c76d756f45aae312496f751571f1341eff0"
+    },
+    {
+      "name": "Certificate",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Certificate/SVG/ic_fluent_certificate_20_regular.svg",
+      "aliases": [
+        "Certificate",
+        "CheckDecagramOutline"
+      ],
+      "sha256": "cbbd4fe149d131a2142755d792cfad41aee0e9967030e10f7b0cb9de8a8fdf3d"
+    },
+    {
+      "name": "Chart Multiple",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Chart Multiple/SVG/ic_fluent_chart_multiple_20_regular.svg",
+      "aliases": [
+        "ChartBox",
+        "ViewDashboard"
+      ],
+      "sha256": "16be5df81c437ecba1408f0ce26e97b92c834627584c7dc9eeb0c9a3816f4749"
+    },
+    {
+      "name": "Chat",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Chat/SVG/ic_fluent_chat_20_regular.svg",
+      "aliases": [
+        "MessageText",
+        "MessageTextOutline"
+      ],
+      "sha256": "887ddc4469df53b75d350965d7f0d3cb5e0468bf1acc13b76a55c593fd8fe7a7"
+    },
+    {
+      "name": "Checkbox Person",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Checkbox Person/SVG/ic_fluent_checkbox_person_20_regular.svg",
+      "aliases": [
+        "ClipboardCheck",
+        "ClipboardCheckOutline"
+      ],
+      "sha256": "c86e8604f2f942c0facd1c9b63683275255ef90a1f39271d8f8c20244381bf29"
+    },
+    {
+      "name": "Checkbox Unchecked",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Checkbox Unchecked/SVG/ic_fluent_checkbox_unchecked_20_regular.svg",
+      "aliases": [
+        "CheckboxMultipleBlank"
+      ],
+      "sha256": "6c9a157db4987d07e029f2fa0271f8b504fdae2e31423647defc0a4536d0130b"
+    },
+    {
+      "name": "Checkmark",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Checkmark/SVG/ic_fluent_checkmark_20_regular.svg",
+      "aliases": [
+        "Check",
+        "CheckAll"
+      ],
+      "sha256": "d4eb7c05fcfe45d7799925431902dc0079fa0a8cf4c647cfd4cb3db22c3fd2b7"
+    },
+    {
+      "name": "Checkmark Circle",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Checkmark Circle/SVG/ic_fluent_checkmark_circle_20_regular.svg",
+      "aliases": [
+        "CheckCircleOutline"
+      ],
+      "sha256": "ee144bd831dd8a7b46976e38825f4c808e7f2468e2b34b587e79036265e801f7"
+    },
+    {
+      "name": "Chevron Down",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Chevron Down/SVG/ic_fluent_chevron_down_20_regular.svg",
+      "aliases": [
+        "ChevronDown"
+      ],
+      "sha256": "56cb3f544124a67c79a5fa021ee35bb5488403a840bac1ae3291c5f6d71abccd"
+    },
+    {
+      "name": "Chevron Left",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Chevron Left/SVG/ic_fluent_chevron_left_20_regular.svg",
+      "aliases": [
+        "ChevronLeft"
+      ],
+      "sha256": "23926710858e2fcaf18178b613f28f35bce3ab8b9238836f7aace406a597d14a"
+    },
+    {
+      "name": "Chevron Right",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Chevron Right/SVG/ic_fluent_chevron_right_20_regular.svg",
+      "aliases": [
+        "ChevronRight"
+      ],
+      "sha256": "212c611689abb60d2cd56d868e070e44a4c4fbe1d4392622040d1d10a46463e2"
+    },
+    {
+      "name": "Chevron Up",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Chevron Up/SVG/ic_fluent_chevron_up_20_regular.svg",
+      "aliases": [
+        "ChevronUp"
+      ],
+      "sha256": "5d2c30dd49be34bcba7daaf1a46ff9c18db1c301d4433a0ec85e9255c50dec60"
+    },
+    {
+      "name": "Circle",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Circle/SVG/ic_fluent_circle_20_regular.svg",
+      "aliases": [
+        "CircleOutline",
+        "RadioboxBlank"
+      ],
+      "sha256": "039fc0cb4a21cbf2a52fdd5590a7eda55cd614a397bc7441925a5ac2bfc38f37"
+    },
+    {
+      "name": "Circle Multiple Hint Checkmark",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Circle Multiple Hint Checkmark/SVG/ic_fluent_circle_multiple_hint_checkmark_20_regular.svg",
+      "aliases": [
+        "CheckboxMultipleMarked"
+      ],
+      "sha256": "ed19060fd2e1151c0e9448fffdacb89b49fe9dbec05be1ebde6d6225483830b2"
+    },
+    {
+      "name": "Circle",
+      "size": 20,
+      "variant": "filled",
+      "path": "assets/Circle/SVG/ic_fluent_circle_20_filled.svg",
+      "aliases": [
+        "Circle"
+      ],
+      "sha256": "db72458a2718d3cc5a4f04e75e6d732e3061add03799cba31b743d8fb8928813"
+    },
+    {
+      "name": "Clipboard",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Clipboard/SVG/ic_fluent_clipboard_20_regular.svg",
+      "aliases": [
+        "ClipboardAccount",
+        "ClipboardPlus"
+      ],
+      "sha256": "f5bcb28575bb2dd22c9fef30740217d7bdd27e5bdef77d6e6b1f09ef441591d2"
+    },
+    {
+      "name": "Clipboard Task",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Clipboard Task/SVG/ic_fluent_clipboard_task_20_regular.svg",
+      "aliases": [
+        "ClipboardList"
+      ],
+      "sha256": "7567acd5fff6948d32bd7a593b840ed521c0b24be4b0b94aafa746a06554db16"
+    },
+    {
+      "name": "Clipboard Task List LTR",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Clipboard Task List LTR/SVG/ic_fluent_clipboard_task_list_ltr_20_regular.svg",
+      "aliases": [
+        "FormatListChecks"
+      ],
+      "sha256": "1abbab5355f1eaf9e39b1eea055741ec34e5cfd7de44143fb191f37de189b5fe"
+    },
+    {
+      "name": "Clipboard Text Edit",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Clipboard Text Edit/SVG/ic_fluent_clipboard_text_edit_20_regular.svg",
+      "aliases": [
+        "ClipboardEdit"
+      ],
+      "sha256": "62d9bb200f908cf3da3058032c3ce9454301a22cd46d1f4030fccf118ab0f276"
+    },
+    {
+      "name": "Clock",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Clock/SVG/ic_fluent_clock_20_regular.svg",
+      "aliases": [
+        "ProgressClock"
+      ],
+      "sha256": "a8330d82a8701f240a5e92fabadb6f73a4179f5980c7e329440f542ceb8deee2"
+    },
+    {
+      "name": "Clock Alarm",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Clock Alarm/SVG/ic_fluent_clock_alarm_20_regular.svg",
+      "aliases": [
+        "ClockAlertOutline"
+      ],
+      "sha256": "37502c9276b94bf6d3983de5cac33f492bfbbd3e784639a7636cc76fb092136a"
+    },
+    {
+      "name": "Cloud",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Cloud/SVG/ic_fluent_cloud_20_regular.svg",
+      "aliases": [
+        "Cloud",
+        "CloudOutline",
+        "CloudSync",
+        "CloudSyncOutline"
+      ],
+      "sha256": "dcf611a7cbd5202d761523b90b17366ff6f9a3b5119a5e63228a594dc01c8b0c"
+    },
+    {
+      "name": "Cloud Archive",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Cloud Archive/SVG/ic_fluent_cloud_archive_20_regular.svg",
+      "aliases": [
+        "CloudLock",
+        "CloudLockOutline"
+      ],
+      "sha256": "b8b67bd1862bcfd7eea0cacfca6b050a27a2eb99f1c57414c434c8232b9ca392"
+    },
+    {
+      "name": "Cloud Arrow Up",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Cloud Arrow Up/SVG/ic_fluent_cloud_arrow_up_20_regular.svg",
+      "aliases": [
+        "CloudUpload",
+        "CloudUploadOutline"
+      ],
+      "sha256": "69ce55154d169ba763bb98e2a260673cb0967f978c21a0091d264921c2804620"
+    },
+    {
+      "name": "Cloud Checkmark",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Cloud Checkmark/SVG/ic_fluent_cloud_checkmark_20_regular.svg",
+      "aliases": [
+        "CloudCheckOutline"
+      ],
+      "sha256": "8a22b27cc3155ae1d709616882f240067d316648c7ce527c38c0a07a59e97072"
+    },
+    {
+      "name": "Cloud Dismiss",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Cloud Dismiss/SVG/ic_fluent_cloud_dismiss_20_regular.svg",
+      "aliases": [
+        "CloudOffOutline"
+      ],
+      "sha256": "552d36b3edcf010573c062b69fd7f3b245bf0895584fa074a5af81a395b71441"
+    },
+    {
+      "name": "Color",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Color/SVG/ic_fluent_color_20_regular.svg",
+      "aliases": [
+        "Palette",
+        "ThemeLightDark"
+      ],
+      "sha256": "83a3831acc8fd89f68f68ee6746d9c519dc372a0ab70ccc4a01c728b6ab1549b"
+    },
+    {
+      "name": "Contact Card",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Contact Card/SVG/ic_fluent_contact_card_20_regular.svg",
+      "aliases": [
+        "BadgeAccount",
+        "CardAccountDetails",
+        "CardAccountDetailsOutline",
+        "FileAccountOutline"
+      ],
+      "sha256": "819321e0cedee5387c833f835fd5aba086283e77e31c13bfa295b9ee9f5ead31"
+    },
+    {
+      "name": "Copy",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Copy/SVG/ic_fluent_copy_20_regular.svg",
+      "aliases": [
+        "ContentCopy",
+        "FileMultiple"
+      ],
+      "sha256": "b05642b32388ba4c7701c381023c02d20bf48231229bf371f0ca5f10196b7d5b"
+    },
+    {
+      "name": "Data Line",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Data Line/SVG/ic_fluent_data_line_20_regular.svg",
+      "aliases": [
+        "ChartLine",
+        "Finance"
+      ],
+      "sha256": "8fe32a2b247e2025586dff6d8785557eebd0dd285aaf3ddc9dabd5e2ff4e3156"
+    },
+    {
+      "name": "Data Pie",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Data Pie/SVG/ic_fluent_data_pie_20_regular.svg",
+      "aliases": [
+        "ChartArc",
+        "ChartDonut"
+      ],
+      "sha256": "c36847ec5da548f5c8d869171d2c5416ba42ef28791bf128ee211e22ed5d35a1"
+    },
+    {
+      "name": "Data Trending",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Data Trending/SVG/ic_fluent_data_trending_20_regular.svg",
+      "aliases": [
+        "ChartBar"
+      ],
+      "sha256": "59770ef9d3849bc7b728fe4819a9ec8bf7878b9fc6433abdebc24b1a6e446f20"
+    },
+    {
+      "name": "Database",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Database/SVG/ic_fluent_database_20_regular.svg",
+      "aliases": [
+        "DatabaseCheck",
+        "DatabaseCheckOutline",
+        "DatabaseExport",
+        "DatabaseExportOutline",
+        "DatabaseOutline"
+      ],
+      "sha256": "dd615945eee65e3f0f4adf976a63fbdab450732ed588f2928d83f93a10143793"
+    },
+    {
+      "name": "Delete",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Delete/SVG/ic_fluent_delete_20_regular.svg",
+      "aliases": [
+        "Delete",
+        "DeleteForeverOutline",
+        "DeleteSweep",
+        "DeleteSweepOutline",
+        "Eraser",
+        "TrashCanOutline"
+      ],
+      "sha256": "c3ce6fcb04fa1564fc50e00677d763ddf5cafa0ade58604df4c478268ef54452"
+    },
+    {
+      "name": "Desktop",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Desktop/SVG/ic_fluent_desktop_20_regular.svg",
+      "aliases": [
+        "DesktopTowerMonitor",
+        "MonitorEye"
+      ],
+      "sha256": "07c553f0bc7c79deec787f4c8eda5276873f80241a7970e38cba88620ba9f046"
+    },
+    {
+      "name": "Dialpad",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Dialpad/SVG/ic_fluent_dialpad_20_regular.svg",
+      "aliases": [
+        "Dialpad"
+      ],
+      "sha256": "71156223b94647eaa4b57f726eadb74f709118339328fca85788a13d576aea1e"
+    },
+    {
+      "name": "Dismiss",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Dismiss/SVG/ic_fluent_dismiss_20_regular.svg",
+      "aliases": [
+        "Close"
+      ],
+      "sha256": "e84ad771fa8afba8e3ef52c98d9ab2d8ef4fc8e23c5954766a1c4e88fc13b355"
+    },
+    {
+      "name": "Dismiss Circle",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Dismiss Circle/SVG/ic_fluent_dismiss_circle_20_regular.svg",
+      "aliases": [
+        "CloseCircle"
+      ],
+      "sha256": "bc6a315d91fd5adffe81d5c66f9febf575df09cff39e47bd787ebf6df0c77da7"
+    },
+    {
+      "name": "Document",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Document/SVG/ic_fluent_document_20_regular.svg",
+      "aliases": [
+        "FileDocument"
+      ],
+      "sha256": "9a4df1411feac56af539710455c0da05ed81c72b65f8c66c9775ca2f63552980"
+    },
+    {
+      "name": "Document Add",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Document Add/SVG/ic_fluent_document_add_20_regular.svg",
+      "aliases": [
+        "FileDocumentPlus"
+      ],
+      "sha256": "c1f4e03272d61879004fc466c3e0686d283e282521aa4b3802af740ec4156361"
+    },
+    {
+      "name": "Document Arrow Left",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Document Arrow Left/SVG/ic_fluent_document_arrow_left_20_regular.svg",
+      "aliases": [
+        "FileImportOutline"
+      ],
+      "sha256": "21bae6aeff768bae5183e803ce4f00b0707853be0c66e618fb47a7456541bf8e"
+    },
+    {
+      "name": "Document Arrow Right",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Document Arrow Right/SVG/ic_fluent_document_arrow_right_20_regular.svg",
+      "aliases": [
+        "FileExport"
+      ],
+      "sha256": "0520222413b68241880578b1527d8a74911df0c6c8cc0a477432cfc6f03c4c3a"
+    },
+    {
+      "name": "Document Checkmark",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Document Checkmark/SVG/ic_fluent_document_checkmark_20_regular.svg",
+      "aliases": [
+        "FileCheck"
+      ],
+      "sha256": "3dc30dfa1186befb2f53ab125489343b5df52292424e7fb20b6f00e13b90b1b2"
+    },
+    {
+      "name": "Document Data",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Document Data/SVG/ic_fluent_document_data_20_regular.svg",
+      "aliases": [
+        "FileChart",
+        "FileChartOutline"
+      ],
+      "sha256": "3000abe9bf63253c042d11fa60ae91ded72502e7b642639e6b5f802809c99c90"
+    },
+    {
+      "name": "Document Edit",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Document Edit/SVG/ic_fluent_document_edit_20_regular.svg",
+      "aliases": [
+        "PencilBoxMultipleOutline"
+      ],
+      "sha256": "293430a55f09cf7fdba68d7c27829d421cc52f40fea52f1d0e31734de8e73732"
+    },
+    {
+      "name": "Document PDF",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Document PDF/SVG/ic_fluent_document_pdf_20_regular.svg",
+      "aliases": [
+        "FilePdfBox"
+      ],
+      "sha256": "e8c6aa2347edbac266e647bcc947709f07a72fd798183e992d9b857f5771f1ec"
+    },
+    {
+      "name": "Document Search",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Document Search/SVG/ic_fluent_document_search_20_regular.svg",
+      "aliases": [
+        "FileFind"
+      ],
+      "sha256": "3b5c69f3e343752388e49054a17ff372997a62791a9e9843db9bc0dc6fa5e89c"
+    },
+    {
+      "name": "Document Signature",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Document Signature/SVG/ic_fluent_document_signature_20_regular.svg",
+      "aliases": [
+        "FileSign"
+      ],
+      "sha256": "7f5582d18881d46186044d64a0ca55e5e6d7092edd9e004cca01a660183980ff"
+    },
+    {
+      "name": "Document Table",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Document Table/SVG/ic_fluent_document_table_20_regular.svg",
+      "aliases": [
+        "FileExcel"
+      ],
+      "sha256": "5c8d4e7e519eabfea07b002377932537d7c0d0ee0caff8a788f7235ba897be60"
+    },
+    {
+      "name": "Document Text",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Document Text/SVG/ic_fluent_document_text_20_regular.svg",
+      "aliases": [
+        "FileDocumentOutline"
+      ],
+      "sha256": "65e29e8bf8e2177972aecf3dfd9f60a5c0500391618f64193bfa725edc6e7d9e"
+    },
+    {
+      "name": "Edit",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Edit/SVG/ic_fluent_edit_20_regular.svg",
+      "aliases": [
+        "Pen",
+        "Pencil",
+        "PencilBoxOutline",
+        "PencilOutline"
+      ],
+      "sha256": "f14fdc76c0e3953d273e99394e724003bebd8779a55e30df6130455841f237c6"
+    },
+    {
+      "name": "Error Circle",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Error Circle/SVG/ic_fluent_error_circle_20_regular.svg",
+      "aliases": [
+        "AlertCircle",
+        "AlertCircleOutline"
+      ],
+      "sha256": "fcc37b8366fc8d0c31457cd1299807dff0f00fe7ef2c944ea2744c200ab0c7c9"
+    },
+    {
+      "name": "Eye",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Eye/SVG/ic_fluent_eye_20_regular.svg",
+      "aliases": [
+        "Eye",
+        "EyeOutline"
+      ],
+      "sha256": "3fedb211bdbd5d47c9d1e2a820fe73ffd0067ebf555ed8fe435033a09d0d2d1d"
+    },
+    {
+      "name": "Eye Off",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Eye Off/SVG/ic_fluent_eye_off_20_regular.svg",
+      "aliases": [
+        "EyeOffOutline"
+      ],
+      "sha256": "819b18033ecedc1f9dec830ba811925ce5276938c7d754a4989cdd631f06d87d"
+    },
+    {
+      "name": "Filter",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Filter/SVG/ic_fluent_filter_20_regular.svg",
+      "aliases": [
+        "FilterOutline",
+        "FilterVariant"
+      ],
+      "sha256": "e68771cba4653937ebbe31d0c24f5afa61b30c71571bd55dd7d4068b0383ea35"
+    },
+    {
+      "name": "Filter Dismiss",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Filter Dismiss/SVG/ic_fluent_filter_dismiss_20_regular.svg",
+      "aliases": [
+        "FilterRemove",
+        "FilterRemoveOutline"
+      ],
+      "sha256": "781eef4c2807d4912262199f1bf825a469217ee7c16d345d1970aa5ff869532f"
+    },
+    {
+      "name": "Fingerprint",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Fingerprint/SVG/ic_fluent_fingerprint_20_regular.svg",
+      "aliases": [
+        "Fingerprint"
+      ],
+      "sha256": "fd1b492ecb83a309a563ded6cbb55e6b1b4d2fcd64351aa7a9fcfb00cc70397c"
+    },
+    {
+      "name": "Folder Add",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Folder Add/SVG/ic_fluent_folder_add_20_regular.svg",
+      "aliases": [
+        "FolderPlus",
+        "FolderPlusOutline"
+      ],
+      "sha256": "cd3f4b271eb744513906a76684d7a3993e6fba41d5a594c92fd88ae84b975436"
+    },
+    {
+      "name": "Food Cake",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Food Cake/SVG/ic_fluent_food_cake_20_regular.svg",
+      "aliases": [
+        "CakeVariant"
+      ],
+      "sha256": "55ceb66dbddfb87b59791fd95e7e7660ac9147a6a79ccc9fe2322f623ec081b7"
+    },
+    {
+      "name": "Form",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Form/SVG/ic_fluent_form_20_regular.svg",
+      "aliases": [
+        "ClipboardTextOutline"
+      ],
+      "sha256": "530e90702795a9c8353b6d3c9dad942f9c69f323367fcbf472a74e7de90c0c96"
+    },
+    {
+      "name": "Gauge",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Gauge/SVG/ic_fluent_gauge_20_regular.svg",
+      "aliases": [
+        "ViewDashboardOutline"
+      ],
+      "sha256": "b92bde1cb0057fce2bb8846599beff11438ca33965d8d185cb3b7e928cb1a162"
+    },
+    {
+      "name": "Globe",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Globe/SVG/ic_fluent_globe_20_regular.svg",
+      "aliases": [
+        "Web"
+      ],
+      "sha256": "54c4387778893c6b6f4c8c8715f89b4eb05b7395329de96856f932c15f4b4281"
+    },
+    {
+      "name": "History",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/History/SVG/ic_fluent_history_20_regular.svg",
+      "aliases": [
+        "History"
+      ],
+      "sha256": "37c96212d4efc8c37b0b7d7181d00011153ec2375d387442d0f8c73e2541ed6a"
+    },
+    {
+      "name": "Home",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Home/SVG/ic_fluent_home_20_regular.svg",
+      "aliases": [
+        "Home",
+        "HomeOutline"
+      ],
+      "sha256": "b810b7e896c6ef2b4cfa0b693650e0f94b4a6760b222531d60e55ee38212a861"
+    },
+    {
+      "name": "Image",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Image/SVG/ic_fluent_image_20_regular.svg",
+      "aliases": [
+        "Image",
+        "ImageOutline"
+      ],
+      "sha256": "3a0db668b30da746f0bf6805c9c95debf35d1180aa3e7033b9409898f7e3c876"
+    },
+    {
+      "name": "Image Add",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Image Add/SVG/ic_fluent_image_add_20_regular.svg",
+      "aliases": [
+        "ImagePlusOutline"
+      ],
+      "sha256": "ad953694d09b1141cf1d67d7fbd14db943c1023c987decfa6d2a83de2b7273d5"
+    },
+    {
+      "name": "Image Off",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Image Off/SVG/ic_fluent_image_off_20_regular.svg",
+      "aliases": [
+        "ImageOff"
+      ],
+      "sha256": "91561b4b0c5e09264b84ce6195665bf6c62d151928c2541ff1c1cb5b5c0d3c0b"
+    },
+    {
+      "name": "Image Search",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Image Search/SVG/ic_fluent_image_search_20_regular.svg",
+      "aliases": [
+        "ImageSearchOutline"
+      ],
+      "sha256": "89d65518454f155c3ac671e48cbf92a39e9a7d8beb187dea3381f6f37e1de085"
+    },
+    {
+      "name": "InPrivate Account",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/InPrivate Account/SVG/ic_fluent_inprivate_account_20_regular.svg",
+      "aliases": [
+        "Incognito"
+      ],
+      "sha256": "e09101b140c7c134bd6bf7a49d43571991df7287ab0ee21dec0ffdf99ba3bd21"
+    },
+    {
+      "name": "Info",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Info/SVG/ic_fluent_info_20_regular.svg",
+      "aliases": [
+        "Information",
+        "InformationOutline"
+      ],
+      "sha256": "498bc2a24fb99480e7565b502467a4cc8e967b41b0c374c1283a68fc0da73b7a"
+    },
+    {
+      "name": "Key",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Key/SVG/ic_fluent_key_20_regular.svg",
+      "aliases": [
+        "Key",
+        "KeyChain",
+        "KeyChange",
+        "KeyOutline"
+      ],
+      "sha256": "667b3bf0c2b407343d1d8f1075ccc995c7fb13dc4fe2e236c128e9d950231fee"
+    },
+    {
+      "name": "Keyboard",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Keyboard/SVG/ic_fluent_keyboard_20_regular.svg",
+      "aliases": [
+        "Keyboard"
+      ],
+      "sha256": "3ebfabe0b682fda1f581511c20bdf228fc70600c33411f3bf3281e00a37e74e1"
+    },
+    {
+      "name": "Library",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Library/SVG/ic_fluent_library_20_regular.svg",
+      "aliases": [
+        "School"
+      ],
+      "sha256": "ab97e663042e78079ed4c46ea44390b8e5cccac5382dc2282cc617a5ea564272"
+    },
+    {
+      "name": "Lock Closed",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Lock Closed/SVG/ic_fluent_lock_closed_20_regular.svg",
+      "aliases": [
+        "Lock",
+        "LockCheck",
+        "LockCheckOutline",
+        "LockClock",
+        "LockOutline"
+      ],
+      "sha256": "71582e20cc3028bc1ac0abb985d4ca9a0c3073b0c8d3c78969ff43ec22cb5467"
+    },
+    {
+      "name": "Lock Open",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Lock Open/SVG/ic_fluent_lock_open_20_regular.svg",
+      "aliases": [
+        "LockOpenVariant",
+        "LockOpenVariantOutline"
+      ],
+      "sha256": "db55a5673703ccb1b71fa3d1f4428c5937c1074169865f8789a81238a36a89cf"
+    },
+    {
+      "name": "Mail",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Mail/SVG/ic_fluent_mail_20_regular.svg",
+      "aliases": [
+        "EmailOutline"
+      ],
+      "sha256": "105e060af45a15e6b233248fc73ed29ed72c296f7661abfa4d0efe6a221f327d"
+    },
+    {
+      "name": "Mic",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Mic/SVG/ic_fluent_mic_20_regular.svg",
+      "aliases": [
+        "Microphone",
+        "MicrophoneOutline"
+      ],
+      "sha256": "bffda34bba304cfd360e204440e96d4672ddc07d310ec67d87a81fc03fce7748"
+    },
+    {
+      "name": "Money",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Money/SVG/ic_fluent_money_20_regular.svg",
+      "aliases": [
+        "Cash",
+        "CashMultiple",
+        "CashRegister"
+      ],
+      "sha256": "a48f8165ab2e878105fa3a87d986de567211ff1221b390270f5953e207934149"
+    },
+    {
+      "name": "Money Hand",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Money Hand/SVG/ic_fluent_money_hand_20_regular.svg",
+      "aliases": [
+        "CashCheck",
+        "CashMinus",
+        "CashPlus"
+      ],
+      "sha256": "cc5be850279956b8a95ef36a93040659ff9784a0e3668aa242b3dab130ea5f16"
+    },
+    {
+      "name": "Money Settings",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Money Settings/SVG/ic_fluent_money_settings_20_regular.svg",
+      "aliases": [
+        "CashEdit"
+      ],
+      "sha256": "2006af8da55da2582daded36da6be96ab9795dfce94ecd0c779835d135b32377"
+    },
+    {
+      "name": "More Horizontal",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/More Horizontal/SVG/ic_fluent_more_horizontal_20_regular.svg",
+      "aliases": [
+        "DotsHorizontal",
+        "DotsHorizontalCircleOutline"
+      ],
+      "sha256": "5cc969f49ca33c856fb72804f9355e84db26dc6c23f2a1fc85995b67ad1c0c8d"
+    },
+    {
+      "name": "Navigation",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Navigation/SVG/ic_fluent_navigation_20_regular.svg",
+      "aliases": [
+        "Menu"
+      ],
+      "sha256": "59538fecbf6bbd3de61f776f5d6472adb76492e05aff5c236417dd79bdf3086a"
+    },
+    {
+      "name": "Network Check",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Network Check/SVG/ic_fluent_network_check_20_regular.svg",
+      "aliases": [
+        "IpNetworkOutline"
+      ],
+      "sha256": "3b9f5a6b0b8007b88e5ed5a6c212ebb1ad3fa72fefc2ecdbd6a9a7e31ea15be3"
+    },
+    {
+      "name": "Notebook",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Notebook/SVG/ic_fluent_notebook_20_regular.svg",
+      "aliases": [
+        "BookEducationOutline"
+      ],
+      "sha256": "585589b7f5e03fbe7575a608a77ac8946462a0466b034696d8f47f34ad9f7482"
+    },
+    {
+      "name": "Notebook Question Mark",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Notebook Question Mark/SVG/ic_fluent_notebook_question_mark_20_regular.svg",
+      "aliases": [
+        "BookAlertOutline"
+      ],
+      "sha256": "cd2021a2bbd28ad343bbfee371a43467a4c6fc5d63f9b7b09a7b9f414e7bcc95"
+    },
+    {
+      "name": "Number Symbol Square",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Number Symbol Square/SVG/ic_fluent_number_symbol_square_20_regular.svg",
+      "aliases": [
+        "Dice5"
+      ],
+      "sha256": "cbb26312c63cf735d35da06235c079d0c63dc9652b35f5e9b40c447b38cc17f4"
+    },
+    {
+      "name": "Open",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Open/SVG/ic_fluent_open_20_regular.svg",
+      "aliases": [
+        "OpenInNew"
+      ],
+      "sha256": "a6a9e0bcb65b97529e3904b3966b7d9f725d6d9c318aca98ca33827ec514b066"
+    },
+    {
+      "name": "Options",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Options/SVG/ic_fluent_options_20_regular.svg",
+      "aliases": [
+        "Tune",
+        "TuneVariant"
+      ],
+      "sha256": "eeda1235eeb61dab0e9e23386c052fd0f0715a5112b90091ba37e2764557067c"
+    },
+    {
+      "name": "Organization",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Organization/SVG/ic_fluent_organization_20_regular.svg",
+      "aliases": [
+        "SitemapOutline"
+      ],
+      "sha256": "dc46a8c71e0f2890cebcfb442399209a47c999eb66cabd13e420e22ca614919c"
+    },
+    {
+      "name": "Organization Horizontal",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Organization Horizontal/SVG/ic_fluent_organization_horizontal_20_regular.svg",
+      "aliases": [
+        "LanConnect"
+      ],
+      "sha256": "67aec52b902357c432c39006c9d2ac002ea29de0911609d1d97af9762028042e"
+    },
+    {
+      "name": "Panel Left",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Panel Left/SVG/ic_fluent_panel_left_20_regular.svg",
+      "aliases": [
+        "DockLeft"
+      ],
+      "sha256": "be665db4761d910a85eddf2c55dbcaffb816bbc46d2c1c1e68377220c776009f"
+    },
+    {
+      "name": "Password",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Password/SVG/ic_fluent_password_20_regular.svg",
+      "aliases": [
+        "FormTextboxPassword"
+      ],
+      "sha256": "de4e18ad04cde1b1ca3fae35a4aedecf60a41c2700195a0e1b6aa8ce371b74ad"
+    },
+    {
+      "name": "Payment",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Payment/SVG/ic_fluent_payment_20_regular.svg",
+      "aliases": [
+        "HandCoin"
+      ],
+      "sha256": "07498feab1f3c9b3e11e6258647540540793fae170dd2b6acb2ef722348cd4e3"
+    },
+    {
+      "name": "People Add",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/People Add/SVG/ic_fluent_people_add_20_regular.svg",
+      "aliases": [
+        "AccountMultiplePlusOutline"
+      ],
+      "sha256": "217b8afdaa2bf64fab09583baab5fff461b6bcc471abf2c151df9f599f734614"
+    },
+    {
+      "name": "People List",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/People List/SVG/ic_fluent_people_list_20_regular.svg",
+      "aliases": [
+        "HumanMaleBoard"
+      ],
+      "sha256": "bd7917aff64a7f384f5026f392098fe2ca9114f988a1387da83c07d2b69e6a32"
+    },
+    {
+      "name": "People Settings",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/People Settings/SVG/ic_fluent_people_settings_20_regular.svg",
+      "aliases": [
+        "AccountCog",
+        "AccountCogOutline"
+      ],
+      "sha256": "96371d399934ba603f7ead43b8d5a2a4b9d9d2392817f5bf41020d5c40b522fd"
+    },
+    {
+      "name": "People Swap",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/People Swap/SVG/ic_fluent_people_swap_20_regular.svg",
+      "aliases": [
+        "AccountSwitch",
+        "AccountSwitchOutline"
+      ],
+      "sha256": "506b4dc891ebdaaaa79aa5cfd3bc6da53cc540957ebbd8d92f9da095371d56d2"
+    },
+    {
+      "name": "People Sync",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/People Sync/SVG/ic_fluent_people_sync_20_regular.svg",
+      "aliases": [
+        "CalendarSync"
+      ],
+      "sha256": "466eea7463bf9807aa45fd3483a1fbd69eca69665db2890696768d870e66c6c1"
+    },
+    {
+      "name": "People Team",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/People Team/SVG/ic_fluent_people_team_20_regular.svg",
+      "aliases": [
+        "AccountGroup",
+        "AccountGroupOutline",
+        "AccountMultipleOutline"
+      ],
+      "sha256": "6427e892c4b2962091d947d88198a9aa575ef0a073373386dcb31a8c1f3ae857"
+    },
+    {
+      "name": "Person",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Person/SVG/ic_fluent_person_20_regular.svg",
+      "aliases": [
+        "Account",
+        "AccountCircleOutline",
+        "AccountOutline",
+        "AccountTie"
+      ],
+      "sha256": "c75bdf7e4c02437f3ad35c305253f4eaf4e2dfb2cc11e30d5a31af02a391e7ad"
+    },
+    {
+      "name": "Person Add",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Person Add/SVG/ic_fluent_person_add_20_regular.svg",
+      "aliases": [
+        "AccountPlus",
+        "AccountPlusOutline"
+      ],
+      "sha256": "84f663603f27c32fd232cd364cc37df254ae5f0bf1976239e1d9ff1132149d30"
+    },
+    {
+      "name": "Person Arrow Back",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Person Arrow Back/SVG/ic_fluent_person_arrow_back_20_regular.svg",
+      "aliases": [
+        "AccountArrowDown"
+      ],
+      "sha256": "20b6a5437b85ab51e65ea1827bdb9b72b11219ea54f804da635bc2231a154084"
+    },
+    {
+      "name": "Person Arrow Left",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Person Arrow Left/SVG/ic_fluent_person_arrow_left_20_regular.svg",
+      "aliases": [
+        "AccountArrowLeftOutline"
+      ],
+      "sha256": "ac44b4bc8adcad5348745d5dc2a3b9875f59918c0476901f5bbe7907c8ae1259"
+    },
+    {
+      "name": "Person Arrow Right",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Person Arrow Right/SVG/ic_fluent_person_arrow_right_20_regular.svg",
+      "aliases": [
+        "AccountArrowRight"
+      ],
+      "sha256": "a716fe8f2f400e682751679949fefbdf1ffd1128f699d4b5976e890261ef7a8f"
+    },
+    {
+      "name": "Person Available",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Person Available/SVG/ic_fluent_person_available_20_regular.svg",
+      "aliases": [
+        "AccountCheck",
+        "AccountCheckOutline"
+      ],
+      "sha256": "ffabcdaa47aa6ca7536406685873e867bde2800cb3d08cfeb68b2a0e29cbcbd7"
+    },
+    {
+      "name": "Person Board",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Person Board/SVG/ic_fluent_person_board_20_regular.svg",
+      "aliases": [
+        "AccountSchool",
+        "AccountSchoolOutline"
+      ],
+      "sha256": "bb2fba82f2d2102403e7652f19f2f29b11358a45c43422967e62119d0bf34123"
+    },
+    {
+      "name": "Person Clock",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Person Clock/SVG/ic_fluent_person_clock_20_regular.svg",
+      "aliases": [
+        "AccountClock"
+      ],
+      "sha256": "0ef9a089f5947e3b8e9f58b8e28b9d1ea2bb2314b8ea51d372c2098fd39086c0"
+    },
+    {
+      "name": "Person Delete",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Person Delete/SVG/ic_fluent_person_delete_20_regular.svg",
+      "aliases": [
+        "AccountCancel",
+        "AccountCancelOutline",
+        "AccountMinus",
+        "AccountOffOutline",
+        "AccountRemove",
+        "AccountRemoveOutline"
+      ],
+      "sha256": "f0b796f10df7de30571ff0976b994911011243644b331d2e07927042d4db731b"
+    },
+    {
+      "name": "Person Edit",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Person Edit/SVG/ic_fluent_person_edit_20_regular.svg",
+      "aliases": [
+        "AccountEdit",
+        "Rename"
+      ],
+      "sha256": "18f6d0135e52c93427a00c49b40037380606bd91edeab5e6c7d7ebde79938e58"
+    },
+    {
+      "name": "Person Heart",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Person Heart/SVG/ic_fluent_person_heart_20_regular.svg",
+      "aliases": [
+        "HandHeart",
+        "HandHeartOutline"
+      ],
+      "sha256": "42b9b47876e66d8267cc0a0a1853a9b4583c0a4264bfe945ff5e243b655adbcd"
+    },
+    {
+      "name": "Person Key",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Person Key/SVG/ic_fluent_person_key_20_regular.svg",
+      "aliases": [
+        "AccountKey"
+      ],
+      "sha256": "5c6fb53ac5793d7f72bba5c74a26fbef819aedca5afc552b8bb3f1b9a6dd19ba"
+    },
+    {
+      "name": "Person Search",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Person Search/SVG/ic_fluent_person_search_20_regular.svg",
+      "aliases": [
+        "AccountSearchOutline"
+      ],
+      "sha256": "effff75cd6842d64eac185100440db5d4ac1e3c16f836883daefcd6d3a91baa1"
+    },
+    {
+      "name": "Person Star",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Person Star/SVG/ic_fluent_person_star_20_regular.svg",
+      "aliases": [
+        "AccountStarOutline"
+      ],
+      "sha256": "a3285a3211de6b62e8c3d3906bb9089707c35189ceb05f2cd3101de7d64d208e"
+    },
+    {
+      "name": "Person Warning",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Person Warning/SVG/ic_fluent_person_warning_20_regular.svg",
+      "aliases": [
+        "AlertOctagon"
+      ],
+      "sha256": "130e0464ed9c7bc1316b8c4fd6de8b83d9bc080897339059f9e320fd5b83c445"
+    },
+    {
+      "name": "Phone",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Phone/SVG/ic_fluent_phone_20_regular.svg",
+      "aliases": [
+        "Cellphone",
+        "CellphoneCheck",
+        "CellphoneOff",
+        "CellphoneRemove",
+        "PhoneOutline"
+      ],
+      "sha256": "f8986c14a1f92b5d3f63defe21d0f6467c8f41896ca6d4f569ea2f52a0bc30de"
+    },
+    {
+      "name": "Phone Laptop",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Phone Laptop/SVG/ic_fluent_phone_laptop_20_regular.svg",
+      "aliases": [
+        "CellphoneLink"
+      ],
+      "sha256": "0e72c7affc76adb0257d557fd058c57b15e420bf3a7e9058dc3ef2307f1b17b1"
+    },
+    {
+      "name": "Phone Lock",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Phone Lock/SVG/ic_fluent_phone_lock_20_regular.svg",
+      "aliases": [
+        "CellphoneLock"
+      ],
+      "sha256": "4305a5c3e08dd71ca6f4e5dc9d71ffc1f765cf7a1c98eb83baa96243012b984a"
+    },
+    {
+      "name": "Play Circle",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Play Circle/SVG/ic_fluent_play_circle_20_regular.svg",
+      "aliases": [
+        "AnimationPlay",
+        "PlayOutline"
+      ],
+      "sha256": "a74b97ec3027b795020abb89a549009dc212b98cada22b29934b770c36180669"
+    },
+    {
+      "name": "Plug Disconnected",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Plug Disconnected/SVG/ic_fluent_plug_disconnected_20_regular.svg",
+      "aliases": [
+        "LanDisconnect"
+      ],
+      "sha256": "683cd7875d0312f866d76ef8017e600434e3354194596f7aa8caf839cd87a68e"
+    },
+    {
+      "name": "Power",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Power/SVG/ic_fluent_power_20_regular.svg",
+      "aliases": [
+        "Power",
+        "PowerSettings"
+      ],
+      "sha256": "e29f64cc7f913418505e3cfce061076440dbce1db20ed8424e197388e28adc98"
+    },
+    {
+      "name": "Print",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Print/SVG/ic_fluent_print_20_regular.svg",
+      "aliases": [
+        "Printer"
+      ],
+      "sha256": "e418a867689b2f174d25fa8d5a9a8c589ed9d0c42793ca393c090423eab316e2"
+    },
+    {
+      "name": "QR Code",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/QR Code/SVG/ic_fluent_qr_code_20_regular.svg",
+      "aliases": [
+        "QrcodePlus",
+        "QrcodeScan"
+      ],
+      "sha256": "69f9c0a55a5362e7299af893426f5096156c6ad459f02642a53f5b325284b55a"
+    },
+    {
+      "name": "Question Circle",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Question Circle/SVG/ic_fluent_question_circle_20_regular.svg",
+      "aliases": [
+        "HelpCircleOutline"
+      ],
+      "sha256": "2a74ef3c4c4fe762581ba7339c01be2129b7e646a8f399703f1426558275a639"
+    },
+    {
+      "name": "Radio Button",
+      "size": 20,
+      "variant": "filled",
+      "path": "assets/Radio Button/SVG/ic_fluent_radio_button_20_filled.svg",
+      "aliases": [
+        "RadioboxMarked"
+      ],
+      "sha256": "e002e3564239fff4060840cabfe5863ea00e9a91d9531207531fb24d5b15e378"
+    },
+    {
+      "name": "Receipt",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Receipt/SVG/ic_fluent_receipt_20_regular.svg",
+      "aliases": [
+        "Receipt",
+        "ReceiptText",
+        "ReceiptTextOutline",
+        "ReceiptTextRemoveOutline"
+      ],
+      "sha256": "8985f40b2cf573d287787c9cf0235cb6a3efe7f0e645225bc6566e1e1a0e2ad5"
+    },
+    {
+      "name": "Ribbon Star",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Ribbon Star/SVG/ic_fluent_ribbon_star_20_regular.svg",
+      "aliases": [
+        "CertificateOutline"
+      ],
+      "sha256": "be6648e98fa7d25b0e846e2ee814379564f68a262524d0dac175f3eae6025fd4"
+    },
+    {
+      "name": "Save",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Save/SVG/ic_fluent_save_20_regular.svg",
+      "aliases": [
+        "ContentSave",
+        "ContentSaveOutline"
+      ],
+      "sha256": "fdfbcf9c469ff958782a3f8ab4659c7f1c48062752bb6324b07e5bbb70f52969"
+    },
+    {
+      "name": "Scales",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Scales/SVG/ic_fluent_scales_20_regular.svg",
+      "aliases": [
+        "ScaleBalance"
+      ],
+      "sha256": "80d62429eea902ae8ea6555030bd2add10568906c02f58c17839b511aa4a1ed2"
+    },
+    {
+      "name": "Scan Person",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Scan Person/SVG/ic_fluent_scan_person_20_regular.svg",
+      "aliases": [
+        "AccountKeyOutline"
+      ],
+      "sha256": "c7b7eea5f701022fb1a8687d4b1c2db32d02367dc718df0187487be2355b2ca3"
+    },
+    {
+      "name": "Search",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Search/SVG/ic_fluent_search_20_regular.svg",
+      "aliases": [
+        "Magnify"
+      ],
+      "sha256": "5ac1eac82df532662cd1bad2c8e55763846e1b258740bcbb0612a48d22630d40"
+    },
+    {
+      "name": "Send",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Send/SVG/ic_fluent_send_20_regular.svg",
+      "aliases": [
+        "SendOutline"
+      ],
+      "sha256": "f75835a377cd20ff159d7959c97bf08b3a0c348df62f637068c5865b102c7727"
+    },
+    {
+      "name": "Server",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Server/SVG/ic_fluent_server_20_regular.svg",
+      "aliases": [
+        "ServerOutline"
+      ],
+      "sha256": "0bf62933f4d4d0cf4100fd70925de9c89c33500badbcf0e98db3dfe0e559243d"
+    },
+    {
+      "name": "Settings",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Settings/SVG/ic_fluent_settings_20_regular.svg",
+      "aliases": [
+        "Cog",
+        "CogOutline"
+      ],
+      "sha256": "ac5bdb808bed91dc8c0b6f346e7a0a1ee1901fc4b50f5641987498a65e200685"
+    },
+    {
+      "name": "Share Android",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Share Android/SVG/ic_fluent_share_android_20_regular.svg",
+      "aliases": [
+        "ShareVariantOutline"
+      ],
+      "sha256": "3bfc6ef9c6e07cf607a13a1613b772c1ca030dc5d44ba7bc63bc1efa917042bb"
+    },
+    {
+      "name": "Shield",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Shield/SVG/ic_fluent_shield_20_regular.svg",
+      "aliases": [
+        "ShieldAccount",
+        "ShieldAccountOutline"
+      ],
+      "sha256": "266f90b013f661aca9c8fac4da92d911720506a286b9ce95d40691731b8ac8b6"
+    },
+    {
+      "name": "Shield Checkmark",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Shield Checkmark/SVG/ic_fluent_shield_checkmark_20_regular.svg",
+      "aliases": [
+        "ShieldCheck",
+        "ShieldCheckOutline"
+      ],
+      "sha256": "33765f648a8ab4a6595e22658eb7456dc0511980cf32b7e1d7e4e736c92b0c71"
+    },
+    {
+      "name": "Shield Dismiss",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Shield Dismiss/SVG/ic_fluent_shield_dismiss_20_regular.svg",
+      "aliases": [
+        "ShieldOff"
+      ],
+      "sha256": "af4ab638a314c11829dfc6c881e52f6c8303b994b19ef255f4c371ba506269a6"
+    },
+    {
+      "name": "Shield Lock",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Shield Lock/SVG/ic_fluent_shield_lock_20_regular.svg",
+      "aliases": [
+        "ShieldLockOutline"
+      ],
+      "sha256": "922f0c18eb95ca031a17dfe21dc45c140c66ef12e04a1f76f462820c1fb638c3"
+    },
+    {
+      "name": "Shifts",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Shifts/SVG/ic_fluent_shifts_20_regular.svg",
+      "aliases": [
+        "ClockCheck",
+        "ClockCheckOutline"
+      ],
+      "sha256": "c35ce7fea57588fc49628b656895b2130bec4ba3d4cdff25ec1ec7ecb4eda96f"
+    },
+    {
+      "name": "Sign Out",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Sign Out/SVG/ic_fluent_sign_out_20_regular.svg",
+      "aliases": [
+        "Logout",
+        "LogoutVariant"
+      ],
+      "sha256": "d1f5a71d52abd196a909cfb2e1f3a75e078780fe1429d63cbf45221e3ea001a1"
+    },
+    {
+      "name": "Speaker 1",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Speaker 1/SVG/ic_fluent_speaker_1_20_regular.svg",
+      "aliases": [
+        "VolumeLow"
+      ],
+      "sha256": "9b8bc9965fc7c71fa04c82df280e34402b3e5243b906dade9b5d4ef3d6fb7caf"
+    },
+    {
+      "name": "Speaker 2",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Speaker 2/SVG/ic_fluent_speaker_2_20_regular.svg",
+      "aliases": [
+        "VolumeHigh"
+      ],
+      "sha256": "42e7c3f32201be44f3252e263fedc2abf8c43da81c8b95ab7878795e3f3d53da"
+    },
+    {
+      "name": "Square",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Square/SVG/ic_fluent_square_20_regular.svg",
+      "aliases": [
+        "WindowMaximize"
+      ],
+      "sha256": "6c9a157db4987d07e029f2fa0271f8b504fdae2e31423647defc0a4536d0130b"
+    },
+    {
+      "name": "Stop",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Stop/SVG/ic_fluent_stop_20_regular.svg",
+      "aliases": [
+        "Stop",
+        "StopOutline"
+      ],
+      "sha256": "8023e072d92bf65ac7647ae651d828d083834abc2eee1a2d24d64e10815d493a"
+    },
+    {
+      "name": "Subtract",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Subtract/SVG/ic_fluent_subtract_20_regular.svg",
+      "aliases": [
+        "Minus"
+      ],
+      "sha256": "cdba492b0fe35494b23b8b0934a9b38af3b52058852777d4820ee8ced991c24f"
+    },
+    {
+      "name": "Tag Add",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Tag Add/SVG/ic_fluent_tag_add_20_regular.svg",
+      "aliases": [
+        "TagPlusOutline"
+      ],
+      "sha256": "201717a75f7a3dec54962fc66ea4c7df34232f0848671cdddb92d9d46e0bcb05"
+    },
+    {
+      "name": "Tag Multiple",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Tag Multiple/SVG/ic_fluent_tag_multiple_20_regular.svg",
+      "aliases": [
+        "TagMultipleOutline"
+      ],
+      "sha256": "78bff06607e03fb2fdd79d2ffde4d3777a2ef572f9ed5c0cb6264010cfe3791a"
+    },
+    {
+      "name": "Tap Double",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Tap Double/SVG/ic_fluent_tap_double_20_regular.svg",
+      "aliases": [
+        "GestureDoubleTap"
+      ],
+      "sha256": "e35ee34e243e735fce4a4511b332efba1a0539322d6663f918738b7a233dfdf5"
+    },
+    {
+      "name": "Tap Single",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Tap Single/SVG/ic_fluent_tap_single_20_regular.svg",
+      "aliases": [
+        "CallToAction",
+        "Cta",
+        "GestureTap",
+        "GestureTapButton",
+        "GestureTouchButton"
+      ],
+      "sha256": "ed31d91cb80c4084765a4cbc4c823df66c7af18b26a4f5c0ecd6fd29dd8b9a67"
+    },
+    {
+      "name": "Text Font",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Text Font/SVG/ic_fluent_text_font_20_regular.svg",
+      "aliases": [
+        "FormatFont"
+      ],
+      "sha256": "d0385262659f28012cc9c447add969876a64a41900ad8fabdc7dce326cc9df40"
+    },
+    {
+      "name": "Text Number List LTR",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Text Number List LTR/SVG/ic_fluent_text_number_list_ltr_20_regular.svg",
+      "aliases": [
+        "FormatListNumbered"
+      ],
+      "sha256": "bee3fb1629c512d183f6853dbcb7366c1294de785b1a1e2229be1669760065df"
+    },
+    {
+      "name": "Timer",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Timer/SVG/ic_fluent_timer_20_regular.svg",
+      "aliases": [
+        "TimerSandComplete",
+        "TimerSandEmpty"
+      ],
+      "sha256": "b58aa4351921540299bfa9626bd64af21495f5d00e97f1c14396b597c40699ac"
+    },
+    {
+      "name": "Tray Item Remove",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Tray Item Remove/SVG/ic_fluent_tray_item_remove_20_regular.svg",
+      "aliases": [
+        "TrayRemove"
+      ],
+      "sha256": "b7b0ce2b6150e7b9420d214b5441c136595d8fd1f40c4a7a148ecbcb13b64e25"
+    },
+    {
+      "name": "Trophy",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Trophy/SVG/ic_fluent_trophy_20_regular.svg",
+      "aliases": [
+        "Podium"
+      ],
+      "sha256": "0d71324ff127fac256b68db1638a28efe7347b377bba959e91df55eec3c45c59"
+    },
+    {
+      "name": "Vault",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Vault/SVG/ic_fluent_vault_20_regular.svg",
+      "aliases": [
+        "Safe"
+      ],
+      "sha256": "3914798e76775e34e29a7f92e18d56bf6a4f3ced24f077129ddbd2967c749f7b"
+    },
+    {
+      "name": "Wallet",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Wallet/SVG/ic_fluent_wallet_20_regular.svg",
+      "aliases": [
+        "Wallet",
+        "WalletOutline"
+      ],
+      "sha256": "b01ae42c483c2338b5d9c896affefeae3a55b9f3eb0d559c1b1d5eebb2957637"
+    },
+    {
+      "name": "Wand",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Wand/SVG/ic_fluent_wand_20_regular.svg",
+      "aliases": [
+        "AutoFix"
+      ],
+      "sha256": "96cafdc63bd760ac09c7b839f62edf6963c3c70d14b6fa7becdef6171c2aa08e"
+    },
+    {
+      "name": "Warning",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Warning/SVG/ic_fluent_warning_20_regular.svg",
+      "aliases": [
+        "AlertOctagonOutline",
+        "BatteryAlertVariantOutline",
+        "ShieldAlertOutline"
+      ],
+      "sha256": "c3bdfef09229240562268d03a5036cdd8185b7d25c2f21f572add0f3aeb62eb2"
+    },
+    {
+      "name": "Weather Moon",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Weather Moon/SVG/ic_fluent_weather_moon_20_regular.svg",
+      "aliases": [
+        "WeatherNight",
+        "WeatherNightOutline"
+      ],
+      "sha256": "9ffadd57a15c85524fdb979f42773e2a58199b07ccc39b188d7a6a1392a41cbe"
+    },
+    {
+      "name": "Weather Sunny",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/Weather Sunny/SVG/ic_fluent_weather_sunny_20_regular.svg",
+      "aliases": [
+        "WeatherSunny"
+      ],
+      "sha256": "c6a4eb912c9e9c245ab5dfa77c7a8dea691a1acf8869190449bb908830ff9b93"
+    },
+    {
+      "name": "WiFi 1",
+      "size": 20,
+      "variant": "regular",
+      "path": "assets/WiFi 1/SVG/ic_fluent_wifi_1_20_regular.svg",
+      "aliases": [
+        "Wifi"
+      ],
+      "sha256": "65daed2b3756f762cee52026170f2bfcc50817dfd5a4489e6a789ad87f248355"
     }
   ],
   "color": [

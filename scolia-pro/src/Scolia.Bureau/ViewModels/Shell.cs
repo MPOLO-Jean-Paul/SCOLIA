@@ -467,7 +467,20 @@ public sealed class ShellViewModel : Observable
         }
     }
 
-    public bool Can(string permission) => session?.Permissions.Contains(permission) == true;
+    public bool Can(string permission)
+    {
+        if (session is null) return false;
+        if (session.Permissions.Contains(permission)) return true;
+        // Compatibilité avec les serveurs antérieurs au type de gestion ; les serveurs récents restent seuls maîtres des droits.
+        if (session.PermissionPolicyVersion >= 2 || session.ManagementMode != "Mixte") return false;
+        return permission switch
+        {
+            Perm.StudentFinanceRead => session.Permissions.Contains(Perm.PaymentsRead),
+            Perm.StaffRead or Perm.PayrollManage => session.Permissions.Contains(Perm.StaffManage),
+            Perm.SponsorshipManage => session.Permissions.Contains(Perm.StudentsWrite),
+            _ => false
+        };
+    }
 
     /// <summary>Compte enseignant : son espace se limite à ses cours (encodage et remise des cotes).</summary>
     public bool TeacherOnly => (Can(Perm.MarksEncode) || Can(Perm.JuryEncode)) && !Can(Perm.AcademicsRead);
@@ -1052,14 +1065,14 @@ public sealed class ShellViewModel : Observable
     /// Ouvre la session : l'écran d'ouverture montre une roue et les étapes, au moins deux secondes,
     /// pendant que le ruban et l'accueil se préparent ; l'accueil apparaît ensuite d'un seul geste.
     /// </summary>
-    public async Task OpenSessionAsync(SessionDto s, bool compact = true, bool paired = false)
+    public async Task OpenSessionAsync(SessionDto s, bool compact = true, bool paired = false, bool refreshPermissions = false)
     {
         var watch = System.Diagnostics.Stopwatch.StartNew();
         // Durée choisie dans Paramètres, Animations et fluidité ; l'outil de captures peut la fixer à part.
         // Après la création du premier compte, éviter la séquence d’attente de connexion.
         // Hors ligne : conserver la transition sans ajouter une animation de
         // deux secondes à un chargement déjà local et quasi immédiat.
-        var minimum = !api.IsOnline ? TimeSpan.FromMilliseconds(120)
+        var minimum = refreshPermissions ? TimeSpan.Zero : !api.IsOnline ? TimeSpan.FromMilliseconds(120)
             : IsSetupRequired ? TimeSpan.FromMilliseconds(320)
             : MinimumOpening == TimeSpan.FromSeconds(2) ? TimeSpan.FromSeconds(Prefs.OpeningSeconds) : MinimumOpening;
         var pace = minimum / 4;
@@ -1068,6 +1081,7 @@ public sealed class ShellViewModel : Observable
         if (switchingAccount) CloseLocalSession();
         openingCompact = compact;
         session = s;
+        Backstage.RefreshEntries();
         Vocabulary.Current = StudentTerms;
         knownRevision = -1;
         // Données gardées sur l'appareil, propres à ce compte ; puis le direct avec les autres postes.
@@ -1105,7 +1119,7 @@ public sealed class ShellViewModel : Observable
             : api.IsOnline ? $"Accès à {s.SchoolName}." : $"Données locales de {s.SchoolName}.";
         OpeningStep = paired ? "Validation de la liaison…" : "Préparation de votre espace…";
         OpeningProgress = 0;
-        Opening = true;
+        Opening = !refreshPermissions;
         IsSetupRequired = false;
         RaiseLogin();
         try
@@ -1277,7 +1291,7 @@ public sealed class ShellViewModel : Observable
 
     private void RefreshReturnedFinancePage(PageViewModel page)
     {
-        if (page is MonthlyPage or HomePage or ReceiptsPage or DashboardPage or StudentsPage or StudentDetailPage or DebtorsPage or CashPage)
+        if (page is MonthlyPage or HomePage or ReceiptsPage or DashboardPage or StudentsPage or StudentDetailPage or DebtorsPage or CashPage or ManagementModePage)
             _ = Run(page.RefreshQuietlyAsync);
     }
 
@@ -1570,7 +1584,20 @@ public sealed class ShellViewModel : Observable
     public RelayCommand NetworkCommand => networkCommand ??= new RelayCommand(ShowNetwork);
     private RelayCommand? networkCommand;
 
-    public void OpenBackstage() => BackstageOpen = true;
+    public void OpenBackstage()
+    {
+        Backstage.RefreshEntries();
+        BackstageOpen = true;
+    }
+
+    public async Task ApplyManagementSessionAsync(SessionDto updated, string currentPassword)
+    {
+        if (session?.Id != updated.Id) throw new InvalidOperationException("Le compte connecté a changé. Reconnectez-vous.");
+        api.Offline?.InvalidateReadSnapshotsFor(updated.UserName);
+        api.Offline?.SaveCredential(updated.UserName, currentPassword, updated, api.SessionCookie);
+        CloseBackstage();
+        await OpenSessionAsync(updated, compact: false, refreshPermissions: true);
+    }
 
     /// <summary>
     /// Code provisoire remis par le secrétariat : ouvre « Sécurité du compte » pour choisir son propre code.

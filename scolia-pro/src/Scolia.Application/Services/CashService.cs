@@ -45,6 +45,7 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
 
     public Task<ExpenseDto> CreateExpenseAsync(ExpenseCreate input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
+        await EffectivePermissions.RequireAsync(db, user, Permissions.ExpensesWrite, ct);
         var school = await YearContext.SchoolAsync(db, ct);
         Money.EnsureValid(input.Amount, school.WholeAmountsOnly, "amount");
         var method = PaymentService.ParseMethod(input.Method);
@@ -84,6 +85,7 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
 
     public Task<ExpenseDto> CancelExpenseAsync(Guid id, string reason, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
+        await EffectivePermissions.RequireAsync(db, user, Permissions.ExpensesWrite, ct);
         if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 5) throw new DomainException("reason", "Le motif d'annulation est obligatoire.");
         var e = await db.Expenses.FirstOrDefaultAsync(x => x.Id == id, ct) ?? throw new NotFoundException("Dépense introuvable.");
         if (e.Status == OperationStatus.Annule) throw new ConflictException("Cette dépense est déjà annulée.");
@@ -130,7 +132,7 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
 
     public Task<CashClosingDto> CloseAsync(CashClosingRequest input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
-        if (!user.HasPermission(Permissions.CashClose)) throw new DomainException("droits", "Vous n'êtes pas autorisé à arrêter la caisse.");
+        await EffectivePermissions.RequireAsync(db, user, Permissions.CashClose, ct);
         if (input.Date > clock.Today) throw new DomainException("date", "Impossible d'arrêter la caisse à une date future.");
         if (input.CountedCash < 0) throw new DomainException("countedCash", "Le montant compté ne peut pas être négatif.");
         // Un arrêté par jour : les opérations enregistrées après l'arrêté du jour entrent dans le prochain arrêté.

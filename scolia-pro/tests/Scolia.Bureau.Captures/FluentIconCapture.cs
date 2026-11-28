@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -32,27 +33,77 @@ internal static class FluentIconCapture
                 "FluentArtwork" + name, Application.Current.ActualThemeVariant, out var resource) && resource is IImage { Size.Width: > 0, Size.Height: > 0 });
 
         // Compare actual pixels, including non-square containers: shapes must not be stretched or cropped.
-        foreach (var kind in new[] { MaterialIconKind.ArrowLeft, MaterialIconKind.ArrowRight, MaterialIconKind.ChevronLeft,
-                     MaterialIconKind.LanConnect, MaterialIconKind.LanDisconnect, MaterialIconKind.Wifi })
-        foreach (var size in new[] { new Size(16, 16), new Size(20, 20), new Size(24, 24), new Size(32, 32),
+        foreach (var kind in FeatureVisuals.PageIcons.Values.Concat(new[] { MaterialIconKind.ArrowLeft, MaterialIconKind.ArrowRight,
+                     MaterialIconKind.ChevronLeft, MaterialIconKind.LanConnect, MaterialIconKind.LanDisconnect,
+                     MaterialIconKind.Wifi, MaterialIconKind.CashEdit }).Distinct())
+        foreach (var size in new[] { new Size(16, 16), new Size(18, 18), new Size(20, 20), new Size(24, 24), new Size(32, 32),
                      new Size(48, 48), new Size(32, 16), new Size(16, 32) })
+        foreach (var density in new[] { 1d, 1.25d, 2d })
         {
             var icon = new FluentIcon { Kind = kind, Foreground = Brushes.Black };
             icon.Measure(size);
             icon.Arrange(new Rect(size));
-            var pixels = Render(icon, (int)size.Width, (int)size.Height);
+            var width = (int)Math.Ceiling(size.Width * density);
+            var height = (int)Math.Ceiling(size.Height * density);
+            var pixels = Render(icon, width, height, density);
             var ink = Enumerable.Range(0, pixels.Length / 4).Where(i => pixels[i * 4 + 3] > 40).ToArray();
-            Check($"{kind} {size}: pixels visibles", ink.Length > 4);
-            Check($"{kind} {size}: aucun bord coupé", ink.All(i => i % (int)size.Width > 0 && i % (int)size.Width < size.Width - 1
-                && i / (int)size.Width > 0 && i / (int)size.Width < size.Height - 1));
-            var minX = ink.Min(i => i % (int)size.Width);
-            var maxX = ink.Max(i => i % (int)size.Width);
-            var minY = ink.Min(i => i / (int)size.Width);
-            var maxY = ink.Max(i => i / (int)size.Width);
-            var bounds = FluentGlyphs.For(kind).Bounds;
-            var scale = Math.Min(size.Width, size.Height) / 24;
-            Check($"{kind} {size}: proportions originales", Math.Abs(maxX - minX + 1 - bounds.Width * scale) < 2
+            Check($"{kind} {size} ×{density}: pixels visibles", ink.Length > 4);
+            var geometry = FluentGlyphs.ForSize(kind, Math.Min(size.Width, size.Height), out var canvas);
+            // Some native 16 px drawings legitimately occupy their last pixel. Compare with an
+            // unclipped drawing on a padded canvas, rather than requiring an empty outer pixel.
+            var reference = new GlyphReference(geometry, size, canvas, 2 / density);
+            var padded = new Size((width + 4) / density, (height + 4) / density);
+            reference.Measure(padded);
+            reference.Arrange(new Rect(padded));
+            var expected = Render(reference, width + 4, height + 4, density);
+            var outsideAlpha = 0;
+            var differenceInside = 0;
+            long totalDifference = 0;
+            for (var y = 0; y < height + 4; y++)
+            for (var x = 0; x < width + 4; x++)
+            {
+                var alpha = expected[(y * (width + 4) + x) * 4 + 3];
+                if (x < 2 || y < 2 || x >= width + 2 || y >= height + 2)
+                    outsideAlpha = Math.Max(outsideAlpha, alpha);
+                else
+                {
+                    var alphaDifference = Math.Abs(alpha - pixels[((y - 2) * width + x - 2) * 4 + 3]);
+                    differenceInside = Math.Max(differenceInside, alphaDifference);
+                    totalDifference += alphaDifference;
+                }
+            }
+            // At fractional density Skia can quantize an edge differently after an integer
+            // translation. Bound both the largest alpha variation and its average over the image.
+            Check($"{kind} {size} ×{density}: aucun bord coupé (extérieur {outsideAlpha}, écart {differenceInside})",
+                outsideAlpha < 40 && differenceInside <= 32 && totalDifference < width * height * 2);
+            var minX = ink.Min(i => i % width);
+            var maxX = ink.Max(i => i % width);
+            var minY = ink.Min(i => i / width);
+            var maxY = ink.Max(i => i / width);
+            var bounds = geometry.Bounds;
+            var scale = Math.Min(size.Width, size.Height) / canvas * density;
+            Check($"{kind} {size} ×{density}: proportions originales", Math.Abs(maxX - minX + 1 - bounds.Width * scale) < 2
                 && Math.Abs(maxY - minY + 1 - bounds.Height * scale) < 2);
+        }
+        foreach (var (kind, data) in new[] { (MaterialIconKind.ArrowLeft, AuthGlyphs.Back),
+                     (MaterialIconKind.Lock, AuthGlyphs.Lock), (MaterialIconKind.Magnify, HomeGlyphs.Search) })
+        foreach (var size in new[] { 16, 20, 24 })
+        {
+            var fromKind = new FluentIcon { Kind = kind, Foreground = Brushes.Black };
+            var fromData = new FluentIcon { Data = data, Foreground = Brushes.Black };
+            foreach (var control in new[] { fromKind, fromData })
+            {
+                control.Measure(new Size(size, size));
+                control.Arrange(new Rect(0, 0, size, size));
+            }
+            Check($"{kind} {size}: PathIcon et commande ont le même rendu", Render(fromKind, size, size).SequenceEqual(Render(fromData, size, size)));
+        }
+        foreach (var size in new[] { 16, 20, 24 })
+        {
+            var identities = FeatureVisuals.PageIcons.Select(page => (Page: page.Key.Name,
+                Pixels: Convert.ToHexString(SHA256.HashData(RenderGlyph(page.Value, size)))));
+            foreach (var group in identities.GroupBy(page => page.Pixels))
+                Check($"Identités distinctes à {size} points : {string.Join(", ", group.Select(page => page.Page))}", group.Count() == 1);
         }
         var left = RenderGlyph(MaterialIconKind.ArrowLeft);
         var right = RenderGlyph(MaterialIconKind.ArrowRight);
@@ -120,17 +171,17 @@ internal static class FluentIconCapture
         Console.WriteLine($"OK {checks} vérifications des icônes : grille, proportions, symétrie, ressources et thèmes.");
     }
 
-    private static byte[] RenderGlyph(MaterialIconKind kind)
+    private static byte[] RenderGlyph(MaterialIconKind kind, int size = 48)
     {
         var icon = new FluentIcon { Kind = kind, Foreground = Brushes.Black };
-        icon.Measure(new Size(48, 48));
-        icon.Arrange(new Rect(0, 0, 48, 48));
-        return Render(icon, 48, 48);
+        icon.Measure(new Size(size, size));
+        icon.Arrange(new Rect(0, 0, size, size));
+        return Render(icon, size, size);
     }
 
-    private static byte[] Render(Control icon, int width, int height)
+    private static byte[] Render(Control icon, int width, int height, double density = 1)
     {
-        using var bitmap = new RenderTargetBitmap(new PixelSize(width, height));
+        using var bitmap = new RenderTargetBitmap(new PixelSize(width, height), new Vector(96 * density, 96 * density));
         bitmap.Render(icon);
         var data = new byte[width * height * 4];
         var pointer = Marshal.AllocHGlobal(data.Length);
@@ -139,9 +190,21 @@ internal static class FluentIconCapture
         return data;
     }
 
+    private sealed class GlyphReference(Geometry geometry, Size size, double canvas, double padding) : Control
+    {
+        public override void Render(DrawingContext context)
+        {
+            var side = Math.Min(size.Width, size.Height);
+            var offset = new Vector((size.Width - side) / 2 + padding, (size.Height - side) / 2 + padding);
+            using var transform = context.PushTransform(Matrix.CreateScale(side / canvas, side / canvas) * Matrix.CreateTranslation(offset));
+            context.DrawGeometry(Brushes.Black, null, geometry);
+        }
+    }
+
     private static string Label(Type page) => page.Name switch
     {
         nameof(HomePage) => "Accueil", nameof(StartPage) => "Tous les outils", nameof(PromoterDashboardPage) => "Pilotage",
+        nameof(ManagementModePage) => "Type de gestion",
         nameof(DashboardPage) => "Tableau de bord", nameof(ReportsPage) => "Rapports et exports", nameof(StudentsPage) => "Dossiers des élèves",
         nameof(StudentAccountsPage) => "Accès étudiants", nameof(ReEnrollmentPage) => "Réinscriptions", nameof(CardsPage) => "Cartes scolaires",
         nameof(CashierPage) => "Encaissement", nameof(BatchPaymentPage) => "Encaissement par lot", nameof(ReceiptsPage) => "Journal des reçus",

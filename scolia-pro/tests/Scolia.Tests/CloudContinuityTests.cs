@@ -212,6 +212,36 @@ public sealed class CloudContinuityTests : IDisposable
     }
 
     [Fact]
+    public async Task A_management_mode_change_revokes_old_delegations_without_blocking_new_authorized_school_work()
+    {
+        var (admin, console) = await ConnectedAsync();
+        await admin.Post("/api/utilisateurs", new { userName = "compta-mode", displayName = "Comptable", role = "Comptabilite", password = "Provisoire1" }).Ok();
+        await admin.Post("/api/nuage/activation", new { enabled = true, confirm = true }).Ok();
+        var before = await admin.GetAsync("/api/nuage/depot").Ok();
+        await admin.Put("/api/organisation/gestion", new { mode = "Separee", currentPassword = "Scolia2026!" }).Ok();
+        var after = await admin.GetAsync("/api/nuage/depot").Ok();
+        string Deposit(string name, JsonElement access)
+        {
+            var key = Guid.NewGuid().ToString("N");
+            var body = JsonSerializer.Serialize(new { lastName = name, middleName = "TEST", firstName = "Paul", gender = "M",
+                function = "Enseignant", phone = "0812345678", hireDate = new DateOnly(2020, 1, 1), baseSalary = 0m, isActive = true }, Http.Json);
+            var operation = new CloudOperation(key, "POST", "api/personnel", body, "Dossier administratif", access.GetProperty("delegation").GetString()!, DateTime.UtcNow, "telephone-mode");
+            var sealedBytes = CloudSeal.Seal(JsonSerializer.SerializeToUtf8Bytes(operation, Web),
+                Convert.FromBase64String(access.GetProperty("depositKey").GetString()!), CloudSeal.OperationContext);
+            console.Mailbox.Add((key, Base64Url.EncodeToString(sealedBytes)));
+            return key;
+        }
+        var old = Deposit("ANCIENNE", before);
+        var fresh = Deposit("ACTUELLE", after);
+        await admin.Post("/api/nuage/releve", new { }).Ok();
+        Assert.Equal("refused", console.Outcomes[old]);
+        Assert.Equal("applied", console.Outcomes[fresh]);
+        var staff = await admin.GetAsync("/api/personnel").Ok();
+        Assert.DoesNotContain(staff.EnumerateArray(), item => item.GetProperty("lastName").GetString() == "ANCIENNE");
+        Assert.Contains(staff.EnumerateArray(), item => item.GetProperty("lastName").GetString() == "ACTUELLE");
+    }
+
+    [Fact]
     public async Task Operations_deposited_during_an_outage_are_applied_once_as_their_author()
     {
         var (admin, console) = await ConnectedAsync();

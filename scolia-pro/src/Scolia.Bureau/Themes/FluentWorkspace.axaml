@@ -17,6 +17,8 @@
   </Style>
   <Style Selector="PathIcon">
     <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="UseLayoutRounding" Value="True" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
     <Setter Property="Template">
       <ControlTemplate>
         <ctl:FluentIcon Data="{TemplateBinding Data}" Foreground="{TemplateBinding Foreground}" />

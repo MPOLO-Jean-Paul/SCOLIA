@@ -295,6 +295,7 @@ public sealed partial class ScoliaClient : IDisposable
         ct.ThrowIfCancellationRequested();
         var sourceStore = Offline;
         var sourceUser = sourceStore?.User ?? string.Empty;
+        var sourceGeneration = sourceStore?.ReadGeneration ?? 0;
         var canCache = Cacheable(path) && sourceUser.Length > 0;
 
         // Un accusé provisoire appartient uniquement à cet appareil. Il n'a
@@ -368,8 +369,7 @@ public sealed partial class ScoliaClient : IDisposable
                 // pas monopoliser le thread graphique pendant un changement de page.
                 await Task.Run(() =>
                 {
-                    if (sameSnapshot) sourceStore.TouchPageFor(sourceUser, path, text);
-                    else sourceStore.SavePageFor(sourceUser, path, text);
+                    sourceStore.SaveReadSnapshotFor(sourceUser, path, text, sameSnapshot, sourceGeneration);
                 }, ct);
             }
         }
@@ -596,6 +596,7 @@ public sealed partial class ScoliaClient : IDisposable
         && !path.StartsWith("api/revision", StringComparison.Ordinal)
         && !path.StartsWith("api/sante", StringComparison.Ordinal)
         && !path.StartsWith("api/session", StringComparison.Ordinal)
+        && !path.StartsWith("api/organisation", StringComparison.Ordinal)
         // État et code de secours de la sauvegarde en ligne : jamais gardés sur l'appareil.
         && !path.StartsWith("api/nuage", StringComparison.Ordinal);
 

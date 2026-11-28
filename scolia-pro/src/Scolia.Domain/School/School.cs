@@ -2,9 +2,14 @@ using Scolia.Domain.Common;
 
 namespace Scolia.Domain.School;
 
+/// <summary>Organisation des responsabilités : conserver les valeurs persistées et le mode historique par défaut.</summary>
+public enum SchoolManagementMode { Mixte = 0, Separee = 1 }
+
 /// <summary>Établissement (une seule instance par base).</summary>
 public sealed class SchoolProfile : Entity
 {
+    /// <summary>Mixte : secrétariat polyvalent ; séparée : opérations comptables confiées à la comptabilité.</summary>
+    public SchoolManagementMode ManagementMode { get; set; } = SchoolManagementMode.Mixte;
     /// <summary>Profil pédagogique immuable après installation ; les anciennes écoles restent ITM/IM.</summary>
     public string InstitutionType { get; set; } = InstitutionProfiles.ItmIm;
     /// <summary>Statut administratif, distinct des cycles et des tarifs ; privé par défaut.</summary>

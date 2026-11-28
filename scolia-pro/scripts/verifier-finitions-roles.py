@@ -34,6 +34,8 @@ def main():
     parser.add_argument('--configuration', default='Release')
     parser.add_argument('--output', default='artifacts/finitions-roles')
     parser.add_argument('--scenarios', choices=SCENARIOS, nargs='+', default=list(SCENARIOS))
+    parser.add_argument('--management-mode', choices=['Mixte', 'Separee'], default='Mixte')
+    parser.add_argument('--accounts', choices=ACCOUNTS, nargs='+', default=ACCOUNTS)
     parser.add_argument('--server', help='Réutiliser un serveur de démonstration déjà préparé, sans réinstallation.')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
@@ -79,13 +81,13 @@ def main():
                             raise TimeoutError('Le serveur de démonstration ne répond pas.')
                         time.sleep(0.2)
                 with (output / 'preparation.log').open('w', encoding='utf-8') as log:
-                    subprocess.run(['node', str(root / 'scripts/audit/preparer-roles.mjs'), address],
+                    subprocess.run(['node', str(root / 'scripts/audit/preparer-roles.mjs'), address, args.management_mode],
                         cwd=root, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=120)
 
             # Les scénarios partagent une adresse locale. Respecter la limite de connexion
             # du serveur ; les protections de production restent actives pendant les tests.
             admission = threading.Condition()
-            attempts = deque([time.monotonic()] * 4)
+            attempts = deque([time.monotonic()] * (5 if args.management_mode == 'Separee' else 4))
             cooldown = [0.0]
 
             def admit():
@@ -110,7 +112,7 @@ def main():
                 config.mkdir()
                 environment = dict(os.environ, XDG_CONFIG_HOME=str(config), SCOLIA_MOBILE=str(int(mobile)),
                     SCOLIA_CAPTURE_DARK=str(int(dark)), SCOLIA_TAILLE=size, SCOLIA_COMPTE=account,
-                    SCOLIA_PREMIUM_TEXTE=str(scale), SCOLIA_ASTUCES='0')
+                    SCOLIA_PREMIUM_TEXTE=str(scale), SCOLIA_ASTUCES='0', SCOLIA_GESTION_TEST=args.management_mode)
                 log_path = destination / 'verification.log'
                 for retry in range(2):
                     admit()
@@ -132,7 +134,7 @@ def main():
                 print(f'{"ECHEC" if failed else "OK"} {name} {size} · {status} Débordements : {overflows}.', flush=True)
                 return name + '/' + account if failed else None
 
-            cases = [(name, account) for name in args.scenarios for account in ACCOUNTS]
+            cases = [(name, account) for name in args.scenarios for account in args.accounts]
             with ThreadPoolExecutor(max_workers=4) as executor:
                 failures = [failure for failure in executor.map(render, cases) if failure]
         finally:

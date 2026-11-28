@@ -1,4 +1,5 @@
 using Scolia.Domain.Common;
+using Scolia.Domain.School;
 
 namespace Scolia.Domain.Security;
 
@@ -37,6 +38,7 @@ public static class Permissions
 {
     public const string StudentsRead = "apprenants.lire";
     public const string StudentsWrite = "apprenants.ecrire";
+    public const string StudentFinanceRead = "apprenants.situation-financiere";
     public const string PaymentsRead = "paiements.lire";
     public const string PaymentsCreate = "paiements.encaisser";
     public const string PaymentsCancel = "paiements.annuler";
@@ -52,6 +54,9 @@ public static class Permissions
     public const string AcademicsWrite = "scolarite.ecrire";
     public const string AcademicsRead = "scolarite.lire";
     public const string StaffManage = "personnel.gerer";
+    public const string StaffRead = "personnel.lire";
+    public const string PayrollManage = "paie.gerer";
+    public const string SponsorshipManage = "prises-en-charge.gerer";
     public const string DisciplineCancel = "discipline.annuler";
     /// <summary>Jury : décisions motivées, clôture et réouverture des délibérations, codes anonymes.</summary>
     public const string DeliberationManage = "deliberation.gerer";
@@ -66,7 +71,7 @@ public static class Permissions
     [
         StudentsRead, StudentsWrite, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose,
         ReportsRead, PilotageRead, SettingsWrite, UsersManage, AuditRead, BackupManage, AcademicsWrite, AcademicsRead, StaffManage, DisciplineCancel, DeliberationManage,
-        MarksEncode, JuryEncode, OwnResultsRead,
+        MarksEncode, JuryEncode, OwnResultsRead, StudentFinanceRead, StaffRead, PayrollManage, SponsorshipManage,
     ];
 
     /// <summary>Les seuls rôles qu'on attribue.</summary>
@@ -74,12 +79,16 @@ public static class Permissions
 
     /// <summary>Le secrétariat est l'administrateur : ses fonctions, le paramétrage, les utilisateurs, les sauvegardes et le journal.
     /// La comptabilité garde les finances.</summary>
-    public static IReadOnlyCollection<string> For(Role role) => role switch
+    public static IReadOnlyCollection<string> For(Role role, SchoolManagementMode managementMode = SchoolManagementMode.Mixte) => role switch
     {
         // Le secrétariat a tout, sauf l'espace enseignant (« mes cours ») qui n'a de sens que relié à une fiche du personnel.
         // Le secrétariat n'encode pas et ne consulte pas « ses » résultats : ces droits sont personnels.
-        Role.Secretariat or Role.Administrateur or Role.Direction => All.Where(p => p != MarksEncode && p != OwnResultsRead).ToList(),
-        Role.Comptabilite => [StudentsRead, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose, ReportsRead, AuditRead, BackupManage],
+        Role.Secretariat or Role.Administrateur or Role.Direction => All.Where(p => p != MarksEncode && p != OwnResultsRead
+            && (managementMode == SchoolManagementMode.Mixte || !AccountingOperations.Contains(p))).ToList(),
+        Role.Comptabilite when managementMode == SchoolManagementMode.Separee =>
+            [StudentsRead, StudentFinanceRead, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose, ReportsRead, AuditRead, BackupManage,
+                StaffRead, PayrollManage, SponsorshipManage],
+        Role.Comptabilite => [StudentsRead, StudentFinanceRead, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose, ReportsRead, AuditRead, BackupManage],
         // Seul le tableau de bord agrégé est autorisé côté API ; personnalisation d'affichage stockée sur l'appareil.
         Role.Promoteur => [PilotageRead],
         // Portail enseignant d'ITMCD : uniquement l'encodage de ses cours ; le service vérifie l'attribution à chaque appel.
@@ -89,8 +98,11 @@ public static class Permissions
     };
 
     /// <summary>Droits effectifs d'un compte : ceux de son rôle, plus le privilège jury accordé à un enseignant.</summary>
-    public static IReadOnlyCollection<string> For(AppUser user) =>
-        user.Role == Role.Enseignant && user.JuryAccess ? [.. For(user.Role), JuryEncode] : For(user.Role);
+    public static IReadOnlyCollection<string> For(AppUser user, SchoolManagementMode managementMode = SchoolManagementMode.Mixte) =>
+        user.Role == Role.Enseignant && user.JuryAccess ? [.. For(user.Role, managementMode), JuryEncode] : For(user.Role, managementMode);
+
+    private static readonly HashSet<string> AccountingOperations =
+        [PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose, ReportsRead, PilotageRead, PayrollManage, SponsorshipManage];
 
     public static string Label(AppUser user) => user.Role == Role.Enseignant && user.JuryAccess ? "Enseignant · membre du jury" : Label(user.Role);
 

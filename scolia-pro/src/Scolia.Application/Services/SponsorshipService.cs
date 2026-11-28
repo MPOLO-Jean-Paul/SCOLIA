@@ -3,6 +3,7 @@ using Scolia.Application.Abstractions;
 using Scolia.Application.Dtos;
 using Scolia.Domain.Common;
 using Scolia.Domain.Finance;
+using Scolia.Domain.Security;
 using Scolia.Domain.School;
 using Scolia.Domain.Students;
 
@@ -12,7 +13,7 @@ namespace Scolia.Application.Services;
 /// Couvertures de frais. Les pourcentages historiques restent lisibles ; les nouvelles
 /// prises en charge se configurent par type, sans saisir de pourcentage par mois.
 /// </summary>
-public sealed class SponsorshipService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, AccountService accounts)
+public sealed class SponsorshipService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, AccountService accounts, ICurrentUser user)
 {
     private static string Label(SponsorshipMode mode) => mode switch
     {
@@ -87,6 +88,7 @@ public sealed class SponsorshipService(IAppDbContext db, IWriteGate gate, IAudit
 
     public Task<SponsorshipDto> UpsertAsync(Guid enrollmentId, Guid? id, SponsorshipUpsert input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
+        await EffectivePermissions.RequireAsync(db, user, Permissions.SponsorshipManage, ct);
         if (!Enum.TryParse<SponsorshipMode>(input.Type ?? nameof(SponsorshipMode.Historique), true, out var mode) ||
             !Enum.IsDefined(mode))
             throw new DomainException("type", "Choisissez une prise en charge complète ou partielle.");
@@ -221,6 +223,7 @@ public sealed class SponsorshipService(IAppDbContext db, IWriteGate gate, IAudit
 
     public Task EndAsync(Guid enrollmentId, Guid id, string reason, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
+        await EffectivePermissions.RequireAsync(db, user, Permissions.SponsorshipManage, ct);
         if (string.IsNullOrWhiteSpace(reason)) throw new DomainException("reason", "Précisez le motif de fin de prise en charge.");
         var s = await db.Sponsorships.FirstOrDefaultAsync(x => x.Id == id && x.EnrollmentId == enrollmentId, ct)
             ?? throw new NotFoundException("Prise en charge introuvable.");

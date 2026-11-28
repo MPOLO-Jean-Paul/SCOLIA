@@ -106,6 +106,7 @@ public static class AppCatalog
                 new("Utilisateurs", "Création des comptes, rôles et remise d'un code provisoire."),
                 new("Préférences du poste", "Thème clair ou sombre, couleur, police et taille du texte, animations, sons et notifications : propres à chaque appareil."),
                 new("Mon compte", "Sécurité du compte (code et empreinte), poste et réseau, déconnexion."),
+                new("Type de gestion", "Organisation de l'école : gestion mixte ou séparation entre secrétariat et comptabilité, réglée depuis le compte du secrétariat."),
             ]),
         new("Données et sécurité", "DatabaseLock", "ToneRed",
             "Rien ne se perd : copies vérifiées, traces de chaque opération.",

@@ -1,0 +1,50 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             x:Class="Scolia.Bureau.Views.ManagementModeView">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Spacing="16" MaxWidth="960" HorizontalAlignment="Stretch">
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <TextBlock Text="Organisation de l'école" Classes="heading" />
+          <TextBlock Text="{Binding CurrentLabel}" FontWeight="SemiBold" Foreground="{DynamicResource ToneBlue}" />
+          <TextBlock Text="{Binding Notice}" Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+      <Grid ColumnDefinitions="*,*" infra:Adaptive.StackBelow="640" IsEnabled="{Binding Supported}">
+        <Border Classes="card" Margin="0,0,8,8">
+          <RadioButton GroupName="management-mode" IsChecked="{Binding MixedSelected}" HorizontalContentAlignment="Stretch" MinHeight="132">
+            <StackPanel Spacing="10">
+              <c:FluentIcon Kind="AccountGroupOutline" Width="32" Height="32" Foreground="{DynamicResource ToneBlue}" HorizontalAlignment="Left" />
+              <TextBlock Text="Gestion mixte" Classes="heading" TextWrapping="Wrap" />
+              <TextBlock Text="Le secrétariat assure aussi les opérations de comptabilité." TextWrapping="Wrap" />
+              <TextBlock Text="Fonctionnement actuel" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </RadioButton>
+        </Border>
+        <Border Grid.Column="1" Classes="card" Margin="0,0,0,8">
+          <RadioButton GroupName="management-mode" IsChecked="{Binding SeparatedSelected}" HorizontalContentAlignment="Stretch" MinHeight="132">
+            <StackPanel Spacing="10">
+              <c:FluentIcon Kind="AccountSwitch" Width="32" Height="32" Foreground="{DynamicResource ToneGreen}" HorizontalAlignment="Left" />
+              <TextBlock Text="Gestion séparée" Classes="heading" TextWrapping="Wrap" />
+              <TextBlock Text="Chaque métier dispose des fonctions correspondant à ses responsabilités." TextWrapping="Wrap" />
+              <TextBlock Text="Secrétariat et comptabilité distincts" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </RadioButton>
+        </Border>
+      </Grid>
+      <Border Classes="card">
+        <StackPanel Spacing="12">
+          <TextBlock Text="Répartition des responsabilités" Classes="heading" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Responsibilities}" TextWrapping="Wrap" />
+          <TextBlock Text="Le promoteur conserve ses indicateurs et l'enseignant ses cours. L'administration des comptes reste au secrétariat." Classes="muted" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding AccountantsLine}" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <TextBlock Text="Créez ou activez un compte Comptabilité avant de choisir la gestion séparée." IsVisible="{Binding NeedsAccountant}" TextWrapping="Wrap" />
+          <Button Command="{Binding OpenAccounts}" HorizontalAlignment="Stretch" MinHeight="44"><TextBlock Text="Voir les comptes utilisateurs" TextWrapping="Wrap" /></Button>
+        </StackPanel>
+      </Border>
+      <Button Classes="primary" Command="{Binding Apply}" IsEnabled="{Binding CanApply}" HorizontalAlignment="Stretch" MinHeight="44"><TextBlock Text="Appliquer ce type de gestion" TextWrapping="Wrap" /></Button>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
