@@ -150,7 +150,7 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         };
         db.CashClosings.Add(closing);
         audit.Record("caisse.arretee", "ArreteCaisse", closing.Id.ToString(),
-            $"Caisse arrêtée au {input.Date:dd/MM/yyyy} : attendu {situation.ExpectedCash:N0}, compté {input.CountedCash:N0}, écart {difference:N0}.");
+            $"Caisse arrêtée au {input.Date:dd/MM/yyyy} : attendu {Money.Number(situation.ExpectedCash)}, compté {Money.Number(input.CountedCash)}, écart {Money.Number(difference)}.");
         await db.SaveChangesAsync(ct);
         return ToDto(closing);
     }, ct);

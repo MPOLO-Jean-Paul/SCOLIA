@@ -22,7 +22,7 @@ public sealed class SkiaDocumentService : IDocumentService
     private const string Green = "#15803D";
     private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
 
-    private static string M(decimal amount, string symbol) => amount.ToString("N0", Fr) + " " + symbol;
+    private static string M(decimal amount, string symbol) => Scolia.Domain.Finance.Money.Display(amount, symbol);
 
     private static PdfStyle S(float size, bool bold = false, string color = Ink, bool italic = false) => new(size, bold, italic, color);
 
@@ -175,14 +175,14 @@ public sealed class SkiaDocumentService : IDocumentService
                 new[] { "Rubrique", "Échéance", "Montant", "Pris en charge", "Payé", "Reste", "Statut" }.Select(t => new PdfCell(t, Align: PdfAlign.Left)).ToList(),
                 d.Lines.Select(l => (IReadOnlyList<PdfCell>)
                 [
-                    new PdfCell(l.Label), new PdfCell(l.DueDate.ToString("dd/MM/yyyy", Fr)), new PdfCell(l.Amount.ToString("N0", Fr)),
-                    new PdfCell(l.Covered == 0 ? "—" : l.Covered.ToString("N0", Fr)), new PdfCell(l.Paid.ToString("N0", Fr)),
-                    new PdfCell(l.Remaining.ToString("N0", Fr), S(9, false, l.IsOverdue ? Red : Ink)),
+                    new PdfCell(l.Label), new PdfCell(l.DueDate.ToString("dd/MM/yyyy", Fr)), new PdfCell(Scolia.Domain.Finance.Money.Number(l.Amount)),
+                    new PdfCell(l.Covered == 0 ? "—" : Scolia.Domain.Finance.Money.Number(l.Covered)), new PdfCell(Scolia.Domain.Finance.Money.Number(l.Paid)),
+                    new PdfCell(Scolia.Domain.Finance.Money.Number(l.Remaining), S(9, false, l.IsOverdue ? Red : Ink)),
                     new PdfCell(l.Status, S(9, false, l.IsOverdue ? Red : Muted)),
                 ]),
                 S(9), Solid with { HeadStyle = S(8, true, "#FFFFFF"), Padding = 4 },
-                [new PdfCell("TOTAL NET À PAYER : " + M(d.TotalNet, cur), Span: 4, Align: PdfAlign.Left), new PdfCell(d.TotalPaid.ToString("N0", Fr)),
-                 new PdfCell(d.Balance.ToString("N0", Fr)), new PdfCell(string.Empty)]);
+                [new PdfCell("TOTAL NET À PAYER : " + M(d.TotalNet, cur), Span: 4, Align: PdfAlign.Left), new PdfCell(Scolia.Domain.Finance.Money.Number(d.TotalPaid)),
+                 new PdfCell(Scolia.Domain.Finance.Money.Number(d.Balance)), new PdfCell(string.Empty)]);
             f.Y += 16;
             f.Ensure(60);
             f.Y += f.DrawText("Reçus enregistrés", S(9, true, Navy), f.Left, f.Y, f.ContentWidth);
@@ -196,7 +196,7 @@ public sealed class SkiaDocumentService : IDocumentService
                     return (IReadOnlyList<PdfCell>)
                     [
                         new PdfCell(r.Number + (cancelled ? " (annulé)" : string.Empty), tone), new PdfCell(r.Date.ToString("dd/MM/yyyy", Fr)),
-                        new PdfCell(r.Allocations ?? string.Empty, S(8)), new PdfCell(r.Method), new PdfCell(r.Amount.ToString("N0", Fr), tone),
+                        new PdfCell(r.Allocations ?? string.Empty, S(8)), new PdfCell(r.Method), new PdfCell(Scolia.Domain.Finance.Money.Number(r.Amount), tone),
                     ];
                 }),
                 S(9), new PdfTableLook(S(8, true, Navy), null, Navy, false, 4, Navy));

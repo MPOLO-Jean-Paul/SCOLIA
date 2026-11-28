@@ -322,7 +322,7 @@ public sealed class SearchService(IAppDbContext db)
         var number = string.Join(' ', terms);
         var receipts = await db.Receipts.AsNoTracking().Where(r => r.Number.Contains(number)).OrderByDescending(r => r.Date).Take(5)
             .Select(r => new { r.Id, r.Number, r.Date, r.Amount }).ToListAsync(ct);
-        hits.AddRange(receipts.Select(r => new SearchHit("Reçu", r.Number, $"{r.Date:dd/MM/yyyy} · {r.Amount:N0}", $"/paiements/recus/{r.Id}")));
+        hits.AddRange(receipts.Select(r => new SearchHit("Reçu", r.Number, $"{r.Date:dd/MM/yyyy} · {Scolia.Domain.Finance.Money.Number(r.Amount)}", $"/paiements/recus/{r.Id}")));
         return hits;
     }
 }

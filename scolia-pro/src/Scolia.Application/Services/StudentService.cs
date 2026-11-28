@@ -358,7 +358,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
                 throw new DomainException("promotionId", $"Le paiement « {label} » n'a pas d'équivalent dans {target.Code}. Ajoutez ce frais à la promotion ou annulez le reçu.");
             var paidValid = group.Where(a => validReceiptIds.Contains(a.ReceiptId)).Sum(a => a.Amount);
             if (paidValid > newItem.Amount)
-                throw new DomainException("promotionId", $"« {label} » : {paidValid:N0} déjà versé dépasse le montant prévu en {target.Code} ({newItem.Amount:N0}).");
+                throw new DomainException("promotionId", $"« {label} » : {Money.Number(paidValid)} déjà versé dépasse le montant prévu en {target.Code} ({Money.Number(newItem.Amount)}).");
             foreach (var a in group) a.FeeItemId = newItem.Id;
         }
         var old = source.Code;

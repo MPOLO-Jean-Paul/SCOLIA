@@ -60,9 +60,7 @@ public sealed class DashboardPage : PageViewModel
         Action("Exporter la sélection", MaterialIconKind.FileExport, () => Filters.ExportAsync(Shell, false, loadedQuery, selectionKey));
         Filters.Changed += () =>
         {
-            loadedQuery = selectionKey = null;
-            SelectionTotal = "Actualisation de la sélection…";
-            Kpis.Clear(); Promotions.Clear(); Latest.Clear(); Months.Clear(); Aging.Clear();
+            ClearSelection("Actualisation de la sélection…");
             _ = Shell.Run(() => Filters.RefreshLatestAsync(RefreshAsync, () => loadedQuery == Filters.Query));
         };
         ActionRefresh();
@@ -101,9 +99,20 @@ public sealed class DashboardPage : PageViewModel
 
     public override async Task LoadAsync()
     {
-        await Filters.EnsureAsync(Shell.Api, promoter: false);
-        var query = Filters.Query;
-        var d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord" + query);
+        loadedQuery = selectionKey = null;
+        string query;
+        DashboardDto d;
+        try
+        {
+            await Filters.EnsureAsync(Shell.Api, promoter: false);
+            query = Filters.Query;
+            d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord" + query);
+        }
+        catch
+        {
+            ClearSelection("Sélection indisponible. Utilisez Actualiser pour réessayer.");
+            throw;
+        }
         if (query != Filters.Query) return;
         loadedQuery = query;
         selectionKey = d.SelectionKey;
@@ -164,6 +173,15 @@ public sealed class DashboardPage : PageViewModel
         if (!Filters.HasScope) await LoadTodayAsync();
         else { HasToday = false; Appointments.Clear(); Birthdays.Clear(); RaisePeople(); }
         await CheckBackupAsync();
+    }
+
+    private void ClearSelection(string message)
+    {
+        loadedQuery = selectionKey = null;
+        SelectionTotal = message;
+        Kpis.Clear(); Promotions.Clear(); Latest.Clear(); Months.Clear(); Aging.Clear();
+        GenderText = string.Empty; MaleShare = 0;
+        HasToday = false; TodayStats.Clear(); Appointments.Clear(); Birthdays.Clear(); RaisePeople();
     }
 
     /// <summary>Âge de la dernière sauvegarde : rien à signaler sous 24 heures.</summary>

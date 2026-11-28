@@ -4,6 +4,7 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using Scolia.Application.Abstractions;
+using Scolia.Domain.Finance;
 
 namespace Scolia.Infrastructure.Documents;
 
@@ -43,7 +44,7 @@ public sealed class DocumentService : IDocumentService
         }
     }
 
-    private static string M(decimal amount, string symbol) => amount.ToString("N0", Fr) + " " + symbol;
+    private static string M(decimal amount, string symbol) => Money.Display(amount, symbol);
 
     private static void Header(IContainer container, SchoolHeader school, string title, string? subtitle)
     {
@@ -214,15 +215,15 @@ public sealed class DocumentService : IDocumentService
                     var bg = i++ % 2 == 0 ? "#FFFFFF" : "#F7F9FD";
                     t.Cell().Background(bg).Padding(4).Text(l.Label);
                     t.Cell().Background(bg).Padding(4).Text(l.DueDate.ToString("dd/MM/yyyy", Fr));
-                    t.Cell().Background(bg).Padding(4).AlignRight().Text(l.Amount.ToString("N0", Fr));
-                    t.Cell().Background(bg).Padding(4).AlignRight().Text(l.Covered == 0 ? "—" : l.Covered.ToString("N0", Fr));
-                    t.Cell().Background(bg).Padding(4).AlignRight().Text(l.Paid.ToString("N0", Fr));
-                    t.Cell().Background(bg).Padding(4).AlignRight().Text(l.Remaining.ToString("N0", Fr)).FontColor(l.IsOverdue ? "#DC2626" : "#1E293B");
+                    t.Cell().Background(bg).Padding(4).AlignRight().Text(Money.Number(l.Amount));
+                    t.Cell().Background(bg).Padding(4).AlignRight().Text(l.Covered == 0 ? "—" : Money.Number(l.Covered));
+                    t.Cell().Background(bg).Padding(4).AlignRight().Text(Money.Number(l.Paid));
+                    t.Cell().Background(bg).Padding(4).AlignRight().Text(Money.Number(l.Remaining)).FontColor(l.IsOverdue ? "#DC2626" : "#1E293B");
                     t.Cell().Background(bg).Padding(4).Text(l.Status).FontColor(l.IsOverdue ? "#DC2626" : Muted);
                 }
                 t.Cell().ColumnSpan(4).BorderTop(1).BorderColor(Navy).Padding(4).Text("TOTAL NET À PAYER : " + M(d.TotalNet, d.School.CurrencySymbol)).Bold();
-                t.Cell().BorderTop(1).BorderColor(Navy).Padding(4).AlignRight().Text(d.TotalPaid.ToString("N0", Fr)).Bold();
-                t.Cell().BorderTop(1).BorderColor(Navy).Padding(4).AlignRight().Text(d.Balance.ToString("N0", Fr)).Bold();
+                t.Cell().BorderTop(1).BorderColor(Navy).Padding(4).AlignRight().Text(Money.Number(d.TotalPaid)).Bold();
+                t.Cell().BorderTop(1).BorderColor(Navy).Padding(4).AlignRight().Text(Money.Number(d.Balance)).Bold();
                 t.Cell().BorderTop(1).BorderColor(Navy);
             });
             col.Item().PaddingTop(6).Text("Reçus enregistrés").Bold().FontColor(Navy);
@@ -241,7 +242,7 @@ public sealed class DocumentService : IDocumentService
                     t.Cell().Padding(4).Text(r.Date.ToString("dd/MM/yyyy", Fr));
                     t.Cell().Padding(4).Text(r.Allocations ?? string.Empty).FontSize(8);
                     t.Cell().Padding(4).Text(r.Method);
-                    t.Cell().Padding(4).AlignRight().Text(r.Amount.ToString("N0", Fr)).FontColor(cancelled ? Muted : "#1E293B");
+                    t.Cell().Padding(4).AlignRight().Text(Money.Number(r.Amount)).FontColor(cancelled ? Muted : "#1E293B");
                 }
             });
         });
