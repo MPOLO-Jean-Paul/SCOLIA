@@ -136,16 +136,16 @@
   <Style Selector="ScrollViewer.fluentaccess Button.authlink">
     <Setter Property="FontWeight" Value="Normal" />
   </Style>
-  <Style Selector="ScrollViewer.fluentaccess Button.authprimary /template/ ContentPresenter">
+  <Style Selector="LayoutTransformControl:not(.phone) ScrollViewer.fluentaccess Button.authprimary /template/ ContentPresenter">
     <Setter Property="RenderTransform" Value="scale(1)" />
   </Style>
-  <Style Selector="ScrollViewer.fluentaccess Button.authprimary:pressed /template/ ContentPresenter">
+  <Style Selector="LayoutTransformControl:not(.phone) ScrollViewer.fluentaccess Button.authprimary:pressed /template/ ContentPresenter">
     <Setter Property="RenderTransform" Value="scale(0.99)" />
   </Style>
-  <Style Selector="ScrollViewer.fluentaccess Button.autheye PathIcon">
+  <Style Selector="LayoutTransformControl:not(.phone) ScrollViewer.fluentaccess Button.autheye PathIcon">
     <Setter Property="RenderTransform" Value="scale(1)" />
   </Style>
-  <Style Selector="ScrollViewer.fluentaccess Button.autheye:pressed PathIcon">
+  <Style Selector="LayoutTransformControl:not(.phone) ScrollViewer.fluentaccess Button.autheye:pressed PathIcon">
     <Setter Property="RenderTransform" Value="scale(0.92)" />
   </Style>
   <Style Selector="LayoutTransformControl.anim ScrollViewer.fluentaccess Button.authprimary /template/ ContentPresenter">

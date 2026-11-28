@@ -30,6 +30,12 @@ if (args.Length > 3 && args[3] == "icones-scolia")
     return;
 }
 
+if (args.Length > 3 && args[3] == "contact-mobile")
+{
+    MobileMotionCapture.Run(output);
+    return;
+}
+
 if (args.Length > 3 && args[3] == "fonctionnement")
 {
     FunctionalClientChecks.Run(output);

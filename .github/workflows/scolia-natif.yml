@@ -114,6 +114,8 @@ jobs:
           SCOLIA_MOBILE=1 SCOLIA_TAILLE=390x740 SCOLIA_CAPTURE_DARK=1 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-connexion/android-sombre http://127.0.0.1:5293/ inutilise identite-connexion
       - name: Vérifier les changements de feuille, les enregistrements et la pagination des dépenses
         run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-fonctionnement http://127.0.0.1:1/ inutilise fonctionnement
+      - name: Vérifier les cartes fixes et les clics confirmés sur mobile
+        run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-contact-mobile http://127.0.0.1:1/ inutilise contact-mobile
       - name: Vérifier le placement des icônes À propos sur téléphone et ordinateur
         env:
           SCOLIA_ASTUCES: '0'
@@ -128,6 +130,7 @@ jobs:
           name: SCOLIA_Controle_Fonctionnement_Et_Contacts
           path: |
             scolia-pro/artifacts/controle-fonctionnement/
+            scolia-pro/artifacts/controle-contact-mobile/
             scolia-pro/artifacts/controle-a-propos/
           if-no-files-found: ignore
           retention-days: 14

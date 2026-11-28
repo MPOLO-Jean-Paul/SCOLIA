@@ -46,3 +46,11 @@ Le téléchargement affiche désormais une fenêtre dans SCOLIA dès son démarr
 Chaque tentative utilise une destination distincte pour éviter les collisions avec un ancien transfert. Les liens HTTPS restent limités au dépôt officiel. La méthode Navigateur ouvre ce même fichier officiel ; Android conserve le contrôle du certificat lors de l'installation. Le parcours interne conserve la vérification SHA-256 et du numéro de version. Les erreurs de stockage, les échecs de téléchargement et les fichiers manquants ou refusés sont présentés dans une fenêtre persistante.
 
 Les 80 tests mobiles réussissent, dont 23 nouveaux cas sur la progression, les attentes Wi-Fi/réseau, les erreurs de stockage et la reprise des transferts. Le typage du code de l'interface a aussi été vérifié avec les références Android et AndroidX utilisées par l'application. Le build APK complet et les autres contrôles sont rejoués avant la publication officielle.
+
+## Contact et navigation sur mobile
+
+Les effets de zoom et de soulèvement au survol sont réservés au desktop. Les boutons du thème de base ne peuvent plus comprimer les cartes sur téléphone, et les illustrations et pictogrammes restent fixes, y compris au premier contact. Le retour tactile se déclenche sur le clic confirmé, après la reconnaissance du geste ; le début d'un défilement ne lance ni onde ni vibration. La navigation mobile utilise seulement un fondu bref, sans translation des pages.
+
+Les 60 contrôles natifs mesurent les rectangles réels des boutons, illustrations et pictogrammes avant et après survol, contact, geste abandonné et clic. Ils contrôlent l'absence d'action et de vibration avant confirmation, puis l'exécution unique de l'action. Ils couvrent les petits téléphones en clair et sombre, avec les animations actives. Un témoin desktop exerce réellement le survol pour éviter un résultat obtenu en désactivant toutes les animations. Les 773 tests du client réussissent également après les premières modifications ; les suites complètes sont rejouées sur la version finale.
+
+Le test de démarrage sur émulateur passe à Android 16 (API 36), conserve les animations système et vérifie le niveau d'API annoncé par l'appareil. Les fichiers android-version.txt et android-sdk.txt sont archivés avec les captures de validation.
