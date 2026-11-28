@@ -2,9 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.DashboardView">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="16" Margin="0,0,6,8">
+      <c:DashboardFilters DataContext="{Binding Filters}" />
+      <Border Classes="band"><TextBlock Text="{Binding SelectionTotal}" FontWeight="SemiBold" TextWrapping="Wrap" /></Border>
 
       <!-- Rappel de sauvegarde : barre d'information de Windows, seulement s'il y a lieu -->
       <Border Background="{DynamicResource OrangeSoftBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"

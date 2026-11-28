@@ -336,6 +336,8 @@ public sealed class SettingsPage : PageViewModel
     public RelayCommand<BackstageItemVm> OpenMobileSection { get; }
     public RelayCommand BackToMobileSections { get; }
     /// <summary>Actions directes, accessibles sans le menu « … » sur Android.</summary>
+    public AsyncCommand ConfigureBackupSchedule { get; }
+    public AsyncCommand BrowseBackups { get; }
     public AsyncCommand CreateSection { get; }
     public RelayCommand<SectionRowVm> EditSectionOnPhone { get; }
     public AsyncCommand CreatePromotion { get; }
@@ -374,6 +376,10 @@ public sealed class SettingsPage : PageViewModel
             SchoolSections = [.. SchoolSections,
                 new BackstageItemVm("licence", "Licence SCOLIA Pro",
                     MaterialIconKind.ShieldLockOutline, "ToneBlue")];
+        if (Shell.Can(Perm.SettingsWrite) && Shell.Can(Perm.BackupManage))
+            SchoolSections = [.. SchoolSections, new BackstageItemVm("sauvegardes", "Sauvegardes", MaterialIconKind.DatabaseExport, "ToneGreen")];
+        ConfigureBackupSchedule = new AsyncCommand(() => Shell.Run(() => DataPage.ConfigureBackupsAsync(Shell)));
+        BrowseBackups = new AsyncCommand(() => Shell.Open(() => new DataPage(Shell)));
         PosteSections =
         [
             new BackstageItemVm("apparence", "Thème et couleurs", MaterialIconKind.Palette, "TonePurple"),
@@ -588,7 +594,7 @@ public sealed class SettingsPage : PageViewModel
         set
         {
             if (!Set(ref section, value)) return;
-            foreach (var name in new[] { nameof(IsSchool), nameof(IsYears), nameof(IsSections), nameof(IsPromotions), nameof(IsFees), nameof(IsAppearance), nameof(IsText),
+            foreach (var name in new[] { nameof(IsSchool), nameof(IsBackupSchedule), nameof(IsYears), nameof(IsSections), nameof(IsPromotions), nameof(IsFees), nameof(IsAppearance), nameof(IsText),
                          nameof(IsWindows), nameof(IsAnimations), nameof(IsSounds), nameof(IsSecurity), nameof(IsAbout), nameof(IsLicense), nameof(IsPoste), nameof(ShowResetLink), nameof(SchoolSection), nameof(PosteSection), nameof(SectionTitle), nameof(SectionHint) })
                 Raise(name);
             if (value?.Value == "securite" && !Preferences.MobileLayout) ActivateSecurity();
@@ -609,6 +615,7 @@ public sealed class SettingsPage : PageViewModel
 
     protected override bool HasRows => section?.Value is "annees" or "sections" or "promotions" or "frais";
 
+    public bool IsBackupSchedule => section?.Value == "sauvegardes";
     public bool IsSchool => section?.Value == "etablissement";
     public bool IsLicense => section?.Value == "licence";
     public bool IsYears => section?.Value == "annees";
@@ -631,6 +638,7 @@ public sealed class SettingsPage : PageViewModel
     public string SectionHint => section?.Value switch
     {
         "etablissement" => "Ce qui figure sur les reçus, les listes et les cartes d'accès.",
+        "sauvegardes" => "Fréquence des copies locales et en ligne, conservation et accès aux sauvegardes.",
         "licence" => "Échéance, jours restants et statut du serveur SCOLIA. Aucun dossier scolaire n'est envoyé à JP-Services.",
         "annees" => "Les années scolaires, leurs mois de paiement et l'année courante.",
         "sections" => "Les filières de l'établissement, qui regroupent les promotions.",
@@ -671,6 +679,12 @@ public sealed class SettingsPage : PageViewModel
 
     public override async Task LoadAsync()
     {
+        if (IsBackupSchedule)
+        {
+            subtitle = "Fréquences et copies de sauvegarde";
+            Raise(nameof(Subtitle));
+            return;
+        }
         if (IsPoste)
         {
             subtitle = "Réglages de ce poste";

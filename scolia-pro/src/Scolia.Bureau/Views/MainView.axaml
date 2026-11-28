@@ -361,7 +361,7 @@
     <ContentControl Content="{Binding Connection}" IsVisible="{Binding ShowConnection}" />
 
     <!-- Ouverture : logo, nom SCOLIA Pro et trois points animés, sans textes ni barre supplémentaires. -->
-    <Grid x:Name="OpeningHost" IsVisible="{Binding Opening}">
+    <Grid x:Name="OpeningHost" IsVisible="{Binding ShowOpening}">
       <Grid.RenderTransform><TranslateTransform /></Grid.RenderTransform>
       <Border Background="{DynamicResource BgBrush}" />
       <!-- Après connexion : un seul titre et trois points ; les étapes techniques restent internes. -->

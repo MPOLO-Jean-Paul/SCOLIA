@@ -10,7 +10,7 @@ using Scolia.Domain.Students;
 namespace Scolia.Application.Services;
 
 /// <summary>Tableau de bord, liste des débiteurs, balance âgée et exports.</summary>
-public sealed class ReportService(IAppDbContext db, IClock clock, AccountService accounts, IDocumentService documents, ISpreadsheetService spreadsheets)
+public sealed partial class ReportService(IAppDbContext db, IClock clock, AccountService accounts, IDocumentService documents, ISpreadsheetService spreadsheets)
 {
     /// <summary>
     /// Vue exclusivement agrégée du promoteur : aucune ligne nominative n'est renvoyée.
@@ -18,23 +18,28 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
     /// La dette par mois suit la PÉRIODE de frais et son solde net (comptabilité scolaire).
     /// Ces deux dimensions ne doivent jamais être confondues pour les paiements en retard.
     /// </summary>
-    public async Task<PromoterDashboardDto> PromoterDashboardAsync(CancellationToken ct = default)
+    public Task<PromoterDashboardDto> PromoterDashboardAsync(CancellationToken ct = default) =>
+        FilteredPromoterDashboardAsync(new DashboardQuery(), ct);
+
+    public async Task<PromoterDashboardDto> FilteredPromoterDashboardAsync(DashboardQuery query, CancellationToken ct = default)
     {
         var year = await YearContext.CurrentAsync(db, ct);
         var today = clock.Today;
         var monthStart = new DateOnly(today.Year, today.Month, 1);
         var accountsByEnrollment = await accounts.ComputeAsync(year.Id, null, today, ct);
-        var accountRows = accountsByEnrollment.Values.ToList();
+        var accountRows = SelectDashboardAccounts(accountsByEnrollment.Values, query);
+        var enrollmentIds = accountRows.Select(a => a.Enrollment.Id).ToArray();
         var active = accountRows.Where(a => a.Enrollment.Status == EnrollmentStatus.Actif).ToList();
         var periods = year.Periods.OrderBy(p => p.Order).ToList();
         var promotions = await db.Promotions.AsNoTracking().Where(p => p.AcademicYearId == year.Id)
             .OrderBy(p => p.Code).ToListAsync(ct);
+        promotions = promotions.Where(p => MatchesDashboardPromotion(p, query)).ToList();
 
         // Ne sélectionner ni les noms ni les contacts, mais seulement les montants nécessaires.
         var receipts = await (from receipt in db.Receipts.AsNoTracking()
                               join enrollment in db.Enrollments.AsNoTracking()
                                   on receipt.EnrollmentId equals enrollment.Id
-                              where receipt.AcademicYearId == year.Id && receipt.Status == OperationStatus.Valide
+                              where receipt.AcademicYearId == year.Id && receipt.Status == OperationStatus.Valide && enrollmentIds.Contains(enrollment.Id)
                               select new { enrollment.PromotionId, receipt.Date, receipt.Amount }).ToListAsync(ct);
 
         var summaries = promotions.Select(p =>
@@ -67,7 +72,8 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
         }).ToList();
 
         // Toujours calculer la synthèse globale à partir des mêmes groupes : pas de divergence entre écran et totaux.
-        return new PromoterDashboardDto(year.Label, today, active.Count,
+        summaries = OrderDashboardRows(summaries, query, p => p.Code, p => p.ActiveStudents, p => p.CollectedTotal, p => p.Outstanding, p => p.Overdue);
+        var dashboard = new PromoterDashboardDto(year.Label, today, active.Count,
             summaries.Sum(p => p.StudentsWithBalance), summaries.Sum(p => p.StudentsOverdue),
             summaries.Sum(p => p.CollectedToday), summaries.Sum(p => p.CollectedThisMonth),
             summaries.Sum(p => p.CollectedTotal), summaries.Sum(p => p.Outstanding),
@@ -75,21 +81,26 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
             summaries.Sum(p => p.PayingStudents), summaries.Sum(p => p.SponsoredStudents),
             summaries.Sum(p => p.PartiallySponsoredStudents), summaries.Sum(p => p.SponsoredAmount),
             summaries.Sum(p => p.StudentsUpToDate));
+        return dashboard with { SelectionKey = DashboardStamp(query, dashboard) };
     }
 
-    public async Task<DashboardDto> DashboardAsync(Guid? promotionId, CancellationToken ct = default)
+    public Task<DashboardDto> DashboardAsync(Guid? promotionId, CancellationToken ct = default) =>
+        FilteredDashboardAsync(new DashboardQuery(PromotionId: promotionId), ct);
+
+    public async Task<DashboardDto> FilteredDashboardAsync(DashboardQuery query, CancellationToken ct = default)
     {
         var year = await YearContext.CurrentAsync(db, ct);
         var today = clock.Today;
         var monthStart = new DateOnly(today.Year, today.Month, 1);
         var map = await accounts.ComputeAsync(year.Id, null, today, ct);
-        var all = map.Values.Where(x => promotionId is null || x.Promotion.Id == promotionId).ToList();
+        var all = SelectDashboardAccounts(map.Values, query);
+        var enrollmentIds = all.Select(a => a.Enrollment.Id).ToArray();
         var active = all.Where(x => x.Enrollment.Status == EnrollmentStatus.Actif).ToList();
 
         var receipts = await (from r in db.Receipts.AsNoTracking()
                               join e in db.Enrollments.AsNoTracking() on r.EnrollmentId equals e.Id
-                              where r.AcademicYearId == year.Id && r.Status == OperationStatus.Valide && (promotionId == null || e.PromotionId == promotionId)
-                              select new { r.Date, r.Amount }).ToListAsync(ct);
+                              where r.AcademicYearId == year.Id && r.Status == OperationStatus.Valide && enrollmentIds.Contains(e.Id)
+                              select new { r.Date, r.Amount, e.PromotionId }).ToListAsync(ct);
         var expensesMonth = (await db.Expenses.AsNoTracking().Where(e => e.Status == OperationStatus.Valide && e.Date >= monthStart && e.Date <= today)
             .Select(e => e.Amount).ToListAsync(ct)).Sum();
 
@@ -107,7 +118,7 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
         var promotions = all.GroupBy(x => x.Promotion).OrderBy(g => g.Key.Code).Select(g =>
         {
             var expected = g.Sum(x => x.Account.Lines.Where(l => l.DueDate <= today).Sum(l => l.Net));
-            var collected = g.Sum(x => x.Account.TotalPaid);
+            var collected = receipts.Where(r => r.PromotionId == g.Key.Id).Sum(r => r.Amount);
             var paid = g.Sum(x => x.Account.Lines.Where(l => l.DueDate <= today).Sum(l => Math.Min(l.Paid, l.Net)));
             var current = g.Where(x => x.Enrollment.Status == EnrollmentStatus.Actif).ToList();
             return new PromotionStat(g.Key.Id, g.Key.Code, g.Key.Name, current.Count, expected, collected,
@@ -124,7 +135,7 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
 
         var latestRows = await (from r in db.Receipts.AsNoTracking()
                             join s in db.Students.AsNoTracking() on r.StudentId equals s.Id
-                            where r.AcademicYearId == year.Id
+                            where r.AcademicYearId == year.Id && enrollmentIds.Contains(r.EnrollmentId)
                             // Les plus récents par date du reçu : une reprise de données saisie après coup ne passe pas devant.
                             orderby r.Date descending, r.CreatedAtUtc descending, r.Number descending
                             select new { Row = new ReceiptSummaryDto(r.Id, r.Number, r.Date, r.Amount, r.Method.ToString(), r.Status == OperationStatus.Valide ? "Valide" : "Annulé",
@@ -133,7 +144,8 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
         var latest = latestRows.Select(x => x.Row with { Allocations = AnonymousDisplay.Label(latestCodes, x.EnrollmentId, x.Row.Allocations ?? string.Empty) }).ToList();
         latest = latest.Select(r => r with { Method = Labels.Of(Enum.Parse<PaymentMethod>(r.Method)) }).ToList();
 
-        return new DashboardDto(year.Label, active.Count, active.Count(x => x.Enrollment.EnrolledOn >= monthStart),
+        promotions = OrderDashboardRows(promotions, query, p => p.Code, p => p.Students, p => p.Collected, p => p.Outstanding, p => p.Overdue);
+        var dashboard = new DashboardDto(year.Label, active.Count, active.Count(x => x.Enrollment.EnrolledOn >= monthStart),
             receipts.Sum(r => r.Amount), receipts.Where(r => r.Date >= monthStart).Sum(r => r.Amount), receipts.Where(r => r.Date == today).Sum(r => r.Amount),
             expectedToDate, all.Sum(x => x.Account.Balance), all.Sum(x => x.Account.Overdue),
             expectedToDate == 0 ? 100 : decimal.Round(paidOnDue * 100 / expectedToDate, 1),
@@ -142,6 +154,7 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
             active.Count(x => x.Enrollment.Student!.Gender == Gender.M), active.Count(x => x.Enrollment.Student!.Gender == Gender.F),
             active.Count(x => x.IsPaying), active.Count(x => x.IsSponsored), active.Count(x => x.Coverage == Coverage.Partielle),
             all.Sum(x => x.Account.TotalCovered));
+        return dashboard with { SelectionKey = DashboardStamp(query, dashboard) };
     }
 
     /// <summary>

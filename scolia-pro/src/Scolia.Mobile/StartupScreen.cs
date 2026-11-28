@@ -33,6 +33,8 @@ internal sealed class StartupScreen : FrameLayout
     private bool active = true;
 
     /// <summary>Temps où les trois points battent seuls avant le fondu, puis durée du fondu vers la page.</summary>
+    private const int AssemblyDuration = 1500;
+    private const int DescentDuration = 450;
     private const int DotsHold = 550;
     private const int FadeOut = 260;
 
@@ -167,14 +169,14 @@ internal sealed class StartupScreen : FrameLayout
             view.TranslationY = Dp(7);
         }
         var assemble = ValueAnimator.OfFloat(0f, 1f)!;
-        assemble.SetDuration(720);
+        assemble.SetDuration(AssemblyDuration);
         assemble.SetInterpolator(new Android.Views.Animations.LinearInterpolator());
         assemble.Update += (_, e) => logo.Progress = (float)(e.Animation.AnimatedValue ?? 1f);
         assemble.AnimationEnd += (_, _) =>
         {
             if (closed) return;
             // Le logo descend à sa place, en douceur.
-            logo.Animate()?.TranslationY(0f)?.ScaleX(1f)?.ScaleY(1f)?.SetDuration(280)
+            logo.Animate()?.TranslationY(0f)?.ScaleX(1f)?.ScaleY(1f)?.SetDuration(DescentDuration)
                 ?.SetInterpolator(new Android.Views.Animations.DecelerateInterpolator(1.6f))?.Start();
             // Seuls le nom SCOLIA Pro et les trois points apparaissent successivement.
             for (var i = 0; i < intro.Count; i++)
@@ -224,7 +226,8 @@ internal sealed class StartupScreen : FrameLayout
                 await OnUiAsync(() => { if (!closed) status.Text = "La préparation continue. Merci de patienter…"; }).ConfigureAwait(false);
             await ready.ConfigureAwait(false);
             // L'ouverture du logo va jusqu'au bout : la page suivante ne coupe jamais l'animation en plein vol.
-            await introDone.Task.WaitAsync(TimeSpan.FromSeconds(4), token).ConfigureAwait(false);
+            var introBudget = TimeSpan.FromMilliseconds(Math.Max(4000, (AssemblyDuration + DescentDuration + 1000) * Math.Max(1, animationScale)));
+            await introDone.Task.WaitAsync(introBudget, token).ConfigureAwait(false);
             if (animationScale > 0)
             {
                 // Les trois points ont le temps d'être vus : un battement complet avant de céder la place,

@@ -15,6 +15,7 @@ build/
 dist/
 **/bin/
 **/obj/
+**/TestResults/
 # Documents pouvant contenir des donnees reelles (noms, paiements, captures)
 scolia/documentation/RAPPROCHEMENT_PAIEMENTS_A_CONFIRMER.csv
 scolia/documentation/*.png

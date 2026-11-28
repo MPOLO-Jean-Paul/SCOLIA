@@ -130,7 +130,13 @@ public sealed record DashboardDto(
     decimal ExpectedToDate, decimal Outstanding, decimal Overdue, decimal RecoveryRate, int StudentsUpToDate, int StudentsLate,
     decimal ExpensesThisMonth, IReadOnlyList<SeriesPoint> MonthlyCollections, IReadOnlyList<PromotionStat> Promotions,
     IReadOnlyList<SeriesPoint> Aging, IReadOnlyList<ReceiptSummaryDto> LatestReceipts, int GenderMale, int GenderFemale,
-    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m);
+    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m,
+    string? SelectionKey = null);
+
+public sealed record DashboardSectionOption(Guid Id, string Label);
+public sealed record DashboardPromotionOption(Guid Id, string Code, string Name, Guid? SectionId);
+public sealed record DashboardFilterOptions(IReadOnlyList<DashboardSectionOption>? Sections,
+    IReadOnlyList<DashboardPromotionOption>? Promotions, int Version = 0);
 
 public sealed record SeriesPoint(string Label, decimal Value, decimal? Secondary);
 
@@ -143,7 +149,8 @@ public sealed record PromoterPromotionDto(Guid Id, string Code, string Name, int
 public sealed record PromoterDashboardDto(string AcademicYear, DateOnly AsOf, int ActiveStudents,
     int StudentsWithBalance, int StudentsOverdue, decimal CollectedToday, decimal CollectedThisMonth,
     decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPromotionDto> Promotions,
-    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m, int StudentsUpToDate = 0);
+    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m, int StudentsUpToDate = 0,
+    string? SelectionKey = null);
 
 public sealed record PeriodChoiceDto(Guid Id, string Name, bool IsCurrent);
 
@@ -283,6 +290,12 @@ public sealed record PayrollDto(
     decimal Deductions, decimal Advances, decimal Net, string Status, DateOnly? PaidOn, string? Note);
 
 public sealed record BackupDto(string Name, DateTime CreatedUtc, long SizeBytes);
+public sealed record BackupScheduleDto(bool Enabled = true, int LocalIntervalHours = 24,
+    int CloudIntervalHours = 1, int CleanupAfterDays = 30, int KeepLatest = 5)
+{
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool Supported { get; init; } = true;
+}
 
 public sealed record ImportReportDto(bool Applied, int Promotions, int Students, int Receipts, int Allocations, IReadOnlyList<string> Warnings, IReadOnlyList<string> Errors);
 

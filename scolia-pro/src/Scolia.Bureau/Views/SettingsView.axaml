@@ -291,6 +291,25 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
           </StackPanel>
         </Border>
 
+        <Border Classes="card" IsVisible="{Binding IsBackupSchedule}">
+          <StackPanel Spacing="16">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+              <Border Classes="appicon medium" Background="{DynamicResource GreenSoftBrush}"><mi:MaterialIcon Kind="DatabaseExport" /></Border>
+              <StackPanel Grid.Column="1" Spacing="5">
+                <TextBlock Text="Protéger les données de l'établissement" Classes="heading" TextWrapping="Wrap" />
+                <TextBlock Text="Choisissez le rythme des copies automatiques du serveur et des sauvegardes en ligne lorsqu'elles sont activées."
+                           Classes="muted" TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
+            <Button Classes="primary" Content="Configurer les fréquences" Command="{Binding ConfigureBackupSchedule}"
+                    infra:Icons.Lead="CalendarClock" HorizontalAlignment="Left" />
+            <Button Content="Consulter les sauvegardes" Command="{Binding BrowseBackups}"
+                    infra:Icons.Lead="DatabaseExport" HorizontalAlignment="Left" />
+            <TextBlock Text="Le nettoyage des anciennes copies reste manuel et demande votre confirmation. Les sauvegardes récentes sont conservées."
+                       Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
         <!-- Établissement : formulaire intégré, rangé en groupes -->
         <ContentControl Content="{Binding SchoolForm}" IsVisible="{Binding IsSchool}" HorizontalAlignment="Left" />
 

@@ -136,6 +136,9 @@ public interface ISpreadsheetService
 {
     byte[] Export(TableDocument document);
 
+    /// <summary>Plusieurs tableaux ordinaires, avec leurs colonnes et leurs totaux, dans un seul classeur.</summary>
+    byte[] ExportTables(IReadOnlyList<(string SheetName, TableDocument Document)> tables);
+
     /// <summary>Un seul classeur Excel avec une feuille par promotion, sans export intermédiaire de données scolaires.</summary>
     byte[] ExportGrids(IReadOnlyList<(string SheetName, TableDocument Document)> grids);
 }

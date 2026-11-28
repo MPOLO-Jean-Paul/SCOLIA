@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Scolia.Bureau.ViewModels"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Controls.DashboardFilters"
+             x:DataType="vm:DashboardFiltersVm">
+  <UserControl.Resources>
+    <DataTemplate x:Key="DashboardChoice" x:DataType="infra:ChoiceItem">
+      <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+    </DataTemplate>
+  </UserControl.Resources>
+  <Border Classes="card" Padding="14">
+    <StackPanel Spacing="10">
+      <Expander IsExpanded="{Binding Expanded}" HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+        <Expander.Header>
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="0,5">
+            <c:FluentIcon Kind="FilterVariant" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Spacing="3">
+              <TextBlock Text="Filtrer et trier" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding Summary}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+        </Expander.Header>
+        <infra:AdaptiveTiles MinItemWidth="160" MaxColumns="3" IsEnabled="{Binding Supported}" Margin="0,12,-8,0">
+          <StackPanel Spacing="5" Margin="0,0,8,12">
+            <TextBlock Text="Section" Classes="fieldlabel" TextWrapping="Wrap" />
+            <ComboBox ItemsSource="{Binding Sections}" SelectedItem="{Binding Section}" ItemTemplate="{StaticResource DashboardChoice}"
+                      HorizontalAlignment="Stretch" MinWidth="0" MaxDropDownHeight="280" AutomationProperties.Name="Section du tableau de bord" />
+          </StackPanel>
+          <StackPanel Spacing="5" Margin="0,0,8,12">
+            <TextBlock Text="Promotion" Classes="fieldlabel" TextWrapping="Wrap" />
+            <ComboBox ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" ItemTemplate="{StaticResource DashboardChoice}"
+                      HorizontalAlignment="Stretch" MinWidth="0" MaxDropDownHeight="280" AutomationProperties.Name="Promotion du tableau de bord" />
+          </StackPanel>
+          <StackPanel Spacing="5" Margin="0,0,8,12">
+            <TextBlock Text="Sexe" Classes="fieldlabel" TextWrapping="Wrap" />
+            <ComboBox ItemsSource="{Binding Genders}" SelectedItem="{Binding Gender}" ItemTemplate="{StaticResource DashboardChoice}"
+                      HorizontalAlignment="Stretch" MinWidth="0" MaxDropDownHeight="280" AutomationProperties.Name="Sexe du tableau de bord" />
+          </StackPanel>
+          <StackPanel Spacing="5" Margin="0,0,8,12">
+            <TextBlock Text="Situation" Classes="fieldlabel" TextWrapping="Wrap" />
+            <ComboBox ItemsSource="{Binding States}" SelectedItem="{Binding State}" ItemTemplate="{StaticResource DashboardChoice}"
+                      HorizontalAlignment="Stretch" MinWidth="0" MaxDropDownHeight="280" AutomationProperties.Name="Situation du tableau de bord" />
+          </StackPanel>
+          <StackPanel Spacing="5" Margin="0,0,8,12">
+            <TextBlock Text="Trier par" Classes="fieldlabel" TextWrapping="Wrap" />
+            <ComboBox ItemsSource="{Binding Sorts}" SelectedItem="{Binding Sort}" ItemTemplate="{StaticResource DashboardChoice}"
+                      HorizontalAlignment="Stretch" MinWidth="0" MaxDropDownHeight="280" AutomationProperties.Name="Tri du tableau de bord" />
+          </StackPanel>
+          <StackPanel Spacing="5" Margin="0,0,8,12">
+            <TextBlock Text="Rechercher une promotion" Classes="fieldlabel" TextWrapping="Wrap" />
+            <TextBox MaxLength="120" Classes="search clearButton" Text="{Binding Search}" PlaceholderText="Code ou nom"
+                     HorizontalAlignment="Stretch" MinWidth="0" AutomationProperties.Name="Recherche du tableau de bord" />
+          </StackPanel>
+        </infra:AdaptiveTiles>
+      </Expander>
+      <Button Classes="link" Command="{Binding Reset}" IsVisible="{Binding HasSelection}"
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" infra:Icons.Lead="FilterRemoveOutline">
+        <TextBlock Text="Réinitialiser les filtres" TextWrapping="Wrap" />
+      </Button>
+      <TextBlock Text="{Binding SupportMessage}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+    </StackPanel>
+  </Border>
+</UserControl>

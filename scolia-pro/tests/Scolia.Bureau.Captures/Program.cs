@@ -7,6 +7,7 @@ using Avalonia.VisualTree;
 using Scolia.Bureau;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Bureau.Ribbon;
 using Scolia.Bureau.ViewModels;
 using Scolia.Bureau.Views;
 
@@ -2746,6 +2747,8 @@ if (args.Length > 3 && args[3] == "finitions-roles")
     void RenderRole(string name)
     {
         Save(window, $"{account}-{name}.png");
+        var openingOverlay = window.GetVisualDescendants().OfType<Control>().Single(c => c.Name == "OpeningHost");
+        CheckRole("Le logo d'ouverture est entièrement masqué dans l'espace de travail", !shell.ShowOpening && !openingOverlay.IsVisible);
         VerifyFluentArtwork(window);
         if (!Preferences.MobileLayout) return;
         var frame = window.GetVisualDescendants().OfType<Scolia.Bureau.Views.PhoneFrame>().FirstOrDefault(c => c.IsEffectivelyVisible);
@@ -2832,7 +2835,20 @@ if (args.Length > 3 && args[3] == "finitions-roles")
         Wait(pilotage.LoadAsync());
         CheckRole("Les promotions inchangées ne sont pas recréées", cards.Length == pilotage.Promotions.Count &&
             pilotage.Promotions.Zip(cards).All(pair => ReferenceEquals(pair.First, pair.Second)));
-        var details = window.GetVisualDescendants().OfType<Expander>().FirstOrDefault(e => e.IsEffectivelyVisible);
+        pilotage.Filters.Expanded = true;
+        RenderRole("pilotage-filtres");
+        pilotage.Filters.Gender = pilotage.Filters.Genders[2];
+        Wait(pilotage.RefreshAsync());
+        CheckRole("Le pilotage explique le total de la sélection", pilotage.Filters.HasScope && pilotage.SelectionTotal.StartsWith("Total de la sélection", StringComparison.Ordinal));
+        RenderRole("pilotage-selection");
+        var resetEvents = 0;
+        pilotage.Filters.Changed += () => resetEvents++;
+        pilotage.Filters.Reset.Execute(null);
+        CheckRole("Réinitialiser ne déclenche qu'un seul changement de sélection", resetEvents == 1);
+        Wait(pilotage.RefreshAsync());
+        pilotage.Filters.Expanded = false;
+        var details = window.GetVisualDescendants().OfType<Expander>().FirstOrDefault(e => e.IsEffectivelyVisible &&
+            e.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text?.Contains("mois par mois", StringComparison.Ordinal) == true));
         if (details is not null)
         {
             details.IsExpanded = true;
@@ -2846,6 +2862,24 @@ if (args.Length > 3 && args[3] == "finitions-roles")
     {
         var allowed = shell.Navigation.SelectMany(g => g.Items).Select(i => i.PageType).ToHashSet();
         if (allowed.Contains(typeof(HomePage))) ShowRole(() => new HomePage(shell), "accueil");
+        if (allowed.Contains(typeof(DashboardPage)))
+        {
+            var dashboard = new DashboardPage(shell);
+            ShowRole(() => dashboard, "tableau-de-bord");
+            dashboard.Filters.Expanded = true;
+            RenderRole("tableau-de-bord-filtres");
+        }
+        if (shell.Can(Perm.SettingsWrite) && shell.Can(Perm.BackupManage))
+        {
+            var backupSettings = new SettingsPage(shell, "sauvegardes");
+            ShowRole(() => backupSettings, "parametres-sauvegardes");
+            backupSettings.ConfigureBackupSchedule.Execute(null);
+            var waitForDialog = DateTime.UtcNow.AddSeconds(8);
+            while (shell.Dialog is not FormViewModel && DateTime.UtcNow < waitForDialog) Wait(Task.Delay(25));
+            CheckRole("Les fréquences de sauvegarde sont accessibles dans Paramètres", shell.Dialog is FormViewModel);
+            RenderRole("frequences-sauvegardes");
+            if (shell.Dialog is FormViewModel backupForm) backupForm.Cancel.Execute(null);
+        }
         if (allowed.Contains(typeof(StudentsPage)))
         {
             var roleStudents = new StudentsPage(shell);

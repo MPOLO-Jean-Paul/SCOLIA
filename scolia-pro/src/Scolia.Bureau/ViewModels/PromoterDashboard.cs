@@ -31,9 +31,21 @@ public sealed class PromoterDashboardPage : PageViewModel
     private string subtitle = "Consultation uniquement";
     private string asOf = string.Empty;
     private string attention = string.Empty;
+    private string selectionTotal = "Chargement de la sélection…";
+    private string? loadedQuery, selectionKey;
+    public DashboardFiltersVm Filters { get; } = new();
+    public string SelectionTotal { get => selectionTotal; private set => Set(ref selectionTotal, value); }
 
     public PromoterDashboardPage(ShellViewModel shell) : base(shell)
     {
+        Action("Exporter la sélection", MaterialIconKind.FileExport, () => Filters.ExportAsync(Shell, true, loadedQuery, selectionKey));
+        Filters.Changed += () =>
+        {
+            loadedQuery = selectionKey = null;
+            SelectionTotal = "Actualisation de la sélection…";
+            Kpis.Clear(); Promotions.Clear(); SchoolPeriods.Clear(); Raise(nameof(HasPromotions));
+            _ = Shell.Run(() => Filters.RefreshLatestAsync(RefreshAsync, () => loadedQuery == Filters.Query));
+        };
         ActionRefresh();
     }
 
@@ -54,10 +66,16 @@ public sealed class PromoterDashboardPage : PageViewModel
     public override async Task LoadAsync()
     {
         if (!Shell.Can(Ribbon.Perm.PilotageRead)) return;
-        var data = await Shell.Api.GetAsync<PromoterDashboardDto>("api/pilotage/synthese");
+        await Filters.EnsureAsync(Shell.Api, promoter: true);
+        var query = Filters.Query;
+        var data = await Shell.Api.GetAsync<PromoterDashboardDto>("api/pilotage/synthese" + query);
+        if (query != Filters.Query) return;
+        loadedQuery = query;
+        selectionKey = data.SelectionKey;
         var currency = Shell.Session?.CurrencySymbol ?? "FC";
         string Money(decimal amount) => amount.ToString("N0", French) + " " + currency;
         string Count(int count) => count.ToString("N0", French);
+        SelectionTotal = $"Total de la sélection · {Format.Count(data.ActiveStudents, Shell.StudentTerms.Singular, Shell.StudentTerms.Plural)} · {Money(data.CollectedTotal)} encaissés · {Money(data.Outstanding)} à percevoir";
         var currentLabel = $"{French.TextInfo.ToTitleCase(data.AsOf.ToString("MMMM", French))} {data.AsOf.Year}";
 
         PromoterPeriodRowVm Period(string label, decimal due, decimal paid, decimal remaining, decimal collected) =>

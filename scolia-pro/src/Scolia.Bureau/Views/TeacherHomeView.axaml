@@ -38,7 +38,7 @@
 
       <!-- Même accueil natif que secrétariat et administration : bande d'accent,
            icône du kit SCOLIA, identité et actions alignées, sans style parallèle. -->
-      <Border Classes="desktopwelcome" Padding="0" ClipToBounds="True">
+      <Border Classes="desktopwelcome" Padding="0" ClipToBounds="True" Background="{DynamicResource WelcomeBrush}">
         <StackPanel Spacing="0">
           <Border Height="3" Background="{DynamicResource AccentBrush}" />
           <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15"

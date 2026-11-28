@@ -159,11 +159,19 @@ public sealed record CashClosingDto(Guid Id, DateOnly Date, DateOnly PeriodStart
     decimal ExpectedCash, decimal CountedCash, decimal Difference, string? Note, string ClosedBy, DateTime ClosedAtUtc);
 
 // ---------- Tableau de bord et rapports ----------
+public sealed record DashboardQuery(Guid? PromotionId = null, Guid? SectionId = null, string? Gender = null,
+    string? State = null, string? Search = null, string? Sort = null);
+public sealed record DashboardSectionOption(Guid Id, string Label);
+public sealed record DashboardPromotionOption(Guid Id, string Code, string Name, Guid? SectionId);
+public sealed record DashboardFilterOptions(IReadOnlyList<DashboardSectionOption> Sections,
+    IReadOnlyList<DashboardPromotionOption> Promotions, int Version = 1);
+
 public sealed record DashboardDto(string AcademicYear, int ActiveStudents, int NewThisMonth, decimal CollectedTotal, decimal CollectedThisMonth,
     decimal CollectedToday, decimal ExpectedToDate, decimal Outstanding, decimal Overdue, decimal RecoveryRate, int StudentsUpToDate,
     int StudentsLate, decimal ExpensesThisMonth, IReadOnlyList<SeriesPoint> MonthlyCollections, IReadOnlyList<PromotionStat> Promotions,
     IReadOnlyList<SeriesPoint> Aging, IReadOnlyList<ReceiptSummaryDto> LatestReceipts, int GenderMale, int GenderFemale,
-    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m);
+    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m,
+    string? SelectionKey = null);
 
 public sealed record SeriesPoint(string Label, decimal Value, decimal? Secondary = null);
 
@@ -179,7 +187,8 @@ public sealed record PromoterPromotionDto(Guid Id, string Code, string Name, int
 public sealed record PromoterDashboardDto(string AcademicYear, DateOnly AsOf, int ActiveStudents,
     int StudentsWithBalance, int StudentsOverdue, decimal CollectedToday, decimal CollectedThisMonth,
     decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPromotionDto> Promotions,
-    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m, int StudentsUpToDate = 0);
+    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m, int StudentsUpToDate = 0,
+    string? SelectionKey = null);
 
 // ---------- Suivi des paiements par mois ----------
 /// <summary>Filtres du suivi mensuel : le mois, la promotion (toutes si absente), l'état et une recherche.</summary>

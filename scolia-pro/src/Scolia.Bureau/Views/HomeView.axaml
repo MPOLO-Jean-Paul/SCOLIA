@@ -110,6 +110,7 @@
           <mi:MaterialIcon Kind="Refresh" Width="18" Height="18" />
         </Button>
       </Grid>
+      <Border Classes="card" Padding="16" Background="{DynamicResource WelcomeBrush}">
       <Grid x:Name="WelcomeLayout" ColumnDefinitions="*,Auto" ColumnSpacing="12"
             infra:Adaptive.StackBelow="610">
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
@@ -137,6 +138,7 @@
           </Border>
         </Grid>
       </Grid>
+      </Border>
 
       <Border Classes="pbiPanel" Padding="4">
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" infra:Adaptive.StackBelow="580">

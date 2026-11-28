@@ -249,7 +249,11 @@ public sealed class ShellViewModel : Observable
     private bool entryChecked;
 
     /// <summary>Un écran neutre apparaît durant la détection, jamais une fausse connexion.</summary>
-    public bool ShowStartup => !entryChecked && !ChoosingServer && !Opening && !IsLoggedIn;
+    private bool launchIntro;
+    private bool launchIntroPlayed;
+    public static readonly TimeSpan LaunchIntroDuration = TimeSpan.FromMilliseconds(2400);
+    public bool ShowOpening => !launchIntro && Opening;
+    public bool ShowStartup => launchIntro || (!entryChecked && !ChoosingServer && !Opening && !IsLoggedIn);
 
     /// <summary>Une réponse vérifiée du serveur décide entre connexion et assistant.</summary>
     public void ApplyInstallationStatus(bool configured)
@@ -269,17 +273,17 @@ public sealed class ShellViewModel : Observable
 
     /// <summary>Premier lancement : aucune configuration sur ce serveur, l'assistant remplace la connexion.</summary>
     public bool IsSetupRequired { get => setupRequired; set { if (Set(ref setupRequired, value)) { RaiseLogin(); Raise(nameof(ShowSetup)); } } }
-    public bool ShowSetup => entryChecked && IsSetupRequired && !Opening;
+    public bool ShowSetup => !launchIntro && entryChecked && IsSetupRequired && !Opening;
 
     /// <summary>La connexion s'affiche seulement quand une configuration existe et qu'aucune session n'est ouverte.</summary>
-    public bool ShowLogin => entryChecked && (!IsLoggedIn || switchingAccount) && !IsSetupRequired
+    public bool ShowLogin => !launchIntro && entryChecked && (!IsLoggedIn || switchingAccount) && !IsSetupRequired
         && !ChoosingServer && !Connection.PairingInProgress && !Opening;
 
     /// <summary>Conserver l'écran QR visible pendant la vérification, même après bascule vers le serveur reconnu.</summary>
-    public bool ShowConnection => ChoosingServer || (Connection.PairingInProgress && !Opening && !IsLoggedIn);
+    public bool ShowConnection => !launchIntro && (ChoosingServer || (Connection.PairingInProgress && !Opening && !IsLoggedIn));
 
     /// <summary>L'application s'affiche une fois l'ouverture terminée.</summary>
-    public bool ShowApp => IsLoggedIn && !Opening && !switchingAccount;
+    public bool ShowApp => !launchIntro && IsLoggedIn && !Opening && !switchingAccount;
 
     // ---------- Ouverture : entre la connexion et l'accueil, une roue et les étapes, au moins deux secondes ----------
     /// <summary>Durée minimale de l'écran d'ouverture : le passage à l'accueil reste lisible, sans cassure.</summary>
@@ -296,7 +300,7 @@ public sealed class ShellViewModel : Observable
         private set
         {
             if (!Set(ref opening, value)) return;
-            Raise(nameof(ShowLogin)); Raise(nameof(ShowSetup)); Raise(nameof(ShowStartup)); Raise(nameof(ShowApp)); Raise(nameof(CompactWindow)); Raise(nameof(ShowConnection));
+            Raise(nameof(ShowLogin)); Raise(nameof(ShowSetup)); Raise(nameof(ShowStartup)); Raise(nameof(ShowOpening)); Raise(nameof(ShowApp)); Raise(nameof(CompactWindow)); Raise(nameof(ShowConnection));
         }
     }
 
@@ -335,6 +339,7 @@ public sealed class ShellViewModel : Observable
         Raise(nameof(ShowLogin));
         Raise(nameof(ShowSetup));
         Raise(nameof(ShowStartup));
+        Raise(nameof(ShowOpening));
         Raise(nameof(ShowApp));
         Raise(nameof(ShowConnection));
         Raise(nameof(CompactWindow));
@@ -499,6 +504,27 @@ public sealed class ShellViewModel : Observable
     /// Un serveur mémorisé dont l'adresse a changé est retrouvé par l'identifiant de son établissement.
     /// </summary>
     public async Task StartAsync(ILocalServer? server)
+    {
+        var animate = !launchIntroPlayed && Prefs.Animations;
+        launchIntroPlayed = true;
+        if (!animate) { await StartCoreAsync(server); return; }
+        launchIntro = true;
+        RaiseLogin();
+        var presentation = Task.Delay(LaunchIntroDuration);
+        try
+        {
+            // La recherche du serveur avance pendant l'animation ; aucun travail n'attend son dessin.
+            await StartCoreAsync(server);
+        }
+        finally
+        {
+            await presentation;
+            launchIntro = false;
+            RaiseLogin();
+        }
+    }
+
+    private async Task StartCoreAsync(ILocalServer? server)
     {
         localServer = server;
         var forced = Environment.GetEnvironmentVariable("SCOLIA_SERVEUR");
