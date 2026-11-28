@@ -36,6 +36,20 @@ const database = {
   }
 };
 const env = { OWNER_DB: database, OWNER_ADMIN_TOKEN: "owner-console-integration-fictif-2026", OWNER_ACCESS_AUD: "owner-console-integration-audience-2026" };
+// Réponses fournisseurs strictement locales : les tests ne contactent ni R2, ni TURN, ni Netlify.
+const objects = new Map();
+env.STORAGE_FETCH = async (input, init) => {
+  const key = new URL(input).pathname;
+  if (init.method === "PUT") { objects.set(key, new Uint8Array(init.body)); return new Response(null, { status: 200 }); }
+  if (init.method === "DELETE") { objects.delete(key); return new Response(null, { status: 204 }); }
+  return objects.has(key) ? new Response(objects.get(key)) : new Response(null, { status: 404 });
+};
+env.CLOUDFLARE_TURN_ACCOUNT_ID = "a".repeat(32);
+env.CLOUDFLARE_TURN_DISCOVERY_TOKEN = "turn-decouverte-fictif-2026";
+env.TURN_DISCOVERY_FETCH = async () => Response.json({ success: true,
+  result: [{ uid: "b".repeat(32), name: "TURN Démonstration JP-Services" }] });
+env.NETLIFY_HEALTH_FETCH = async () => Response.json({ service: "SCOLIA Netlify HTTPS Backup",
+  protocol: "scolia-https-mailbox-v1", transport: "https", enabled: false });
 const access = { access: { aud: env.OWNER_ACCESS_AUD } };
 async function owner(path, body) {
   const response = await worker.fetch(new Request("https://console.example.org" + path, {

@@ -47,8 +47,8 @@ concurrency:
   cancel-in-progress: ${{ inputs.publish_release != true }}
 
 env:
-  OWNER_VERSION: '1.2.1'
-  RELEASE_TAG: 'scolia-owner-v1.2.1'
+  OWNER_VERSION: '1.2.2'
+  RELEASE_TAG: 'scolia-owner-v1.2.2'
   ANDROID_PACKAGE: 'com.jpservices.scolia.owner'
   ANDROID_PREVIEW_PACKAGE: 'com.jpservices.scolia.owner.preview'
 

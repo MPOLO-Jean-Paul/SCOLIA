@@ -7,7 +7,7 @@ et une seule palette `Core/OwnerPalette.cs` pour Windows et Android.
 
 - Android : `com.jpservices.scolia.owner.preview` en Debug, `com.jpservices.scolia.owner` en Release SIGNÉE.
 - Windows : fenêtre Avalonia + installateur Inno Setup. Ni WinForms ni WebView2.
-- **Version 1.2.1 : interface Fluent et administration native.** Vue d'ensemble chiffrée, établissements (liste, fiche,
+- **Version 1.2.2 : interface Fluent et administration native.** Vue d'ensemble chiffrée, établissements (liste, fiche,
   invitation et invitation de reprise), licences (paiement, délai, essai, blocage en lecture seule, dérogation,
   facturation), serveurs, relais WSS (création, activation/désactivation et choix Cloudflare principal), journal d'activité et sauvegardes.
 - **Authentification** : chaque appel porte un **jeton de service Cloudflare Access** (`CF-Access-Client-Id` /
@@ -17,9 +17,9 @@ et une seule palette `Core/OwnerPalette.cs` pour Windows et Android.
   plateforme — DPAPI (compte Windows courant) ou clé AES-256 non exportable de l'Android Keystore. Ils ne sont jamais
   affichés ni journalisés ; « Effacer l'accès de cet appareil » les supprime.
 - **Écritures** : toute action modifiant une licence, une sauvegarde ou un relais demande une confirmation en deux temps.
-- Restent dans la console web : stockage R2, découverte TURN et Netlify.
+- **Réglages natifs** : configuration R2 vérifiée avant enregistrement, retrait des identifiants, proposition de sauvegarde à toutes les écoles, découverte TURN et configuration/test/retrait du site Netlify. Les protocoles et accords des écoles restent respectés : la découverte TURN ne remplace pas un relais WSS et le pilote Netlify reste désactivé.
 - Mises à jour : canal propriétaire indépendant `scolia-owner-v...`, filtre la liste des Releases GitHub. Les APK Preview ne sont pas des releases signées permanentes.
-- Tests : `Tests/` (client, coffre, libellés, navigation concurrente, refus sans perte de saisie, rendu de chaque page en sept formats/thèmes ; renouvellement et relais contre le vrai Worker sur SQLite en mémoire ;
+- Tests : `Tests/` (37 tests : client, coffre, libellés, navigation concurrente, refus sans perte de saisie, rendu de chaque page en sept formats/thèmes ; renouvellement, relais, stockage R2 et Netlify contre le vrai Worker sur SQLite en mémoire ;
   `SCOLIA_CONSOLE_CAPTURES=<dossier>` enregistre les captures).
 
 Ne pas publier la version Android officielle sans les quatre secrets de signature Admin.

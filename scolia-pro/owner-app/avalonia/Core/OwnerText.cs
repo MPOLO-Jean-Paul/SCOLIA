@@ -99,6 +99,8 @@ public static class OwnerText
         "relay_created" => "Relais ajouté",
         "relay_active" => "Relais activé",
         "relay_disabled" => "Relais désactivé",
+        "netlify_backup_configured_disabled" => "Secours HTTPS configuré (désactivé)",
+        "netlify_backup_removed" => "Configuration du secours HTTPS retirée",
         _ => action.Replace('_', ' ')
     };
 
