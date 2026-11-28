@@ -87,8 +87,8 @@ public sealed class PosteViewModel : Observable, ILiveRefresh
         CopyAddresses = new AsyncCommand(async () =>
         {
             if (addresses.Count == 0) return;
-            if (shell.CopyHandler is { } copy) await copy(string.Join(Environment.NewLine, addresses));
-            shell.Notify("Adresse copiée : collez-la dans le navigateur d'un autre poste du même réseau.");
+            if (await shell.TryCopyAsync(string.Join(Environment.NewLine, addresses)))
+                shell.Notify("Adresse copiée : collez-la dans le navigateur d'un autre poste du même réseau.");
         });
         // Mobile : quitter l'ordinateur principal actuel pour en choisir un autre, ou saisir son adresse.
         ChangeServer = new AsyncCommand(async () =>

@@ -29,6 +29,12 @@ if (args.Length > 3 && args[3] == "icones-scolia")
     return;
 }
 
+if (args.Length > 3 && args[3] == "fonctionnement")
+{
+    FunctionalClientChecks.Run(output);
+    return;
+}
+
 // Attend une tâche tout en faisant tourner la boucle d'affichage de l'interface.
 static T Result<T>(Task<T> task)
 {
@@ -221,6 +227,61 @@ if (Environment.GetEnvironmentVariable("SCOLIA_MICA") == "1" && window.Content i
 // Barre de titre de Windows dessinée par SCOLIA : simulée ici, la fenêtre sans écran n'a pas celle du système.
 if (!Preferences.MobileLayout && Environment.GetEnvironmentVariable("SCOLIA_BARRE_TITRE") != "0" && window.Content is Scolia.Bureau.Views.MainView main) main.ShowTitleBar(32);
 // Emblème de connexion : compte de démonstration, aucune authentification ni appel à un établissement.
+if (args.Length > 3 && args[3] == "a-propos")
+{
+    using var fixture = new LayoutServer();
+    api.Retarget(fixture.Address);
+    ShellViewModel.MinimumOpening = TimeSpan.Zero;
+    Wait(shell.OpenSessionAsync(new SessionDto(Guid.NewGuid(), "about-preview", "Compte de démonstration",
+        "Secretaire", "Secrétariat", [], false, "Institut de démonstration", "TEST", "2026-2027", "FC", "+243")));
+    shell.Sync.Stop();
+    Platform.CheckAppUpdatesAsync = () => Task.CompletedTask;
+    Platform.AppUpdateStatus = () => "Aucune version plus récente trouvée sur GitHub.";
+    shell.ShowAbout();
+    foreach (var (width, height, scale) in Preferences.MobileLayout
+                 ? new[] { (390, 844, 1d), (320, 640, 1d), (360, 740, 1.3d), (320, 640, 1.3d) }
+                 : new[] { (1280, 900, 1d), (1024, 768, 1.2d) })
+    {
+        window.Width = width;
+        window.Height = height;
+        prefs.Scale = scale;
+        Save(window, $"a-propos-{width}x{height}-{scale:0.0}.png");
+        var about = window.GetVisualDescendants().OfType<AboutView>().Single();
+        var scroll = about.GetVisualDescendants().OfType<ScrollViewer>().Single();
+        var frames = about.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("aboutcontacticon")).ToArray();
+        if (frames.Length != 5) throw new InvalidOperationException("Les cinq cadres de contact sont attendus.");
+        foreach (var frame in frames)
+        {
+            if (frame.Child is not Control icon || icon.TranslatePoint(default, frame) is not { } p)
+                throw new InvalidOperationException("Pictogramme de contact absent.");
+            var iconBounds = new Rect(p, icon.Bounds.Size);
+            if (Math.Abs(frame.Bounds.Width - 40) > .5 || Math.Abs(frame.Bounds.Height - 40) > .5 ||
+                iconBounds.Left < 7.5 || iconBounds.Top < 7.5 || iconBounds.Right > frame.Bounds.Width - 7.5 || iconBounds.Bottom > frame.Bounds.Height - 7.5 ||
+                Math.Abs(iconBounds.Center.X - frame.Bounds.Width / 2) > .5 || Math.Abs(iconBounds.Center.Y - frame.Bounds.Height / 2) > .5)
+                throw new InvalidOperationException($"Pictogramme hors cadre ou décentré : {frame.Name} ({iconBounds}).");
+        }
+        foreach (var action in about.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("aboutcontactaction")))
+        {
+            var icons = action.GetVisualDescendants().OfType<Scolia.Bureau.Controls.FluentIcon>().ToArray();
+            if (action.Bounds.Width < 43.5 || action.Bounds.Height < 43.5 || icons.Length != 1)
+                throw new InvalidOperationException("Action de contact dédoublée ou trop petite.");
+            if (icons[0].TranslatePoint(default, action) is not { } p)
+                throw new InvalidOperationException("Pictogramme d'action absent.");
+            var bounds = new Rect(p, icons[0].Bounds.Size);
+            if (bounds.Left < 11.5 || bounds.Top < 11.5 || bounds.Right > action.Bounds.Width - 11.5 || bounds.Bottom > action.Bounds.Height - 11.5 ||
+                Math.Abs(bounds.Center.X - action.Bounds.Width / 2) > .5 || Math.Abs(bounds.Center.Y - action.Bounds.Height / 2) > .5)
+                throw new InvalidOperationException("Pictogramme d'action hors cadre ou décentré.");
+        }
+        Console.WriteLine($"OK À propos {width}×{height} texte {scale:P0} : cinq icônes centrées et contenues, trois actions alignées.");
+        scroll.Offset = new Vector(0, Math.Max(0, scroll.Extent.Height - scroll.Viewport.Height));
+        Save(window, $"a-propos-contacts-{width}x{height}-{scale:0.0}.png");
+        scroll.Offset = default;
+    }
+    shell.CloseDialog();
+    window.Close();
+    return;
+}
+
 if (args.Length > 3 && args[3] == "identite-connexion")
 {
     // Le format bureau doit rester celui demandé même si l'hôte headless

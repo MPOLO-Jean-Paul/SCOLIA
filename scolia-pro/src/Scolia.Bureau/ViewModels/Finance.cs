@@ -301,9 +301,42 @@ public sealed class ExpensesPage : PageViewModel
     private string subtitle = string.Empty;
     private bool ready;
     private DispatcherTimer? timer;
+    private const int PageSize = 200;
+    private int pageNumber = 1;
+    private int total;
+    private (string Search, DateOnly? From, DateOnly? To, string? Category) Criteria => (Search.Trim(), ToDayOrNull(From), ToDayOrNull(To), Category?.Value);
+    public AsyncCommand PreviousPage { get; }
+    public AsyncCommand NextPage { get; }
+    public bool CanPrevious => !Busy && pageNumber > 1;
+    public bool CanNext => !Busy && (long)pageNumber * PageSize < total;
+    public bool HasPages => total > PageSize;
+    public string PageText => $"Page {pageNumber} sur {Math.Max(1, (int)Math.Ceiling((double)total / PageSize))}";
+
+    private void NotifyPages()
+    {
+        Raise(nameof(CanPrevious)); Raise(nameof(CanNext)); Raise(nameof(HasPages)); Raise(nameof(PageText));
+    }
+
+    private void ResetPage()
+    {
+        pageNumber = 1;
+        Selected = null;
+        NotifyPages();
+    }
+
+    private async Task ChangePageAsync(int direction)
+    {
+        if (direction < 0 ? !CanPrevious : !CanNext) return;
+        pageNumber += direction;
+        Selected = null;
+        await RefreshAsync();
+    }
 
     public ExpensesPage(ShellViewModel shell) : base(shell)
     {
+        PreviousPage = new AsyncCommand(() => Shell.Run(() => ChangePageAsync(-1)));
+        NextPage = new AsyncCommand(() => Shell.Run(() => ChangePageAsync(1)));
+        PropertyChanged += (_, e) => { if (e.PropertyName == nameof(Busy)) NotifyPages(); };
         if (Shell.Can(Perm.ExpensesWrite)) Action("Nouvelle dépense", MaterialIconKind.CashMinus, () => NewExpenseAsync(Shell), primary: true);
         if (Shell.Can(Perm.PaymentsCancel)) Action("Annuler la dépense", MaterialIconKind.CloseCircle, CancelSelectedAsync, row: true);
         ActionRefresh();
@@ -322,6 +355,7 @@ public sealed class ExpensesPage : PageViewModel
         set
         {
             if (!Set(ref search, value)) return;
+            ResetPage();
             timer?.Stop();
             timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
             timer.Tick += async (_, _) => { timer?.Stop(); await Shell.Run(RefreshAsync); };
@@ -329,9 +363,9 @@ public sealed class ExpensesPage : PageViewModel
         }
     }
 
-    public DateTime? From { get => from; set { if (Set(ref from, value) && ready) _ = Shell.Run(RefreshAsync); } }
-    public DateTime? To { get => to; set { if (Set(ref to, value) && ready) _ = Shell.Run(RefreshAsync); } }
-    public ChoiceItem? Category { get => category; set { if (Set(ref category, value) && ready) _ = Shell.Run(RefreshAsync); } }
+    public DateTime? From { get => from; set { if (Set(ref from, value) && ready) { ResetPage(); _ = Shell.Run(RefreshAsync); } } }
+    public DateTime? To { get => to; set { if (Set(ref to, value) && ready) { ResetPage(); _ = Shell.Run(RefreshAsync); } } }
+    public ChoiceItem? Category { get => category; set { if (Set(ref category, value) && ready) { ResetPage(); _ = Shell.Run(RefreshAsync); } } }
     public ExpenseRowVm? Selected { get => selected; set => Set(ref selected, value); }
 
     public override async Task LoadAsync()
@@ -346,18 +380,33 @@ public sealed class ExpensesPage : PageViewModel
             ready = true;
         }
 
-        var page = await Shell.Api.GetAsync<PagedResult<ExpenseDto>>("api/depenses" + ScoliaClient.Query(
-            ("du", ToDayOrNull(From)), ("au", ToDayOrNull(To)), ("categorie", Category?.Value), ("q", Search.Trim()), ("page", 1), ("taille", 200)));
-
+        var criteria = Criteria;
+        var requestedPage = pageNumber;
+        var result = await ReadPageAsync(requestedPage, criteria);
+        if (criteria != Criteria || requestedPage != pageNumber) return;
+        var lastPage = Math.Max(1, (int)Math.Ceiling((double)result.Total / PageSize));
+        if (requestedPage > lastPage)
+        {
+            pageNumber = requestedPage = lastPage;
+            result = await ReadPageAsync(requestedPage, criteria);
+            if (criteria != Criteria || requestedPage != pageNumber) return;
+        }
+        var selectedId = Selected?.Id;
         Items.Clear();
-        foreach (var e in page.Items)
+        foreach (var e in result.Items)
             Items.Add(new ExpenseRowVm(e.Id, e.Number, Format.Date(e.Date), e.Category, e.Beneficiary, e.Description, Money(e.Amount),
                 Labels.Method(e.Method), Labels.Status(e.Status), ThemeBrush.Get(e.Status == "Valide" ? "ToneGreen" : "ToneRed"), e.Reference, e.RecordedBy));
-
-        var total = page.Items.Where(e => e.Status == "Valide").Sum(e => e.Amount);
-        subtitle = $"{Format.Count(page.Total, "dépense", "dépenses")} · total valide {Money(total)}";
+        Selected = Items.FirstOrDefault(e => e.Id == selectedId);
+        total = result.Total;
+        var sum = result.Sum ?? result.Items.Where(e => e.Status == "Valide").Sum(e => e.Amount);
+        subtitle = $"{Format.Count(total, "dépense", "dépenses")} · total valide {Money(sum)}";
         Raise(nameof(Subtitle));
+        NotifyPages();
     }
+
+    private Task<PagedResult<ExpenseDto>> ReadPageAsync(int page, (string Search, DateOnly? From, DateOnly? To, string? Category) criteria) =>
+        Shell.Api.GetAsync<PagedResult<ExpenseDto>>("api/depenses" + ScoliaClient.Query(
+            ("du", criteria.From), ("au", criteria.To), ("categorie", criteria.Category), ("q", criteria.Search), ("page", page), ("taille", PageSize)));
 
     private static DateOnly? ToDayOrNull(DateTime? value) => value is null ? null : ToDay(value);
 

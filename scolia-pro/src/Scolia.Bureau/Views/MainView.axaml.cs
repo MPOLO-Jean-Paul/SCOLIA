@@ -356,8 +356,9 @@ public partial class MainView : UserControl
 
     private async Task CopyAsync(string text)
     {
-        if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard)
-            await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(clipboard, text);
+        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard
+            ?? throw new NotSupportedException("Le presse-papiers n'est pas disponible pour cette fenêtre.");
+        await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(clipboard, text);
     }
 
     // Plusieurs événements de taille pendant une même passe de rendu ne demandent qu'un seul recalcul.

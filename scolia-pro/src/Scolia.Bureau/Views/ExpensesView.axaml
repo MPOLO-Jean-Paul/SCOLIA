@@ -2,8 +2,9 @@
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Scolia.Bureau.Controls"
+             xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.ExpensesView">
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,*,Auto">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
       <WrapPanel>
         <StackPanel Classes="field pagesearch">
@@ -47,5 +48,14 @@
       </DataGrid.Columns>
     </DataGrid>
     <c:EmptyState Grid.Row="1" Icon="WalletOutline" Title="Aucune dépense sur ces critères" Hint="Changez la période ou la catégorie, ou ajoutez une nouvelle dépense." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6" Margin="0,8,0,0" IsVisible="{Binding HasPages}">
+      <TextBlock Text="{Binding PageText}" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" />
+      <Button x:Name="ExpensesPrevious" Grid.Column="1" Classes="toolicon" Command="{Binding PreviousPage}" IsEnabled="{Binding CanPrevious}" AutomationProperties.Name="Page précédente des dépenses" ToolTip.Tip="Page précédente">
+        <mi:MaterialIcon Kind="ArrowLeft" Width="20" Height="20" />
+      </Button>
+      <Button x:Name="ExpensesNext" Grid.Column="2" Classes="toolicon" Command="{Binding NextPage}" IsEnabled="{Binding CanNext}" AutomationProperties.Name="Page suivante des dépenses" ToolTip.Tip="Page suivante">
+        <mi:MaterialIcon Kind="ArrowRight" Width="20" Height="20" />
+      </Button>
+    </Grid>
   </Grid>
 </UserControl>
