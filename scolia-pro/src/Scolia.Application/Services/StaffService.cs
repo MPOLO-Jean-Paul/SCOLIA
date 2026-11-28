@@ -4,6 +4,7 @@ using Scolia.Application.Common;
 using Scolia.Application.Dtos;
 using Scolia.Domain.Common;
 using Scolia.Domain.Finance;
+using Scolia.Domain.Security;
 using Scolia.Domain.Staff;
 using Scolia.Domain.Students;
 
@@ -13,13 +14,20 @@ namespace Scolia.Application.Services;
 public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, ICurrentUser user, CashService cash)
 {
     public async Task<IReadOnlyList<StaffDto>> ListAsync(CancellationToken ct = default) =>
-        (await db.Staff.AsNoTracking().OrderBy(s => s.LastName).ToListAsync(ct)).Select(ToDto).ToList();
+        (await db.Staff.AsNoTracking().OrderBy(s => s.LastName).ToListAsync(ct)).Select(ToDtoForCurrent).ToList();
 
     private static StaffDto ToDto(StaffMember s) => new(s.Id, s.Number, s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(), s.Function, s.Phone, s.Email,
         s.HireDate, s.ExitDate, s.BaseSalary, s.IsActive);
 
+    private StaffDto ToDtoForCurrent(StaffMember member) => user.HasPermission(Permissions.PayrollManage)
+        ? ToDto(member) : ToDto(member) with { BaseSalary = 0 };
+
     public Task<StaffDto> UpsertAsync(Guid? id, StaffUpsert input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
+        if (!user.HasPermission(Permissions.StaffManage)) throw new ForbiddenException("La modification du personnel est réservée au secrétariat.");
+        var managesPayroll = await EffectivePermissions.AllowsAsync(db, user, Permissions.PayrollManage, ct);
+        if (!managesPayroll && input.BaseSalary != 0)
+            throw new ForbiddenException("La définition des salaires revient à la comptabilité en gestion séparée.");
         var v = new ValidationBuilder()
             .Require(!string.IsNullOrWhiteSpace(input.LastName), "lastName", "Nom obligatoire.")
             .Require(!string.IsNullOrWhiteSpace(input.FirstName), "firstName", "Prénom obligatoire.")
@@ -44,10 +52,24 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
         member.Function = input.Function.Trim(); member.Phone = phone; member.Email = string.IsNullOrWhiteSpace(input.Email) ? null : input.Email.Trim();
         if (input.ExitDate is { } exit && exit < input.HireDate)
             throw new DomainException("personnel", "La fin d'activité ne peut pas précéder l'entrée en fonction.");
-        member.HireDate = input.HireDate; member.ExitDate = input.ExitDate; member.BaseSalary = input.BaseSalary; member.IsActive = input.IsActive;
+        member.HireDate = input.HireDate; member.ExitDate = input.ExitDate; member.IsActive = input.IsActive;
+        if (managesPayroll) member.BaseSalary = input.BaseSalary;
         audit.Record(id is null ? "personnel.cree" : "personnel.modifie", "Personnel", member.Id.ToString(), $"{member.Number} {member.FullName} ({member.Function}).");
         await db.SaveChangesAsync(ct);
-        return ToDto(member);
+        return ToDtoForCurrent(member);
+    }, ct);
+
+    public Task<StaffDto> ChangeSalaryAsync(Guid id, StaffSalaryUpdate input, CancellationToken ct = default) => gate.RunAsync(async () =>
+    {
+        await RequirePayrollAsync(ct);
+        var school = await YearContext.SchoolAsync(db, ct);
+        ValidateAmount(input.BaseSalary, school.WholeAmountsOnly, "baseSalary");
+        var member = await db.Staff.FirstOrDefaultAsync(s => s.Id == id, ct) ?? throw new NotFoundException("Membre du personnel introuvable.");
+        member.BaseSalary = input.BaseSalary;
+        audit.Record("personnel.salaire-modifie", "Personnel", member.Id.ToString(),
+            $"Salaire de base de {member.FullName} : {Money.Display(member.BaseSalary, school.CurrencySymbol)}. Les bulletins déjà préparés sont conservés.");
+        await db.SaveChangesAsync(ct);
+        return ToDtoForCurrent(member);
     }, ct);
 
     public static string NormalizePeriod(string period)
@@ -59,6 +81,7 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
 
     public async Task<IReadOnlyList<PayrollDto>> PayrollAsync(string period, CancellationToken ct = default)
     {
+        await RequirePayrollAsync(ct);
         period = NormalizePeriod(period);
         var rows = await (from p in db.Payroll.AsNoTracking()
                           join s in db.Staff.AsNoTracking() on p.StaffMemberId equals s.Id
@@ -74,6 +97,7 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
     /// <summary>Prépare les bulletins du mois pour tout le personnel actif (sans doublon).</summary>
     public Task<int> GenerateAsync(string period, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
+        await RequirePayrollAsync(ct);
         period = NormalizePeriod(period);
         var existing = await db.Payroll.Where(p => p.Period == period).Select(p => p.StaffMemberId).ToListAsync(ct);
         var staff = await db.Staff.Where(s => s.IsActive && !existing.Contains(s.Id)).ToListAsync(ct);
@@ -90,6 +114,7 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
 
     public Task<PayrollDto> UpdateEntryAsync(Guid id, PayrollUpdate input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
+        await RequirePayrollAsync(ct);
         var entry = await db.Payroll.FirstOrDefaultAsync(p => p.Id == id, ct) ?? throw new NotFoundException("Bulletin introuvable.");
         if (entry.Status == PayrollStatus.Paye) throw new DomainException("paie", "Un bulletin payé ne peut plus être modifié.");
         var school = await YearContext.SchoolAsync(db, ct);
@@ -108,6 +133,7 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
 
     public Task<PayrollDto> PayAsync(Guid id, string method, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
+        await RequirePayrollAsync(ct);
         var entry = await db.Payroll.FirstOrDefaultAsync(p => p.Id == id, ct) ?? throw new NotFoundException("Bulletin introuvable.");
         if (entry.Status == PayrollStatus.Paye) throw new ConflictException("Ce bulletin est déjà payé.");
         var s = await db.Staff.AsNoTracking().FirstAsync(x => x.Id == entry.StaffMemberId, ct);
@@ -136,6 +162,8 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
         await db.SaveChangesAsync(ct);
         return ToDto(entry, s);
     }, ct);
+
+    private Task RequirePayrollAsync(CancellationToken ct) => EffectivePermissions.RequireAsync(db, user, Permissions.PayrollManage, ct);
 
     private static void ValidateAmount(decimal amount, bool wholeOnly, string field)
     {

@@ -1062,6 +1062,15 @@
       "sha256": "1f84a9a5b2a63773d8549654e1a3c3fce8e7975cc3e3f15cec068ace857a26cd"
     },
     {
+      "name": "Money Settings",
+      "variant": "regular",
+      "path": "assets/Money Settings/SVG/ic_fluent_money_settings_24_regular.svg",
+      "aliases": [
+        "CashEdit"
+      ],
+      "sha256": "95077c9061819393fadf30d42ab7b8c1ec9c206c94765c0d61b8dc8829cbdf06"
+    },
+    {
       "name": "More Horizontal",
       "variant": "regular",
       "path": "assets/More Horizontal/SVG/ic_fluent_more_horizontal_24_regular.svg",

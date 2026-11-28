@@ -2880,11 +2880,56 @@ if (args.Length > 3 && args[3] == "finitions-roles")
             RenderRole("frequences-sauvegardes");
             if (shell.Dialog is FormViewModel backupForm) backupForm.Cancel.Execute(null);
         }
+        if (ManagementModePage.CanAccess(shell))
+        {
+            shell.OpenBackstage();
+            CheckRole("Le compte du secrétariat propose le type de gestion", shell.Backstage.Items.Any(item => item.Value == "gestion"));
+            RenderRole("compte-type-gestion");
+            shell.CloseBackstage();
+            var management = new ManagementModePage(shell);
+            ShowRole(() => management, "type-gestion");
+            CheckRole("Le type de gestion est chargé depuis le serveur", management.Supported);
+            management.SelectedMode = shell.Session?.ManagementMode == "Separee" ? "Mixte" : "Separee";
+            RenderRole("type-gestion-selection");
+            if (management.CanApply)
+            {
+                management.Apply.Execute(null);
+                var waitForCode = DateTime.UtcNow.AddSeconds(8);
+                while (shell.Dialog is not FormViewModel && DateTime.UtcNow < waitForCode) Wait(Task.Delay(25));
+                CheckRole("Modifier l'organisation demande le code actuel", shell.Dialog is FormViewModel modeForm
+                    && modeForm.Find("code")?.Kind == FieldKind.Secret);
+                RenderRole("type-gestion-code");
+                if (shell.Dialog is FormViewModel modeCode) modeCode.Cancel.Execute(null);
+                Wait(Task.Delay(50));
+            }
+        }
+        else CheckRole("Le type de gestion reste réservé au secrétariat", !shell.Backstage.Items.Any(item => item.Value == "gestion"));
         if (allowed.Contains(typeof(StudentsPage)))
         {
             var roleStudents = new StudentsPage(shell);
             ShowRole(() => roleStudents, "apprenants");
             CheckForm(roleStudents, "inscription");
+            if (roleStudents.Items.FirstOrDefault() is { } student)
+            {
+                var detail = new StudentDetailPage(shell, student.Id);
+                ShowRole(() => detail, "dossier-droits");
+                CheckRole("La consultation individuelle reste accessible", detail.Actions.Any(action => action.Label == "Relevé de compte") == shell.Can(Perm.StudentFinanceRead));
+                CheckRole("Les opérations de prise en charge suivent le métier", detail.Actions.Any(action => action.Label == "Prise en charge") == shell.Can(Perm.SponsorshipManage));
+                CheckRole("Encaisser suit les droits du compte", detail.Actions.Any(action => action.Label == "Encaisser") == shell.Can(Perm.PaymentsCreate));
+            }
+        }
+        if (allowed.Contains(typeof(StaffPage)))
+        {
+            var members = new StaffPage(shell);
+            ShowRole(() => members, "personnel-droits");
+            members.ShowPayroll = false;
+            Wait(members.RefreshAsync());
+            RenderRole("personnel-dossiers");
+            var view = window.GetVisualDescendants().OfType<Scolia.Bureau.Views.StaffView>().FirstOrDefault();
+            var salaryColumn = view?.FindControl<DataGrid>("StaffTable")?.Columns.Single(column => Equals(column.Header, "Salaire de base"));
+            CheckRole("La colonne salaire respecte le droit de paie", salaryColumn is not null && salaryColumn.IsVisible == shell.Can(Perm.PayrollManage));
+            CheckRole("Modifier le personnel reste une action administrative", members.Actions.Any(action => action.Label == "Nouveau membre") == shell.Can(Perm.StaffManage));
+            CheckRole("Payer un salaire reste une action comptable", members.Actions.Any(action => action.Label == "Payer le salaire") == shell.Can(Perm.PayrollManage));
         }
         if (allowed.Contains(typeof(CashierPage)))
         {

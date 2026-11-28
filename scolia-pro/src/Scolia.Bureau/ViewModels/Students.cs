@@ -409,7 +409,7 @@ public sealed class StudentDetailPage : PageViewModel
         if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell, studentId)), primary: true);
         if (Shell.Can(Perm.StudentsWrite)) Action("Modifier", MaterialIconKind.Pencil, EditAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Renommer", MaterialIconKind.Rename, RenameAsync);
-        if (Shell.Can(Perm.PaymentsRead)) Action("Relevé de compte", MaterialIconKind.FileDocument, StatementAsync);
+        if (Shell.Can(Perm.StudentFinanceRead)) Action("Relevé de compte", MaterialIconKind.FileDocument, StatementAsync);
         // Les anciens établissements ITM conservent leurs bulletins existants.
         // L'action n'apparaît que pour les nouveaux profils scolaires APRÈS
         // leur activation officielle ; elle n'écrit aucune note.
@@ -422,7 +422,7 @@ public sealed class StudentDetailPage : PageViewModel
                 OpenSchoolBulletinAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Changer le statut", MaterialIconKind.AccountSwitch, ChangeStatusAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Changer de promotion", MaterialIconKind.SwapHorizontal, ChangePromotionAsync);
-        if (Shell.Can(Perm.StudentsWrite)) Action("Prise en charge", MaterialIconKind.ShieldAccount, NewSponsorshipAsync);
+        if (Shell.Can(Perm.SponsorshipManage)) Action("Prise en charge", MaterialIconKind.ShieldAccount, NewSponsorshipAsync);
         if (Shell.Can(Perm.PaymentsRead)) Action("Relancer par WhatsApp", MaterialIconKind.Whatsapp, RemindAsync);
         if (StudentsPage.CanDelete(Shell)) Action("Supprimer le dossier", MaterialIconKind.Delete, DeleteAsync, danger: true);
         ActionRefresh();
@@ -478,6 +478,7 @@ public sealed class StudentDetailPage : PageViewModel
 
     /// <summary>Ferme une prise en charge en gardant son historique.</summary>
     public AsyncCommand EndSponsorship { get; private set; } = null!;
+    public bool CanManageSponsorships => Shell.Can(Perm.SponsorshipManage);
 
     public override async Task LoadAsync()
     {

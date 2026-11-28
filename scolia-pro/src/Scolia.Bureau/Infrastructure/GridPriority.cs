@@ -26,6 +26,17 @@ public static class GridPriority
     public static readonly AttachedProperty<bool> AdaptiveProperty =
         AvaloniaProperty.RegisterAttached<DataGrid, bool>("Adaptive", typeof(GridPriority));
 
+    /// <summary>Une colonne retirée selon les droits ne peut pas être réaffichée par l'adaptation à la largeur.</summary>
+    public static readonly AttachedProperty<bool> AllowedProperty =
+        AvaloniaProperty.RegisterAttached<DataGridColumn, bool>("Allowed", typeof(GridPriority), true);
+
+    public static bool GetAllowed(DataGridColumn column) => column.GetValue(AllowedProperty);
+    public static void SetAllowed(DataGridColumn column, bool allowed)
+    {
+        column.SetValue(AllowedProperty, allowed);
+        column.IsVisible = allowed;
+    }
+
     /// <summary>Largeur minimale prévue dans la vue, avant agrandissement du texte.</summary>
     private static readonly AttachedProperty<double> BaseMinWidthProperty =
         AvaloniaProperty.RegisterAttached<DataGridColumn, double>("BaseMinWidth", typeof(GridPriority), double.NaN);
@@ -124,8 +135,8 @@ public static class GridPriority
         }
 
         // Tout afficher, puis retirer les colonnes secondaires une à une tant que le tableau déborde.
-        var visible = columns.Select(_ => true).ToArray();
-        var total = needs.Sum();
+        var visible = columns.Select(GetAllowed).ToArray();
+        var total = needs.Where((_, index) => visible[index]).Sum();
         while (total > width)
         {
             var drop = -1;

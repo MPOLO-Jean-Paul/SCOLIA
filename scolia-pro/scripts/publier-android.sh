@@ -46,6 +46,7 @@ case "$version" in
   1.3.14) minimum=3633023 ;;
   1.3.15) minimum=3633449 ;;
   1.3.16) minimum=3633838 ;;
+  1.3.17) minimum=3633966 ;;
 esac
 if (( minimum > 0 )); then
   if [[ -n "${SCOLIA_VERSION_CODE:-}" && ( ! "$code" =~ ^[0-9]+$ || "$code" -lt "$minimum" ) ]]; then

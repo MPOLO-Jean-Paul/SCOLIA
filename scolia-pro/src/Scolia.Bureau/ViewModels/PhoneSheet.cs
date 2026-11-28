@@ -188,6 +188,9 @@ public sealed class PhoneSettingsSearchVm : Observable
             MaterialIconKind.ShieldLockOutline, "ToneTeal",
             "biometrie empreinte digitale identification connexion authentification code secret mot de passe veille mise en veille verrouillage verrouiller ecran inactivite",
             Account("mot-de-passe"));
+        if (ManagementModePage.CanAccess(shell))
+            Add("Type de gestion", "Mon compte", MaterialIconKind.AccountSwitch, "ToneBlue",
+                "gestion mixte separee separation roles secretariat comptabilite organisation", OpenPage(() => new ManagementModePage(shell)));
         Add("Poste et réseau", shell.Phone || Platform.IsMobile ? "Mon compte" : "Réseau et postes",
             MaterialIconKind.LanConnect, "ToneGreen",
             "tailscale vpn wifi internet serveur partage reseaux connexion poste magicdns",

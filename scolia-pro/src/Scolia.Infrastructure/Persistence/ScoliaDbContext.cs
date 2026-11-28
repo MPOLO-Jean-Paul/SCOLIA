@@ -104,6 +104,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.Property(x => x.OfficialCode).HasMaxLength(20);
             e.Property(x => x.InstitutionType).HasMaxLength(32).HasDefaultValue(InstitutionProfiles.ItmIm);
             e.Property(x => x.Governance).HasDefaultValue(SchoolGovernanceKind.Prive);
+            e.Property(x => x.ManagementMode).HasDefaultValue(SchoolManagementMode.Mixte);
         });
 
         // Un seul établissement, mais jusqu'à trois cycles scolaires.

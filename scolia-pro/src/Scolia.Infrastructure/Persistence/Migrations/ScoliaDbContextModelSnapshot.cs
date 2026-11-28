@@ -2574,6 +2574,11 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<string>("LogoContentType")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("ManagementMode")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
                     b.Property<string>("Motto")
                         .HasColumnType("TEXT");
 

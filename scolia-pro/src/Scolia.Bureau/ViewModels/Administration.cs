@@ -28,17 +28,28 @@ public sealed class StaffPage : PageViewModel
 
     public StaffPage(ShellViewModel shell) : base(shell)
     {
-        Action("Nouveau membre", MaterialIconKind.AccountPlus, () => NewMemberAsync(Shell), primary: true);
-        Action("Modifier le membre", MaterialIconKind.AccountEdit, EditMemberAsync, open: true);
-        Action("Préparer la paie", MaterialIconKind.CalendarPlus, PreparePayrollAsync);
+        showPayroll = CanManagePayroll && !CanManageStaff;
+        if (CanManageStaff)
+        {
+            Action("Nouveau membre", MaterialIconKind.AccountPlus, () => NewMemberAsync(Shell), primary: true);
+            Action("Modifier le membre", MaterialIconKind.AccountEdit, EditMemberAsync, open: true);
+        }
+        if (CanManagePayroll)
+        {
+            Action("Préparer la paie", MaterialIconKind.CalendarPlus, PreparePayrollAsync, primary: !CanManageStaff);
+            Action("Modifier le bulletin", MaterialIconKind.Pencil, EditPayslipAsync, row: true);
+            Action("Payer le salaire", MaterialIconKind.CashCheck, PayAsync, row: true);
+            if (!CanManageStaff) Action("Salaire de base", MaterialIconKind.CashEdit, ChangeSalaryAsync, row: true);
+        }
         Action("Pointage et bilan", MaterialIconKind.ClockCheck, () => Shell.Open(() => new StaffAttendancePage(Shell)));
-        Action("Modifier le bulletin", MaterialIconKind.Pencil, EditPayslipAsync, row: true);
-        Action("Payer le salaire", MaterialIconKind.CashCheck, PayAsync, row: true);
         periodChoice = Periods.FirstOrDefault(p => p.Value == period);
         ActionRefresh();
     }
 
-    public override string Title => "Personnel et paie";
+    public override string Title => CanManagePayroll ? "Personnel et paie" : "Personnel";
+    public bool CanManageStaff => Shell.Can(Perm.StaffManage);
+    public bool CanManagePayroll => Shell.Can(Perm.PayrollManage);
+    public string StaffEmptyHint => CanManageStaff ? "Ajoutez le premier avec « Nouveau membre »." : "Le secrétariat crée les fiches du personnel avant la préparation de la paie.";
     public override string Subtitle => subtitle;
     public override MaterialIconKind Glyph => MaterialIconKind.BriefcaseOutline;
 
@@ -51,6 +62,7 @@ public sealed class StaffPage : PageViewModel
         get => showPayroll;
         set
         {
+            if (value && !CanManagePayroll) return;
             if (!Set(ref showPayroll, value)) return;
             RaiseEmptyStates();
             _ = Shell.Run(RefreshAsync);
@@ -137,7 +149,7 @@ public sealed class StaffPage : PageViewModel
             Staff.Clear();
             foreach (var s in rows)
                 Staff.Add(new StaffRowVm(s.Id, s.Number, Format.FullName(s.LastName, s.MiddleName, s.FirstName), s.Function, s.Phone ?? "—",
-                    Format.Date(s.HireDate), Money(s.BaseSalary), s.IsActive ? "Actif" : "Inactif", ThemeBrush.Get(s.IsActive ? "ToneGreen" : "ToneNeutral"), s));
+                    Format.Date(s.HireDate), CanManagePayroll ? Money(s.BaseSalary) : string.Empty, s.IsActive ? "Actif" : "Inactif", ThemeBrush.Get(s.IsActive ? "ToneGreen" : "ToneNeutral"), s));
             subtitle = $"{Format.Count(rows.Count(r => r.IsActive), "membre actif", "membres actifs")} sur {rows.Count}";
         }
         RaiseEmptyStates();
@@ -165,11 +177,11 @@ public sealed class StaffPage : PageViewModel
     {
         var form = new FormViewModel("Nouveau membre", "Le numéro de dossier est attribué automatiquement.", async f =>
         {
-            await shell.Api.SendAsync(HttpMethod.Post, "api/personnel", StaffBody(f));
+            await shell.Api.SendAsync(HttpMethod.Post, "api/personnel", StaffBody(f, shell.Can(Perm.PayrollManage)));
             shell.Notify("Membre ajouté au personnel.");
             return true;
         });
-        AddStaffFields(form, null);
+        AddStaffFields(form, null, shell.Can(Perm.PayrollManage));
         if (await shell.Ask(form) && shell.Current is StaffPage page) await page.RefreshAsync();
     }
 
@@ -183,11 +195,11 @@ public sealed class StaffPage : PageViewModel
         var s = SelectedStaff.Source;
         var form = new FormViewModel("Modifier le membre", $"Dossier {s.Number}", async f =>
         {
-            await Shell.Api.SendAsync(HttpMethod.Put, $"api/personnel/{s.Id}", StaffBody(f));
+            await Shell.Api.SendAsync(HttpMethod.Put, $"api/personnel/{s.Id}", StaffBody(f, CanManagePayroll));
             Shell.Notify("Dossier enregistré.");
             return true;
         });
-        AddStaffFields(form, s);
+        AddStaffFields(form, s, CanManagePayroll);
         if (await Shell.Ask(form)) await RefreshAsync();
     }
 
@@ -259,7 +271,22 @@ public sealed class StaffPage : PageViewModel
         if (await Shell.Ask(form)) await RefreshAsync();
     }
 
-    private static void AddStaffFields(FormViewModel form, StaffDto? s)
+    private async Task ChangeSalaryAsync()
+    {
+        var id = ShowPayroll ? SelectedPayroll?.Source.StaffMemberId : SelectedStaff?.Id;
+        if (id is null) { Shell.Notify("Choisissez un membre ou un bulletin de paie."); return; }
+        var member = (await Shell.Api.GetAsync<List<StaffDto>>("api/personnel")).FirstOrDefault(s => s.Id == id)
+            ?? throw new InvalidOperationException("Le membre n'est plus disponible. Actualisez la liste.");
+        var form = new FormViewModel("Salaire de base", $"{Format.FullName(member.LastName, member.MiddleName, member.FirstName)} · Les bulletins déjà préparés sont conservés.", async f =>
+        {
+            await Shell.Api.SendAsync(HttpMethod.Put, $"api/personnel/{member.Id}/salaire", new { baseSalary = f.Amount("salaire") });
+            return true;
+        });
+        form.Add("salaire", "Salaire de base", FieldKind.Amount, member.BaseSalary.ToString("0.##", CultureInfo.InvariantCulture), required: true);
+        if (await Shell.Ask(form)) await RefreshAsync();
+    }
+
+    private static void AddStaffFields(FormViewModel form, StaffDto? s, bool managesPayroll)
     {
         form.Add("nom", "Nom", value: s?.LastName, required: true);
         form.Add("postNom", "Post-nom", value: s?.MiddleName);
@@ -270,11 +297,12 @@ public sealed class StaffPage : PageViewModel
         form.Add("email", "E-mail", value: s?.Email);
         form.AddDay("embauche", "Date d'embauche", s?.HireDate ?? DateOnly.FromDateTime(DateTime.Today), required: true);
         form.AddDay("sortie", "Fin d'activité (facultatif)", s?.ExitDate);
-        form.Add("salaire", "Salaire de base", FieldKind.Amount, s is null ? string.Empty : s.BaseSalary.ToString("0.##", CultureInfo.InvariantCulture), required: true);
+        if (managesPayroll)
+            form.Add("salaire", "Salaire de base", FieldKind.Amount, s is null ? string.Empty : s.BaseSalary.ToString("0.##", CultureInfo.InvariantCulture), required: true);
         form.AddFlag("actif", "Membre actif", s?.IsActive ?? true);
     }
 
-    private static object StaffBody(FormViewModel f) => new
+    private static object StaffBody(FormViewModel f, bool managesPayroll) => new
     {
         lastName = f.Text("nom"),
         middleName = f.Text("postNom"),
@@ -285,7 +313,7 @@ public sealed class StaffPage : PageViewModel
         email = f.OptionalText("email"),
         hireDate = f.Day("embauche"),
         exitDate = f.Day("sortie"),
-        baseSalary = f.Amount("salaire"),
+        baseSalary = managesPayroll ? f.Amount("salaire") : 0,
         isActive = f.Flag("actif"),
     };
 }

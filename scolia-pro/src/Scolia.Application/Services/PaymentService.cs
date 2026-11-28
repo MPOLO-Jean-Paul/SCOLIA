@@ -65,6 +65,7 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
 
     public Task<ReceiptDto> CreateAsync(PaymentRequest input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
+        await EffectivePermissions.RequireAsync(db, user, Permissions.PaymentsCreate, ct);
         if (!string.IsNullOrWhiteSpace(input.IdempotencyKey))
         {
             var existing = await db.Receipts.AsNoTracking().Include(r => r.Allocations)
@@ -146,7 +147,7 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
 
     public Task<ReceiptDto> CancelAsync(Guid id, string reason, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
-        if (!user.HasPermission(Permissions.PaymentsCancel)) throw new DomainException("droits", "Vous n'êtes pas autorisé à annuler un reçu.");
+        await EffectivePermissions.RequireAsync(db, user, Permissions.PaymentsCancel, ct);
         if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 5) throw new DomainException("reason", "Le motif d'annulation est obligatoire (5 caractères minimum).");
         var receipt = await db.Receipts.FirstOrDefaultAsync(r => r.Id == id, ct) ?? throw new NotFoundException("Reçu introuvable.");
         if (receipt.Status == OperationStatus.Annule) throw new ConflictException("Ce reçu est déjà annulé.");

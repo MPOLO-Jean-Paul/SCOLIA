@@ -76,6 +76,8 @@ public interface ICurrentUser
 {
     Guid? Id { get; }
     string Name { get; }
+    /// <summary>Empreinte de la session authentifiée, lorsqu'elle existe.</summary>
+    string? SecurityStamp => null;
     bool HasPermission(string permission);
     string? IpAddress { get; }
     /// <summary>Identifiant stable du poste ou du téléphone qui envoie la requête, s'il se présente.</summary>

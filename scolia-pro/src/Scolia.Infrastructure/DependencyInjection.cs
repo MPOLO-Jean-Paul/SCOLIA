@@ -92,6 +92,7 @@ public static class DependencyInjection
         services.AddScoped<StaffAttendanceService>();
         services.AddScoped<CardService>();
         services.AddScoped<StaffService>();
+        services.AddScoped<ManagementModeService>();
         return services;
     }
 

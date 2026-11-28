@@ -4,6 +4,8 @@
 // Toutes les données sont fictives. Usage : node preparer-roles.mjs http://127.0.0.1:5293/
 const base = process.argv[2] ?? "http://127.0.0.1:5293/";
 const PASSWORD = "Scolia2026!";
+const managementMode = process.argv[3] ?? "Mixte";
+if (!["Mixte", "Separee"].includes(managementMode)) throw new Error("Type de gestion inconnu.");
 
 function client() {
   let cookie = "";
@@ -74,4 +76,6 @@ const sheet = await prof("GET", `api/deliberation/feuille?coursId=${assigned[0]}
 const rows = sheet.rows.slice(0, Math.ceil(sheet.rows.length / 2)).map((r, i) => ({ enrollmentId: r.enrollmentId, value: 8 + (i % 12) }));
 await prof("PUT", `api/deliberation/feuille?coursId=${assigned[0]}&nature=S1`, rows);
 
-console.log(JSON.stringify({ comptes: ["admin", "comptable", "promoteur", "enseignant"], coursAttribues: assigned.length, cotes: rows.length }));
+if (managementMode === "Separee")
+  await admin("PUT", "api/organisation/gestion", { mode: managementMode, currentPassword: PASSWORD });
+console.log(JSON.stringify({ gestion: managementMode, comptes: ["admin", "comptable", "promoteur", "enseignant"], coursAttribues: assigned.length, cotes: rows.length }));

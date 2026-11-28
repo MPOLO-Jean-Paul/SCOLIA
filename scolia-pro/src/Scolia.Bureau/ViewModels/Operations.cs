@@ -768,6 +768,7 @@ public sealed record BackstageItemVm(string Value, string Label, MaterialIconKin
 public sealed class BackstageViewModel : Observable
 {
     private readonly ShellViewModel shell;
+    private readonly IReadOnlyList<BackstageItemVm> baseItems;
     private BackstageItemVm? section;
     private FormViewModel? passwordForm;
     private PosteViewModel? poste;
@@ -795,7 +796,7 @@ public sealed class BackstageViewModel : Observable
         entries.Add(Preferences.MobileLayout
             ? new("aide", "Aide et gestes", MaterialIconKind.GestureTap, "ToneNeutral")
             : new("aide", "Aide et raccourcis", MaterialIconKind.Keyboard, "ToneNeutral"));
-        Items = entries;
+        baseItems = entries;
         section = Items[0];
         Close = new RelayCommand(shell.CloseBackstage);
         Logout = new AsyncCommand(() => shell.LogoutAsync());
@@ -804,7 +805,11 @@ public sealed class BackstageViewModel : Observable
         ToggleSecurityPassword = new RelayCommand(() => SecurityPasswordVisible = !SecurityPasswordVisible);
     }
 
-    public IReadOnlyList<BackstageItemVm> Items { get; }
+    public IReadOnlyList<BackstageItemVm> Items => ManagementModePage.CanAccess(shell)
+        ? [baseItems[0], new("gestion", "Type de gestion", MaterialIconKind.AccountSwitch, "ToneBlue"), .. baseItems.Skip(1)]
+        : baseItems;
+
+    public void RefreshEntries() => Raise(nameof(Items));
 
     /// <summary>Rubrique affichée. Préférences et aide ouvrent leur boîte, sans quitter les informations.</summary>
     public BackstageItemVm? Section
@@ -815,6 +820,10 @@ public sealed class BackstageViewModel : Observable
             if (value is null) return;
             switch (value.Value)
             {
+                case "gestion":
+                    shell.CloseBackstage();
+                    _ = shell.Run(() => shell.Open(() => new ManagementModePage(shell)));
+                    return;
                 case "preferences":
                     _ = PreferencesDialog.ShowAsync(shell);
                     return;

@@ -54,6 +54,7 @@ public static partial class FeatureVisuals
             [typeof(StaffAttendancePage)] = MaterialIconKind.ClockCheck,
             [typeof(NetworkHubPage)] = MaterialIconKind.LanConnect,
             [typeof(SettingsPage)] = MaterialIconKind.Cog,
+            [typeof(ManagementModePage)] = MaterialIconKind.AccountSwitch,
             [typeof(UsersPage)] = MaterialIconKind.AccountCog,
             [typeof(DataPage)] = MaterialIconKind.DatabaseExport,
             [typeof(CloudBackupPage)] = MaterialIconKind.CloudLock,

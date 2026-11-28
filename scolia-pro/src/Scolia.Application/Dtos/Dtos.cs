@@ -238,7 +238,12 @@ public sealed record PasswordChange(string CurrentPassword, string NewPassword);
 
 public sealed record SessionDto(Guid Id, string UserName, string DisplayName, string Role, string RoleLabel, IReadOnlyCollection<string> Permissions,
     bool MustChangePassword, string SchoolName, string? SchoolShortName, string? CurrentYear, string CurrencySymbol, string PhoneCountryCode,
-    string InstitutionType = "ItmIm");
+    string InstitutionType = "ItmIm", Scolia.Domain.School.SchoolManagementMode ManagementMode = Scolia.Domain.School.SchoolManagementMode.Mixte,
+    int PermissionPolicyVersion = 2);
+
+public sealed record ManagementModeStatus(Scolia.Domain.School.SchoolManagementMode Mode, int ActiveAccountants, int Version = 1);
+public sealed record ManagementModeChange(Scolia.Domain.School.SchoolManagementMode Mode, string CurrentPassword);
+public sealed record StaffSalaryUpdate(decimal BaseSalary);
 
 public sealed record LoginRequest(string UserName, string Password);
 

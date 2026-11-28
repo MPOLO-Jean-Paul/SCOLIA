@@ -106,7 +106,7 @@ public static class CloudDispatchAuthentication
             await http.Response.WriteAsJsonAsync(new { title = "Compte de l'auteur introuvable ou désactivé." });
             return;
         }
-        http.User = SessionFactory.Principal(user);
+        http.User = await SessionFactory.PrincipalAsync(db, user, http.RequestAborted);
         await next(http);
     });
 }
