@@ -104,11 +104,14 @@ internal static class FunctionalClientChecks
         marks.Rows[0].Value = "14";
         releaseBulkSave.SetResult();
         Wait(savingMarks);
-        Check("Cotes : une modification pendant l'envoi reste affichée", marks.Rows[0].Value == "14");
+        Check("Cotes : une modification pendant l'envoi reste affichée", marks.Rows[0].Value == "14" && marks.Rows[0].Original == "13");
         var bulkWrite = server.Writes.Last();
         using var markPayload = JsonDocument.Parse(bulkWrite.Body);
         Check("Cotes : le semestre envoyé correspond à la feuille modifiée", bulkWrite.Path.Contains("nature=S2", StringComparison.Ordinal)
             && markPayload.RootElement[0].GetProperty("value").GetDecimal() == 13);
+        marks.Rows[0].Value = "13";
+        Wait(((AsyncCommand)marks.Actions.Single(a => a.Label == "Enregistrer les cotes").Command).ExecuteAsync());
+        Check("Cotes : une valeur déjà enregistrée n'est pas renvoyée", server.Writes.Count == bulkWrites + 1);
 
         Role("Enseignant");
         var releaseCode = Signal();
@@ -203,12 +206,15 @@ internal static class FunctionalClientChecks
         lmd.Items[0].Score = "18";
         releaseLmdSave.SetResult();
         Wait(savingLmd);
-        Check("LMD : une modification pendant l'envoi reste affichée", lmd.Items[0].Score == "18");
+        Check("LMD : une modification pendant l'envoi reste affichée", lmd.Items[0].Score == "18" && lmd.Items[0].Original == 17);
         var lmdWrite = server.Writes.Last();
         using var lmdPayload = JsonDocument.Parse(lmdWrite.Body);
         Check("LMD : l'envoi conserve l'EC, la session et les valeurs choisis", lmdWrite.Path.Contains(elementB.ToString(), StringComparison.Ordinal)
             && lmdPayload.RootElement.GetProperty("session").GetInt32() == 1
             && lmdPayload.RootElement.GetProperty("lines")[0].GetProperty("score").GetDecimal() == 17);
+        lmd.Items[0].Score = "17";
+        Wait(((AsyncCommand)lmd.Actions.Single(a => a.Label == "Enregistrer les notes").Command).ExecuteAsync());
+        Check("LMD : une valeur déjà enregistrée n'est pas renvoyée", server.Writes.Count == lmdWrites + 1);
 
         server.Reply = request =>
         {

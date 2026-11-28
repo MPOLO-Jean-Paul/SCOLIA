@@ -168,8 +168,9 @@ public sealed class MarkEditRowVm(Guid enrollmentId, string code, string matricu
     public string FullName { get; } = fullName;
     public string Retained { get; } = retained;
     public IBrush RetainedBrush { get; } = ThemeBrush.Get(failed ? "ToneRed" : "ToneNeutral");
-    public string Original { get; } = value;
+    public string Original { get; private set; } = value;
     public string Value { get => text; set => Set(ref text, value); }
+    internal void AcceptSavedValue(string saved) => Original = saved;
 }
 
 /// <summary>
@@ -612,6 +613,7 @@ public sealed class MarksPage : PageViewModel
         var request = sheetRequest;
         var snapshot = Rows.Select(r => (r.EnrollmentId, r.Value)).ToArray();
         var changes = new List<object>();
+        var sent = new List<(MarkEditRowVm Row, string Value)>();
         foreach (var r in Rows.Where(r => r.Value.Trim() != r.Original))
         {
             if (!string.IsNullOrWhiteSpace(r.Value) && !Format.TryAmount(r.Value, out _))
@@ -625,6 +627,7 @@ public sealed class MarksPage : PageViewModel
                 return;
             }
             changes.Add(new { enrollmentId = r.EnrollmentId, value = Format.TryAmount(r.Value, out var v) ? (decimal?)v : null });
+            sent.Add((r, r.Value.Trim()));
         }
         if (changes.Count == 0)
         {
@@ -633,8 +636,11 @@ public sealed class MarksPage : PageViewModel
         }
         await Shell.Api.SendAsync(HttpMethod.Put, "api/deliberation/feuille" + ScoliaClient.Query(("coursId", context.Course), ("nature", context.Kind)), changes);
         Shell.Notify($"{Format.Count(changes.Count, "cote enregistrée", "cotes enregistrées")}.");
-        if (request == sheetRequest && context == SheetContext && snapshot.SequenceEqual(Rows.Select(r => (r.EnrollmentId, r.Value))))
-            await LoadSheetAsync();
+        if (request == sheetRequest && context == SheetContext)
+        {
+            foreach (var (row, saved) in sent) row.AcceptSavedValue(saved);
+            if (snapshot.SequenceEqual(Rows.Select(r => (r.EnrollmentId, r.Value)))) await LoadSheetAsync();
+        }
     }
 
     /// <summary>Cotes déjà tenues ailleurs (export d'ITMCD, Excel, CSV) : aperçu, puis enregistrement des lignes reconnues.</summary>

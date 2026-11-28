@@ -538,7 +538,8 @@ public sealed class LmdMarkRowVm(LmdMarkLineDto dto) : Observable
     public string FullName => dto.FullName;
     public bool Editable => dto.Editable;
     public string Score { get => score; set => Set(ref score, value); }
-    public decimal? Original => dto.Score;
+    public decimal? Original { get; private set; } = dto.Score;
+    internal void AcceptSavedValue(decimal? saved) => Original = saved;
 }
 
 /// <summary>Saisie des notes d'un élément constitutif, par session.</summary>
@@ -663,19 +664,27 @@ public sealed class LmdMarksPage : PageViewModel
         var request = sheetRequest;
         var snapshot = Items.Select(r => (r.EnrollmentId, r.Score)).ToArray();
         var lines = new List<object>();
+        var sent = new List<(LmdMarkRowVm Row, decimal? Score)>();
         foreach (var row in Items.Where(r => r.Editable))
         {
             decimal? value = string.IsNullOrWhiteSpace(row.Score) ? null
                 : Format.TryAmount(row.Score, out var parsed) ? parsed
                 : throw new InvalidOperationException($"Note illisible pour {row.FullName} : « {row.Score} ».");
-            if (value != row.Original) lines.Add(new { enrollmentId = row.EnrollmentId, score = value });
+            if (value != row.Original)
+            {
+                lines.Add(new { enrollmentId = row.EnrollmentId, score = value });
+                sent.Add((row, value));
+            }
         }
         if (lines.Count == 0) { Shell.Notify("Aucune note modifiée."); return; }
         await Shell.Api.SendAsync(HttpMethod.Put, $"api/etablissement/lmd/promotions/{context.Promotion}/ecs/{context.Element}/notes",
             new { session = int.Parse(context.Session, CultureInfo.InvariantCulture), lines });
         Shell.Notify($"{lines.Count} note(s) enregistrée(s).");
-        if (request == sheetRequest && context == SheetContext && snapshot.SequenceEqual(Items.Select(r => (r.EnrollmentId, r.Score))))
-            await LoadSheetAsync();
+        if (request == sheetRequest && context == SheetContext)
+        {
+            foreach (var (row, saved) in sent) row.AcceptSavedValue(saved);
+            if (snapshot.SequenceEqual(Items.Select(r => (r.EnrollmentId, r.Score)))) await LoadSheetAsync();
+        }
     }
 }
 

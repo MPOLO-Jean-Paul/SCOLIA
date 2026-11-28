@@ -12,7 +12,7 @@ Base : version officielle 1.3.13, commit `2ab9d2f84f235c9ff6c3caac152fbee04d91ce
 | Journal des dépenses | Seules les 200 premières lignes étaient accessibles et leur somme était annoncée comme le total du journal. | Navigation par pages, total de tous les résultats filtrés, retour à la première page après changement de filtre. |
 | Évaluations | Une réponse tardive pouvait ajouter les notes d'une ancienne évaluation dans la nouvelle. | Chaque chargement garde sa sélection et ignore les réponses devenues obsolètes. |
 | Cotes ITM/IM et notes LMD | Changer de semestre, d'EC ou de session pendant un chargement pouvait afficher la mauvaise feuille. | Les lignes sont invalidées immédiatement et la réponse est rattachée au contexte demandé. |
-| Enregistrement des notes | La fin d'un envoi pouvait recharger la feuille et effacer une modification faite pendant l'envoi. | Le rafraîchissement a lieu seulement si la feuille et la saisie n'ont pas changé. L'envoi conserve sa cible et ses valeurs initiales. |
+| Enregistrement des notes | La fin d'un envoi pouvait recharger la feuille et effacer une modification faite pendant l'envoi. | Le rafraîchissement a lieu seulement si la feuille et la saisie n'ont pas changé. L'envoi conserve sa cible et ses valeurs initiales. Le suivi des cotes et des notes LMD prend ensuite les valeurs effectivement acceptées comme référence, sans renvoyer les valeurs déjà enregistrées. |
 | Code anonyme enseignant | Une ancienne vérification pouvait valider un nouveau code saisi pendant l'attente. La fin d'un enregistrement pouvait vider la copie suivante. | Résultats et retours d'enregistrement sont rattachés au code, à la saisie et à la feuille d'origine. |
 | Remise et import des cotes | Une confirmation ou un fichier en attente pouvait s'appliquer après un changement de feuille. | Une feuille différente exige de relancer l'action. L'aperçu d'import identifie le cours et la nature des cotes. |
 | À propos | Fonds superposés, icônes mal contenues et actions irrégulières. | Un seul cadre de 40 points par contact, pictogramme centré de 24 points, actions centrées dans 44 points. |
@@ -32,7 +32,9 @@ Les contrôles utilisent des établissements de démonstration et des bases temp
 - 580 tests métier et API : réussis, dont les trois nouveaux scénarios de caisse.
 - 766 tests du client Avalonia : réussis après les corrections.
 - 56 tests spécifiques au mobile : réussis.
-- 24 scénarios natifs avec réponses retardées et presse-papiers contrôlé : réussis.
+- 26 scénarios natifs avec réponses retardées et presse-papiers contrôlé : réussis, y compris l'absence de renvoi des valeurs déjà enregistrées.
 - 12 variantes de la fenêtre « À propos » : cadres et actions centrés, sans débordement horizontal sur téléphone.
+- 32 variantes des quatre métiers sur téléphone et ordinateur : réussies, sans débordement.
+- 196 vues natives, soit 49 pages en clair et sombre sur téléphone et ordinateur : rendues sans échec ni débordement.
 
 Les binaires de distribution sont ensuite reconstruits par le workflow natif. L'APK publié doit conserver le certificat du client existant et un versionCode supérieur à 3633022.
