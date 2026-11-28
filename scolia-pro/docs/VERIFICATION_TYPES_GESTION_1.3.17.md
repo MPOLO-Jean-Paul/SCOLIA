@@ -36,3 +36,33 @@ La comparaison a révélé que l'alias automatique « Outline » pouvait réutil
 - Migration et modèle de données : aucune modification de modèle en attente après génération de la migration.
 
 La chaîne d'intégration rejoue les suites complètes et les captures des rôles avant la publication. Les vérifications utilisent des bases temporaires et des données fictives.
+
+## Téléchargement des mises à jour Android
+
+Le signalement « Télécharger ne fait rien apparaître » a conduit à retenir la publication avant sa signature. Le lien public de l'APK répond correctement, y compris avec le User-Agent de l'application, une requête fraîche et les redirections GitHub (réponse HTTP 206 pour la lecture partielle).
+
+Le téléchargement affiche désormais une fenêtre dans SCOLIA dès son démarrage, avec les octets reçus, le pourcentage et le motif d'attente. Les notifications Android ne sont plus le seul retour visible. La recherche manuelle retrouve un transfert actif ; un transfert disparu, échoué ou périmé peut être proposé à nouveau. Un fichier terminé reste disponible pour la vérification et l'installation.
+
+Chaque tentative utilise une destination distincte pour éviter les collisions avec un ancien transfert. Les liens HTTPS restent limités au dépôt officiel. La méthode Navigateur ouvre ce même fichier officiel ; Android conserve le contrôle du certificat lors de l'installation. Le parcours interne conserve la vérification SHA-256 et du numéro de version. Les erreurs de stockage, les échecs de téléchargement et les fichiers manquants ou refusés sont présentés dans une fenêtre persistante.
+
+Les 80 tests mobiles réussissent, dont 23 nouveaux cas sur la progression, les attentes Wi-Fi/réseau, les erreurs de stockage et la reprise des transferts. Le typage du code de l'interface a aussi été vérifié avec les références Android et AndroidX utilisées par l'application. Le build APK complet et les autres contrôles sont rejoués avant la publication officielle.
+
+## Contact et navigation sur mobile
+
+Les effets de zoom et de soulèvement au survol sont réservés au desktop. Les boutons du thème de base ne peuvent plus comprimer les cartes sur téléphone, et les illustrations et pictogrammes restent fixes, y compris au premier contact. Le retour tactile se déclenche sur le clic confirmé, après la reconnaissance du geste ; le début d'un défilement ne lance ni onde ni vibration. La navigation mobile utilise seulement un fondu bref, sans translation des pages.
+
+Les 60 contrôles natifs mesurent les rectangles réels des boutons, illustrations et pictogrammes avant et après survol, contact, geste abandonné et clic. Ils contrôlent l'absence d'action et de vibration avant confirmation, puis l'exécution unique de l'action. Ils couvrent les petits téléphones en clair et sombre, avec les animations actives. Un témoin desktop exerce réellement le survol pour éviter un résultat obtenu en désactivant toutes les animations. Les 773 tests du client réussissent également après les premières modifications ; les suites complètes sont rejouées sur la version finale.
+
+Le test de démarrage sur émulateur passe à Android 16 (API 36), conserve les animations système et vérifie le niveau d'API annoncé par l'appareil. Les fichiers android-version.txt et android-sdk.txt sont archivés avec les captures de validation.
+
+## Sources et rendu des icônes mobiles
+
+La référence fournie montre l'habillage des paramètres TECNO/HiOS : symbole clair, carré arrondi coloré, dégradé et reflet. La recherche s'appuie sur les sources officielles suivantes :
+
+- [Android Developers — Material 3 Expressive et Android 16](https://android-developers.googleblog.com/2025/05/the-android-show-io-edition.html).
+- [Google Fonts — guide Material Symbols](https://developers.google.com/fonts/docs/material_symbols) : variantes arrondies, remplissage, graisse, taille optique et SVG disponibles sous Apache 2.0.
+- [TECNO — HiOS](https://www.tecno-mobile.com/hios-detail/) pour le contexte de l'habillage constructeur.
+
+Le catalogue mobile embarque 78 symboles Google originaux pour 80 identifiants, épinglés au commit 10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7. Les chemins, variantes et empreintes sont dans Assets/MaterialSymbols/manifest.json ; la licence est embarquée. Les fonds, dégradés bleus et verts, reflets et reliefs fixes sont dessinés nativement par SCOLIA. Le rendu ne télécharge ni police ni image à l'ouverture. Le catalogue Fluent reste utilisé sur le desktop et pour les commandes au trait.
+
+Les 612 contrôles du nouveau catalogue vérifient la présence des symboles de chaque écran, le cache, la grille, les dimensions et les identités distinctes à 16, 24, 32 et 48 points. Les planches claire et sombre ont été inspectées. Les 60 contrôles des interactions ont été rejoués avec les nouvelles icônes et réussissent ; les 4 712 contrôles du catalogue desktop réussissent également. La génération est reproductible avec scripts/generer-icones-mobiles.py --check.

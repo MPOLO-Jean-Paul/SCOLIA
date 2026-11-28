@@ -1,0 +1,571 @@
+{
+  "source": "https://github.com/google/material-design-icons",
+  "commit": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+  "variant": "materialsymbolsrounded",
+  "fill": 1,
+  "opticalSize": 24,
+  "weight": 400,
+  "license": "Apache-2.0",
+  "symbols": [
+    {
+      "alias": "Account",
+      "name": "person",
+      "fill": 1,
+      "path": "symbols/web/person/materialsymbolsrounded/person_fill1_24px.svg",
+      "sha256": "8f47dcdc1937ad3c1292750c6cf00dec1bb326176c73b9a2f5259321d3cf72e8"
+    },
+    {
+      "alias": "AccountCircleOutline",
+      "name": "account_circle",
+      "fill": 1,
+      "path": "symbols/web/account_circle/materialsymbolsrounded/account_circle_fill1_24px.svg",
+      "sha256": "003993f2f5df4a81c57b2e64b215207917e8968467309a5ba78143c481e87bc9"
+    },
+    {
+      "alias": "AccountCog",
+      "name": "manage_accounts",
+      "fill": 1,
+      "path": "symbols/web/manage_accounts/materialsymbolsrounded/manage_accounts_fill1_24px.svg",
+      "sha256": "46a674db74e809f92068bc710301872152328619340a6d47fbe2f9fd306b87e7"
+    },
+    {
+      "alias": "AccountGroup",
+      "name": "groups",
+      "fill": 1,
+      "path": "symbols/web/groups/materialsymbolsrounded/groups_fill1_24px.svg",
+      "sha256": "3117aceee1c2dc5ecb2916cbb9af39ad579084fae5d39ef607c385f274057556"
+    },
+    {
+      "alias": "AccountKey",
+      "name": "vpn_key",
+      "fill": 1,
+      "path": "symbols/web/vpn_key/materialsymbolsrounded/vpn_key_fill1_24px.svg",
+      "sha256": "49adc4b63327a7ee344e4ff1f0ff95cbda884d35da3d85cd6385b8b1dc3d45c1"
+    },
+    {
+      "alias": "AccountKeyOutline",
+      "name": "badge",
+      "fill": 1,
+      "path": "symbols/web/badge/materialsymbolsrounded/badge_fill1_24px.svg",
+      "sha256": "915e98c623edd2cb677a1e5785e154abd0ff824d41c08627405d4b11e6e8d90a"
+    },
+    {
+      "alias": "AccountOutline",
+      "name": "person",
+      "fill": 1,
+      "path": "symbols/web/person/materialsymbolsrounded/person_fill1_24px.svg",
+      "sha256": "8f47dcdc1937ad3c1292750c6cf00dec1bb326176c73b9a2f5259321d3cf72e8"
+    },
+    {
+      "alias": "AccountSchool",
+      "name": "school",
+      "fill": 1,
+      "path": "symbols/web/school/materialsymbolsrounded/school_fill1_24px.svg",
+      "sha256": "646355683fd4f5e651793944f437e638fb6838934eb948d422453b283ff4ef7a"
+    },
+    {
+      "alias": "AccountSwitch",
+      "name": "switch_account",
+      "fill": 1,
+      "path": "symbols/web/switch_account/materialsymbolsrounded/switch_account_fill1_24px.svg",
+      "sha256": "b9732f969f40c2918a4cdf83c99646addc723a294f2b4939f6d53508114a8b82"
+    },
+    {
+      "alias": "AccountTieVoiceOutline",
+      "name": "co_present",
+      "fill": 1,
+      "path": "symbols/web/co_present/materialsymbolsrounded/co_present_fill1_24px.svg",
+      "sha256": "3521133ee7a7098f4bd887b8af78122bb563296f8ae5947fc384db9f8c5cf49c"
+    },
+    {
+      "alias": "AlertOctagon",
+      "name": "gpp_maybe",
+      "fill": 1,
+      "path": "symbols/web/gpp_maybe/materialsymbolsrounded/gpp_maybe_fill1_24px.svg",
+      "sha256": "65bd17cbb4f2943b0ffa4cb8c23ebe04cc286d35b5bd8a84d337b8e295d7a8ee"
+    },
+    {
+      "alias": "BackupRestore",
+      "name": "settings_backup_restore",
+      "fill": 1,
+      "path": "symbols/web/settings_backup_restore/materialsymbolsrounded/settings_backup_restore_fill1_24px.svg",
+      "sha256": "fc6760896417ad43312aee57ba6aebe45e645f5348c1aa211d3822ece0fc5521"
+    },
+    {
+      "alias": "BellOutline",
+      "name": "notifications",
+      "fill": 1,
+      "path": "symbols/web/notifications/materialsymbolsrounded/notifications_fill1_24px.svg",
+      "sha256": "d6a01ce75c567d75c1dc41f30b41fb7239a86a793aa8c3bdad15aa1025c07acb"
+    },
+    {
+      "alias": "Bluetooth",
+      "name": "bluetooth",
+      "fill": 1,
+      "path": "symbols/web/bluetooth/materialsymbolsrounded/bluetooth_fill1_24px.svg",
+      "sha256": "3736a6c4fb26629b36b2ca6e2f28e5a61a72a4419c1ad18bfcf66bac4490e2de"
+    },
+    {
+      "alias": "BookAlertOutline",
+      "name": "assignment_late",
+      "fill": 1,
+      "path": "symbols/web/assignment_late/materialsymbolsrounded/assignment_late_fill1_24px.svg",
+      "sha256": "42da7bb350fc9c349cbb1323b57220b1c991ef2702b5e5391bfcb4d49fe9110b"
+    },
+    {
+      "alias": "BookEducationOutline",
+      "name": "history_edu",
+      "fill": 1,
+      "path": "symbols/web/history_edu/materialsymbolsrounded/history_edu_fill1_24px.svg",
+      "sha256": "857cc2bc50ab2702d0a37330d88b5693bfc63f61c33bbd6e9811b62539b6aab0"
+    },
+    {
+      "alias": "BookOpenVariant",
+      "name": "menu_book",
+      "fill": 1,
+      "path": "symbols/web/menu_book/materialsymbolsrounded/menu_book_fill1_24px.svg",
+      "sha256": "5c777c23b8535d621de7d5c2edaed226613d5864b84e8e9118beac596e615e69"
+    },
+    {
+      "alias": "BookOpenVariantOutline",
+      "name": "policy",
+      "fill": 1,
+      "path": "symbols/web/policy/materialsymbolsrounded/policy_fill1_24px.svg",
+      "sha256": "310ca0e86321fb3169b21ad38699a9a81f2bb613496c5518c5df5c741424d465"
+    },
+    {
+      "alias": "Briefcase",
+      "name": "work",
+      "fill": 1,
+      "path": "symbols/web/work/materialsymbolsrounded/work_fill1_24px.svg",
+      "sha256": "4dd9fd1e0652adb6281bcabdf5d45b400e929f5e31f35e92c7b65e4826b586bc"
+    },
+    {
+      "alias": "Brightness6",
+      "name": "brightness_6",
+      "fill": 1,
+      "path": "symbols/web/brightness_6/materialsymbolsrounded/brightness_6_fill1_24px.svg",
+      "sha256": "6c08b254162d49f913343d25144ea57218ae042a5e817e182002d434431f36c8"
+    },
+    {
+      "alias": "CalendarCheck",
+      "name": "calendar_month",
+      "fill": 1,
+      "path": "symbols/web/calendar_month/materialsymbolsrounded/calendar_month_fill1_24px.svg",
+      "sha256": "175e8905d380b73158673f4b22cb536513173a754725291119e99b7da1856fb5"
+    },
+    {
+      "alias": "CalendarSync",
+      "name": "person_add",
+      "fill": 1,
+      "path": "symbols/web/person_add/materialsymbolsrounded/person_add_fill1_24px.svg",
+      "sha256": "bada7d37548b84f30231cbbac4a83c429f1591de055529a439e36a4c0915822e"
+    },
+    {
+      "alias": "CardAccountDetails",
+      "name": "id_card",
+      "fill": 1,
+      "path": "symbols/web/id_card/materialsymbolsrounded/id_card_fill1_24px.svg",
+      "sha256": "2d49909d1f436d9d3fc9967de8b7d5ba5ec8d550cbeca9ff98d2217259d9f0ae"
+    },
+    {
+      "alias": "CashMultiple",
+      "name": "point_of_sale",
+      "fill": 1,
+      "path": "symbols/web/point_of_sale/materialsymbolsrounded/point_of_sale_fill1_24px.svg",
+      "sha256": "971970007f81462ebcfce83a48298047cb7534190011bedbd4ec372d1ea19b2f"
+    },
+    {
+      "alias": "Cellphone",
+      "name": "smartphone",
+      "fill": 1,
+      "path": "symbols/web/smartphone/materialsymbolsrounded/smartphone_fill1_24px.svg",
+      "sha256": "c1a32807334b4fc4375d7df3769f9f73303e26d9af709546607a4a63e2f49282"
+    },
+    {
+      "alias": "CellphoneLink",
+      "name": "devices",
+      "fill": 1,
+      "path": "symbols/web/devices/materialsymbolsrounded/devices_fill1_24px.svg",
+      "sha256": "2c920e47bf434b5a9aba3b936477bc251dc06496b05ec5ebb52d01aede861ac1"
+    },
+    {
+      "alias": "Certificate",
+      "name": "workspace_premium",
+      "fill": 1,
+      "path": "symbols/web/workspace_premium/materialsymbolsrounded/workspace_premium_fill1_24px.svg",
+      "sha256": "0861a4c1925f921d2cd71092c958fc96a2a4dd1436cfd30511c3eb2ca5b105a9"
+    },
+    {
+      "alias": "CertificateOutline",
+      "name": "military_tech",
+      "fill": 1,
+      "path": "symbols/web/military_tech/materialsymbolsrounded/military_tech_fill1_24px.svg",
+      "sha256": "c1e26db46a86c13290d46acd30588ae01652b923561bcababffd0574c6ff2335"
+    },
+    {
+      "alias": "ChartBar",
+      "name": "request_quote",
+      "fill": 1,
+      "path": "symbols/web/request_quote/materialsymbolsrounded/request_quote_fill1_24px.svg",
+      "sha256": "6609e27d8a3d4d5bc5063a1ba30effe88e4ec611bd530950db13284e8b47d330"
+    },
+    {
+      "alias": "ChartBox",
+      "name": "pie_chart",
+      "fill": 1,
+      "path": "symbols/web/pie_chart/materialsymbolsrounded/pie_chart_fill1_24px.svg",
+      "sha256": "fa7829c05ee325485c9a8c6b207251e6c6f301df7a88a21623e22f2ef3557a03"
+    },
+    {
+      "alias": "CheckboxMultipleMarked",
+      "name": "verified",
+      "fill": 1,
+      "path": "symbols/web/verified/materialsymbolsrounded/verified_fill1_24px.svg",
+      "sha256": "e605180317ba6abfd91e5407202db7a109996973c621cc92701eef3abd3e041c"
+    },
+    {
+      "alias": "ClipboardCheck",
+      "name": "fact_check",
+      "fill": 1,
+      "path": "symbols/web/fact_check/materialsymbolsrounded/fact_check_fill1_24px.svg",
+      "sha256": "fd84de5c5a1f6bef4fb55a28626cd389df0f2c6922877c19c7967184cafdc2c2"
+    },
+    {
+      "alias": "ClipboardTextOutline",
+      "name": "assignment",
+      "fill": 1,
+      "path": "symbols/web/assignment/materialsymbolsrounded/assignment_fill1_24px.svg",
+      "sha256": "82c840bafe0591bbabe75fe7ffef374a3754631aad8c5a364fe659478c7bc61d"
+    },
+    {
+      "alias": "ClockCheck",
+      "name": "punch_clock",
+      "fill": 1,
+      "path": "symbols/web/punch_clock/materialsymbolsrounded/punch_clock_fill1_24px.svg",
+      "sha256": "aac265b6d74ac161a8e141f38adec2d3d8616ce13e60694d7e8e76e31e23e499"
+    },
+    {
+      "alias": "CloudLock",
+      "name": "backup",
+      "fill": 1,
+      "path": "symbols/web/backup/materialsymbolsrounded/backup_fill1_24px.svg",
+      "sha256": "c404419ccb106d1970861ee3308f73d1562c1ed1596b69538a58bb565a51d4e5"
+    },
+    {
+      "alias": "CloudSyncOutline",
+      "name": "cloud_sync",
+      "fill": 1,
+      "path": "symbols/web/cloud_sync/materialsymbolsrounded/cloud_sync_fill1_24px.svg",
+      "sha256": "649921be3e6942a2a590b329f32386286b399f98dd6bf14e544a2c5520ce4d36"
+    },
+    {
+      "alias": "Cog",
+      "name": "settings",
+      "fill": 1,
+      "path": "symbols/web/settings/materialsymbolsrounded/settings_fill1_24px.svg",
+      "sha256": "349d48c9515c5cc92bfd22fc5cab61a6d9b90e680825edfa5f77e15f4b2265ef"
+    },
+    {
+      "alias": "ContentSaveOutline",
+      "name": "save",
+      "fill": 1,
+      "path": "symbols/web/save/materialsymbolsrounded/save_fill1_24px.svg",
+      "sha256": "d4e5a538856a347b51a6261b84edc9f95d3ac697ab3ca5140f406be9adf047de"
+    },
+    {
+      "alias": "DatabaseExport",
+      "name": "database",
+      "fill": 1,
+      "path": "symbols/web/database/materialsymbolsrounded/database_fill1_24px.svg",
+      "sha256": "5ad5a138192447140a6255c1131a8009a0a817af1659644b60180230118b3cd6"
+    },
+    {
+      "alias": "DeleteSweep",
+      "name": "delete_sweep",
+      "fill": 1,
+      "path": "symbols/web/delete_sweep/materialsymbolsrounded/delete_sweep_fill1_24px.svg",
+      "sha256": "9561fc877fc35ec9778b28da805e519a80b9d627447a0cd86f127181e8fe87bd"
+    },
+    {
+      "alias": "Email",
+      "name": "mail",
+      "fill": 1,
+      "path": "symbols/web/mail/materialsymbolsrounded/mail_fill1_24px.svg",
+      "sha256": "dfbbc2052a050c40acb282a2dc6e001fe3de775e6457b7e30b50f92fe990d50a"
+    },
+    {
+      "alias": "EmailOutline",
+      "name": "mail",
+      "fill": 1,
+      "path": "symbols/web/mail/materialsymbolsrounded/mail_fill1_24px.svg",
+      "sha256": "dfbbc2052a050c40acb282a2dc6e001fe3de775e6457b7e30b50f92fe990d50a"
+    },
+    {
+      "alias": "FileChart",
+      "name": "summarize",
+      "fill": 1,
+      "path": "symbols/web/summarize/materialsymbolsrounded/summarize_fill1_24px.svg",
+      "sha256": "efc212c2cd103abf7ad42761d3d9a8e15d76c1e33713118e93425ba1dd0d1272"
+    },
+    {
+      "alias": "FileDocumentOutline",
+      "name": "description",
+      "fill": 1,
+      "path": "symbols/web/description/materialsymbolsrounded/description_fill1_24px.svg",
+      "sha256": "831673d91483d18e3a9040c1ddee06c150886bc5d6e4a97ef5004fba997afc50"
+    },
+    {
+      "alias": "FormatFont",
+      "name": "text_fields",
+      "fill": 1,
+      "path": "symbols/web/text_fields/materialsymbolsrounded/text_fields_fill1_24px.svg",
+      "sha256": "7c964df3d7c79196877b2e1a731221699d39c90fbd25f7b9624a5375f715ddd2"
+    },
+    {
+      "alias": "FormatListChecks",
+      "name": "playlist_add_check",
+      "fill": 1,
+      "path": "symbols/web/playlist_add_check/materialsymbolsrounded/playlist_add_check_fill1_24px.svg",
+      "sha256": "8e34d9d4ea599ea4f319c2291133be3a6df534682bdc6ac4bcebbe6d2bd22e28"
+    },
+    {
+      "alias": "Gavel",
+      "name": "gavel",
+      "fill": 1,
+      "path": "symbols/web/gavel/materialsymbolsrounded/gavel_fill1_24px.svg",
+      "sha256": "c9d9c2ee043fc3ecb6b85c236dfe92191d809d67d30b2e58624e73383a820049"
+    },
+    {
+      "alias": "GestureTap",
+      "name": "touch_app",
+      "fill": 1,
+      "path": "symbols/web/touch_app/materialsymbolsrounded/touch_app_fill1_24px.svg",
+      "sha256": "2c140df017f68731ff58a7d7fefb6f59a45c2c99c53fc0712acdccbe155d09e7"
+    },
+    {
+      "alias": "HandCoin",
+      "name": "payments",
+      "fill": 1,
+      "path": "symbols/web/payments/materialsymbolsrounded/payments_fill1_24px.svg",
+      "sha256": "348a91c9fff6eabdeff9fa4d330cd661d8d7d71429850ecd9965118e22e00844"
+    },
+    {
+      "alias": "HandHeart",
+      "name": "volunteer_activism",
+      "fill": 1,
+      "path": "symbols/web/volunteer_activism/materialsymbolsrounded/volunteer_activism_fill1_24px.svg",
+      "sha256": "b7139324824ed0bbc56bc792e386a757a882ff7537cb5193b0bcfe5fb5ac4a9e"
+    },
+    {
+      "alias": "HelpCircleOutline",
+      "name": "help",
+      "fill": 1,
+      "path": "symbols/web/help/materialsymbolsrounded/help_fill1_24px.svg",
+      "sha256": "e73cf5f83f6a80263b33e8002a44a14beebf3cc3bb7aceca93a24dd592f2fe64"
+    },
+    {
+      "alias": "Home",
+      "name": "home",
+      "fill": 1,
+      "path": "symbols/web/home/materialsymbolsrounded/home_fill1_24px.svg",
+      "sha256": "d6b0cb6d80710caaba1ce1be0da5a34b757d802f0e9442968c5ca2c39a868f6f"
+    },
+    {
+      "alias": "HumanMaleBoard",
+      "name": "cast_for_education",
+      "fill": 1,
+      "path": "symbols/web/cast_for_education/materialsymbolsrounded/cast_for_education_fill1_24px.svg",
+      "sha256": "7df2a55f407c4e5ff85929d82081726f3fa22cd690a79932da3317060dee6da8"
+    },
+    {
+      "alias": "Incognito",
+      "name": "privacy_tip",
+      "fill": 1,
+      "path": "symbols/web/privacy_tip/materialsymbolsrounded/privacy_tip_fill1_24px.svg",
+      "sha256": "336676a45886b0b8c26f22e074df6955b77743097f8e3692ec97acfb15da1426"
+    },
+    {
+      "alias": "InformationOutline",
+      "name": "info",
+      "fill": 1,
+      "path": "symbols/web/info/materialsymbolsrounded/info_fill1_24px.svg",
+      "sha256": "c57db3e00e7235905dfb943ecc5b564148f82ed807284597418f9d8744b0f569"
+    },
+    {
+      "alias": "Lan",
+      "name": "lan",
+      "fill": 1,
+      "path": "symbols/web/lan/materialsymbolsrounded/lan_fill1_24px.svg",
+      "sha256": "a2f0893e82ddd0e3c05f4410c967027187584c08fb3908fd5d7fcd0f75d702be"
+    },
+    {
+      "alias": "LanConnect",
+      "name": "hub",
+      "fill": 1,
+      "path": "symbols/web/hub/materialsymbolsrounded/hub_fill1_24px.svg",
+      "sha256": "62de05dab1139fbc884a9623a5b0451608cf0bac33f43e6f61c65168d086a707"
+    },
+    {
+      "alias": "LanDisconnect",
+      "name": "wifi_off",
+      "fill": 1,
+      "path": "symbols/web/wifi_off/materialsymbolsrounded/wifi_off_fill1_24px.svg",
+      "sha256": "dbeddf5cbfcaaaa541b3a9399ac52a7b4117c2fd1b6463b6dfb32847dddb56cf"
+    },
+    {
+      "alias": "LockOutline",
+      "name": "lock",
+      "fill": 1,
+      "path": "symbols/web/lock/materialsymbolsrounded/lock_fill1_24px.svg",
+      "sha256": "64fd7f36a67d03e6071fe0963d6f67d15b37fdb22dcec2f06b83ba6e8bab6ea8"
+    },
+    {
+      "alias": "Magnify",
+      "name": "search",
+      "fill": 1,
+      "path": "symbols/web/search/materialsymbolsrounded/search_fill1_24px.svg",
+      "sha256": "8d12ac6ba27a23ccf0e57794c28481ce9c978efcb2f80ba6d2979ccdf238c993"
+    },
+    {
+      "alias": "Monitor",
+      "name": "desktop_windows",
+      "fill": 1,
+      "path": "symbols/web/desktop_windows/materialsymbolsrounded/desktop_windows_fill1_24px.svg",
+      "sha256": "b2357d7cddfb23b1af9ed1ef434aca416e7a3001dd3222e58627a5dc0a782a69"
+    },
+    {
+      "alias": "Palette",
+      "name": "palette",
+      "fill": 1,
+      "path": "symbols/web/palette/materialsymbolsrounded/palette_fill1_24px.svg",
+      "sha256": "d058ad95558c491154a9239ce9eb03c3bb1ceb06c709dd4889b882773fa7b7b7"
+    },
+    {
+      "alias": "Pen",
+      "name": "ink_pen",
+      "fill": 1,
+      "path": "symbols/web/ink_pen/materialsymbolsrounded/ink_pen_fill1_24px.svg",
+      "sha256": "a6ff48d174ad48dd6225fc28560d331613b43f4dd538758947faf86d71d73206"
+    },
+    {
+      "alias": "PencilBoxMultipleOutline",
+      "name": "edit_document",
+      "fill": 1,
+      "path": "symbols/web/edit_document/materialsymbolsrounded/edit_document_fill1_24px.svg",
+      "sha256": "8005d827f288385bca65e41f8ac36979f0b4dc1ce3d8ce61db6f0866bfedb0c0"
+    },
+    {
+      "alias": "ProgressClock",
+      "name": "timelapse",
+      "fill": 1,
+      "path": "symbols/web/timelapse/materialsymbolsrounded/timelapse_fill1_24px.svg",
+      "sha256": "a441110954834a1e36f9e33141b3eb5bae99e8515798cf5b6fbe914aae11ffa0"
+    },
+    {
+      "alias": "ReceiptText",
+      "name": "receipt_long",
+      "fill": 1,
+      "path": "symbols/web/receipt_long/materialsymbolsrounded/receipt_long_fill1_24px.svg",
+      "sha256": "1cad889eb954eda9e97dd468f1a99718a70dd8fae657e3f7d1a3695eaa5b8fdb"
+    },
+    {
+      "alias": "Restore",
+      "name": "history",
+      "fill": 1,
+      "path": "symbols/web/history/materialsymbolsrounded/history_fill1_24px.svg",
+      "sha256": "98a0aacd0f8de1393b7fd627f3a4958986c33009192d59f022269505df6dbe51"
+    },
+    {
+      "alias": "ScaleBalance",
+      "name": "balance",
+      "fill": 1,
+      "path": "symbols/web/balance/materialsymbolsrounded/balance_fill1_24px.svg",
+      "sha256": "77a8a7da4989d0497119430d0dbdeb5bdd607ecf0bd74044ba9cefb0647dbab2"
+    },
+    {
+      "alias": "School",
+      "name": "local_library",
+      "fill": 1,
+      "path": "symbols/web/local_library/materialsymbolsrounded/local_library_fill1_24px.svg",
+      "sha256": "cd8bc3347679652b29850bcac6e13c55c4d1e37f1caa1066d24422651741af4a"
+    },
+    {
+      "alias": "SchoolOutline",
+      "name": "account_balance",
+      "fill": 1,
+      "path": "symbols/web/account_balance/materialsymbolsrounded/account_balance_fill1_24px.svg",
+      "sha256": "036b151d3b3e53f72396d6d15d1560750f0146614cbf4c3f671969701f1fb6dc"
+    },
+    {
+      "alias": "ShieldCheck",
+      "name": "verified_user",
+      "fill": 1,
+      "path": "symbols/web/verified_user/materialsymbolsrounded/verified_user_fill1_24px.svg",
+      "sha256": "86ae9702d6a8b65061e11dcfbc2cf536aef9980c863d612f4097eceac59e492d"
+    },
+    {
+      "alias": "ShieldLockOutline",
+      "name": "security",
+      "fill": 1,
+      "path": "symbols/web/security/materialsymbolsrounded/security_fill1_24px.svg",
+      "sha256": "30a0cddf9527bc5d93b3ec21cf08cdc90d28da2f5a21aa8e7f469c3edd8d2e98"
+    },
+    {
+      "alias": "Translate",
+      "name": "translate",
+      "fill": 1,
+      "path": "symbols/web/translate/materialsymbolsrounded/translate_fill1_24px.svg",
+      "sha256": "9035ff8e8341ac5df3e990e42c15dd2ef78ab53d0c18be33c21e4e07523eb31c"
+    },
+    {
+      "alias": "Tune",
+      "name": "tune",
+      "fill": 1,
+      "path": "symbols/web/tune/materialsymbolsrounded/tune_fill1_24px.svg",
+      "sha256": "2e153083c6847581bb13980e84f2ca1e05048407b68dc9b96c409b1678e8eacb"
+    },
+    {
+      "alias": "ViewDashboardOutline",
+      "name": "speed",
+      "fill": 1,
+      "path": "symbols/web/speed/materialsymbolsrounded/speed_fill1_24px.svg",
+      "sha256": "c035590107335c6201c7be22e5d0a31104267e7e1cfee3f85864ad9838e15f6b"
+    },
+    {
+      "alias": "ViewGrid",
+      "name": "apps",
+      "fill": 1,
+      "path": "symbols/web/apps/materialsymbolsrounded/apps_fill1_24px.svg",
+      "sha256": "c11e79be76394ee701595f8978628e80d6cc11a2af408596548a706b04331cb4"
+    },
+    {
+      "alias": "VolumeHigh",
+      "name": "volume_up",
+      "fill": 1,
+      "path": "symbols/web/volume_up/materialsymbolsrounded/volume_up_fill1_24px.svg",
+      "sha256": "62300695b3e149d7f61f74721bea9e36876158c88248eb3fda6c80a2891b889d"
+    },
+    {
+      "alias": "Wallet",
+      "name": "wallet",
+      "fill": 1,
+      "path": "symbols/web/wallet/materialsymbolsrounded/wallet_fill1_24px.svg",
+      "sha256": "6e3b7d1cbfa08306678ed02a1d0a46e16cfbc72d35e32d9fc84c7eec5dc60812"
+    },
+    {
+      "alias": "Web",
+      "name": "language",
+      "fill": 1,
+      "path": "symbols/web/language/materialsymbolsrounded/language_fill1_24px.svg",
+      "sha256": "7bef4e741ed558c37c166b8f06c7abbc7c964e100057f6c725a7be40809113b0"
+    },
+    {
+      "alias": "Wifi",
+      "name": "wifi",
+      "fill": 1,
+      "path": "symbols/web/wifi/materialsymbolsrounded/wifi_fill1_24px.svg",
+      "sha256": "f7c825d97360b22a97e7b5636fbf68ef08fab3de679811553d3eb07590163488"
+    }
+  ]
+}

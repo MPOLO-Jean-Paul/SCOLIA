@@ -53,6 +53,9 @@ public static class AndroidAppUpdates
     private static bool installDialogOpen;
     private static WeakReference<Activity>? foregroundActivity;
     private static CancellationTokenSource? foregroundDownloadWatch;
+    private static WeakReference<AlertDialog>? downloadProgressDialog;
+    private static long progressDownloadId, progressExpectedBytes;
+    private static string? lastDownloadMessage;
 
     internal sealed record Release(string Version, string DownloadUrl, string Sha256, long Size);
 
@@ -87,6 +90,7 @@ public static class AndroidAppUpdates
 
     public static void OnPause(Activity activity)
     {
+        CloseDownloadProgress();
         if (foregroundActivity?.TryGetTarget(out var shown) == true && ReferenceEquals(shown, activity))
         {
             foregroundActivity = null;
@@ -120,13 +124,21 @@ public static class AndroidAppUpdates
     }
 
     private static int? DownloadStatus(Context context, long id)
+        => ReadDownloadProgress(context, id)?.Status;
+
+    private static UpdateDownloadProgress? ReadDownloadProgress(Context context, long id)
     {
         var manager = context.GetSystemService(Context.DownloadService) as DownloadManager;
         if (manager is null) return null;
         using var cursor = manager.InvokeQuery(new DownloadManager.Query().SetFilterById(id));
         if (cursor is null || !cursor.MoveToFirst()) return null;
-        var column = cursor.GetColumnIndex(DownloadManager.ColumnStatus);
-        return column < 0 ? null : cursor.GetInt(column);
+        int status = cursor.GetColumnIndex(DownloadManager.ColumnStatus);
+        int reason = cursor.GetColumnIndex(DownloadManager.ColumnReason);
+        int received = cursor.GetColumnIndex(DownloadManager.ColumnBytesDownloadedSoFar);
+        int total = cursor.GetColumnIndex(DownloadManager.ColumnTotalSizeBytes);
+        return new UpdateDownloadProgress(status < 0 ? null : cursor.GetInt(status),
+            reason < 0 ? 0 : cursor.GetInt(reason), received < 0 ? 0 : cursor.GetLong(received),
+            total < 0 ? -1 : cursor.GetLong(total));
     }
 
     // Actif uniquement pendant le téléchargement et uniquement lorsque SCOLIA
@@ -139,7 +151,10 @@ public static class AndroidAppUpdates
             {
                 var id = Preferences(activity).GetLong(DownloadIdKey, 0);
                 if (id <= 0) return;
-                var status = DownloadStatus(activity, id);
+                var progress = ReadDownloadProgress(activity, id);
+                var status = progress?.Status;
+                if (progress is not null)
+                    RefreshDownloadProgress(activity, id, progress);
                 if (UpdateCompletionPolicy.NeedsForegroundCheck(
                     IsForeground(activity), id, status))
                 {
@@ -386,11 +401,24 @@ public static class AndroidAppUpdates
         var pending = prefs.GetString(DownloadVersionKey, null);
         if (!UpdateCompletionPolicy.IsNewerThanPending(release.Version, pending))
         {
-            Report(context, $"Version {release.Version} suivie : installation ou téléchargement encore en attente.");
             var id = prefs.GetLong(DownloadIdKey, 0);
-            if (id > 0 && DownloadStatus(context, id) == DownloadSuccessStatus
-                && context is not Activity)
+            var progress = id > 0 ? ReadDownloadProgress(context, id) : null;
+            var action = UpdateCompletionPolicy.PendingAction(progress?.Status,
+                prefs.GetLong(DownloadStartedAtKey, 0), DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            if (action == PendingUpdateAction.OfferDownload)
+            {
+                if (id > 0) (context.GetSystemService(Context.DownloadService) as DownloadManager)?.Remove(id);
+                ResetPending(context);
+                Report(context, progress?.Message ?? "Ancien téléchargement introuvable. Vous pouvez le relancer.");
+                if (showDialog && context is Activity retry) OfferUpdate(retry, release, manual);
+                else NotifyOnce(context, release);
+                return;
+            }
+            Report(context, $"Version {release.Version} · {progress!.Message}");
+            if (action == PendingUpdateAction.Install && context is not Activity)
                 NotifyInstallReady(context);
+            else if (manual && context is Activity progressScreen && action == PendingUpdateAction.ShowProgress)
+                ShowDownloadProgress(progressScreen, release);
             return;
         }
         Report(context, pending is null
@@ -514,11 +542,130 @@ public static class AndroidAppUpdates
         });
     }
 
-    private static string UpdateFileName(string version) => $"SCOLIA-MiseAJour-{version}.apk";
+    private static void CloseDownloadProgress()
+    {
+        var previous = downloadProgressDialog;
+        downloadProgressDialog = null;
+        progressDownloadId = progressExpectedBytes = 0;
+        if (previous?.TryGetTarget(out var dialog) != true) return;
+        try { dialog.Dismiss(); }
+        catch (Java.Lang.Exception) { /* L'activité peut déjà être fermée. */ }
+    }
+
+    private const string ProgressHint = "\n\nFermer laisse Android continuer en arrière-plan. Relancer recommence le téléchargement. Si Android le bloque, utilisez Navigateur.";
+
+    private static void ShowDownloadProgress(Activity activity, Release release)
+    {
+        activity.RunOnUiThread(() =>
+        {
+            if (activity.IsFinishing || activity.IsDestroyed) return;
+            CloseDownloadProgress();
+            var id = Preferences(activity).GetLong(DownloadIdKey, 0);
+            var progress = ReadDownloadProgress(activity, id) ?? new UpdateDownloadProgress(1, 0, 0, release.Size);
+            if (progress.TotalBytes <= 0) progress = progress with { TotalBytes = release.Size };
+            var dialog = new AlertDialog.Builder(activity)
+                .SetTitle($"Téléchargement SCOLIA {release.Version}")
+                .SetMessage(progress.Message + ProgressHint)
+                .SetPositiveButton("Fermer", (_, _) => { })
+                .SetNeutralButton("Relancer", (_, _) => StartDownload(activity, release))
+                .SetNegativeButton("Navigateur", (_, _) => OpenBrowserDownload(activity, release))
+                .SetCancelable(false)
+                .Show();
+            if (dialog is null) return;
+            downloadProgressDialog = new WeakReference<AlertDialog>(dialog);
+            progressDownloadId = id;
+            progressExpectedBytes = release.Size;
+        });
+    }
+
+    private static void RefreshDownloadProgress(Activity activity, long id, UpdateDownloadProgress progress)
+    {
+        var message = progress.Message;
+        if (message != lastDownloadMessage)
+        {
+            lastDownloadMessage = message;
+            Report(activity, message);
+        }
+        activity.RunOnUiThread(() =>
+        {
+            if (id != progressDownloadId || downloadProgressDialog?.TryGetTarget(out var dialog) != true || !dialog.IsShowing) return;
+            var visible = progress.TotalBytes <= 0 && progressExpectedBytes > 0
+                ? progress with { TotalBytes = progressExpectedBytes } : progress;
+            dialog.SetMessage(visible.Message + ProgressHint);
+        });
+    }
+
+    private static void ShowDownloadFailure(Activity activity, Release release, string message)
+    {
+        activity.RunOnUiThread(() =>
+        {
+            if (activity.IsFinishing || activity.IsDestroyed) return;
+            CloseDownloadProgress();
+            promptedVersion = release.Version;
+            new AlertDialog.Builder(activity)
+                .SetTitle("Téléchargement interrompu")
+                .SetMessage(message + "\n\nVous pouvez réessayer ou télécharger le fichier officiel avec le navigateur. Les données de SCOLIA sont conservées.")
+                .SetPositiveButton("Relancer", (_, _) => { promptedVersion = null; StartDownload(activity, release); })
+                .SetNeutralButton("Navigateur", (_, _) => { promptedVersion = null; OpenBrowserDownload(activity, release); })
+                .SetNegativeButton("Fermer", (_, _) => { promptedVersion = null; })
+                .SetCancelable(false)
+                .Show();
+        });
+    }
+
+    private static void ShowDownloadProblem(Activity activity, string message)
+    {
+        Report(activity, message);
+        var release = Deserialize(Preferences(activity).GetString(ReleaseKey, null));
+        if (release is not null) { ShowDownloadFailure(activity, release, message); return; }
+        activity.RunOnUiThread(() =>
+        {
+            if (activity.IsFinishing || activity.IsDestroyed) return;
+            CloseDownloadProgress();
+            new AlertDialog.Builder(activity).SetTitle("Téléchargement interrompu")
+                .SetMessage(message + "\n\nRelancez Rechercher les mises à jour pour réessayer.")
+                .SetPositiveButton("Fermer", (_, _) => { }).Show();
+        });
+    }
+
+    private static string FreshDownloadAddress(Release release)
+        => new UriBuilder(release.DownloadUrl) { Query = "scolia_update=" + Guid.NewGuid().ToString("N") }.Uri.AbsoluteUri;
+
+    private static void OpenBrowserDownload(Activity activity, Release release)
+    {
+        if (!TrustedDownload(release.DownloadUrl)) return;
+        try
+        {
+            var id = Preferences(activity).GetLong(DownloadIdKey, 0);
+            if (id > 0 && DownloadStatus(activity, id) == DownloadSuccessStatus)
+            {
+                _ = CheckDownloadSafelyAsync(activity);
+                return;
+            }
+            // Seul le lien HTTPS officiel est transmis. Android garde la vérification
+            // obligatoire du certificat lors de l'installation choisie dans le navigateur.
+            activity.StartActivity(new Intent(Intent.ActionView, AndroidUri.Parse(FreshDownloadAddress(release))));
+            if (id > 0) (activity.GetSystemService(Context.DownloadService) as DownloadManager)?.Remove(id);
+            ResetPending(activity);
+            CloseDownloadProgress();
+            Report(activity, $"Téléchargement officiel {release.Version} ouvert dans le navigateur.");
+        }
+        catch (Exception ex) when (ex is Java.Lang.Exception or InvalidOperationException)
+        {
+            Report(activity, "Impossible d'ouvrir le navigateur de téléchargement.");
+            new AlertDialog.Builder(activity).SetTitle("Navigateur indisponible")
+                .SetMessage("Android n'a pas pu ouvrir le lien officiel. Vérifiez qu'un navigateur est disponible, puis réessayez.")
+                .SetPositiveButton("Fermer", (_, _) => { }).Show();
+        }
+    }
+
+    // Chaque tentative reçoit sa propre destination : un ancien téléchargement Android
+    // peut encore libérer son fichier sans écraser ni supprimer celui de la nouvelle tentative.
+    private static string UpdateFileName(string version) => $"SCOLIA-MiseAJour-{version}-{Guid.NewGuid():N}.apk";
 
     private static string? UpdatePath(Context context, string filename)
     {
-        if (!Regex.IsMatch(filename, @"^SCOLIA-MiseAJour-\d+\.\d+\.\d+\.apk$")) return null;
+        if (!Regex.IsMatch(filename, @"^SCOLIA-MiseAJour-\d+\.\d+\.\d+(?:-[a-f0-9]{32})?\.apk$")) return null;
         var folder = context.GetExternalFilesDir(Android.OS.Environment.DirectoryDownloads)?.AbsolutePath;
         return folder is null ? null : Path.Combine(folder, filename);
     }
@@ -527,13 +674,24 @@ public static class AndroidAppUpdates
     {
         try
         {
+            if (!TrustedDownload(release.DownloadUrl)) throw new InvalidOperationException("Lien officiel invalide.");
+            var prefs = Preferences(activity);
+            var previousId = prefs.GetLong(DownloadIdKey, 0);
+            if (prefs.GetString(DownloadVersionKey, null) == release.Version && previousId > 0
+                && DownloadStatus(activity, previousId) == DownloadSuccessStatus)
+            {
+                _ = CheckDownloadSafelyAsync(activity);
+                return;
+            }
             var filename = UpdateFileName(release.Version);
             var path = UpdatePath(activity, filename)
                 ?? throw new IOException("Dossier de téléchargement Android introuvable.");
             if (File.Exists(path)) File.Delete(path);
             var downloadManager = (DownloadManager?)activity.GetSystemService(Context.DownloadService)
                 ?? throw new IOException("Le gestionnaire de téléchargement n'est pas disponible.");
-            var request = new DownloadManager.Request(AndroidUri.Parse(release.DownloadUrl));
+            var request = new DownloadManager.Request(AndroidUri.Parse(FreshDownloadAddress(release)));
+            request.AddRequestHeader("User-Agent", "SCOLIA-Pro-Android/" + Scolia.Bureau.Infrastructure.AboutInfo.Version);
+            request.AddRequestHeader("Cache-Control", "no-cache");
             request.SetTitle($"SCOLIA Pro {release.Version}");
             request.SetDescription("Mise à jour officielle — installation après vérification");
             request.SetMimeType("application/vnd.android.package-archive");
@@ -541,8 +699,6 @@ public static class AndroidAppUpdates
             request.SetAllowedOverMetered(true);
             request.SetDestinationInExternalFilesDir(activity, Android.OS.Environment.DirectoryDownloads, filename);
             var id = downloadManager.Enqueue(request);
-            var prefs = Preferences(activity);
-            var previousId = prefs.GetLong(DownloadIdKey, 0);
             var previousFile = UpdatePath(activity, prefs.GetString(FileNameKey, "") ?? "");
             prefs.Edit()!
                 .PutLong(DownloadIdKey, id)!
@@ -559,7 +715,7 @@ public static class AndroidAppUpdates
             if (previousFile is not null && previousFile != path)
             {
                 try { if (File.Exists(previousFile)) File.Delete(previousFile); }
-                catch (IOException) { /* Le gestionnaire Android peut encore libérer le fichier. */ }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { /* Le gestionnaire Android peut encore libérer le fichier. */ }
             }
             (activity.GetSystemService(Context.NotificationService) as NotificationManager)?
                 .Cancel(InstallNotificationId);
@@ -567,11 +723,12 @@ public static class AndroidAppUpdates
             // Ne pas dépendre exclusivement du broadcast DOWNLOAD_COMPLETE.
             if (IsForeground(activity)) StartForegroundDownloadWatch(activity);
             Report(activity, $"Téléchargement de la mise à jour {release.Version} lancé.");
-            Toast.MakeText(activity, "Téléchargement commencé. Android affiche sa progression dans les notifications.", ToastLength.Long)?.Show();
+            ShowDownloadProgress(activity, release);
         }
-        catch (Exception ex) when (ex is Java.Lang.Exception or IOException or InvalidOperationException)
+        catch (Exception ex) when (ex is Java.Lang.Exception or IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            Toast.MakeText(activity, $"Téléchargement impossible : {ex.Message}", ToastLength.Long)?.Show();
+            Report(activity, $"Téléchargement impossible : {ex.Message}");
+            ShowDownloadFailure(activity, release, "Android n'a pas pu démarrer le téléchargement. Vérifiez la connexion et l'espace libre, puis réessayez.");
         }
     }
 
@@ -599,17 +756,21 @@ public static class AndroidAppUpdates
         }
         var downloadManager = activity.GetSystemService(Context.DownloadService) as DownloadManager;
         if (downloadManager is null) return false;
-        var state = DownloadStatus(activity, id);
+        var progress = ReadDownloadProgress(activity, id);
+        var state = progress?.Status;
         if (state is null)
         {
+            activity.RunOnUiThread(CloseDownloadProgress);
             ResetPending(activity);
             return false;
         }
         var status = state.Value;
         if (status == DownloadFailureStatus)
         {
+            var message = progress!.Message;
+            downloadManager.Remove(id);
             ResetPending(activity);
-            Toast.MakeText(activity, "La mise à jour a échoué. Vérifiez la connexion ou l'espace libre et réessayez.", ToastLength.Long)?.Show();
+            ShowDownloadProblem(activity, message);
             return false;
         }
         if (status != DownloadSuccessStatus)
@@ -622,6 +783,7 @@ public static class AndroidAppUpdates
             if (UpdateCompletionPolicy.IsStalePendingDownload(started, now))
             {
                 downloadManager.Remove(id);
+                activity.RunOnUiThread(CloseDownloadProgress);
                 ResetPending(activity);
                 Report(activity, "Un ancien téléchargement interrompu a été nettoyé.");
                 return false;
@@ -638,15 +800,18 @@ public static class AndroidAppUpdates
             var version = pref.GetString(DownloadVersionKey, "") ?? "";
             if (path is null || !File.Exists(path) || !Regex.IsMatch(hash, "^[a-fA-F0-9]{64}$"))
             {
+                downloadManager.Remove(id);
                 ResetPending(activity);
+                ShowDownloadProblem(activity, "Le fichier de mise à jour n'est plus disponible sur le téléphone. Relancez son téléchargement.");
                 return false;
             }
             var valid = await Task.Run(() => VerifyDownloadedApk(activity, path, hash));
             if (!valid)
             {
                 try { File.Delete(path); } catch (IOException) { }
+                downloadManager.Remove(id);
                 ResetPending(activity);
-                Toast.MakeText(activity, "Mise à jour refusée : APK incorrect, non signé comme attendu ou version obsolète.", ToastLength.Long)?.Show();
+                ShowDownloadProblem(activity, "La vérification du fichier APK a échoué, ou sa version est déjà dépassée. L'installation est bloquée ; vous pouvez retélécharger le fichier officiel.");
                 return false;
             }
             if (!IsForeground(activity) || !showInstallDialog)
@@ -660,6 +825,7 @@ public static class AndroidAppUpdates
             installDialogOpen = true;
             activity.RunOnUiThread(() =>
             {
+                CloseDownloadProgress();
                 if (!IsForeground(activity))
                 {
                     installDialogOpen = false;

@@ -108,7 +108,7 @@
   </Style>
 
   <!-- Réponse brève à l'appui, uniquement lorsque les animations sont activées. -->
-  <Style Selector="LayoutTransformControl.anim Button mi|MaterialIcon:not(.spin)">
+  <Style Selector="LayoutTransformControl.anim:not(.phone) Button mi|MaterialIcon:not(.spin)">
     <Setter Property="RenderTransform" Value="scale(1)" />
     <Setter Property="Transitions">
       <Transitions>
@@ -116,7 +116,7 @@
       </Transitions>
     </Setter>
   </Style>
-  <Style Selector="LayoutTransformControl.anim Button:pressed mi|MaterialIcon:not(.spin)">
+  <Style Selector="LayoutTransformControl.anim:not(.phone) Button:pressed mi|MaterialIcon:not(.spin)">
     <Setter Property="RenderTransform" Value="scale(0.94)" />
   </Style>
 </Styles>

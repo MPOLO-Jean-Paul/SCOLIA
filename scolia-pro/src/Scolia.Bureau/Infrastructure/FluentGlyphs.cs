@@ -30,6 +30,8 @@ public static partial class FluentGlyphs
 
     public static bool HasPath(MaterialIconKind kind) => Paths.ContainsKey(kind);
     public static string? ArtworkKey(MaterialIconKind kind) => ArtworkKeys.GetValueOrDefault(kind);
+    /// <summary>Le client peut adapter les repères à son appareil ; les consommateurs partagés gardent les ressources Fluent.</summary>
+    public static Func<MaterialIconKind, IImage?>? DeviceArtwork { get; set; }
 
     private static Dictionary<MaterialIconKind, string> CompleteOpticalAliases(Dictionary<MaterialIconKind, string> optical)
     {
@@ -72,6 +74,7 @@ public static partial class FluentGlyphs
     public static IImage? ArtworkFor(MaterialIconKind? kind)
     {
         if (kind is not { } icon) return null;
+        if (DeviceArtwork?.Invoke(icon) is { } deviceArtwork) return deviceArtwork;
         if (ArtworkKeys.TryGetValue(icon, out var key) && Avalonia.Application.Current is { } app &&
             app.Resources.TryGetResource(key, app.ActualThemeVariant, out var value) && value is IImage image)
             return image;

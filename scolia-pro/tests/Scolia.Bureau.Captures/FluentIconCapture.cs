@@ -179,7 +179,7 @@ internal static class FluentIconCapture
         return Render(icon, size, size);
     }
 
-    private static byte[] Render(Control icon, int width, int height, double density = 1)
+    internal static byte[] Render(Control icon, int width, int height, double density = 1)
     {
         using var bitmap = new RenderTargetBitmap(new PixelSize(width, height), new Vector(96 * density, 96 * density));
         bitmap.Render(icon);
@@ -201,7 +201,7 @@ internal static class FluentIconCapture
         }
     }
 
-    private static string Label(Type page) => page.Name switch
+    internal static string Label(Type page) => page.Name switch
     {
         nameof(HomePage) => "Accueil", nameof(StartPage) => "Tous les outils", nameof(PromoterDashboardPage) => "Pilotage",
         nameof(ManagementModePage) => "Type de gestion",

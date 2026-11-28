@@ -13,7 +13,7 @@ namespace Scolia.Bureau.Infrastructure;
 public enum HapticKind { Tap, Success, Error }
 
 /// <summary>
-/// Retour au toucher, comme sur Android : une onde part du doigt sur le bouton ou la ligne touchés, puis s'efface.
+/// Retour au clic confirmé : une onde part du point de contact sur le bouton, puis s'efface.
 /// Les boutons principaux donnent aussi une légère vibration sur le téléphone. L'onde ne gêne jamais le clic :
 /// elle est dessinée au-dessus, sans capter le pointeur, et disparaît seule.
 /// </summary>
@@ -24,28 +24,41 @@ public static class TouchFeedback
 
     /// <summary>Branche l'onde sur tout l'écran ; <paramref name="enabled"/> suit le réglage « Animations ».</summary>
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Control, RippleAdorner> Active = new();
+    private sealed record Contact(Point Origin);
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Control, Contact> Contacts = new();
 
     public static void Attach(Control root, Func<bool> enabled)
     {
         root.AddHandler(InputElement.PointerPressedEvent, (_, e) =>
         {
             if (e.Source is not Visual source) return;
-            if (Target(source) is not { } target || !target.IsEffectivelyEnabled) return;
+            if (Target(source) is not Button target || !target.IsEffectivelyEnabled) return;
+            Contacts.Remove(target);
+            Contacts.Add(target, new Contact(e.GetPosition(target)));
+        }, RoutingStrategies.Tunnel, handledEventsToo: true);
+        // Le premier contact peut devenir un défilement : aucune onde, vibration ou
+        // animation avant que le bouton ait effectivement confirmé son clic.
+        root.AddHandler(Button.ClickEvent, (_, e) =>
+        {
+            if (e.Source is not Visual source || Target(source) is not Button target || !target.IsEffectivelyEnabled) return;
+            var origin = Contacts.TryGetValue(target, out var contact) ? contact.Origin
+                : new Point(target.Bounds.Width / 2, target.Bounds.Height / 2);
+            Contacts.Remove(target);
             // La vibration suit les réglages du téléphone, pas ceux des animations ; l'onde suit les animations.
             if (target is Button { Classes: var classes } && (classes.Contains("primary") || classes.Contains("stickyaction")))
                 Platform.Haptic?.Invoke(HapticKind.Tap);
-            if (enabled()) Ripple(target, e.GetPosition(target));
-        }, RoutingStrategies.Tunnel, handledEventsToo: true);
+            if (enabled()) Ripple(target, origin);
+        }, RoutingStrategies.Bubble, handledEventsToo: true);
     }
 
-    /// <summary>Le bouton, l'onglet ou la ligne de liste sous le doigt ; jamais un champ de saisie.</summary>
+    /// <summary>Le bouton sous le doigt ; jamais un champ de saisie.</summary>
     private static Control? Target(Visual source)
     {
         foreach (var visual in source.GetSelfAndVisualAncestors())
         {
             if (visual is TextBox or ScrollBar or Slider) return null;
             if (visual is Control control && control.Classes.Contains("noripple")) return null;
-            if (visual is Button or ListBoxItem or ToggleButton) return (Control)visual;
+            if (visual is Button) return (Control)visual;
         }
         return null;
     }

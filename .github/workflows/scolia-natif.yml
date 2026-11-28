@@ -98,7 +98,7 @@ jobs:
       - name: Compiler le client Avalonia partage Windows et Android
         run: dotnet build src/Scolia.Bureau/Scolia.Bureau.csproj -c Release
       - name: Tester les mises a jour Android (fin de telechargement, arriere-plan, erreurs)
-        run: dotnet test tests/Scolia.Mobile.Tests/Scolia.Mobile.Tests.csproj -c Release --filter "FullyQualifiedName~UpdateCompletionPolicyTests|FullyQualifiedName~AndroidPrivacyManifestTests" --logger "trx;LogFileName=android-updates.trx"
+        run: dotnet test tests/Scolia.Mobile.Tests/Scolia.Mobile.Tests.csproj -c Release --filter "FullyQualifiedName~UpdateCompletionPolicyTests|FullyQualifiedName~UpdateDownloadProgressTests|FullyQualifiedName~AndroidPrivacyManifestTests" --logger "trx;LogFileName=android-updates.trx"
       - name: Verifier les resultats du menu, les recherches contextuelles et la securite
         run: dotnet test tests/Scolia.Bureau.Tests/Scolia.Bureau.Tests.csproj -c Release --logger "trx;LogFileName=natif.trx"
       # La publication native dépend également de la géométrie réelle des champs d'accès.
@@ -114,6 +114,10 @@ jobs:
           SCOLIA_MOBILE=1 SCOLIA_TAILLE=390x740 SCOLIA_CAPTURE_DARK=1 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-connexion/android-sombre http://127.0.0.1:5293/ inutilise identite-connexion
       - name: Vérifier les changements de feuille, les enregistrements et la pagination des dépenses
         run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-fonctionnement http://127.0.0.1:1/ inutilise fonctionnement
+      - name: Vérifier les cartes fixes et les clics confirmés sur mobile
+        run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-contact-mobile http://127.0.0.1:1/ inutilise contact-mobile
+      - name: Vérifier les symboles arrondis et les carrés colorés du mobile
+        run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-icones-mobiles http://127.0.0.1:1/ inutilise icones-mobiles
       - name: Vérifier le placement des icônes À propos sur téléphone et ordinateur
         env:
           SCOLIA_ASTUCES: '0'
@@ -128,6 +132,8 @@ jobs:
           name: SCOLIA_Controle_Fonctionnement_Et_Contacts
           path: |
             scolia-pro/artifacts/controle-fonctionnement/
+            scolia-pro/artifacts/controle-contact-mobile/
+            scolia-pro/artifacts/controle-icones-mobiles/
             scolia-pro/artifacts/controle-a-propos/
           if-no-files-found: ignore
           retention-days: 14

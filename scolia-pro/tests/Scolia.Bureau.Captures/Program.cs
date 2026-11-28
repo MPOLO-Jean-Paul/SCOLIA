@@ -30,6 +30,18 @@ if (args.Length > 3 && args[3] == "icones-scolia")
     return;
 }
 
+if (args.Length > 3 && args[3] == "contact-mobile")
+{
+    MobileMotionCapture.Run(output);
+    return;
+}
+
+if (args.Length > 3 && args[3] == "icones-mobiles")
+{
+    MobileArtworkCapture.Run(output);
+    return;
+}
+
 if (args.Length > 3 && args[3] == "fonctionnement")
 {
     FunctionalClientChecks.Run(output);
@@ -122,7 +134,12 @@ static void VerifyFluentArtwork(Window window)
         var image = icon.GetVisualDescendants().OfType<Image>().FirstOrDefault();
         if (image?.Source is not { Size.Width: > 0, Size.Height: > 0 })
             throw new InvalidOperationException($"Illustration Fluent absente : {kind}.");
-        if (FluentGlyphs.ArtworkKey(kind) is { } key &&
+        if (Platform.IsMobile || PhoneLayout.Active)
+        {
+            if (!ReferenceEquals(image.Source, MobileArtwork.For(kind)))
+                throw new InvalidOperationException($"Illustration mobile remplacée par un secours : {kind}.");
+        }
+        else if (FluentGlyphs.ArtworkKey(kind) is { } key &&
             (!Avalonia.Application.Current!.Resources.TryGetResource(key, Avalonia.Application.Current.ActualThemeVariant, out var artwork)
              || !ReferenceEquals(artwork, image.Source)))
             throw new InvalidOperationException($"Illustration Fluent remplacée par un secours : {kind}.");

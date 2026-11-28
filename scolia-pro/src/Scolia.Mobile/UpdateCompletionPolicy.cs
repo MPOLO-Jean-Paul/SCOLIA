@@ -12,6 +12,8 @@ public enum UpdateCompletionAction
     NotifyReady,
 }
 
+internal enum PendingUpdateAction { OfferDownload, ShowProgress, Install }
+
 internal static class UpdateCompletionPolicy
 {
     internal const int Successful = 8; // DownloadManager.STATUS_SUCCESSFUL
@@ -28,6 +30,11 @@ internal static class UpdateCompletionPolicy
 
     internal static bool NeedsForegroundCheck(bool foreground, long downloadId, int? status)
         => foreground && downloadId > 0 && (status is null or Successful or Failed);
+
+    internal static PendingUpdateAction PendingAction(int? status, long startedAtUtc, long nowUtc)
+        => status == Successful ? PendingUpdateAction.Install
+            : status is null or Failed || IsStalePendingDownload(startedAtUtc, nowUtc)
+                ? PendingUpdateAction.OfferDownload : PendingUpdateAction.ShowProgress;
 
     /// <summary>
     /// Une mise à jour déjà téléchargée n'empêche jamais de découvrir une
@@ -78,4 +85,41 @@ internal static class UpdateCompletionPolicy
         => Version.TryParse(downloadedVersion, out var downloaded)
            && EffectiveInstalledVersion(installedVersion, bundledVersion) is { } installed
            && installed >= downloaded;
+}
+
+/// <summary>État lisible du vrai téléchargement Android, indépendant des notifications système.</summary>
+internal sealed record UpdateDownloadProgress(int? Status, int Reason, long ReceivedBytes, long TotalBytes)
+{
+    internal int? Percent => Status == UpdateCompletionPolicy.Successful ? 100 : TotalBytes > 0
+        ? (int)Math.Clamp(Math.Max(0, ReceivedBytes) * 100d / TotalBytes, 0, 99) : null;
+
+    internal string Message
+    {
+        get
+        {
+            var culture = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
+            string Mb(long bytes) => (Math.Max(0, bytes) / (1024d * 1024)).ToString("0.#", culture);
+            var progress = TotalBytes > 0
+                ? $"{Mb(ReceivedBytes)} / {Mb(TotalBytes)} Mo · {Percent} %"
+                : $"{Mb(ReceivedBytes)} Mo reçus";
+            var state = Status switch
+            {
+                1 => "Android prépare le téléchargement…",
+                2 => "Téléchargement en cours…",
+                4 when Reason == 2 => "En attente d'une connexion Internet.",
+                4 when Reason == 3 => "Android attend un réseau Wi-Fi pour ce fichier. Vous pouvez utiliser le navigateur pour choisir une autre méthode.",
+                4 when Reason == 1 => "Connexion interrompue. Android attend avant de réessayer.",
+                4 => "Le téléchargement est en pause dans Android.",
+                UpdateCompletionPolicy.Successful => "Téléchargement terminé. Vérification de l'APK…",
+                UpdateCompletionPolicy.Failed when Reason == 1006 => "Espace libre insuffisant pour télécharger la mise à jour.",
+                UpdateCompletionPolicy.Failed when Reason == 1007 => "Le stockage de téléchargement n'est pas disponible.",
+                UpdateCompletionPolicy.Failed when Reason == 1008 => "Android ne peut pas reprendre ce fichier. Relancez le téléchargement.",
+                UpdateCompletionPolicy.Failed when Reason == 1009 => "Un ancien fichier empêche le téléchargement. Vous pouvez le relancer.",
+                UpdateCompletionPolicy.Failed when Reason is >= 400 and <= 599 => $"Le serveur de téléchargement a répondu HTTP {Reason}. Réessayez ou utilisez le navigateur.",
+                UpdateCompletionPolicy.Failed => "Le téléchargement Android a échoué. Réessayez ou utilisez le navigateur.",
+                _ => "Ce téléchargement n'est plus suivi par Android. Vous pouvez le relancer.",
+            };
+            return progress + "\n\n" + state;
+        }
+    }
 }

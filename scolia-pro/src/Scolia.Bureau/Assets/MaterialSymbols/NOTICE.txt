@@ -1,0 +1,13 @@
+Google Material Symbols Rounded
+https://github.com/google/material-design-icons
+Apache License 2.0 — see LICENSE.txt.
+
+Original SVG geometry is embedded as native Avalonia paths, normalized from the
+Google 960-unit canvas to 24 points. catalogue.json records the semantic choices;
+manifest.json records the pinned commit, source paths, variants and SHA-256 hashes.
+Rebuild with scripts/generer-icones-mobiles.py. The application renders these vectors
+offline without downloading a font or an image.
+
+The rounded tile backgrounds, blue and green gradients, highlights and fixed relief
+are SCOLIA drawings. Additional existing action shapes retain their Fluent System
+Icons provenance and license in Assets/FluentSystem.

@@ -247,11 +247,11 @@
         </Transitions>
       </Setter>
     </Style>
-    <Style Selector="LayoutTransformControl.anim Grid#DesktopArea Button.tooltile, LayoutTransformControl.anim Grid#DesktopArea Button.cardbutton,
-                     LayoutTransformControl.anim Grid#DesktopArea Button.heroaction, LayoutTransformControl.anim Grid#DesktopArea Button.hdr,
-                     LayoutTransformControl.anim Grid#DesktopArea Button.navitem, LayoutTransformControl.anim Grid#DesktopArea Button.navcategory,
-                     LayoutTransformControl.anim Grid#DesktopArea Button.searchrow, LayoutTransformControl.anim Grid#DesktopArea Button.searchtile,
-                     LayoutTransformControl.anim Grid#DesktopArea Button.listrow">
+    <Style Selector="LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.tooltile, LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.cardbutton,
+                     LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.heroaction, LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.hdr,
+                     LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.navitem, LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.navcategory,
+                     LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.searchrow, LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.searchtile,
+                     LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.listrow">
       <Setter Property="RenderTransform" Value="none" />
       <Setter Property="Transitions">
         <Transitions>
@@ -259,17 +259,17 @@
         </Transitions>
       </Setter>
     </Style>
-    <Style Selector="LayoutTransformControl.anim Grid#DesktopArea Button.tooltile:pointerover, LayoutTransformControl.anim Grid#DesktopArea Button.cardbutton:pointerover,
-                     LayoutTransformControl.anim Grid#DesktopArea Button.searchtile:pointerover, LayoutTransformControl.anim Grid#DesktopArea Button.heroaction:pointerover">
+    <Style Selector="LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.tooltile:pointerover, LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.cardbutton:pointerover,
+                     LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.searchtile:pointerover, LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.heroaction:pointerover">
       <Setter Property="RenderTransform" Value="translateY(-2px)" />
     </Style>
-    <Style Selector="LayoutTransformControl.anim Grid#DesktopArea Button.tooltile:pressed, LayoutTransformControl.anim Grid#DesktopArea Button.cardbutton:pressed,
-                     LayoutTransformControl.anim Grid#DesktopArea Button.searchtile:pressed, LayoutTransformControl.anim Grid#DesktopArea Button.heroaction:pressed,
-                     LayoutTransformControl.anim Grid#DesktopArea Button.searchrow:pressed, LayoutTransformControl.anim Grid#DesktopArea Button.listrow:pressed">
+    <Style Selector="LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.tooltile:pressed, LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.cardbutton:pressed,
+                     LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.searchtile:pressed, LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.heroaction:pressed,
+                     LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.searchrow:pressed, LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.listrow:pressed">
       <Setter Property="RenderTransform" Value="scale(0.98)" />
     </Style>
-    <Style Selector="LayoutTransformControl.anim Grid#DesktopArea Button.hdr:pressed, LayoutTransformControl.anim Grid#DesktopArea Button.navitem:pressed,
-                     LayoutTransformControl.anim Grid#DesktopArea Button.navcategory:pressed">
+    <Style Selector="LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.hdr:pressed, LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.navitem:pressed,
+                     LayoutTransformControl.anim:not(.phone) Grid#DesktopArea Button.navcategory:pressed">
       <Setter Property="RenderTransform" Value="scale(0.97)" />
     </Style>
     <!-- Les résultats de la barre descendent en fondu, comme le menu du téléphone -->
@@ -291,18 +291,37 @@
       </Style.Animations>
     </Style>
     <!-- Cartes d'avatar : l'illustration grandit doucement au survol et à l'appui (désactivé sans animations) -->
-    <Style Selector="LayoutTransformControl.anim Image.featureillustration">
+    <Style Selector="LayoutTransformControl.anim:not(.phone) Image.featureillustration">
       <Setter Property="Transitions">
         <Transitions>
           <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22" Easing="{x:Static infra:Motion.Spring}" />
         </Transitions>
       </Setter>
     </Style>
-    <Style Selector="LayoutTransformControl.anim Button.cardbutton:pointerover Image.featureillustration">
+    <Style Selector="LayoutTransformControl.anim:not(.phone) Button.cardbutton:pointerover Image.featureillustration">
       <Setter Property="RenderTransform" Value="scale(1.06) translateY(-2px)" />
     </Style>
-    <Style Selector="LayoutTransformControl.anim Button.cardbutton:pressed Image.featureillustration">
+    <Style Selector="LayoutTransformControl.anim:not(.phone) Button.cardbutton:pressed Image.featureillustration">
       <Setter Property="RenderTransform" Value="scale(0.97)" />
+    </Style>
+    <!-- Le thème de base peut aussi comprimer un bouton à l'appui. Sur téléphone,
+         les surfaces et leurs pictogrammes restent fixes, y compris dans les vues métier partagées. -->
+    <Style Selector="LayoutTransformControl.phone Button, LayoutTransformControl.phone Button:pointerover, LayoutTransformControl.phone Button:pressed">
+      <Setter Property="RenderTransform" Value="none" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Button /template/ ContentPresenter#PART_ContentPresenter,
+                     LayoutTransformControl.phone Button:pointerover /template/ ContentPresenter#PART_ContentPresenter,
+                     LayoutTransformControl.phone Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="RenderTransform" Value="none" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Image.featureillustration,
+                     LayoutTransformControl.phone Button:pointerover Image.featureillustration,
+                     LayoutTransformControl.phone Button:pressed Image.featureillustration,
+                     LayoutTransformControl.phone Button mi|MaterialIcon:not(.spin),
+                     LayoutTransformControl.phone Button:pressed mi|MaterialIcon:not(.spin),
+                     LayoutTransformControl.phone Button PathIcon,
+                     LayoutTransformControl.phone Button:pressed PathIcon">
+      <Setter Property="RenderTransform" Value="none" />
     </Style>
     <!-- Liste de la recherche de la barre : une carte claire, ombrée, posée sous la barre -->
     <Style Selector="Border.finderdrop">
