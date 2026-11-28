@@ -168,8 +168,9 @@ public sealed class MarkEditRowVm(Guid enrollmentId, string code, string matricu
     public string FullName { get; } = fullName;
     public string Retained { get; } = retained;
     public IBrush RetainedBrush { get; } = ThemeBrush.Get(failed ? "ToneRed" : "ToneNeutral");
-    public string Original { get; } = value;
+    public string Original { get; private set; } = value;
     public string Value { get => text; set => Set(ref text, value); }
+    internal void AcceptSavedValue(string saved) => Original = saved;
 }
 
 /// <summary>
@@ -239,6 +240,10 @@ public sealed class MarksPage : PageViewModel
     private string scoreText = string.Empty;
     private string codeFeedback = "Saisissez les premiers caractères du code figurant sur la copie.";
     private MarkSheetDto? currentSheet;
+    private int sheetRequest;
+    private (Guid Course, string Kind, bool Anonymous)? loadedSheet;
+    private (Guid Course, string Kind, bool Anonymous)? SheetContext => Course is { } c && Kind is { } k ? (c.Id, k.Value, Anonymous) : null;
+
     private AsyncCommand? checkCodeCommand;
     private AsyncCommand? saveCodeCommand;
 
@@ -319,7 +324,10 @@ public sealed class MarksPage : PageViewModel
     private async Task CheckCodeAsync()
     {
         if (!ShowCodeEntry || Course is null) return;
+        var context = SheetContext;
+        var request = sheetRequest;
         var code = codeQuery.Trim().ToUpperInvariant();
+        if (loadedSheet != context || currentSheet is null) { CodeFeedback = "Attendez le chargement de la feuille."; return; }
         if (code.Length == 0) { CodeFeedback = "Saisissez le code anonyme."; return; }
         if (Rows.Any(r => string.Equals(r.Code, code, StringComparison.OrdinalIgnoreCase)))
         {
@@ -335,14 +343,18 @@ public sealed class MarksPage : PageViewModel
         {
             var check = await Shell.Api.GetAsync<CodeInCourseDto>(
                 "api/deliberation/codes/verifier-promotion" + ScoliaClient.Query(("coursId", Course.Id), ("code", code)));
+            if (request != sheetRequest || context != SheetContext || !string.Equals(codeQuery.Trim(), code, StringComparison.OrdinalIgnoreCase)) return;
             if (!check.InPromotion) { CodeFeedback = "Apprenant hors promotion."; return; }
+            var reloading = sheetRequest + 1;
             await LoadSheetAsync();
+            if (sheetRequest != reloading || context != SheetContext || codeQuery.Length != 0) return;
             if (Rows.Any(r => string.Equals(r.Code, check.Code, StringComparison.OrdinalIgnoreCase)))
                 AcceptCode(check.Code);
             else CodeFeedback = "Code valide, mais la feuille a changé. Actualisez les données du cours.";
         }
         catch (ApiException ex) when (ex.Status == 404)
         {
+            if (request != sheetRequest || context != SheetContext || !string.Equals(codeQuery.Trim(), code, StringComparison.OrdinalIgnoreCase)) return;
             CodeFeedback = "Code anonyme introuvable dans l'année scolaire.";
         }
     }
@@ -350,6 +362,7 @@ public sealed class MarksPage : PageViewModel
     private async Task SaveCodeAsync()
     {
         if (!ShowScoreInput || Course is null || Kind is null || validatedCode.Length == 0) return;
+        if (SheetContext is not { } context || loadedSheet != context) { CodeFeedback = "Attendez le chargement de la feuille."; return; }
         if (currentSheet is not { EncodingOpen: true, Locked: false, SubmittedAtUtc: null })
         {
             CodeFeedback = "Encodage fermé, feuille remise ou délibération clôturée. Aucune note enregistrée.";
@@ -361,18 +374,28 @@ public sealed class MarksPage : PageViewModel
             return;
         }
         var code = validatedCode;
+        var entered = codeQuery;
+        var score = ScoreText;
+        var request = sheetRequest;
         try
         {
             var result = await Shell.Api.SendAsync<MarkByCodeResult>(HttpMethod.Post, "api/deliberation/cotes-par-code",
-                new { code, courseId = Course.Id, kind = Kind.Value, value });
+                new { code, courseId = context.Course, kind = context.Kind, value });
+            if (request != sheetRequest || context != SheetContext || codeQuery != entered || ScoreText != score)
+            {
+                Shell.Notify($"Note enregistrée pour {result.Code}.");
+                return;
+            }
+            var reloading = sheetRequest + 1;
             await LoadSheetAsync();
-            ResetCodeEntry();
+            if (sheetRequest != reloading || context != SheetContext || codeQuery.Length != 0) return;
             CodeFeedback = $"Note {result.Value:0.##}/{ScoreMaximum:0.##} enregistrée pour {result.Code} · {result.Remaining} copie(s) restantes.";
         }
         catch (OfflineQueuedException)
         {
             // Le serveur vérifiera à la reprise l'attribution, la période et le maxima.
             // On conserve un accusé explicite : aucune note n'est annoncée comme validée.
+            if (request != sheetRequest || context != SheetContext || codeQuery != entered || ScoreText != score) return;
             ResetCodeEntry();
             CodeFeedback = $"Note {value:0.##}/{ScoreMaximum:0.##} pour {code} en attente de synchronisation avec le serveur.";
         }
@@ -463,7 +486,7 @@ public sealed class MarksPage : PageViewModel
         }
     }
 
-    public ChoiceItem? Kind { get => kind; set { if (Set(ref kind, value) && value is not null)
+    public ChoiceItem? Kind { get => kind; set { if (Set(ref kind, value))
         { ResetCodeEntry(); _ = Shell.Run(LoadSheetAsync); } } }
 
     /// <summary>Feuille anonyme : triée par code, sans nom ni matricule, comme pour la correction des copies.</summary>
@@ -501,6 +524,9 @@ public sealed class MarksPage : PageViewModel
             Raise(nameof(Kind));
             ready = true;
         }
+        ++sheetRequest;
+        loadedSheet = null;
+        currentSheet = null;
         var keep = course?.Id ?? wantedCourse;
         wantedCourse = null;
         Courses.Clear();
@@ -544,17 +570,22 @@ public sealed class MarksPage : PageViewModel
 
     private async Task LoadSheetAsync()
     {
+        var request = ++sheetRequest;
+        var context = SheetContext;
         Rows.Clear();
         currentSheet = null;
+        loadedSheet = null;
         ResetCodeEntry();
-        if (Course is null || Kind is null) return;
+        if (context is not { } chosen) { SheetTitle = "Choisissez un cours"; SheetHint = string.Empty; return; }
         var sheet = await Shell.Api.GetAsync<MarkSheetDto>("api/deliberation/feuille" + ScoliaClient.Query(
-            ("coursId", Course.Id), ("nature", Kind.Value), ("anonyme", Anonymous ? "true" : "false")));
+            ("coursId", chosen.Course), ("nature", chosen.Kind), ("anonyme", chosen.Anonymous ? "true" : "false")));
+        if (request != sheetRequest || context != SheetContext) return;
         currentSheet = sheet;
+        loadedSheet = context;
         Raise(nameof(ScoreMaximum));
         Raise(nameof(ScoreMaximumText));
         var scale = sheet.Kind == "Appui" ? "10" : sheet.MaxScore.ToString("0.##");
-        SheetTitle = $"{sheet.Course} · {Kind.Label} · sur {scale}";
+        SheetTitle = $"{sheet.Course} · {Kind?.Label ?? chosen.Kind} · sur {scale}";
         var figures = $" {sheet.Failed} échec(s)" + (sheet.Average is { } avg ? $", moyenne {avg:0.##}." : ".");
         SheetHint = (sheet.Locked ? "Délibération clôturée : ces cotes sont figées."
             : !sheet.EncodingOpen ? "Encodage fermé dans les réglages de la délibération."
@@ -574,7 +605,15 @@ public sealed class MarksPage : PageViewModel
             Shell.Notify("Choisissez un cours avant d'enregistrer.");
             return;
         }
+        if (SheetContext is not { } context || loadedSheet != context || currentSheet is null)
+        {
+            Shell.Notify("Attendez le chargement de la feuille avant d'enregistrer.");
+            return;
+        }
+        var request = sheetRequest;
+        var snapshot = Rows.Select(r => (r.EnrollmentId, r.Value)).ToArray();
         var changes = new List<object>();
+        var sent = new List<(MarkEditRowVm Row, string Value)>();
         foreach (var r in Rows.Where(r => r.Value.Trim() != r.Original))
         {
             if (!string.IsNullOrWhiteSpace(r.Value) && !Format.TryAmount(r.Value, out _))
@@ -588,15 +627,20 @@ public sealed class MarksPage : PageViewModel
                 return;
             }
             changes.Add(new { enrollmentId = r.EnrollmentId, value = Format.TryAmount(r.Value, out var v) ? (decimal?)v : null });
+            sent.Add((r, r.Value.Trim()));
         }
         if (changes.Count == 0)
         {
             Shell.Notify("Aucune cote modifiée.");
             return;
         }
-        await Shell.Api.SendAsync(HttpMethod.Put, "api/deliberation/feuille" + ScoliaClient.Query(("coursId", Course.Id), ("nature", Kind.Value)), changes);
+        await Shell.Api.SendAsync(HttpMethod.Put, "api/deliberation/feuille" + ScoliaClient.Query(("coursId", context.Course), ("nature", context.Kind)), changes);
         Shell.Notify($"{Format.Count(changes.Count, "cote enregistrée", "cotes enregistrées")}.");
-        await RefreshAsync();
+        if (request == sheetRequest && context == SheetContext)
+        {
+            foreach (var (row, saved) in sent) row.AcceptSavedValue(saved);
+            if (snapshot.SequenceEqual(Rows.Select(r => (r.EnrollmentId, r.Value)))) await LoadSheetAsync();
+        }
     }
 
     /// <summary>Cotes déjà tenues ailleurs (export d'ITMCD, Excel, CSV) : aperçu, puis enregistrement des lignes reconnues.</summary>
@@ -604,8 +648,15 @@ public sealed class MarksPage : PageViewModel
     {
         if (Course is null || Kind is null) { Shell.Notify("Choisissez d'abord le cours et la cote à reprendre."); return; }
         if (Shell.PickFileHandler is null) return;
+        var context = SheetContext;
+        var request = sheetRequest;
         var picked = await Shell.PickFileHandler([".csv", ".txt"]);
         if (picked is null) return;
+        if (request != sheetRequest || context != SheetContext)
+        {
+            Shell.Notify("La feuille a changé : choisissez à nouveau le fichier pour le cours affiché.");
+            return;
+        }
         var text = System.Text.Encoding.UTF8.GetString(picked.Data);
         if (text.Contains('\uFFFD', StringComparison.Ordinal)) text = System.Text.Encoding.Latin1.GetString(picked.Data);
         await ImportMarksAsync(text);
@@ -614,23 +665,39 @@ public sealed class MarksPage : PageViewModel
     private async Task ImportMarksPasteAsync()
     {
         if (Course is null || Kind is null) { Shell.Notify("Choisissez d'abord le cours et la cote à reprendre."); return; }
+        var context = SheetContext;
+        var request = sheetRequest;
         var text = string.Empty;
         var form = new FormViewModel("Reprendre des cotes", $"{Course.Number}. {Course.Name} · {Kind.Label}. Une ligne par copie : "
             + (teacher ? "code anonyme ; cote." : "code anonyme (ou matricule) ; cote.") + " Les colonnes copiées depuis Excel conviennent.",
             f => { text = f.Text("liste"); return Task.FromResult(true); });
         form.Add("liste", "Liste des cotes", FieldKind.Multiline, required: true);
-        if (await Shell.Ask(form)) await ImportMarksAsync(text);
+        if (!await Shell.Ask(form)) return;
+        if (request != sheetRequest || context != SheetContext)
+        {
+            Shell.Notify("La feuille a changé : collez à nouveau les cotes pour le cours affiché.");
+            return;
+        }
+        await ImportMarksAsync(text);
     }
 
     private async Task ImportMarksAsync(string text)
     {
         if (Course is null || Kind is null) return;
-        var body = new { courseId = Course.Id, kind = Kind.Value, text, apply = false };
+        if (SheetContext is not { } context || loadedSheet != context)
+        {
+            Shell.Notify("Attendez le chargement de la feuille avant de reprendre les cotes.");
+            return;
+        }
+        var request = sheetRequest;
+        var target = $"{Course.Number}. {Course.Name} · {Kind.Label}";
+        var body = new { courseId = context.Course, kind = context.Kind, text, apply = false };
         var preview = await Shell.Api.SendAsync<MarkImportResult>(HttpMethod.Post, "api/deliberation/cotes/import", body);
+        if (request != sheetRequest || context != SheetContext) return;
         var problems = preview.Lines.Where(l => l.Status is not ("À enregistrer" or "Remplace" or "Inchangée"))
             .Select(l => $"Ligne {l.Line} · {l.Identifier} · {l.Value} : {l.Status}").Take(12).ToList();
         var replaced = preview.Lines.Count(l => l.Status == "Remplace");
-        var message = $"{preview.Ready} cote(s) à enregistrer{(replaced > 0 ? $" dont {replaced} remplaçant une cote existante" : string.Empty)} · "
+        var message = target + Environment.NewLine + Environment.NewLine + $"{preview.Ready} cote(s) à enregistrer{(replaced > 0 ? $" dont {replaced} remplaçant une cote existante" : string.Empty)} · "
             + $"{preview.Unchanged} inchangée(s) · {preview.Problems} ligne(s) à revoir."
             + (problems.Count == 0 ? string.Empty : Environment.NewLine + Environment.NewLine + string.Join(Environment.NewLine, problems)
                 + (preview.Problems > problems.Count ? $"{Environment.NewLine}…" : string.Empty));
@@ -640,9 +707,14 @@ public sealed class MarksPage : PageViewModel
             return;
         }
         if (!await Shell.Confirm("Reprendre les cotes", message, "Enregistrer")) return;
+        if (request != sheetRequest || context != SheetContext)
+        {
+            Shell.Notify("La feuille a changé : relancez l'aperçu avant de reprendre les cotes.");
+            return;
+        }
         var result = await Shell.Api.SendAsync<MarkImportResult>(HttpMethod.Post, "api/deliberation/cotes/import", body with { apply = true });
         Shell.Notify($"{Format.Count(result.Saved, "cote reprise", "cotes reprises")}.");
-        await RefreshAsync();
+        if (request == sheetRequest && context == SheetContext) await RefreshAsync();
     }
 
     /// <summary>Remise officielle de la feuille : après elle, seul le jury corrige ou renvoie les cotes.</summary>
@@ -653,6 +725,12 @@ public sealed class MarksPage : PageViewModel
             Shell.Notify("Choisissez d'abord le cours et la cote à remettre.");
             return;
         }
+        if (SheetContext is not { } context || loadedSheet != context || currentSheet is null)
+        {
+            Shell.Notify("Attendez le chargement de la feuille avant de remettre les cotes.");
+            return;
+        }
+        var request = sheetRequest;
         if (Rows.Any(r => r.Value.Trim() != r.Original))
         {
             Shell.Notify("Enregistrez d'abord les cotes modifiées.");
@@ -660,9 +738,14 @@ public sealed class MarksPage : PageViewModel
         }
         if (!await Shell.Confirm("Remettre les cotes", $"{Course.Number}. {Course.Name} · {Kind.Label}. Après la remise, vous ne pourrez plus modifier ces cotes : seul le jury pourra les corriger ou vous renvoyer la feuille.", "Remettre"))
             return;
-        var result = await Shell.Api.SendAsync<MarkSubmissionDto>(HttpMethod.Post, "api/deliberation/remise" + ScoliaClient.Query(("coursId", Course.Id), ("nature", Kind.Value)), new { });
+        if (request != sheetRequest || context != SheetContext || Rows.Any(r => r.Value.Trim() != r.Original))
+        {
+            Shell.Notify("La feuille a changé : vérifiez les cotes avant de confirmer leur remise.");
+            return;
+        }
+        var result = await Shell.Api.SendAsync<MarkSubmissionDto>(HttpMethod.Post, "api/deliberation/remise" + ScoliaClient.Query(("coursId", context.Course), ("nature", context.Kind)), new { });
         Shell.Notify($"Cotes remises : {result.Graded} sur {result.Students} apprenant(s).");
-        await RefreshAsync();
+        if (request == sheetRequest && context == SheetContext) await RefreshAsync();
     }
 
     /// <summary>Le jury renvoie une feuille remise à l'enseignant, avec un motif : elle redevient modifiable.</summary>

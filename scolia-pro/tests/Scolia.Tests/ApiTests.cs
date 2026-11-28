@@ -700,6 +700,52 @@ public sealed class BusinessApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Historical_cash_does_not_include_a_later_closing()
+    {
+        var admin = await app.InstalledAdmin();
+        var (_, enrollment, _) = await NewStudent(admin);
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var yesterday = today.AddDays(-1);
+        await admin.PayMonths(enrollment, date: yesterday);
+        await admin.Post("/api/caisse/arretes", new { date = today, countedCash = 55000m }).Ok();
+        var history = await admin.GetAsync($"/api/caisse/situation?date={yesterday:yyyy-MM-dd}").Ok();
+        Assert.Equal(0m, history.GetProperty("openingBalance").GetDecimal());
+        Assert.Equal(55000m, history.GetProperty("cashReceipts").GetDecimal());
+        Assert.Equal(55000m, history.GetProperty("expectedCash").GetDecimal());
+        Assert.Equal(JsonValueKind.Null, history.GetProperty("lastClosingDate").ValueKind);
+        Assert.True(history.GetProperty("periodStart").GetDateTime() <= history.GetProperty("date").GetDateTime());
+    }
+
+    [Fact]
+    public async Task A_historical_closing_is_refused_even_when_the_historical_report_has_no_closing()
+    {
+        var admin = await app.InstalledAdmin();
+        var (_, enrollment, _) = await NewStudent(admin);
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        await admin.PayMonths(enrollment, date: today.AddDays(-2));
+        await admin.Post("/api/caisse/arretes", new { date = today, countedCash = 55000m }).Ok();
+        var (status, _) = await admin.Post("/api/caisse/arretes", new { date = today.AddDays(-1), countedCash = 55000m }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+        var closings = await admin.GetAsync("/api/caisse/arretes").Ok();
+        Assert.Single(closings.EnumerateArray());
+    }
+
+    [Fact]
+    public async Task Backdated_expenses_cannot_spend_cash_already_used_today()
+    {
+        var admin = await app.InstalledAdmin();
+        var (_, enrollment, _) = await NewStudent(admin);
+        var yesterday = DateOnly.FromDateTime(DateTime.Today).AddDays(-1);
+        await admin.PayMonths(enrollment, date: yesterday);
+        await admin.Post("/api/depenses", new { category = "Fournitures", beneficiary = "Librairie", description = "Matériel", amount = 50000m, method = "Especes" }).Ok();
+        var (status, body) = await admin.Post("/api/depenses", new { category = "Transport", beneficiary = "Transporteur", description = "Trajet d'hier", amount = 6000m, method = "Especes", date = yesterday }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+        Assert.Contains("insuffisantes", body.GetProperty("title").GetString(), StringComparison.Ordinal);
+        var cash = await admin.GetAsync("/api/caisse/situation").Ok();
+        Assert.Equal(5000m, cash.GetProperty("expectedCash").GetDecimal());
+    }
+
+    [Fact]
     public async Task Closing_during_the_day_keeps_the_counter_open_for_later_payments()
     {
         var admin = await app.InstalledAdmin();

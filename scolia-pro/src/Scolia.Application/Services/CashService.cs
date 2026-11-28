@@ -60,8 +60,12 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         if (method == PaymentMethod.Especes)
         {
             var situation = await SituationAsync(date, ct);
-            if (input.Amount > situation.ExpectedCash)
-                throw new DomainException("amount", $"Espèces disponibles insuffisantes : {Money.Display(situation.ExpectedCash, school.CurrencySymbol)} en caisse.");
+            var available = situation.ExpectedCash;
+            // Antidater ne permet pas de dépenser une seconde fois les espèces utilisées depuis.
+            if (date < clock.Today)
+                available = Math.Min(available, (await SituationAsync(clock.Today, ct)).ExpectedCash);
+            if (input.Amount > available)
+                throw new DomainException("amount", $"Espèces disponibles insuffisantes : {Money.Display(available, school.CurrencySymbol)} en caisse.");
         }
         // Une dépense se range dans l'année scolaire de sa date (rentrée, dépense antidatée) ; à défaut, l'année courante.
         var year = await db.AcademicYears.AsNoTracking().Where(y => y.StartDate <= date && y.EndDate >= date)
@@ -95,7 +99,8 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
     public async Task<CashSituationDto> SituationAsync(DateOnly? date, CancellationToken ct = default)
     {
         var day = date ?? clock.Today;
-        var last = await db.CashClosings.AsNoTracking().OrderByDescending(c => c.Date).ThenByDescending(c => c.CreatedAtUtc).FirstOrDefaultAsync(ct);
+        var last = await db.CashClosings.AsNoTracking().Where(c => c.Date <= day)
+            .OrderByDescending(c => c.Date).ThenByDescending(c => c.CreatedAtUtc).FirstOrDefaultAsync(ct);
         // Une opération enregistrée le jour même après l'arrêté appartient à la période suivante.
         var lastDate = last?.Date ?? DateOnly.MinValue;
         var closedAt = last?.CreatedAtUtc ?? DateTime.MinValue;
@@ -128,10 +133,12 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         if (!user.HasPermission(Permissions.CashClose)) throw new DomainException("droits", "Vous n'êtes pas autorisé à arrêter la caisse.");
         if (input.Date > clock.Today) throw new DomainException("date", "Impossible d'arrêter la caisse à une date future.");
         if (input.CountedCash < 0) throw new DomainException("countedCash", "Le montant compté ne peut pas être négatif.");
-        var situation = await SituationAsync(input.Date, ct);
         // Un arrêté par jour : les opérations enregistrées après l'arrêté du jour entrent dans le prochain arrêté.
-        if (situation.LastClosingDate is { } lastDay && input.Date <= lastDay)
-            throw new DomainException("date", $"La caisse est déjà arrêtée au {lastDay:dd/MM/yyyy}. Les opérations enregistrées depuis seront comptées dans le prochain arrêté.");
+        // Cette vérification porte sur le dernier arrêté global, même lors d'une consultation historique.
+        var latest = await CashLock.LastAsync(db, ct);
+        if (latest is not null && input.Date <= latest.Date)
+            throw new DomainException("date", $"La caisse est déjà arrêtée au {latest.Date:dd/MM/yyyy}. Les opérations enregistrées depuis seront comptées dans le prochain arrêté.");
+        var situation = await SituationAsync(input.Date, ct);
         var difference = input.CountedCash - situation.ExpectedCash;
         if (difference != 0 && string.IsNullOrWhiteSpace(input.Note))
             throw new DomainException("note", "Un écart existe entre l'espèce comptée et l'espèce attendue : expliquez-le.");

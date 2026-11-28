@@ -445,6 +445,23 @@ public sealed class ShellViewModel : Observable
     /// <summary>Copie un texte dans le presse-papiers du poste ; fourni par la fenêtre.</summary>
     public Func<string, Task>? CopyHandler { get; set; }
 
+    /// <summary>Ne confirme une copie que lorsque le presse-papiers l'a effectivement acceptée.</summary>
+    public async Task<bool> TryCopyAsync(string text)
+    {
+        if (CopyHandler is not { } copy)
+        {
+            Notify("Le presse-papiers est indisponible sur cet appareil.");
+            return false;
+        }
+        try { await copy(text); return true; }
+        catch (OperationCanceledException) { Notify("Copie annulée."); return false; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or InvalidOperationException or System.Runtime.InteropServices.ExternalException)
+        {
+            Notify("Impossible de copier dans le presse-papiers. Réessayez.", SoundKind.Error);
+            return false;
+        }
+    }
+
     public bool Can(string permission) => session?.Permissions.Contains(permission) == true;
 
     /// <summary>Compte enseignant : son espace se limite à ses cours (encodage et remise des cotes).</summary>

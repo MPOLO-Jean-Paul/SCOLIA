@@ -1341,7 +1341,7 @@ public sealed class AboutViewModel : Observable
         WriteEmail = new RelayCommand(() => Files.Open($"mailto:{AboutInfo.Email}?subject=SCOLIA%20Pro%20{AboutInfo.Version}"));
         OpenWhatsApp = new RelayCommand(() => Files.Open($"https://wa.me/{AboutInfo.PhoneDigits}"));
         OpenWebsite = new RelayCommand(() => Files.Open($"https://{AboutInfo.Website}"));
-        CopyContacts = new AsyncCommand(CopyAsync);
+        CopyContacts = new AsyncCommand(() => shell.Run(CopyAsync));
     }
 
     public bool CanCheckPhoneUpdates => Platform.IsMobile && Platform.CheckAppUpdatesAsync is not null;
@@ -1377,7 +1377,6 @@ public sealed class AboutViewModel : Observable
     private async Task CopyAsync()
     {
         var text = $"SCOLIA Pro {AboutInfo.Version} · {AboutInfo.Publisher}{Environment.NewLine}{AboutInfo.Developer}{Environment.NewLine}{AboutInfo.Phone}{Environment.NewLine}{AboutInfo.Email}{Environment.NewLine}{AboutInfo.Website}";
-        if (shell.CopyHandler is { } copy) await copy(text);
-        shell.Notify("Coordonnées du développeur copiées.");
+        if (await shell.TryCopyAsync(text)) shell.Notify("Coordonnées du développeur copiées.");
     }
 }

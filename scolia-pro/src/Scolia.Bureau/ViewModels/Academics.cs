@@ -35,6 +35,9 @@ public sealed class GradesPage : PageViewModel
     private AssessmentRowVm? assessment;
     private string subtitle = string.Empty;
     private string sheetTitle = "3. Notes";
+    private int assessmentsRequest;
+    private int sheetRequest;
+    private Guid? loadedAssessment;
     private bool ready;
 
     public GradesPage(ShellViewModel shell) : base(shell)
@@ -64,7 +67,12 @@ public sealed class GradesPage : PageViewModel
     public ChoiceItem? Promotion
     {
         get => promotion;
-        set { if (Set(ref promotion, value) && ready) _ = Shell.Run(RefreshAsync); }
+        set
+        {
+            if (!Set(ref promotion, value) || !ready) return;
+            ResetCourses();
+            _ = Shell.Run(RefreshAsync);
+        }
     }
 
     public CourseRowVm? Course
@@ -109,31 +117,53 @@ public sealed class GradesPage : PageViewModel
             Raise(nameof(Promotion));
             ready = true;
         }
-        if (Promotion is null) return;
-
-        var courses = await Shell.Api.GetAsync<List<CourseDto>>("api/scolarite/cours" + ScoliaClient.Query(("promotionId", Guid.Parse(Promotion.Value))));
-        Courses.Clear();
+        var chosen = Promotion;
+        ResetCourses();
+        if (chosen is null) return;
+        var courses = await Shell.Api.GetAsync<List<CourseDto>>("api/scolarite/cours" + ScoliaClient.Query(("promotionId", Guid.Parse(chosen.Value))));
+        if (Promotion?.Value != chosen.Value) return;
         foreach (var c in courses)
             Courses.Add(new CourseRowVm(c.Id, c.Number.ToString(System.Globalization.CultureInfo.InvariantCulture), c.Name, c.Coefficient.ToString("0.##"), $"{c.Hours:0.##} h",
                 c.MaxScore.ToString("0.##"), c.TeacherName ?? "—", c.AssessmentCount, c));
-        subtitle = $"{Format.Count(courses.Count, "cours", "cours")} · {Promotion.Label}";
+        subtitle = $"{Format.Count(courses.Count, "cours", "cours")} · {chosen.Label}";
         Raise(nameof(Subtitle));
-        course = null;
-        Raise(nameof(Course));
-        Assessments.Clear();
+    }
+
+    private void ResetSheet()
+    {
+        sheetRequest++;
+        loadedAssessment = null;
         Grades.Clear();
         SheetTitle = "3. Notes";
     }
 
-    private async Task LoadAssessmentsAsync()
+    private void ResetAssessments()
     {
+        assessmentsRequest++;
         Assessments.Clear();
-        Grades.Clear();
         assessment = null;
         Raise(nameof(Assessment));
-        SheetTitle = "3. Notes";
-        if (Course is null) return;
-        var list = await Shell.Api.GetAsync<List<AssessmentDto>>($"api/scolarite/cours/{Course.Id}/evaluations");
+        Raise(nameof(NoAssessment));
+        ResetSheet();
+    }
+
+    private void ResetCourses()
+    {
+        Courses.Clear();
+        course = null;
+        Raise(nameof(Course));
+        Raise(nameof(NoCourse));
+        ResetAssessments();
+    }
+
+    private async Task LoadAssessmentsAsync()
+    {
+        ResetAssessments();
+        var request = assessmentsRequest;
+        var chosen = Course;
+        if (chosen is null) return;
+        var list = await Shell.Api.GetAsync<List<AssessmentDto>>($"api/scolarite/cours/{chosen.Id}/evaluations");
+        if (request != assessmentsRequest || Course?.Id != chosen.Id) return;
         foreach (var a in list)
             Assessments.Add(new AssessmentRowVm(a.Id, a.Title, Labels.Kind(a.Kind), $"Période {a.Term}", Format.Date(a.Date),
                 a.MaxScore.ToString("0.##"), a.Weight.ToString("0.##"), $"{a.GradedCount}", a));
@@ -141,13 +171,16 @@ public sealed class GradesPage : PageViewModel
 
     private async Task LoadSheetAsync()
     {
-        Grades.Clear();
-        if (Assessment is null) return;
-        var sheet = await Shell.Api.GetAsync<GradeSheetDto>($"api/scolarite/evaluations/{Assessment.Id}/notes");
+        ResetSheet();
+        var request = sheetRequest;
+        var chosen = Assessment;
+        if (chosen is null) return;
+        var sheet = await Shell.Api.GetAsync<GradeSheetDto>($"api/scolarite/evaluations/{chosen.Id}/notes");
+        if (request != sheetRequest || Assessment?.Id != chosen.Id) return;
         SheetTitle = $"{sheet.Assessment.Title} · sur {sheet.Assessment.MaxScore:0.##}";
         foreach (var r in sheet.Rows)
             Grades.Add(new GradeEditRowVm(r.EnrollmentId, r.Matricule, r.FullName, r.Score?.ToString("0.##") ?? string.Empty, r.Comment));
-        Raise(nameof(SheetTitle));
+        loadedAssessment = chosen.Id;
     }
 
     public async Task SaveGradesAsync()
@@ -157,6 +190,14 @@ public sealed class GradesPage : PageViewModel
             Shell.Notify("Sélectionnez une évaluation avant d'enregistrer.");
             return;
         }
+        var chosen = Assessment;
+        if (loadedAssessment != chosen.Id)
+        {
+            Shell.Notify("Attendez le chargement de la feuille avant d'enregistrer.");
+            return;
+        }
+        var request = sheetRequest;
+        var snapshot = Grades.Select(g => (g.EnrollmentId, g.Score, g.Comment)).ToArray();
         var rows = new List<object>();
         foreach (var g in Grades)
         {
@@ -166,18 +207,26 @@ public sealed class GradesPage : PageViewModel
                 return;
             }
             var score = Format.TryAmount(g.Score, out var value) ? (decimal?)value : null;
+            if (score is { } number && (number < 0 || number > chosen.Source.MaxScore))
+            {
+                Shell.Notify($"Note hors limites pour {g.FullName} : maximum {chosen.Source.MaxScore:0.##}.");
+                return;
+            }
             rows.Add(new { enrollmentId = g.EnrollmentId, score, comment = string.IsNullOrWhiteSpace(g.Comment) ? null : g.Comment.Trim() });
         }
         try
         {
-            await Shell.Api.SendAsync(HttpMethod.Put, $"api/scolarite/evaluations/{Assessment.Id}/notes", rows);
+            await Shell.Api.SendAsync(HttpMethod.Put, $"api/scolarite/evaluations/{chosen.Id}/notes", rows);
             Shell.Notify("Notes enregistrées.");
         }
         catch (OfflineQueuedException)
         {
             Shell.Notify("Notes enregistrées localement ; synchronisation automatique au retour du serveur.");
         }
-        await LoadSheetAsync();
+        // Une saisie plus récente ou une autre évaluation ne doit jamais être effacée par la fin de l'envoi.
+        if (request == sheetRequest && Assessment?.Id == chosen.Id &&
+            snapshot.SequenceEqual(Grades.Select(g => (g.EnrollmentId, g.Score, g.Comment))))
+            await LoadSheetAsync();
     }
 
     /// <summary>Crée un cours dans la promotion choisie. Le numéro proposé est le premier libre de la promotion.</summary>

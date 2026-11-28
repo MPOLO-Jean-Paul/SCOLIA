@@ -538,7 +538,8 @@ public sealed class LmdMarkRowVm(LmdMarkLineDto dto) : Observable
     public string FullName => dto.FullName;
     public bool Editable => dto.Editable;
     public string Score { get => score; set => Set(ref score, value); }
-    public decimal? Original => dto.Score;
+    public decimal? Original { get; private set; } = dto.Score;
+    internal void AcceptSavedValue(decimal? saved) => Original = saved;
 }
 
 /// <summary>Saisie des notes d'un élément constitutif, par session.</summary>
@@ -551,6 +552,18 @@ public sealed class LmdMarksPage : PageViewModel
     private string subtitle = string.Empty;
     private string lockReason = string.Empty;
     private bool ready;
+    private int sheetRequest;
+    private int elementsRequest;
+    private (string Promotion, string Element, string Session)? loadedSheet;
+    private (string Promotion, string Element, string Session)? SheetContext => Promotion is { } p && Element is { } e ? (p.Value, e.Value, Session?.Value ?? "1") : null;
+
+    private void ResetSheet()
+    {
+        sheetRequest++;
+        loadedSheet = null;
+        Items.Clear();
+        Selected = null;
+    }
 
     public LmdMarksPage(ShellViewModel shell) : base(shell)
     {
@@ -566,26 +579,38 @@ public sealed class LmdMarksPage : PageViewModel
     public IReadOnlyList<ChoiceItem> Promotions { get; private set; } = [];
     public IReadOnlyList<ChoiceItem> Elements { get; private set; } = [];
     public IReadOnlyList<ChoiceItem> Sessions { get; } = [new("1", "Première session"), new("2", "Deuxième session")];
-    public ChoiceItem? Promotion { get => promotion; set { if (Set(ref promotion, value) && ready) _ = Shell.Run(ReloadElementsAsync); } }
-    public ChoiceItem? Element { get => element; set { if (Set(ref element, value) && ready) _ = Shell.Run(RefreshAsync); } }
-    public ChoiceItem? Session { get => session; set { if (Set(ref session, value) && ready) _ = Shell.Run(RefreshAsync); } }
+    public ChoiceItem? Promotion { get => promotion; set
+    {
+        if (!Set(ref promotion, value) || !ready) return;
+        elementsRequest++;
+        ResetSheet();
+        Elements = [];
+        element = null;
+        Raise(nameof(Elements));
+        Raise(nameof(Element));
+        _ = Shell.Run(ReloadElementsAsync);
+    } }
+    public ChoiceItem? Element { get => element; set { if (Set(ref element, value) && ready) { ResetSheet(); _ = Shell.Run(RefreshAsync); } } }
+    public ChoiceItem? Session { get => session; set { if (Set(ref session, value) && ready) { ResetSheet(); _ = Shell.Run(RefreshAsync); } } }
     public LmdMarkRowVm? Selected { get => selected; set => Set(ref selected, value); }
     public string LockReason { get => lockReason; private set { if (Set(ref lockReason, value)) Raise(nameof(IsLocked)); } }
     public bool IsLocked => !string.IsNullOrEmpty(lockReason);
 
     private async Task ReloadElementsAsync()
     {
-        await LoadElementsAsync();
-        await LoadSheetAsync();
+        if (await LoadElementsAsync()) await LoadSheetAsync();
     }
 
-    private async Task LoadElementsAsync()
+    private async Task<bool> LoadElementsAsync()
     {
+        var request = ++elementsRequest;
+        var chosen = Promotion;
         Elements = [];
         element = null;
-        if (Promotion is not null)
+        if (chosen is not null)
         {
-            var program = await Shell.Api.GetAsync<List<LmdProgramItemDto>>($"api/etablissement/lmd/promotions/{Promotion.Value}/programme");
+            var program = await Shell.Api.GetAsync<List<LmdProgramItemDto>>($"api/etablissement/lmd/promotions/{chosen.Value}/programme");
+            if (request != elementsRequest || Promotion?.Value != chosen.Value) return false;
             var units = program.Where(p => p.Kind == "TeachingUnit").ToDictionary(p => p.Id);
             Elements = program.Where(p => p.Kind == "TeachingElement")
                 .OrderBy(p => p.Semester).ThenBy(p => p.Code)
@@ -596,6 +621,7 @@ public sealed class LmdMarksPage : PageViewModel
         }
         Raise(nameof(Elements));
         Raise(nameof(Element));
+        return true;
     }
 
     public override async Task LoadAsync()
@@ -614,10 +640,14 @@ public sealed class LmdMarksPage : PageViewModel
 
     private async Task LoadSheetAsync()
     {
-        Items.Clear();
-        if (Promotion is null || Element is null) { LockReason = string.Empty; return; }
+        ResetSheet();
+        var request = sheetRequest;
+        var context = SheetContext;
+        if (context is not { } chosen) { LockReason = string.Empty; return; }
         var sheet = await Shell.Api.GetAsync<LmdMarkSheetDto>(
-            $"api/etablissement/lmd/promotions/{Promotion.Value}/ecs/{Element.Value}/notes?session={Session?.Value ?? "1"}");
+            $"api/etablissement/lmd/promotions/{chosen.Promotion}/ecs/{chosen.Element}/notes?session={chosen.Session}");
+        if (request != sheetRequest || context != SheetContext) return;
+        loadedSheet = context;
         foreach (var line in sheet.Lines) Items.Add(new LmdMarkRowVm(line));
         LockReason = sheet.LockReason ?? (sheet.Lines.Any(l => l.Editable) ? string.Empty : "Aucun étudiant ne compose cet EC à cette session.");
         subtitle = $"{sheet.UeCode} › {sheet.Code} · {sheet.Name} · {sheet.Semester} · notes sur {ProfileFormat.N(sheet.MarkScale)}";
@@ -626,20 +656,35 @@ public sealed class LmdMarksPage : PageViewModel
 
     private async Task SaveAsync()
     {
-        if (Promotion is null || Element is null) return;
+        if (SheetContext is not { } context || loadedSheet != context)
+        {
+            Shell.Notify("Attendez le chargement de la feuille avant d'enregistrer.");
+            return;
+        }
+        var request = sheetRequest;
+        var snapshot = Items.Select(r => (r.EnrollmentId, r.Score)).ToArray();
         var lines = new List<object>();
+        var sent = new List<(LmdMarkRowVm Row, decimal? Score)>();
         foreach (var row in Items.Where(r => r.Editable))
         {
             decimal? value = string.IsNullOrWhiteSpace(row.Score) ? null
                 : Format.TryAmount(row.Score, out var parsed) ? parsed
                 : throw new InvalidOperationException($"Note illisible pour {row.FullName} : « {row.Score} ».");
-            if (value != row.Original) lines.Add(new { enrollmentId = row.EnrollmentId, score = value });
+            if (value != row.Original)
+            {
+                lines.Add(new { enrollmentId = row.EnrollmentId, score = value });
+                sent.Add((row, value));
+            }
         }
         if (lines.Count == 0) { Shell.Notify("Aucune note modifiée."); return; }
-        await Shell.Api.SendAsync(HttpMethod.Put, $"api/etablissement/lmd/promotions/{Promotion.Value}/ecs/{Element.Value}/notes",
-            new { session = int.Parse(Session?.Value ?? "1", CultureInfo.InvariantCulture), lines });
+        await Shell.Api.SendAsync(HttpMethod.Put, $"api/etablissement/lmd/promotions/{context.Promotion}/ecs/{context.Element}/notes",
+            new { session = int.Parse(context.Session, CultureInfo.InvariantCulture), lines });
         Shell.Notify($"{lines.Count} note(s) enregistrée(s).");
-        await RefreshAsync();
+        if (request == sheetRequest && context == SheetContext)
+        {
+            foreach (var (row, saved) in sent) row.AcceptSavedValue(saved);
+            if (snapshot.SequenceEqual(Items.Select(r => (r.EnrollmentId, r.Score)))) await LoadSheetAsync();
+        }
     }
 }
 

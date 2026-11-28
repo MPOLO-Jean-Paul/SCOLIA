@@ -42,8 +42,8 @@ public sealed class PairingViewModel : Observable
         Copy = new AsyncCommand(async () =>
         {
             if (!Ready) return;
-            if (shell.CopyHandler is { } copy) await copy(CodeText);
-            shell.Notify("Invitation copiée : utilisez-la sur l'autre appareil avant son expiration.");
+            if (await shell.TryCopyAsync(CodeText))
+                shell.Notify("Invitation copiée : utilisez-la sur l'autre appareil avant son expiration.");
         });
         Close = new RelayCommand(() => { countdown?.Stop(); shell.CloseDialog(); });
         OpenSharing = new RelayCommand(() =>
