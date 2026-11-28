@@ -6,7 +6,7 @@ using Scolia.Bureau.Infrastructure;
 
 namespace Scolia.Bureau.Controls;
 
-/// <summary>Un seul tracé sur sa grille Fluent de 24 points, sans étirer les limites de la forme.</summary>
+/// <summary>Tracé Fluent à la taille optique adaptée, sans étirer les limites de la forme.</summary>
 public sealed class FluentIcon : TemplatedControl
 {
     public static readonly StyledProperty<MaterialIconKind> KindProperty =
@@ -29,11 +29,15 @@ public sealed class FluentIcon : TemplatedControl
 
     public override void Render(DrawingContext context)
     {
-        var scale = Math.Min(Bounds.Width, Bounds.Height) / 24;
-        if (scale <= 0 || Foreground is null) return;
-        var offset = new Vector((Bounds.Width - 24 * scale) / 2, (Bounds.Height - 24 * scale) / 2);
+        var size = Math.Min(Bounds.Width, Bounds.Height);
+        if (size <= 0 || Foreground is null) return;
+        double canvas;
+        var geometry = Data is { } data ? FluentGlyphs.ForSize(data, size, out canvas)
+            : FluentGlyphs.ForSize(Kind, size, out canvas);
+        var scale = size / canvas;
+        var offset = new Vector((Bounds.Width - size) / 2, (Bounds.Height - size) / 2);
         using var clip = context.PushClip(new Rect(Bounds.Size));
         using var transform = context.PushTransform(Matrix.CreateScale(scale, scale) * Matrix.CreateTranslation(offset));
-        context.DrawGeometry(Foreground, null, Data ?? FluentGlyphs.For(Kind));
+        context.DrawGeometry(Foreground, null, geometry);
     }
 }

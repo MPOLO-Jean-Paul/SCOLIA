@@ -1,7 +1,8 @@
 Microsoft Fluent UI System Icons
 https://github.com/microsoft/fluentui-system-icons
 
-Original regular glyphs on a fixed 24 px canvas. Original color geometry and gradients
+Original regular glyphs on their native 16, 20 and 24 px canvases; optical variants
+are selected for small commands without stretching their geometry. Original color geometry and gradients
 transcribed to native Avalonia drawings, with chromatic colors adapted to SCOLIA blue
 (#1D4ED8) and green (#16A34A), retaining neutral shading and semantic alert colors.
 Source commit, paths and SHA-256 of the original SVGs are recorded in manifest.json.

@@ -8,3 +8,4 @@
 - Les droits sont appliqués par le serveur, y compris aux opérations déléguées et aux écritures qui attendaient déjà leur tour. Les autres sessions des métiers concernés doivent se reconnecter.
 - Les anciennes copies de consultation sont retirées sur l'appareil qui applique le changement. Les opérations en attente de synchronisation restent conservées.
 - Le promoteur et l'enseignant conservent leurs espaces et leurs droits habituels. Aucun dossier ni paiement existant n'est déplacé ou supprimé.
+- Les commandes, menus et fenêtres utilisent des pictogrammes Fluent vectoriels à taille optique adaptée : variantes natives de 16 et 20 points, proportions conservées et repères de navigation bleus et verts. Les petites flèches et les icônes des formulaires partagent le même rendu sur téléphone et ordinateur.

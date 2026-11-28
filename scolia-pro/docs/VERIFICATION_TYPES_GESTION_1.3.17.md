@@ -21,6 +21,12 @@ Le contrôle a révélé que l'adaptation automatique des colonnes pouvait réaf
 
 Le nouveau pictogramme de modification du salaire provient du catalogue Microsoft Fluent épinglé du projet. Les tests du catalogue détectent tout identifiant dépourvu de tracé natif.
 
+Le catalogue embarque également les tailles optiques Microsoft : 168 tracés de 16 points et 191 tracés de 20 points, avec la même provenance et leurs empreintes dans le manifeste. Les commandes sélectionnent le dessin adapté à leur taille ; les géométries de connexion et de navigation partagées utilisent ce même catalogue. Les dessins personnalisés conservent leur grille d'origine.
+
+Le contrôle de rendu des icônes couvre tous les écrans principaux, les flèches, le réseau et l'action de salaire à huit tailles ou proportions de conteneur et trois densités (100 %, 125 % et 200 %). Il vérifie les pixels visibles, l'absence de coupe, les proportions, l'identité du rendu des commandes et des PathIcon partagés, ainsi que l'absence de doublons entre écrans à 16, 20 et 24 points. Une planche claire et sombre permet aussi leur contrôle visuel.
+
+La comparaison a révélé que l'alias automatique « Outline » pouvait réutiliser à 16 points le dessin d'une autre fonction lorsque sa variante native manquait. Les alias optiques ne partagent désormais leur dessin que si leurs tracés d'origine de 24 points sont identiques ; sinon le catalogue choisit la taille native suivante. « Résultats » et « Mes résultats » gardent ainsi leurs identités distinctes jusque dans les petites commandes.
+
 ## Exécutions locales
 
 - 35 tests serveur ciblés, puis le scénario de révocation des délégations en ligne : réussis.
