@@ -54,3 +54,15 @@ Les effets de zoom et de soulèvement au survol sont réservés au desktop. Les 
 Les 60 contrôles natifs mesurent les rectangles réels des boutons, illustrations et pictogrammes avant et après survol, contact, geste abandonné et clic. Ils contrôlent l'absence d'action et de vibration avant confirmation, puis l'exécution unique de l'action. Ils couvrent les petits téléphones en clair et sombre, avec les animations actives. Un témoin desktop exerce réellement le survol pour éviter un résultat obtenu en désactivant toutes les animations. Les 773 tests du client réussissent également après les premières modifications ; les suites complètes sont rejouées sur la version finale.
 
 Le test de démarrage sur émulateur passe à Android 16 (API 36), conserve les animations système et vérifie le niveau d'API annoncé par l'appareil. Les fichiers android-version.txt et android-sdk.txt sont archivés avec les captures de validation.
+
+## Sources et rendu des icônes mobiles
+
+La référence fournie montre l'habillage des paramètres TECNO/HiOS : symbole clair, carré arrondi coloré, dégradé et reflet. La recherche s'appuie sur les sources officielles suivantes :
+
+- [Android Developers — Material 3 Expressive et Android 16](https://android-developers.googleblog.com/2025/05/the-android-show-io-edition.html).
+- [Google Fonts — guide Material Symbols](https://developers.google.com/fonts/docs/material_symbols) : variantes arrondies, remplissage, graisse, taille optique et SVG disponibles sous Apache 2.0.
+- [TECNO — HiOS](https://www.tecno-mobile.com/hios-detail/) pour le contexte de l'habillage constructeur.
+
+Le catalogue mobile embarque 78 symboles Google originaux pour 80 identifiants, épinglés au commit 10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7. Les chemins, variantes et empreintes sont dans Assets/MaterialSymbols/manifest.json ; la licence est embarquée. Les fonds, dégradés bleus et verts, reflets et reliefs fixes sont dessinés nativement par SCOLIA. Le rendu ne télécharge ni police ni image à l'ouverture. Le catalogue Fluent reste utilisé sur le desktop et pour les commandes au trait.
+
+Les 612 contrôles du nouveau catalogue vérifient la présence des symboles de chaque écran, le cache, la grille, les dimensions et les identités distinctes à 16, 24, 32 et 48 points. Les planches claire et sombre ont été inspectées. Les 60 contrôles des interactions ont été rejoués avec les nouvelles icônes et réussissent ; les 4 712 contrôles du catalogue desktop réussissent également. La génération est reproductible avec scripts/generer-icones-mobiles.py --check.

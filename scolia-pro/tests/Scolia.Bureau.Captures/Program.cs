@@ -36,6 +36,12 @@ if (args.Length > 3 && args[3] == "contact-mobile")
     return;
 }
 
+if (args.Length > 3 && args[3] == "icones-mobiles")
+{
+    MobileArtworkCapture.Run(output);
+    return;
+}
+
 if (args.Length > 3 && args[3] == "fonctionnement")
 {
     FunctionalClientChecks.Run(output);

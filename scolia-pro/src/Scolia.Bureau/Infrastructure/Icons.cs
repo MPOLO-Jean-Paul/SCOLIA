@@ -11,8 +11,8 @@ using Material.Icons.Avalonia;
 namespace Scolia.Bureau.Infrastructure;
 
 /// <summary>
-/// Règles communes : illustrations Fluent bleues et vertes pour la navigation,
-/// pictogrammes Fluent au trait dans les barres d'outils, les menus et les boutons d'action.
+/// Règles communes : repères vectoriels bleus et verts pour la navigation,
+/// pictogrammes au trait dans les barres d'outils, les menus et les boutons d'action.
 /// Une seule taille par usage : 16 dans un bouton, 18 dans une ligne de liste.
 /// </summary>
 public static class Icons

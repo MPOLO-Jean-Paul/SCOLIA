@@ -116,6 +116,8 @@ jobs:
         run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-fonctionnement http://127.0.0.1:1/ inutilise fonctionnement
       - name: Vérifier les cartes fixes et les clics confirmés sur mobile
         run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-contact-mobile http://127.0.0.1:1/ inutilise contact-mobile
+      - name: Vérifier les symboles arrondis et les carrés colorés du mobile
+        run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/controle-icones-mobiles http://127.0.0.1:1/ inutilise icones-mobiles
       - name: Vérifier le placement des icônes À propos sur téléphone et ordinateur
         env:
           SCOLIA_ASTUCES: '0'
@@ -131,6 +133,7 @@ jobs:
           path: |
             scolia-pro/artifacts/controle-fonctionnement/
             scolia-pro/artifacts/controle-contact-mobile/
+            scolia-pro/artifacts/controle-icones-mobiles/
             scolia-pro/artifacts/controle-a-propos/
           if-no-files-found: ignore
           retention-days: 14
