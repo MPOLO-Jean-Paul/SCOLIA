@@ -13,7 +13,7 @@ namespace JPServices.Owner.Tests;
 /// le dossier donné par SCOLIA_CONSOLE_CAPTURES, sinon seulement vérifiées.
 /// </summary>
 [Collection("Avalonia")]
-public sealed class ShellRenderTests
+public sealed partial class ShellRenderTests
 {
     private static readonly object Gate = new();
     private static bool started;
@@ -114,7 +114,10 @@ public sealed class ShellRenderTests
                 {
                     ("Serveurs", "Sans signal récent", "09-serveurs"),
                     ("Relais", "Cloudflare principal", "10-relais"),
-                    ("Sauvegardes", "En retard", "11-sauvegardes")
+                    ("Sauvegardes", "En retard", "11-sauvegardes"),
+                    ("Stockage cloud", "Stockage vérifié et disponible", "12-stockage"),
+                    ("Découverte TURN", "TURN JP-Services", "13-turn"),
+                    ("Secours HTTPS", "Pilote désactivé", "14-secours-https")
                 })
                 {
                     Navigate(shell, name);
@@ -372,6 +375,7 @@ public sealed class ShellRenderTests
             window.Show(); Pump(600);
             var shell = (OwnerShell)window.Content;
             Navigate(shell, "Établissements");
+            Until(shell, () => All<Button>(shell).Any(b => AutomationProperties.GetName(b) == "École Démonstration JP-Services"));
             Click(shell, "École Démonstration JP-Services");
             Until(shell, () => All<TextBox>(shell).Any(t => AutomationProperties.GetName(t) == "Nombre de jours · Enregistrer un paiement"));
             var days = All<TextBox>(shell).Single(t => AutomationProperties.GetName(t) == "Nombre de jours · Enregistrer un paiement");

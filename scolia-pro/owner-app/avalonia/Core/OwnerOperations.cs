@@ -34,7 +34,8 @@ public sealed partial class OwnerShell
         ShowStatus();
         try
         {
-            JsonElement? summary = null, schools = null, school = null, servers = null, relays = null, audit = null;
+            JsonElement? summary = null, schools = null, school = null, servers = null, relays = null, audit = null,
+                storage = null, turn = null, netlify = null;
             switch (page)
             {
                 case Page.Home or Page.Backups:
@@ -56,6 +57,15 @@ public sealed partial class OwnerShell
                 case Page.Activity:
                     if (force || _audit is null) audit = await api.AuditAsync(ct);
                     break;
+                case Page.Storage:
+                    if (force || _storage is null) storage = await api.StorageAsync(ct);
+                    break;
+                case Page.Turn:
+                    if (force || _turn is null) turn = await api.DiscoverTurnAsync(ct);
+                    break;
+                case Page.Netlify:
+                    if (force || _netlify is null) netlify = await api.NetlifyAsync(ct);
+                    break;
             }
             ct.ThrowIfCancellationRequested();
             await Dispatcher.UIThread.InvokeAsync(() =>
@@ -68,7 +78,10 @@ public sealed partial class OwnerShell
                 if (servers is { } d) { changed |= !Same(_servers, d); _servers = d; }
                 if (relays is { } e) { changed |= !Same(_relays, e); _relays = e; }
                 if (audit is { } f) { changed |= !Same(_audit, f); _audit = f; }
-                if (summary is not null || schools is not null || school is not null || servers is not null || relays is not null || audit is not null)
+                if (storage is { } g) { changed |= !Same(_storage, g); _storage = g; }
+                if (turn is { } h) { changed |= !Same(_turn, h); _turn = h; }
+                if (netlify is { } i) { changed |= !Same(_netlify, i); _netlify = i; }
+                if (summary is not null || schools is not null || school is not null || servers is not null || relays is not null || audit is not null || storage is not null || turn is not null || netlify is not null)
                     _loadedAt = DateTimeOffset.Now;
                 _loading = false;
                 if (changed) ShowPage(preserveScroll: true);
@@ -109,6 +122,7 @@ public sealed partial class OwnerShell
             var notice = OwnerText.Str(reply, "notice");
             _notice = success ?? (notice.Length > 0 ? notice : "Opération enregistrée.");
             _summary = _schools = _servers = _audit = _relays = null;
+            _storage = _turn = _netlify = null;
             // Ne pas déplacer l'administrateur s'il a changé de page pendant l'envoi.
             await LoadAsync(_page, force: true);
         }
@@ -130,6 +144,7 @@ public sealed partial class OwnerShell
         _api?.Dispose();
         _api = null;
         _summary = _schools = _servers = _relays = _audit = _school = null;
+        _storage = _turn = _netlify = null;
         _selectedSchool = null;
         _drafts.Clear();
     }

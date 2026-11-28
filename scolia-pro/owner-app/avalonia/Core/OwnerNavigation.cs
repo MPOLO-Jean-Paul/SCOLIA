@@ -27,6 +27,8 @@ public sealed partial class OwnerShell
     {
         if (_page == Page.SchoolDetail) ReturnToSchools();
         else if (_page == Page.Menu) Navigate(_menuReturnPage);
+        else if (_page == Page.Storage) Navigate(Page.Backups);
+        else if (_page is Page.Turn or Page.Netlify) Navigate(Page.Relays);
         else if (_page != Page.Home) Navigate(Page.Home);
         else return false;
         return true;
@@ -109,11 +111,7 @@ public sealed partial class OwnerShell
     private Control BuildHeader()
     {
         _headerGrid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,Auto"), RowDefinitions = new RowDefinitions("Auto,Auto,Auto"), ColumnSpacing = 8, RowSpacing = 4, Margin = new Thickness(16, 8) };
-        _headerBack = IconButton("Back", "Revenir", () =>
-        {
-            if (_page == Page.Menu) Navigate(_menuReturnPage);
-            else ReturnToSchools();
-        });
+        _headerBack = IconButton("Back", "Revenir", () => { Back(); });
         _headerGrid.Children.Add(_headerBack);
         Grid.SetColumn(_heading, 1);
         _headerGrid.Children.Add(_heading);
@@ -149,7 +147,7 @@ public sealed partial class OwnerShell
         _layout.RowDefinitions[2].Height = GridLength.Auto;
         _sidebar.IsVisible = !_compact;
         _bottomNav.IsVisible = _compact;
-        _headerBack!.IsVisible = _page is Page.SchoolDetail or Page.Menu;
+        _headerBack!.IsVisible = _page is Page.SchoolDetail or Page.Menu or Page.Storage or Page.Turn or Page.Netlify;
         _headerRefresh!.IsVisible = _page is not (Page.Account or Page.Menu) && _credentials is { IsComplete: true };
         var fullMobileTitle = _compact && !_short;
         Grid.SetRow(_heading, fullMobileTitle ? 1 : 0);
@@ -224,6 +222,9 @@ public sealed partial class OwnerShell
         Page.Relays => "Connexions Internet et fournisseurs WSS",
         Page.Activity => "Historique des opérations administratives",
         Page.Backups => "État des sauvegardes chiffrées",
+        Page.Storage => "Configuration et vérification du stockage R2",
+        Page.Turn => "Catalogue des fournisseurs Cloudflare TURN",
+        Page.Netlify => "Configuration et test du site Netlify de secours",
         _ => "Accès sécurisé, apparence et mises à jour"
     };
 

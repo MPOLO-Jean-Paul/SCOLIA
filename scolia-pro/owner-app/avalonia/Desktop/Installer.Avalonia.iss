@@ -1,4 +1,4 @@
-#define AdminVersion "1.2.1"
+#define AdminVersion "1.2.2"
 #define OwnerRoot GetEnv("OWNER_PUBLISH_DIR")
 #if OwnerRoot == ""
   #error OWNER_PUBLISH_DIR must be the Avalonia Desktop publish output.

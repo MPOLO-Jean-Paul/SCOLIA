@@ -55,6 +55,29 @@ public sealed class OwnerApi : IDisposable
     public Task<JsonElement> ServersAsync(CancellationToken ct = default) => GetAsync("api/v1/owner/servers", ct);
     public Task<JsonElement> RelaysAsync(CancellationToken ct = default) => GetAsync("api/v1/owner/relays", ct);
     public Task<JsonElement> AuditAsync(CancellationToken ct = default) => GetAsync("api/v1/owner/audit", ct);
+    public Task<JsonElement> StorageAsync(CancellationToken ct = default) => GetAsync("api/v1/owner/settings/storage", ct);
+    public Task<JsonElement> DiscoverTurnAsync(CancellationToken ct = default) => GetAsync("api/v1/owner/relays/cloudflare", ct);
+    public Task<JsonElement> NetlifyAsync(CancellationToken ct = default) => GetAsync("api/v1/owner/relays/netlify", ct);
+
+    public Task<JsonElement> ConfigureStorageAsync(string account, string bucket, string accessKey, string secret,
+        CancellationToken ct = default) => SendAsync(HttpMethod.Put, "api/v1/owner/settings/storage",
+        new { account_id = account.Trim(), bucket = bucket.Trim(), access_key_id = accessKey.Trim(), secret_access_key = secret.Trim() }, ct);
+
+    public Task<JsonElement> RemoveStorageAsync(CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Delete, "api/v1/owner/settings/storage", null, ct);
+
+    public Task<JsonElement> RequestCloudForAllAsync(CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, "api/v1/owner/cloud/request-all", new { }, ct);
+
+    public Task<JsonElement> ConfigureNetlifyAsync(string label, string address, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Put, "api/v1/owner/relays/netlify",
+            new { label = label.Trim(), base_url = address.Trim(), enabled = false, confirm_experimental = true }, ct);
+
+    public Task<JsonElement> TestNetlifyAsync(CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, "api/v1/owner/relays/netlify/test", new { }, ct);
+
+    public Task<JsonElement> RemoveNetlifyAsync(CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Delete, "api/v1/owner/relays/netlify", null, ct);
 
     public Task<JsonElement> CreateInvitationAsync(string schoolName, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, "api/v1/owner/invitations", new { school_name = schoolName.Trim() }, ct);
@@ -159,5 +182,5 @@ public sealed class OwnerApi : IDisposable
 
 public static class OwnerInfo
 {
-    public const string Version = "1.2.1";
+    public const string Version = "1.2.2";
 }

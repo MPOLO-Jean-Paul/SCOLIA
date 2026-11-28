@@ -1,175 +1,89 @@
-# SCOLIA Console (console administrateur JP-Services) — état et reste à faire
+# SCOLIA Console administrateur — état au 28 novembre 2026
 
-Date de l'audit : 10 novembre 2026. Branche de travail : `claude/escolia-admin-console-config-h9ej62`,
-basée sur la révision la plus récente de la console (`7e4ab94`, branche
-`feature/cloudflare-sqlite-d1-automatic-sync-20261109`, 9 novembre 23 h 18).
+## Fonctions livrées dans la version 1.2.2
 
-## 0. Mise à jour du 18 novembre 2026 — SCOLIA Console 1.2.0
+La console native Avalonia est commune à Android et Windows. Elle administre les établissements, invitations,
+licences, serveurs, relais WSS, sauvegardes cloud et journal d’audit directement par l’API propriétaire.
+La version 1.2.2 termine les trois écrans qui renvoyaient encore vers le navigateur :
 
-La console native n'est plus une vitrine : elle lit et modifie les données du Worker sans navigateur
-(établissements, invitations, licences, serveurs, relais, journal, sauvegardes). Elle s'authentifie avec un
-**jeton de service Cloudflare Access** et le **jeton propriétaire**, chiffrés sur l'appareil (DPAPI sous Windows,
-Android Keystore). Le Worker n'a pas changé : il exige toujours Access (`ctx.access.aud`) **et** le jeton.
+- **Stockage cloud** : état R2, vérification par écriture/relecture/suppression d’un fichier témoin, enregistrement
+  des identifiants chiffrés côté service, retrait des identifiants ajoutés et proposition de sauvegarde aux écoles.
+- **Découverte TURN** : catalogue Cloudflare en lecture seule, présenté séparément des relais WSS.
+- **Secours HTTPS** : enregistrement, vérification de disponibilité et retrait d’un site Netlify.
+  Le transport expérimental reste désactivé tant que le protocole et les clients ne sont pas validés.
 
-Les numéros de version passent tous à **1.2.0** (Android `ApplicationVersion` 4) ; le tag officiel attendu devient
-`scolia-owner-v1.2.0`. Un nouveau job CI « Tests de la console native » (26 tests, captures en artefact) conditionne
-la préversion et la publication. `main` épingle désormais cette révision (voir §4, étape 3, faite le 18 novembre).
+Les modifications sensibles demandent une confirmation dans l’interface. Les formulaires restent remplis après
+un refus du service ; les clés R2 sont masquées et effacées après un enregistrement réussi. Une nouvelle saisie
+faite pendant une requête est préservée. Le retour ramène à la rubrique d’origine. Les pages sont adaptées aux
+petits téléphones, au paysage et au bureau, en thèmes clair et sombre.
 
-### Créer le jeton de service (une fois, dans Cloudflare Zero Trust)
+Les paramètres de fréquence des sauvegardes et les nouveaux filtres/exports du tableau de bord demandés pour
+**SCOLIA des écoles** sont un chantier distinct ; ils ne sont pas ajoutés à cette console propriétaire.
 
-1. **Access → Service Auth → Service Tokens → Create Service Token** : nom `scolia-console`, durée 1 an
-   (ou « non-expiring »). Copier immédiatement le *Client ID* et le *Client Secret* : le secret n'est plus réaffiché.
-2. **Access → Applications →** l'application qui protège `/console` et `/api/v1/owner/*` (AUD `beb99695…`) →
-   **Policies → Add a policy** : action **Service Auth**, règle *Include → Service Token → scolia-console*.
-   Ne pas modifier les exclusions existantes (`/health`, `/api/v1/notice`, `/api/v1/register`, `/api/v1/heartbeat`,
-   `/api/v1/server/*` restent hors Access).
-3. Dans SCOLIA Console : **Compte → Accès sécurisé de cet appareil**, saisir le Client ID, le Client Secret et le
-   jeton propriétaire (`SCOLIA_OWNER_ADMIN_TOKEN`), puis « Enregistrer et vérifier ». Rien n'est enregistré si le
-   service refuse.
+## Validation effectuée
 
-Messages possibles : « redirection vers la connexion » = règle Service Auth absente ou jeton inconnu ;
-« Jeton propriétaire refusé » = jeton propriétaire différent de celui du Worker.
-Pour révoquer un appareil perdu : supprimer ou renouveler le jeton de service dans Zero Trust (effet immédiat),
-puis changer le jeton propriétaire si l'appareil le contenait.
+- **48 tests du Worker** : sécurité, autorisations, établissements, licences, stockage et répertoire des serveurs.
+- **37 tests natifs** : API, coffre chiffré, rendu des pages et interactions. Les parcours R2 et Netlify utilisent
+  le vrai Worker avec SQLite en mémoire ; seuls les fournisseurs externes sont simulés.
+- **Windows** : exécutable autonome et installateur compilés.
+- **Android** : APK ARM/ARM64 compilé ; lancement réel de la configuration Release sur émulateur x86_64,
+  application encore ouverte après 25 secondes.
+- **Console web** : cinq formats et thèmes vérifiés sans débordement ni erreur JavaScript, paiement confirmé
+  envoyé une seule fois et verrouillage conservé malgré une réponse tardive.
+- Aucun secret réel, aucune licence et aucune donnée d’école de production n’ont été modifiés par ces tests.
 
-## 1. Où en est la console
+Exécution de référence : [GitHub Actions 46131684267](https://github.com/MPOLO-Jean-Paul/SCOLIA/actions/runs/46131684267),
+source applicative `ab204be804c659e4d7f73ccf450a130c76b30b32`.
 
-La console administrateur est composée de trois éléments, tous dans `scolia-pro/` :
+## Distribution disponible et blocage de la publication officielle
 
-| Élément | Dossier | Dernier état constaté |
+La [préversion 1.2.2](https://github.com/MPOLO-Jean-Paul/SCOLIA/releases/tag/scolia-console-avalonia-preview-v1.2.2-ab204be8)
+contient l’APK de test et l’installateur Windows. Elle est explicitement distincte du canal officiel
+`scolia-owner-v*` : le paquet Android de test `com.jpservices.scolia.owner.preview` ne reçoit pas les mises à jour
+signées du paquet officiel `com.jpservices.scolia.owner`. Le journal Windows confirme l’absence du certificat
+Authenticode pour cette compilation. Il ne s’agit donc pas d’une version officielle signée.
+
+La publication officielle attend ces éléments dans les réglages GitHub Actions du dépôt :
+
+| Plateforme | Secrets | Variables publiques |
 | --- | --- | --- |
-| Worker Cloudflare (API + page `/console`) | `deploy/owner-console` | **En production** sur `scolia-pro-owner.jeanpaulmpolo242.workers.dev`, révision `742c81f` (déploiement manuel réussi le 9 nov. 13 h 29 UTC). La révision `0c9a831` épinglée ensuite sur `main` n'a jamais été déployée. Les 46 tests passent sur la révision actuelle. |
-| Application native **SCOLIA Console** 1.1.1 (Avalonia 12, Android + Windows) | `owner-app/avalonia` | Pilote 1.1.0 publié en préversion (`scolia-console-avalonia-preview-v1.1.0-143471b2`). **1.1.1 bloquée** : les 3 derniers essais échouent au test sur émulateur (`INSTALL_FAILED_NO_MATCHING_ABIS`). Aucune version officielle signée n'existe. |
-| Ancienne coque WebView 1.0.0 (`SCOLIA-JPServices-Admin`) | `owner-app/android`, `owner-app/windows` | Préversion `scolia-owner-preview-v1.0.0-c4afab5d` seulement. Le workflow de `main` (`scolia-owner-app-release.yml`) pointait encore dessus ; il n'a jamais été lancé. Même paquet Android et même canal que la version Avalonia : les deux ne peuvent pas coexister en version officielle. |
-| Netlify HTTPS de secours | `deploy/netlify-backup` | Tests verts (6), service `health-only`, boîte aux lettres désactivée. Aucun déploiement Netlify constaté. Facultatif. |
+| Android Admin | `OWNER_ADMIN_KEYSTORE_B64`, `OWNER_ADMIN_KEYSTORE_PASSWORD`, `OWNER_ADMIN_KEY_ALIAS`, `OWNER_ADMIN_KEY_PASSWORD` | `OWNER_ADMIN_CERT_SHA256` |
+| Windows Authenticode | `SCOLIA_WINDOWS_SIGNING_PFX`, `SCOLIA_WINDOWS_SIGNING_PASSWORD` | `SCOLIA_WINDOWS_CERT_THUMBPRINT` |
 
-Lignée des branches console (de la plus ancienne à la plus récente) :
-`feature/jp-services-admin-app-20261109` (WebView 1.0.0) → `feature/jp-services-admin-avalonia-20261109` (Avalonia 1.1.0)
-→ `feature/jp-services-admin-server-discovery-20261109` (1.1.1, TURN, Netlify) → `feature/offline-cloud-spool-android-reconnect-20261109`
-→ `feature/cloudflare-d1-school-pairing-free-20261109` (D1 scolaire `SCHOOL_DB`) → `feature/cloudflare-sqlite-d1-automatic-sync-20261109`
-(journal chiffré automatique). Les PR #124, #125 et #127 enchaînent ces branches ; aucune n'est fusionnée.
+Le contrôle préalable du workflow liste les noms des éléments absents, sans afficher leur contenu, avant de
+compiler les installateurs officiels. Les étapes de signature vérifient ensuite réellement les certificats et
+les fichiers. Aucun APK de test ne peut devenir officiel ; aucune clé scolaire ne remplace la clé Admin.
+La consultation des secrets par l’intégration GitHub de cet environnement renvoie HTTP 403 : leur configuration
+ne peut pas être faite depuis cette session. Ce refus ne prouve pas à lui seul l’absence de chaque secret.
 
-## 2. Ce qui a été corrigé et ajouté sur cette branche
+La [procédure de signature](CONSOLE_SIGNATURES_PRODUCTION.md) et le script
+`scripts/owner/new-permanent-android-key.ps1` permettent de préparer la clé Android sur un poste de confiance.
+Conserver cette clé et ses sauvegardes chiffrées : les mises à jour Android doivent garder le même certificat.
 
-Commit `fa74f05` (révision à épingler) — `.github/workflows/scolia-owner-avalonia.yml` :
+## Service de production et accès
 
-1. **Cause de l'échec 1.1.1 corrigée.** Le test émulateur compilait avec `-r android-x64`, mais l'empaquetage
-   Android suit la propriété `RuntimeIdentifiers` du `.csproj` (`android-arm64;android-arm`) : l'APK ne contenait
-   aucune bibliothèque x86_64. Le workflow surcharge maintenant `-p:RuntimeIdentifiers=android-x64`, vérifie
-   `native-code: x86_64` avant de lancer l'émulateur, teste la **configuration Release** (celle de l'APK officiel)
-   et contrôle que l'application reste ouverte 25 secondes.
-2. **Canal de publication officielle** : entrée `workflow_call` (`publish_release`, `source_sha`), job
-   `android-release` (APK Release signé avec le certificat Admin permanent, refus d'un certificat de débogage,
-   contrôle paquet/version/ABI, fichier `.sha256`), job `release` qui publie `scolia-owner-v1.1.1` de façon
-   immuable avec l'APK, l'installateur Windows et leurs empreintes. C'est le tag que l'application lit pour
-   « Vérifier les mises à jour ».
-3. **Plantage Android au lancement corrigé** (révélé par le test émulateur une fois l'ABI réparée) :
-   l'activité utilisait `Theme.Material.Light.NoActionBar`, alors qu'Avalonia.Android exige un thème
-   AppCompat (« You need to use a Theme.AppCompat theme »). L'application se fermait sur **tout**
-   téléphone, préversion 1.1.0 comprise. Nouveau style `ScoliaConsoleTheme` (AppCompat). Les autres
-   obstacles levés dans le test : restauration hôte `NU1102`, KVM absent (démarrage > 10 min) et
-   script exécuté ligne par ligne par l'action émulateur.
-4. **Windows** : contrôle de cohérence des quatre numéros de version, signature Authenticode facultative (mêmes
-   secrets que SCOLIA Pro), empreinte `.sha256`.
+Console web : <https://scolia-pro-owner.jeanpaulmpolo242.workers.dev/console>.
+Le Worker et les installateurs ont deux workflows distincts, déclenchés depuis `main` avec une source épinglée.
+Le déploiement Worker ne nécessite pas les certificats des installateurs.
 
-Commit suivant — fichiers **à copier tels quels sur `main`** (ils sont inertes sur cette branche) :
+L’accès propriétaire reste protégé par Cloudflare Access **et** le jeton propriétaire. L’application native
+utilise un jeton de service Access ; les trois valeurs sont chiffrées par DPAPI sous Windows ou Android Keystore.
+Aucun secret n’est intégré aux binaires.
 
-- `.github/workflows/scolia-owner-app-release.yml` : appelle le workflow Avalonia épinglé à `fa74f05` au lieu de
-  l'ancienne coque WebView.
-- `.github/workflows/scolia-owner-production.yml` : épingle `fa74f05` (Worker avec `SCHOOL_DB`, TURN, Netlify
-  désactivé) et ajoute l'étape `wrangler d1 migrations apply SCHOOL_DB`. Le script `prepare-production.mjs`
-  crée la base `scolia-pro-school-sync` seulement si elle n'existe pas.
+Pour un nouvel appareil :
 
-## 3. Configurations qui restent à faire (hors code)
+1. Créer un jeton dans **Cloudflare Zero Trust → Access → Service Auth → Service Tokens**.
+2. Ajouter une règle **Service Auth** incluant ce jeton à l’application Access qui protège `/console` et
+   `/api/v1/owner/*`, sans retirer la protection des accès humains.
+3. Dans **Compte → Accès sécurisé de cet appareil**, saisir le Client ID, le Client Secret et le jeton
+   propriétaire, puis **Enregistrer et vérifier**. Les données sont conservées seulement si le service accepte.
+4. Pour révoquer un appareil, révoquer son jeton Access et renouveler le jeton propriétaire si nécessaire.
 
-### A. Secrets GitHub du dépôt — bloquant pour l'APK officiel
+Les routes publiques utilisées par les écoles doivent rester accessibles conformément à la configuration
+existante ; ne jamais exclure les routes propriétaires de la protection Access pour résoudre un problème client.
 
-Le journal du dernier build natif confirme : « Pas de clé Admin permanente ». Il faut créer **une seule fois**
-un keystore réservé à la console, le conserver hors ligne (toute perte empêche définitivement les mises à jour
-Android par-dessus la version installée), puis enregistrer quatre secrets de dépôt :
+## Repères de version
 
-| Secret | Contenu |
-| --- | --- |
-| `OWNER_ADMIN_KEYSTORE_B64` | le fichier `.jks` encodé en base64 sur une seule ligne |
-| `OWNER_ADMIN_KEYSTORE_PASSWORD` | mot de passe du keystore |
-| `OWNER_ADMIN_KEY_ALIAS` | alias de la clé (par exemple `scolia-console`) |
-| `OWNER_ADMIN_KEY_PASSWORD` | mot de passe de la clé |
-
-Génération sur un poste de confiance (jamais dans le dépôt, jamais dans une conversation) :
-
-```bash
-keytool -genkeypair -v -keystore scolia-console-admin.jks -alias scolia-console \
-  -keyalg RSA -keysize 4096 -validity 10950 \
-  -dname "CN=SCOLIA Console, O=JP-Services, C=CG"
-base64 -w0 scolia-console-admin.jks > scolia-console-admin.jks.b64
-```
-
-Ne pas réutiliser la clé de SCOLIA Pro (clients) : le canal administrateur doit rester indépendant.
-
-### B. Secrets facultatifs — signature Windows
-
-`SCOLIA_WINDOWS_SIGNING_PFX`, `SCOLIA_WINDOWS_SIGNING_PASSWORD` (secrets) et `SCOLIA_WINDOWS_CERT_THUMBPRINT`
-(variable), déjà prévus pour SCOLIA Pro. Sans certificat de signature de code, l'installateur fonctionne mais
-Windows SmartScreen affiche un avertissement. Le workflow signe automatiquement si les secrets existent.
-
-### C. Environnement GitHub `scolia-owner-production` — déjà en place, à vérifier
-
-Les déploiements réussis du 9 novembre prouvent la présence de `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`,
-`SCOLIA_OWNER_ADMIN_TOKEN` et `SCOLIA_TURN_DISCOVERY_TOKEN`. Deux points à contrôler avant le prochain déploiement :
-
-- Le jeton API doit avoir **D1 Edit** (création de la seconde base `scolia-pro-school-sync`), **Workers R2 Storage
-  Edit** et **Workers Scripts Edit**. Le forfait gratuit accepte 10 bases D1 au maximum.
-- La règle de déploiement de l'environnement n'autorise que `main` : le workflow de la branche
-  `release/direct-apk-scolia-pro-20261103` a été refusé le 9 novembre (job sans aucune étape). Garder `main`
-  comme seule branche autorisée et continuer à publier depuis `main`.
-
-### D. Cloudflare Access — déjà configuré, règle à conserver
-
-L'application Zero Trust protège `/console` et `/api/v1/owner/*` (AUD `beb99695…`). Le déploiement de 12 h 43 a
-échoué parce que `/api/v1/notice` renvoyait 403 ; la configuration a été corrigée avant 13 h 19. **`/health`,
-`/api/v1/notice`, `/api/v1/register`, `/api/v1/heartbeat` et `/api/v1/server/*` doivent rester hors Access**,
-sinon les serveurs des écoles sont bloqués. Le workflow échoue volontairement dans ce cas.
-
-### E. Netlify — facultatif, rien à faire pour les installateurs
-
-Le pilote reste désactivé (`SCOLIA_NETLIFY_MAILBOX_ENABLED` absent). Un site Netlify n'est nécessaire que pour
-tester le point `health`.
-
-## 4. Procédure pour obtenir les installateurs finaux
-
-1. **Valider cette branche sur GitHub** : Actions → « SCOLIA Console natif Avalonia - Android et Windows » →
-   *Run workflow* → branche `claude/escolia-admin-console-config-h9ej62`, `publish_release` = false.
-   Attendu : 4 jobs verts (Windows, Android preview, tests Worker, émulateur) et une préversion
-   `scolia-console-avalonia-preview-v1.1.1-fa74f058`. C'est le seul moyen de vérifier la compilation .NET :
-   l'environnement d'audit ne dispose pas du SDK .NET.
-2. **Créer le keystore et les 4 secrets** (section 3.A). Facultatif : certificat Windows (3.B).
-3. **Mettre `main` à jour** en y copiant les deux fichiers `.github/workflows/scolia-owner-app-release.yml` et
-   `.github/workflows/scolia-owner-production.yml` de cette branche (un commit sur `main`, comme pour les
-   épinglages précédents). Le push déclenche automatiquement le job « Tests sans secrets ».
-4. **Publier les installateurs** : Actions → « JP-Services Admin - publication Android et Windows » depuis `main`,
-   `publish_release` = true. Résultat : release **`scolia-owner-v1.2.0`** avec
-   `SCOLIA_Console_1.2.0_Android.apk`, `SCOLIA_Console_Setup_1.2.0_Windows_x64.exe` et leurs `.sha256`.
-   Sans les 4 secrets, le workflow s'arrête avant toute publication.
-5. **Redéployer le Worker** : Actions → « SCOLIA Pro - Console JP-Services (production protegee) » depuis `main`,
-   `confirm_production` coché. Le Worker passe de `742c81f` à `fa74f05` (D1 scolaire, TURN, Netlify désactivé).
-6. **Vérifier** : `https://scolia-pro-owner.jeanpaulmpolo242.workers.dev/health` répond `SCOLIA Pro Owner` ;
-   `/console` demande Cloudflare Access puis le jeton ; sur un téléphone, désinstaller les préversions
-   (`com.jpservices.scolia.owner.preview`), installer l'APK officiel, ouvrir Compte → « Vérifier les mises à
-   jour » : « La version administrateur est à jour sur le canal officiel ».
-
-## 5. Pour les versions suivantes
-
-Avant chaque nouvelle publication, incrémenter ensemble : `OWNER_VERSION` et `RELEASE_TAG` dans
-`scolia-owner-avalonia.yml`, `Version` dans `Desktop/Scolia.Owner.Desktop.csproj`, `ApplicationDisplayVersion`
-**et** `ApplicationVersion` (+1) dans `Android/Scolia.Owner.Android.csproj`, `AdminVersion` dans
-`Installer.Avalonia.iss`, `OwnerInfo.Version` dans `Core/OwnerApi.cs`. Le job Windows refuse toute incohérence. Une
-release publiée n'est jamais remplacée.
-
-## 6. Limites connues (pas des blocages)
-
-- Depuis la 1.2.0, la console native s'authentifie avec un jeton de service Access ; le stockage R2, la découverte
-  TURN, l'ajout de relais et Netlify restent dans la console web.
-- Le jumelage D1 scolaire et le journal chiffré automatique restent des pilotes à tester de bout en bout avec
-  une vraie école (voir `CLOUDFLARE_D1_SQLITE_AUTO_SYNC.md`).
-- Les secrets et variables GitHub n'ont pas pu être listés par l'API depuis cet environnement ; leur présence est
-  déduite des journaux d'exécution.
+Version native **1.2.2**, Android **ApplicationVersion 6**. Les versions de l’API native, du Core, du projet
+Desktop, de l’installateur, du projet Android et du workflow sont synchronisées. Une release officielle publiée
+reste immuable. La coque WebView historique n’est plus le canal de distribution courant.

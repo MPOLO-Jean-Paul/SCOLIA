@@ -25,7 +25,7 @@ public sealed partial class OwnerShell : UserControl
     private const string Channel = "scolia-owner-v";
     private static readonly HttpClient Client = NewClient();
 
-    private enum Page { Home, Schools, Licenses, Servers, Relays, Activity, Backups, Account, SchoolDetail, Menu }
+    private enum Page { Home, Schools, Licenses, Servers, Relays, Activity, Backups, Storage, Turn, Netlify, Account, SchoolDetail, Menu }
     private static readonly (Page Page, string Icon, string Name)[] Sections =
     [
         (Page.Home, "Home", "Accueil"),
@@ -35,6 +35,9 @@ public sealed partial class OwnerShell : UserControl
         (Page.Relays, "Globe", "Relais"),
         (Page.Activity, "History", "Activité"),
         (Page.Backups, "Cloud", "Sauvegardes"),
+        (Page.Storage, "Database", "Stockage cloud"),
+        (Page.Turn, "Settings", "Découverte TURN"),
+        (Page.Netlify, "CloudDismiss", "Secours HTTPS"),
         (Page.Account, "ShieldCheckmark", "Compte")
     ];
 
@@ -255,6 +258,9 @@ public sealed partial class OwnerShell : UserControl
             Page.Relays => RelaysPage(),
             Page.Activity => ActivityPage(),
             Page.Backups => BackupsPage(),
+            Page.Storage => StoragePage(),
+            Page.Turn => TurnPage(),
+            Page.Netlify => NetlifyPage(),
             _ => HomePage()
         };
         _scroll.Offset = offset;
@@ -621,7 +627,8 @@ public sealed partial class OwnerShell : UserControl
             panel.Children.Add(action);
             stack.Children.Add(panel);
         }
-        stack.Children.Add(Button("Découverte TURN et réglages avancés", () => _ = OpenConsoleAsync("relaysPanel"), subtle: true));
+        stack.Children.Add(Button("Découvrir les relais TURN", () => Navigate(Page.Turn), subtle: true));
+        stack.Children.Add(Button("Configurer le secours HTTPS", () => Navigate(Page.Netlify), subtle: true));
         return stack;
     }
 
@@ -650,7 +657,7 @@ public sealed partial class OwnerShell : UserControl
             $"{OwnerText.Bytes(OwnerText.Number(s, "cloud_backup_bytes"))} stockés · {Count(s, "cloud_pending_operations")} opération(s) en attente",
             12, false, OwnerPalette.Muted));
         stack.Children.Add(Box(info));
-        stack.Children.Add(Button("Configurer le stockage des sauvegardes", () => _ = OpenConsoleAsync("storagePanel"), subtle: true));
+        stack.Children.Add(Button("Configurer le stockage des sauvegardes", () => Navigate(Page.Storage), subtle: true));
         foreach (var school in OwnerText.Items(_schools, "schools").Where(x => OwnerText.Flag(x, "cloud_enabled") || OwnerText.Flag(x, "cloud_requested")))
         {
             var id = OwnerText.Str(school, "id");
@@ -733,7 +740,7 @@ public sealed partial class OwnerShell : UserControl
 
         var web = new StackPanel { Spacing = 8 };
         web.Children.Add(Text("Console web", 14, true));
-        web.Children.Add(Text("Stockage R2, découverte TURN et réglages avancés sont disponibles dans la console web protégée.",
+        web.Children.Add(Text("Retrouvez les mêmes outils d'administration dans la console web protégée.",
             12, false, OwnerPalette.Muted));
         var open = Button("Ouvrir la console web", () => _ = OpenConsoleAsync(), subtle: true);
         open.HorizontalAlignment = HorizontalAlignment.Left;
