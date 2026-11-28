@@ -352,12 +352,11 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
 }
 
 /// <summary>Sauvegarde automatique au démarrage puis à intervalle régulier.</summary>
-public sealed class AutomaticBackupWorker(BackupService backups, IOptions<ScoliaStorageOptions> options, ILogger<AutomaticBackupWorker> logger,
+public sealed class AutomaticBackupWorker(BackupService backups, BackupScheduleStore schedule, ILogger<AutomaticBackupWorker> logger,
     Live.LiveHub live, Persistence.DataRevision revision) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var hours = Math.Max(1, options.Value.AutomaticBackupHours);
         try { await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken); } catch (OperationCanceledException) { return; }
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -365,7 +364,7 @@ public sealed class AutomaticBackupWorker(BackupService backups, IOptions<Scolia
             {
                 var list = backups.List();
                 var latest = list.Count > 0 ? list[0] : null;
-                if (latest is null || latest.CreatedUtc < DateTime.UtcNow.AddHours(-hours))
+                if (BackupScheduleStore.IsDue(schedule.Read(), latest?.CreatedUtc, DateTime.UtcNow))
                 {
                     await backups.CreateAsync("automatique", stoppingToken);
                     live.Changed(revision.Value, null, "Ordinateur principal", "Sauvegarde automatique",
@@ -376,7 +375,7 @@ public sealed class AutomaticBackupWorker(BackupService backups, IOptions<Scolia
             {
                 logger.LogError(ex, "Échec de la sauvegarde automatique");
             }
-            try { await Task.Delay(TimeSpan.FromHours(1), stoppingToken); } catch (OperationCanceledException) { return; }
+            try { await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken); } catch (OperationCanceledException) { return; }
         }
     }
 }

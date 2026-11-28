@@ -49,10 +49,22 @@ public sealed class DashboardPage : PageViewModel
     private string todayTitle = string.Empty;
     private bool hasToday;
     private string backupLine = string.Empty;
+    private string selectionTotal = "Chargement de la sélection…";
+    private string? loadedQuery, selectionKey;
+    public DashboardFiltersVm Filters { get; } = new();
+    public string SelectionTotal { get => selectionTotal; private set => Set(ref selectionTotal, value); }
 
     public DashboardPage(ShellViewModel shell) : base(shell)
     {
         Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell)), primary: true);
+        Action("Exporter la sélection", MaterialIconKind.FileExport, () => Filters.ExportAsync(Shell, false, loadedQuery, selectionKey));
+        Filters.Changed += () =>
+        {
+            loadedQuery = selectionKey = null;
+            SelectionTotal = "Actualisation de la sélection…";
+            Kpis.Clear(); Promotions.Clear(); Latest.Clear(); Months.Clear(); Aging.Clear();
+            _ = Shell.Run(() => Filters.RefreshLatestAsync(RefreshAsync, () => loadedQuery == Filters.Query));
+        };
         ActionRefresh();
     }
 
@@ -89,7 +101,13 @@ public sealed class DashboardPage : PageViewModel
 
     public override async Task LoadAsync()
     {
-        var d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord");
+        await Filters.EnsureAsync(Shell.Api, promoter: false);
+        var query = Filters.Query;
+        var d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord" + query);
+        if (query != Filters.Query) return;
+        loadedQuery = query;
+        selectionKey = d.SelectionKey;
+        SelectionTotal = $"Total de la sélection · {Format.Count(d.ActiveStudents, Shell.StudentTerms.Singular, Shell.StudentTerms.Plural)} · {Money(d.CollectedTotal)} encaissés · {Money(d.Outstanding)} à percevoir";
         subtitle = $"Année {d.AcademicYear} · au {DateTime.Today.ToString("d MMMM", Fr)}";
         Raise(nameof(Subtitle));
 
@@ -104,7 +122,7 @@ public sealed class DashboardPage : PageViewModel
             ThemeBrush.Get("TonePurple"), MaterialIconKind.HandHeartOutline));
         // Les recettes du jour figurent dans « Aujourd'hui » : la tuile de l'année porte celles du mois et ses dépenses.
         Kpis.Add(new KpiVm("Recettes de l'année", Money(d.CollectedTotal),
-            $"Ce mois : {Money(d.CollectedThisMonth)} · dépenses {Money(d.ExpensesThisMonth)}",
+            $"Ce mois : {Money(d.CollectedThisMonth)} · dépenses de l'établissement {Money(d.ExpensesThisMonth)}",
             ThemeBrush.Get("ToneGreen"), MaterialIconKind.CashMultiple));
         Kpis.Add(new KpiVm("Reste exigible", Money(d.Overdue), Format.Count(d.StudentsLate, $"{Shell.StudentTerms.Singular} en retard", $"{Shell.StudentTerms.Plural} en retard"),
             ThemeBrush.Get("ToneOrange"), MaterialIconKind.AlertCircleOutline));
@@ -143,7 +161,8 @@ public sealed class DashboardPage : PageViewModel
         MaleShare = total == 0 ? 0 : 100.0 * d.GenderMale / total;
         GenderText = $"Garçons {Format.Amount(d.GenderMale)} · Filles {Format.Amount(d.GenderFemale)}";
 
-        await LoadTodayAsync();
+        if (!Filters.HasScope) await LoadTodayAsync();
+        else { HasToday = false; Appointments.Clear(); Birthdays.Clear(); RaisePeople(); }
         await CheckBackupAsync();
     }
 
@@ -152,10 +171,11 @@ public sealed class DashboardPage : PageViewModel
     {
         if (!Shell.Can(Perm.BackupManage)) { BackupLine = string.Empty; return; }
         var backups = await Shell.Api.GetAsync<List<BackupDto>>("api/sauvegardes");
+        var schedule = await DataPage.ReadScheduleAsync(Shell);
         var last = backups.Count == 0 ? (DateTime?)null : backups.Max(b => b.CreatedUtc);
         BackupLine = last is null
             ? "Aucune sauvegarde n'existe encore. Une copie vérifiée protège l'établissement en cas de panne."
-            : DateTime.UtcNow - last.Value > TimeSpan.FromHours(24)
+            : !BackupText.IsFresh(last.Value, DateTime.UtcNow, schedule.LocalIntervalHours)
                 ? $"Dernière sauvegarde le {Format.DateTime(last.Value)}. Pensez à en faire une nouvelle."
                 : string.Empty;
     }

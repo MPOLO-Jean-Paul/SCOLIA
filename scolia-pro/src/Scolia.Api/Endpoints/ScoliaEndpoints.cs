@@ -28,6 +28,15 @@ public static class ScoliaEndpoints
             ? Results.File(reports.Excel(table), Xlsx, $"{baseName}.xlsx")
             : new InlineFileResult(reports.Pdf(table), Pdf, $"{baseName}.pdf");
 
+    private static async Task<IResult> DashboardExport(ReportService reports, DashboardQuery query, string expectedSelection,
+        string? format, bool promoter, CancellationToken ct)
+    {
+        var chosen = format ?? "xlsx";
+        var bytes = await reports.DashboardExportAsync(query, expectedSelection, chosen, promoter, ct);
+        return Results.File(bytes, chosen == "xlsx" ? Xlsx : Pdf,
+            (promoter ? "pilotage-selection" : "tableau-bord-selection") + "." + chosen);
+    }
+
     // Les mots de passe des archives et les bases téléchargées ne doivent jamais
     // transiter en clair depuis un autre appareil du réseau local.
     private static bool TrustedBackupTransport(HttpContext http) =>
@@ -199,9 +208,15 @@ public static class ScoliaEndpoints
         MapStudents(secured);
         MapFinance(secured);
         MapReports(secured);
-        // Endpoint de pilotage séparé : aucun rapport nominatif ni fichier téléchargeable avec ce droit.
-        secured.MapGet("/pilotage/synthese", (ReportService reports, CancellationToken ct) =>
-            reports.PromoterDashboardAsync(ct)).RequireAuthorization(Permissions.PilotageRead);
+        // Pilotage séparé : tableaux et exports exclusivement agrégés, sans dossier ni reçu nominatif.
+        secured.MapGet("/pilotage/synthese", ([AsParameters] DashboardQuery query, ReportService reports, CancellationToken ct) =>
+            reports.FilteredPromoterDashboardAsync(query, ct)).RequireAuthorization(Permissions.PilotageRead);
+        secured.MapGet("/pilotage/filtres", (ReportService reports, CancellationToken ct) =>
+            reports.DashboardFiltersAsync(ct)).RequireAuthorization(Permissions.PilotageRead);
+        secured.MapGet("/pilotage/export", async ([AsParameters] DashboardQuery query, string expectedSelection, string? format,
+            ReportService reports, CancellationToken ct) =>
+            await DashboardExport(reports, query, expectedSelection, format, true, ct))
+            .RequireAuthorization(Permissions.PilotageRead);
         MapAcademics(secured);
         MapDeliberation(secured);
         MapStaff(secured);
@@ -560,7 +575,11 @@ public static class ScoliaEndpoints
     private static void MapReports(RouteGroupBuilder api)
     {
         var g = api.MapGroup("/rapports").RequireAuthorization(Permissions.ReportsRead);
-        g.MapGet("/tableau-de-bord", (Guid? promotionId, ReportService r, CancellationToken ct) => r.DashboardAsync(promotionId, ct));
+        g.MapGet("/tableau-de-bord", ([AsParameters] DashboardQuery query, ReportService r, CancellationToken ct) => r.FilteredDashboardAsync(query, ct));
+        g.MapGet("/tableau-de-bord/filtres", (ReportService r, CancellationToken ct) => r.DashboardFiltersAsync(ct));
+        g.MapGet("/tableau-de-bord/export", async ([AsParameters] DashboardQuery query, string expectedSelection, string? format,
+            ReportService r, CancellationToken ct) =>
+            await DashboardExport(r, query, expectedSelection, format, false, ct));
         g.MapGet("/aujourdhui", (ReportService r, CancellationToken ct) => r.TodayAsync(ct));
         g.MapGet("/debiteurs", ([AsParameters] DebtorQuery q, ReportService r, CancellationToken ct) => r.DebtorsAsync(q, ct));
         g.MapGet("/debiteurs/export", async ([AsParameters] DebtorQuery q, string? format, ReportService r, CancellationToken ct) =>
@@ -934,6 +953,16 @@ public static class ScoliaEndpoints
 
         var backups = api.MapGroup("/sauvegardes").RequireAuthorization(Permissions.BackupManage);
         backups.MapGet("", (BackupService b) => b.List());
+        backups.MapGet("/parametres", (Scolia.Infrastructure.Backup.BackupScheduleStore schedule) => schedule.Read());
+        backups.MapPut("/parametres", async (Scolia.Infrastructure.Backup.BackupSchedule input,
+            Scolia.Infrastructure.Backup.BackupScheduleStore schedule, IAuditLog audit, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            var saved = schedule.Save(input);
+            audit.Record("sauvegarde.planification", "Sauvegarde", null,
+                $"Automatique {(saved.Enabled ? "active" : "désactivée")} ; locale {saved.LocalIntervalHours} h ; en ligne {saved.CloudIntervalHours} h ; nettoyage manuel après {saved.CleanupAfterDays} jours, {saved.KeepLatest} copies récentes gardées.");
+            await db.SaveChangesAsync(ct);
+            return saved;
+        }).RequireAuthorization(Permissions.SettingsWrite);
         backups.MapPost("", async (BackupService b, IAuditLog log, ScoliaDbContext db, ICurrentUser user,
             Scolia.Infrastructure.Live.LiveHub live, DataRevision revision, CancellationToken ct) =>
         {

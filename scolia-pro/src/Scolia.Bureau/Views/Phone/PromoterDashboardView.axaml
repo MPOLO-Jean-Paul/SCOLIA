@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.Phone.PromoterDashboardView">
   <UserControl.Resources>
     <DataTemplate x:Key="PhonePeriodRow">
@@ -30,7 +31,7 @@
 
   <!-- Le cadre mobile possède l'unique défilement de la page. -->
   <StackPanel Spacing="22" Margin="0,0,0,8">
-    <Border Classes="mobilecard">
+    <Border Classes="mobilecard" Background="{DynamicResource WelcomeBrush}">
       <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
         <Border Classes="mobileicon" VerticalAlignment="Top">
           <Image Source="{Binding Glyph, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}" Width="28" Height="28" />
@@ -45,6 +46,9 @@
         </StackPanel>
       </Grid>
     </Border>
+
+    <c:DashboardFilters DataContext="{Binding Filters}" />
+    <Border Classes="band"><TextBlock Text="{Binding SelectionTotal}" FontWeight="SemiBold" TextWrapping="Wrap" /></Border>
 
     <Border Classes="mobilecard" Background="{DynamicResource OrangeSoftBrush}" IsVisible="{Binding HasAttention}">
       <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">

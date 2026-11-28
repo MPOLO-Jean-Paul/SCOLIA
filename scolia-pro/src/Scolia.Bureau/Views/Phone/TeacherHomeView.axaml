@@ -5,7 +5,7 @@
              xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.Phone.TeacherHomeView">
   <StackPanel x:Name="TeacherPhoneSections" Spacing="22" Margin="0,0,0,8">
-    <Border Classes="mobilecard">
+    <Border Classes="mobilecard" Background="{DynamicResource WelcomeBrush}">
       <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
         <Border Classes="mobileicon" VerticalAlignment="Top">
           <Image Source="{Binding Glyph, Converter={x:Static infra:FluentGlyphs.ArtworkConverter}}" Width="28" Height="28" />

@@ -6,10 +6,33 @@ namespace Scolia.Infrastructure.Documents;
 /// <summary>Exports Excel (.xlsx) mis en forme : en-tête de l'établissement, tableau filtrable, colonnes ajustées.</summary>
 public sealed class SpreadsheetService : ISpreadsheetService
 {
-    public byte[] Export(TableDocument document)
+    public byte[] Export(TableDocument document) => ExportTables([(SheetName(document.Title), document)]);
+
+    public byte[] ExportTables(IReadOnlyList<(string SheetName, TableDocument Document)> tables)
     {
+        ArgumentNullException.ThrowIfNull(tables);
+        if (tables.Count == 0) throw new ArgumentException("Aucun tableau à exporter.", nameof(tables));
         using var workbook = new XLWorkbook();
-        var sheet = workbook.Worksheets.Add(SheetName(document.Title));
+        foreach (var (requestedName, document) in tables)
+        {
+            var original = SheetName(requestedName);
+            var unique = original;
+            var suffix = 2;
+            while (workbook.Worksheets.Any(s => string.Equals(s.Name, unique, StringComparison.OrdinalIgnoreCase)))
+            {
+                var marker = "-" + suffix.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                unique = original[..Math.Min(original.Length, 31 - marker.Length)] + marker;
+                suffix++;
+            }
+            WriteTable(workbook.Worksheets.Add(unique), document);
+        }
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return stream.ToArray();
+    }
+
+    private static void WriteTable(IXLWorksheet sheet, TableDocument document)
+    {
         // Une liste sans colonnes (aucune période/frais configuré) doit produire
         // un classeur ouvrable, pas un fichier Excel invalide ou une erreur 500.
         IReadOnlyList<string> columns = document.Columns.Count > 0 ? document.Columns : ["Information"];
@@ -65,9 +88,6 @@ public sealed class SpreadsheetService : ISpreadsheetService
         }
         sheet.Columns().AdjustToContents(headerRow, r, 8, 60);
         sheet.SheetView.FreezeRows(headerRow);
-        using var stream = new MemoryStream();
-        workbook.SaveAs(stream);
-        return stream.ToArray();
     }
 
     /// <summary>Les onglets et toutes leurs colonnes sont construits depuis l'année scolaire et ses promotions.</summary>

@@ -23,8 +23,8 @@ public sealed class LogoAssembly : Control
         AvaloniaProperty.Register<LogoAssembly, IBrush?>(nameof(Secondary));
 
     /// <summary>Durée de l'assemblage, puis de la descente.</summary>
-    public static readonly TimeSpan AssemblyTime = TimeSpan.FromMilliseconds(1100);
-    public static readonly TimeSpan DescentTime = TimeSpan.FromMilliseconds(380);
+    public static readonly TimeSpan AssemblyTime = TimeSpan.FromMilliseconds(1500);
+    public static readonly TimeSpan DescentTime = TimeSpan.FromMilliseconds(450);
 
     private const double Grid = 512;
     private static readonly Geometry Upper = Geometry.Parse("M330,118 H206 Q148,118 148,176 Q148,234 206,234 H226");
@@ -93,13 +93,13 @@ public sealed class LogoAssembly : Control
         var assembly = Math.Min(1, Progress);
         // Descente : le logo arrive un peu plus haut et plus grand, puis se pose à sa place.
         var descent = Ease(Math.Clamp((Progress - 1) / 0.35, 0, 1), 0, 1);
-        var lift = (1 - descent) * size * 0.35;
-        var grow = 1 + 0.3 * (1 - descent);
+        var lift = (1 - descent) * size * 0.18;
+        var grow = 1 + 0.12 * (1 - descent);
 
         var scale = size / Grid;
         var origin = Matrix.CreateTranslation((Bounds.Width - size) / 2, (Bounds.Height - size) / 2 - lift);
         var whole = Matrix.CreateTranslation(-Grid / 2, -Grid / 2)
-            * Matrix.CreateRotation(-Math.PI / 2 * (1 - Ease(assembly, 0, 0.85)))
+            * Matrix.CreateRotation(-16 * Math.PI / 180 * (1 - Ease(assembly, 0, 0.85)))
             * Matrix.CreateScale(grow, grow)
             * Matrix.CreateTranslation(Grid / 2, Grid / 2)
             * Matrix.CreateScale(scale, scale)
@@ -108,10 +108,10 @@ public sealed class LogoAssembly : Control
 
         var upperPen = new Pen(primary, 62, lineCap: PenLineCap.Round, lineJoin: PenLineJoin.Round);
         var lowerPen = new Pen(secondary, 62, lineCap: PenLineCap.Round, lineJoin: PenLineJoin.Round);
-        Piece(context, assembly, 0.00, -150, -130, -140, 237, 176, c => c.DrawGeometry(null, upperPen, Upper));
-        Piece(context, assembly, 0.10, 150, 130, 140, 273, 336, c => c.DrawGeometry(null, lowerPen, Lower));
-        Piece(context, assembly, 0.22, 170, -150, 0, 418, 118, c => c.DrawEllipse(primary, null, new Point(418, 118), 38, 38));
-        Piece(context, assembly, 0.30, -170, 150, 0, 94, 394, c => c.DrawEllipse(secondary, null, new Point(94, 394), 38, 38));
+        Piece(context, assembly, 0.00, -68, -54, -20, 237, 176, c => c.DrawGeometry(null, upperPen, Upper));
+        Piece(context, assembly, 0.10, 68, 54, 20, 273, 336, c => c.DrawGeometry(null, lowerPen, Lower));
+        Piece(context, assembly, 0.22, 52, -58, 0, 418, 118, c => c.DrawEllipse(primary, null, new Point(418, 118), 38, 38));
+        Piece(context, assembly, 0.30, -52, 58, 0, 94, 394, c => c.DrawEllipse(secondary, null, new Point(94, 394), 38, 38));
     }
 
     private static void Piece(DrawingContext context, double progress, double delay, double dx, double dy, double spin,

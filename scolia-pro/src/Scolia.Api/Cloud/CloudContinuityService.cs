@@ -80,8 +80,11 @@ public sealed partial class CloudContinuityService : BackgroundService
     private State state;
     private volatile bool backupRequested;
 
+    private readonly BackupScheduleStore? backupSchedule;
+
     public CloudContinuityService(IOptions<ScoliaStorageOptions> options, IDataProtectionProvider provider, SchoolLicenseService license,
-        BackupService backups, DataRevision revision, CloudDispatcher dispatcher, IServiceScopeFactory scopes, ILogger<CloudContinuityService> logger)
+        BackupService backups, DataRevision revision, CloudDispatcher dispatcher, IServiceScopeFactory scopes, ILogger<CloudContinuityService> logger,
+        BackupScheduleStore? backupSchedule = null)
     {
         this.license = license;
         this.backups = backups;
@@ -89,6 +92,7 @@ public sealed partial class CloudContinuityService : BackgroundService
         this.dispatcher = dispatcher;
         this.scopes = scopes;
         this.logger = logger;
+        this.backupSchedule = backupSchedule;
         protector = provider.CreateProtector("SCOLIA.Pro.Nuage.Etat.v1");
         delegations = provider.CreateProtector("SCOLIA.Pro.Nuage.Delegation.v1");
         Directory.CreateDirectory(options.Value.DataDirectory);
@@ -244,7 +248,8 @@ public sealed partial class CloudContinuityService : BackgroundService
         var s = state;
         if (backupRequested || s.LastBackupAt is null) return true;
         var changed = s.LastBackupEpoch != revision.Epoch || s.LastBackupRevision != revision.Value;
-        return (changed && now - s.LastBackupAt >= BackupEvery) || now - s.LastBackupAt >= BackupAtLeast;
+        var interval = TimeSpan.FromHours(backupSchedule?.Read().CloudIntervalHours ?? 1);
+        return (changed && now - s.LastBackupAt >= interval) || now - s.LastBackupAt >= BackupAtLeast;
     }
 
     /// <summary>Copie cohérente, compressée, chiffrée par l'école, envoyée et vérifiée par son empreinte.</summary>

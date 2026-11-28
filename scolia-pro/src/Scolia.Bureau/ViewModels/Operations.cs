@@ -58,7 +58,8 @@ public static class BackupText
     }
 
     /// <summary>Une copie de moins de 26 heures : la protection quotidienne est à jour.</summary>
-    public static bool IsFresh(DateTime? lastUtc, DateTime nowUtc) => lastUtc is { } last && nowUtc - last < TimeSpan.FromHours(26);
+    public static bool IsFresh(DateTime? lastUtc, DateTime nowUtc, int intervalHours = 24) =>
+        lastUtc is { } last && nowUtc - last < TimeSpan.FromHours(intervalHours + 2);
 }
 
 /// <summary>Données et sauvegardes : sauvegardes, restauration, contrôle d'intégrité et import du classeur V79.</summary>
@@ -70,6 +71,11 @@ public sealed class DataPage : PageViewModel
     public DataPage(ShellViewModel shell) : base(shell)
     {
         Action("Sauvegarder", MaterialIconKind.ContentSave, () => BackupNowAsync(Shell), primary: true);
+        if (Shell.Can(Perm.SettingsWrite))
+        {
+            Action("Paramètres des sauvegardes", MaterialIconKind.CogOutline, () => ConfigureBackupsAsync(Shell));
+            Action("Nettoyer les anciennes copies", MaterialIconKind.DeleteOutline, () => CleanupBackupsAsync(Shell));
+        }
         Action("Télécharger", MaterialIconKind.Download, DownloadAsync, row: true);
         Action("Exporter chiffré", MaterialIconKind.LockOutline, ExportEncryptedAsync, row: true);
         Action("Importer chiffré", MaterialIconKind.Upload, ImportEncryptedAsync);
@@ -110,20 +116,84 @@ public sealed class DataPage : PageViewModel
     public override async Task LoadAsync()
     {
         var backups = await Shell.Api.GetAsync<List<BackupDto>>("api/sauvegardes");
+        var schedule = await ReadScheduleAsync(Shell);
         Items.Clear();
         foreach (var b in backups.OrderByDescending(b => b.CreatedUtc))
             Items.Add(new BackupRowVm(b.Name, Format.DateTime(b.CreatedUtc), Size(b.SizeBytes), b));
-        subtitle = $"{Format.Count(backups.Count, "sauvegarde", "sauvegardes")} · gardées 30 jours";
+        subtitle = $"{Format.Count(backups.Count, "sauvegarde", "sauvegardes")} · {ScheduleLabel(schedule)}";
         Raise(nameof(Subtitle));
         var latest = backups.OrderByDescending(b => b.CreatedUtc).FirstOrDefault();
         var now = DateTime.UtcNow;
-        Fresh = BackupText.IsFresh(latest?.CreatedUtc, now);
+        Fresh = BackupText.IsFresh(latest?.CreatedUtc, now, schedule.LocalIntervalHours);
         StatusTitle = latest is null ? "Aucune sauvegarde"
             : Fresh ? "Vos données sont protégées" : "Sauvegarde à refaire";
         StatusDetail = latest is null
             ? "Créez la première sauvegarde pour protéger les données de l'établissement."
             : $"Dernière copie {BackupText.Age(latest.CreatedUtc, now)} ({BackupRowVm.KindOf(latest.Name).ToLowerInvariant()}, {Size(latest.SizeBytes)}) · "
-              + $"copie automatique chaque jour · {Format.Count(backups.Count, "copie conservée", "copies conservées")} 30 jours";
+              + (schedule.Supported ? $"{ScheduleLabel(schedule)} · nettoyage manuel après {schedule.CleanupAfterDays} jours" : "Réglages disponibles après mise à jour du serveur.");
+    }
+
+    public static async Task<BackupScheduleDto> ReadScheduleAsync(ShellViewModel shell, bool requireSupported = false)
+    {
+        try { return await shell.Api.GetAsync<BackupScheduleDto>("api/sauvegardes/parametres"); }
+        catch (ApiException ex) when (ex.Status is 400 or 404)
+        {
+            if (requireSupported) throw new InvalidOperationException("Mettez à jour le serveur de l'établissement pour régler les fréquences des sauvegardes.");
+            return new BackupScheduleDto { Supported = false };
+        }
+    }
+
+    private static string ScheduleLabel(BackupScheduleDto value) => !value.Supported ? "planification gérée par le serveur" : !value.Enabled
+        ? "sauvegarde automatique désactivée"
+        : value.LocalIntervalHours == 24 ? "copie automatique chaque jour"
+        : $"copie automatique toutes les {value.LocalIntervalHours} h";
+
+    public static async Task ConfigureBackupsAsync(ShellViewModel shell)
+    {
+        var current = await ReadScheduleAsync(shell, requireSupported: true);
+        var frequencies = new[] { 1, 3, 6, 12, 24, 48, 168 }.Append(current.LocalIntervalHours).Distinct().Order()
+            .Select(h => new ChoiceItem(h.ToString(CultureInfo.InvariantCulture), h == 1 ? "Toutes les heures" : h == 24 ? "Chaque jour" : h == 168 ? "Chaque semaine" : $"Toutes les {h} heures")).ToList();
+        var cloudFrequencies = new[] { 1, 3, 6, 12, 24 }.Append(current.CloudIntervalHours).Distinct().Order()
+            .Select(h => new ChoiceItem(h.ToString(CultureInfo.InvariantCulture), h == 1 ? "Toutes les heures" : h == 24 ? "Chaque jour" : $"Toutes les {h} heures")).ToList();
+        var form = new FormViewModel("Paramètres des sauvegardes", "Réglages du serveur de l'établissement, appliqués sans redémarrage.", async f =>
+        {
+            if (!int.TryParse(f.Text("jours"), out var days) || days is < 1 or > 3650 ||
+                !int.TryParse(f.Text("garder"), out var keep) || keep is < 1 or > 1000)
+                throw new InvalidOperationException("Indiquez un âge de 1 à 3650 jours et de 1 à 1000 copies récentes.");
+            var input = new BackupScheduleDto(f.Flag("active"), int.Parse(f.ChoiceValue("locale")!, CultureInfo.InvariantCulture),
+                int.Parse(f.ChoiceValue("nuage")!, CultureInfo.InvariantCulture), days, keep);
+            await shell.Api.SendAsync(HttpMethod.Put, "api/sauvegardes/parametres", input);
+            shell.Notify("Planification des sauvegardes enregistrée.");
+            if (shell.Current is DataPage data) await data.RefreshAsync();
+            return true;
+        });
+        form.AddHeader("Copies locales", "Une copie SQLite vérifiée est conservée sur le serveur.");
+        form.AddFlag("active", "Activer les copies automatiques", current.Enabled);
+        form.AddChoice("locale", "Fréquence des copies locales", frequencies, current.LocalIntervalHours.ToString(CultureInfo.InvariantCulture), required: true);
+        form.AddHeader("Copies en ligne", "Cette fréquence s'applique si la sauvegarde en ligne est activée et si les données ont changé. Une copie est faite au moins chaque jour.");
+        form.AddChoice("nuage", "Fréquence des copies en ligne", cloudFrequencies, current.CloudIntervalHours.ToString(CultureInfo.InvariantCulture), required: true);
+        form.AddHeader("Nettoyage manuel", "Les anciennes copies sont supprimées uniquement après votre confirmation dans « Nettoyer les anciennes copies ».");
+        form.Add("jours", "Âge minimal des copies à nettoyer (jours)", FieldKind.Amount, current.CleanupAfterDays.ToString(CultureInfo.InvariantCulture), required: true);
+        form.Add("garder", "Copies récentes à toujours conserver", FieldKind.Amount, current.KeepLatest.ToString(CultureInfo.InvariantCulture), required: true);
+        await shell.Ask(form);
+    }
+
+    public static async Task CleanupBackupsAsync(ShellViewModel shell)
+    {
+        var settings = await ReadScheduleAsync(shell);
+        var form = new FormViewModel("Nettoyer les anciennes sauvegardes", "Seules les copies plus anciennes que l'âge indiqué et au-delà des copies récentes conservées seront supprimées.", async f =>
+        {
+            if (!int.TryParse(f.Text("jours"), out var days) || days is < 1 or > 3650 ||
+                !int.TryParse(f.Text("garder"), out var keep) || keep is < 1 or > 1000)
+                throw new InvalidOperationException("Vérifiez l'âge minimal et le nombre de copies à conserver.");
+            await shell.Api.SendAsync(HttpMethod.Post, "api/sauvegardes/nettoyage", new { garder = keep, plusAnciennesQue = days });
+            shell.Notify("Nettoyage des anciennes sauvegardes terminé.");
+            if (shell.Current is DataPage data) await data.RefreshAsync();
+            return true;
+        }) { Danger = true, SubmitText = "Confirmer le nettoyage" };
+        form.Add("jours", "Âge minimal (jours)", FieldKind.Amount, settings.CleanupAfterDays.ToString(CultureInfo.InvariantCulture), required: true);
+        form.Add("garder", "Copies récentes à conserver", FieldKind.Amount, settings.KeepLatest.ToString(CultureInfo.InvariantCulture), required: true);
+        await shell.Ask(form);
     }
 
     private static string Size(long bytes) => bytes >= 1_048_576
@@ -638,7 +708,7 @@ public sealed class SearchViewModel : Observable
             "personnel" when shell.Can(Perm.StaffManage) => () => new StaffPage(shell),
             "parametres" when parts.Length > 1 && parts[1] == "utilisateurs" && shell.Can(Perm.UsersManage)
                 => () => new UsersPage(shell),
-            "parametres" when parts.Length > 1 && (new[] { "apparence", "texte", "fenetres", "animations", "sons" }.Contains(parts[1]) || (shell.Can(Perm.SettingsWrite) && new[] { "etablissement", "annees", "sections", "promotions", "frais" }.Contains(parts[1]))) => () => new SettingsPage(shell, parts[1]),
+            "parametres" when parts.Length > 1 && (new[] { "apparence", "texte", "fenetres", "animations", "sons" }.Contains(parts[1]) || (shell.Can(Perm.SettingsWrite) && new[] { "etablissement", "annees", "sections", "promotions", "frais", "sauvegardes" }.Contains(parts[1]))) => () => new SettingsPage(shell, parts[1]),
             "parametres" => () => new SettingsPage(shell),
             "utilisateurs" when shell.Can(Perm.UsersManage) => () => new UsersPage(shell),
             "donnees" when shell.Can(Perm.BackupManage) => () => new DataPage(shell),

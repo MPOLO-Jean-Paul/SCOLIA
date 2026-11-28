@@ -40,6 +40,7 @@ public static class DependencyInjection
         services.AddSingleton<IAcademicDocumentService, AcademicDocumentService>();
         services.AddSingleton<ISpreadsheetService, SpreadsheetService>();
         services.AddSingleton<BackupService>();
+        services.AddSingleton<BackupScheduleStore>();
         services.AddSingleton<DataRevision>();
         services.AddSingleton<Live.LiveHub>();
         services.AddHostedService<AutomaticBackupWorker>();

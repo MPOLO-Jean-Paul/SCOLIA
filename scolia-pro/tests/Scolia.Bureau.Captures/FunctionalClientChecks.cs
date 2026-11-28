@@ -253,6 +253,89 @@ internal static class FunctionalClientChecks
         Wait(about.CopyContacts.ExecuteAsync());
         Check("Presse-papiers natif : une fenêtre détachée ne confirme pas une copie fictive", shell.Notice?.Contains("Impossible", StringComparison.Ordinal) == true);
         detachedView.DataContext = null;
+        var sectionA = Guid.NewGuid();
+        var sectionB = Guid.NewGuid();
+        var promotionA = Guid.NewGuid();
+        var promotionB = Guid.NewGuid();
+        server.Reply = _ => Task.FromResult<object>(new DashboardFilterOptions(
+            [new(sectionA, "Informatique"), new(sectionB, "Commerce")],
+            [new(promotionA, "INF1", "Première année informatique", sectionA), new(promotionB, "COM1", "Première année commerce", sectionB)], Version: 1));
+        var filters = new DashboardFiltersVm();
+        Wait(filters.EnsureAsync(api, false));
+        Check("Tableau de bord : les filtres sont proposés par le serveur", filters.Supported && filters.Sections.Count == 3 && filters.Promotions.Count == 3);
+        filters.Section = filters.Sections[1];
+        Check("Tableau de bord : la section limite les promotions disponibles", filters.Promotions.Count == 2 && filters.Promotions[1].Value == promotionA.ToString());
+        filters.Promotion = filters.Promotions[1];
+        filters.Gender = filters.Genders[2];
+        filters.State = filters.States[2];
+        filters.Sort = filters.Sorts[3];
+        Check("Tableau de bord : une seule sélection alimente la requête", filters.Query.Contains("gender=F", StringComparison.Ordinal)
+            && filters.Query.Contains("sort=collected", StringComparison.Ordinal) && filters.Query.Contains(promotionA.ToString(), StringComparison.Ordinal));
+        filters.Section = filters.Sections[2];
+        Check("Tableau de bord : une promotion d'une autre section est retirée", filters.Promotion?.Value == "" && filters.Promotions[1].Value == promotionB.ToString());
+        var changed = 0;
+        filters.Changed += () => changed++;
+        filters.Reset.Execute(null);
+        Check("Tableau de bord : Réinitialiser ne recharge qu'une fois", changed == 1 && !filters.HasSelection && !filters.HasScope && filters.Search == "");
+        filters.Search = "ancienne";
+        filters.Search = "nouvelle";
+        Until(() => changed == 2);
+        Pump();
+        Check("Tableau de bord : une frappe rapide regroupe les recherches", changed == 2 && filters.Query.Contains("nouvelle", StringComparison.Ordinal));
+        filters.Search = "annulée";
+        filters.Reset.Execute(null);
+        Pump();
+        Check("Tableau de bord : Réinitialiser annule aussi la recherche différée", changed == 3 && !filters.HasSelection);
+        var selectionGate = Signal();
+        var refreshes = 0;
+        var currentSelection = false;
+        async Task RefreshSelection()
+        {
+            refreshes++;
+            if (refreshes == 1) await selectionGate.Task;
+            else currentSelection = true;
+        }
+        var slowSelection = filters.RefreshLatestAsync(RefreshSelection, () => currentSelection);
+        for (var i = 0; i < 12; i++) Wait(filters.RefreshLatestAsync(RefreshSelection, () => currentSelection));
+        selectionGate.SetResult();
+        Wait(slowSelection);
+        Check("Tableau de bord : une rafale de sélections ne produit qu'un dernier chargement", refreshes == 2 && currentSelection);
+        server.StatusCode = 404;
+        var legacyFilters = new DashboardFiltersVm();
+        Wait(legacyFilters.EnsureAsync(api, true));
+        Check("Ancien serveur : aucun filtre ignoré silencieusement", !legacyFilters.Supported && legacyFilters.Query == "" && legacyFilters.SupportMessage.Contains("mise à jour", StringComparison.Ordinal));
+        // Les anciens serveurs reconnaissent « parametres » comme un nom de fichier invalide (HTTP 400).
+        server.StatusCode = 400;
+        var oldSchedule = DataPage.ReadScheduleAsync(shell);
+        Wait(oldSchedule);
+        Check("Ancien serveur : l'écran Sauvegardes reste accessible", !oldSchedule.Result.Supported);
+        server.StatusCode = 200;
+
+        var previousServer = Environment.GetEnvironmentVariable("SCOLIA_SERVEUR");
+        try
+        {
+            Environment.SetEnvironmentVariable("SCOLIA_SERVEUR", server.Address.AbsoluteUri);
+            server.Reply = request => Task.FromResult<object>(request.Url!.AbsolutePath == "/api/installation"
+                ? new SetupStatusDto(false, null) : new { statut = "OK", label = "2026-2027" });
+            using var startApi = new ScoliaClient(server.Address);
+            var startShell = new ShellViewModel(startApi, new Preferences { Animations = true });
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var startup = startShell.StartAsync(null);
+            Until(() => server.Reads.Any(p => p == "/api/installation"));
+            Check("Ouverture : le serveur est interrogé pendant l'animation", !startup.IsCompleted && startShell.ShowStartup && !startShell.ShowSetup && !startShell.ShowLogin && !startShell.ShowOpening);
+            Wait(startup);
+            Check("Ouverture : le logo reste quelques secondes avant l'installation", watch.Elapsed >= ShellViewModel.LaunchIntroDuration && startShell.ShowSetup && !startShell.ShowStartup);
+            watch.Restart();
+            Wait(startShell.StartAsync(null));
+            Check("Ouverture : la connexion ne rejoue pas l'introduction", watch.Elapsed < TimeSpan.FromSeconds(2));
+            using var immediateApi = new ScoliaClient(server.Address);
+            var immediateShell = new ShellViewModel(immediateApi, new Preferences { Animations = false });
+            watch.Restart();
+            Wait(immediateShell.StartAsync(null));
+            Check("Ouverture : désactiver les animations supprime l'attente décorative", watch.Elapsed < TimeSpan.FromSeconds(2) && immediateShell.ShowSetup);
+            startShell.Sync.Stop(); immediateShell.Sync.Stop();
+        }
+        finally { Environment.SetEnvironmentVariable("SCOLIA_SERVEUR", previousServer); }
         File.WriteAllLines(Path.Combine(output, "fonctionnement-verifie.txt"), report);
         Console.WriteLine(string.Join(Environment.NewLine, report));
     }
@@ -275,6 +358,7 @@ internal sealed class ScenarioServer : IDisposable
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly HttpListener listener = new();
     public Uri Address { get; }
+    public int StatusCode { get; set; } = 200;
     public Func<HttpListenerRequest, Task<object>> Reply { get; set; } = _ => Task.FromResult<object>(new { revision = 0 });
     public ConcurrentQueue<string> Reads { get; } = new();
     public ConcurrentQueue<(string Path, string Body)> Writes { get; } = new();
@@ -301,6 +385,7 @@ internal sealed class ScenarioServer : IDisposable
             if (context.Request.HttpMethod == "GET") Reads.Enqueue(context.Request.RawUrl!);
             else { using var reader = new StreamReader(context.Request.InputStream); Writes.Enqueue((context.Request.RawUrl!, await reader.ReadToEndAsync())); }
             var reply = await Reply(context.Request);
+            context.Response.StatusCode = StatusCode;
             var bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(reply, JsonOptions));
             context.Response.ContentType = "application/json"; context.Response.ContentLength64 = bytes.Length;
             await context.Response.OutputStream.WriteAsync(bytes); context.Response.Close();
