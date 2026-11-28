@@ -1,5 +1,5 @@
 # Console proprietaire: execution manuelle depuis main, source epinglee.
-# Source épinglée sur SCOLIA Console 1.2.1, compilée et testée (Worker SQLite, natif et émulateur). Worker avec
+# Source épinglée sur SCOLIA Console 1.2.2, compilée et testée (Worker SQLite, natif et émulateur). Worker avec
 # OWNER_DB (licences), SCHOOL_DB (D1 scolaire separee, creee si absente par prepare-production.mjs),
 # R2 scolia-pro-backups, decouverte TURN et canal Netlify desactive.
 name: SCOLIA Pro - Console JP-Services (production protegee)
@@ -32,10 +32,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 984460dca1a433381190e96c0d1fe0777e66ddd7
+          ref: 77dc0c355b76aaf2fd414003a5479a76652c29f9
           persist-credentials: false
       - name: Verifier la revision
-        run: test "$(git rev-parse HEAD)" = '984460dca1a433381190e96c0d1fe0777e66ddd7'
+        run: test "$(git rev-parse HEAD)" = '77dc0c355b76aaf2fd414003a5479a76652c29f9'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -69,10 +69,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 984460dca1a433381190e96c0d1fe0777e66ddd7
+          ref: 77dc0c355b76aaf2fd414003a5479a76652c29f9
           persist-credentials: false
       - name: Verifier la revision
-        run: test "$(git rev-parse HEAD)" = '984460dca1a433381190e96c0d1fe0777e66ddd7'
+        run: test "$(git rev-parse HEAD)" = '77dc0c355b76aaf2fd414003a5479a76652c29f9'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -195,4 +195,4 @@ jobs:
         if: success()
         run: |
           echo "Console SCOLIA deployee sur https://$CF_OWNER_DOMAIN" >> "$GITHUB_STEP_SUMMARY"
-          echo "Source epinglee : 984460dca1a433381190e96c0d1fe0777e66ddd7" >> "$GITHUB_STEP_SUMMARY"
+          echo "Source epinglee : 77dc0c355b76aaf2fd414003a5479a76652c29f9" >> "$GITHUB_STEP_SUMMARY"
