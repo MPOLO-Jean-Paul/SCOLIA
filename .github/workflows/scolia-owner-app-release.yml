@@ -1,6 +1,6 @@
 # Canal de distribution strictement reserve aux administrateurs JP-Services.
 # Fichier a copier tel quel sur main : la publication officielle part de main, les sources
-# et le workflow reutilisable sont epingles a une revision testee (SCOLIA Console Avalonia 1.2.1, signatures de production obligatoires).
+# et le workflow reutilisable sont epingles a une revision testee (SCOLIA Console Avalonia 1.2.2, signatures de production obligatoires).
 # Remplace l'ancien appel de scolia-owner-native.yml (coque WebView 1.0.0, jamais publiee
 # officiellement) : meme paquet Android com.jpservices.scolia.owner, meme canal scolia-owner-v.
 name: JP-Services Admin - publication Android et Windows
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       publish_release:
-        description: "Publier SCOLIA Console 1.2.1 (APK Admin permanent + Windows Authenticode) sur scolia-owner-v"
+        description: "Publier SCOLIA Console 1.2.2 (APK Admin permanent + Windows Authenticode) sur scolia-owner-v"
         type: boolean
         required: true
         default: false
@@ -20,8 +20,8 @@ permissions:
 jobs:
   publication:
     if: github.ref == 'refs/heads/main' && github.actor == 'MPOLO-Jean-Paul' && inputs.publish_release == true
-    uses: MPOLO-Jean-Paul/SCOLIA/.github/workflows/scolia-owner-avalonia.yml@984460dca1a433381190e96c0d1fe0777e66ddd7
+    uses: MPOLO-Jean-Paul/SCOLIA/.github/workflows/scolia-owner-avalonia.yml@77dc0c355b76aaf2fd414003a5479a76652c29f9
     with:
       publish_release: true
-      source_sha: 984460dca1a433381190e96c0d1fe0777e66ddd7
+      source_sha: 77dc0c355b76aaf2fd414003a5479a76652c29f9
     secrets: inherit
