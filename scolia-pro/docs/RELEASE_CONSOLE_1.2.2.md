@@ -9,4 +9,8 @@
 
 Vérification locale : 37 tests natifs réussis, 48 tests du Worker réussis. Les parcours R2 et Netlify utilisent le vrai Worker avec SQLite en mémoire et des fournisseurs simulés ; aucun secret ni service de production n'est utilisé par les tests.
 
+Les builds Android et Windows passent sur GitHub Actions ; l'application reste ouverte sur un émulateur Android après son lancement. La console web est vérifiée dans cinq formats et thèmes, avec paiement unique et verrouillage pendant une lecture. L'APK et l'installateur de préversion ont été téléchargés et leurs empreintes contrôlées.
+
+La publication officielle détecte les paramètres de signature absents avant de compiler. Les étapes suivantes contrôlent toujours les certificats et les fichiers signés ; la préversion reste sur son canal distinct.
+
 Version Android : 6, affichage 1.2.2. La publication officielle reste soumise à la clé Admin permanente, à son empreinte et à la signature Windows Authenticode requises par le workflow. La clé du client SCOLIA Pro n'est jamais utilisée pour la console.

@@ -53,8 +53,45 @@ env:
   ANDROID_PREVIEW_PACKAGE: 'com.jpservices.scolia.owner.preview'
 
 jobs:
+  release-readiness:
+    name: Verifier les signatures requises avant la compilation officielle
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Refuser une publication dont les signatures ne sont pas configurees
+        if: inputs.publish_release == true
+        shell: bash
+        env:
+          OWNER_ADMIN_KEYSTORE_B64: ${{ secrets.OWNER_ADMIN_KEYSTORE_B64 }}
+          OWNER_ADMIN_KEYSTORE_PASSWORD: ${{ secrets.OWNER_ADMIN_KEYSTORE_PASSWORD }}
+          OWNER_ADMIN_KEY_ALIAS: ${{ secrets.OWNER_ADMIN_KEY_ALIAS }}
+          OWNER_ADMIN_KEY_PASSWORD: ${{ secrets.OWNER_ADMIN_KEY_PASSWORD }}
+          OWNER_ADMIN_CERT_SHA256: ${{ vars.OWNER_ADMIN_CERT_SHA256 }}
+          SCOLIA_WINDOWS_SIGNING_PFX: ${{ secrets.SCOLIA_WINDOWS_SIGNING_PFX }}
+          SCOLIA_WINDOWS_SIGNING_PASSWORD: ${{ secrets.SCOLIA_WINDOWS_SIGNING_PASSWORD }}
+          SCOLIA_WINDOWS_CERT_THUMBPRINT: ${{ vars.SCOLIA_WINDOWS_CERT_THUMBPRINT }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in OWNER_ADMIN_KEYSTORE_B64 OWNER_ADMIN_KEYSTORE_PASSWORD OWNER_ADMIN_KEY_ALIAS OWNER_ADMIN_KEY_PASSWORD OWNER_ADMIN_CERT_SHA256 SCOLIA_WINDOWS_SIGNING_PFX SCOLIA_WINDOWS_SIGNING_PASSWORD SCOLIA_WINDOWS_CERT_THUMBPRINT; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Configuration de signature absente : $name."
+              missing=1
+            fi
+          done
+          if [[ -n "${OWNER_ADMIN_CERT_SHA256:-}" && ! "$OWNER_ADMIN_CERT_SHA256" =~ ^[[:xdigit:]]{64}$ ]]; then
+            echo '::error::OWNER_ADMIN_CERT_SHA256 doit contenir 64 caracteres hexadecimaux.'
+            missing=1
+          fi
+          if (( missing != 0 )); then
+            echo '::error::Publication officielle bloquee avant compilation. Aucune signature de test ne remplace les certificats de production.'
+            exit 1
+          fi
+          echo 'Configuration de signature presente. Les builds verifieront les certificats et les signatures des fichiers.'
+
   windows:
     name: Windows - Executable et installateur Avalonia
+    needs: release-readiness
     runs-on: windows-latest
     timeout-minutes: 40
     steps:
@@ -160,6 +197,7 @@ jobs:
 
   android:
     name: Android - APK Avalonia natif (PREVIEW, certificat de test)
+    if: inputs.publish_release != true
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -219,6 +257,7 @@ jobs:
 
   android-release:
     name: Android - APK officiel signe (certificat Admin permanent)
+    needs: release-readiness
     if: inputs.publish_release == true
     runs-on: ubuntu-latest
     timeout-minutes: 70
@@ -506,7 +545,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "SCOLIA Console ${OWNER_VERSION} - Avalonia natif Android et Windows (PREVIEW)" \
             --prerelease \
-            --notes "PREVERSION DE TEST UNIQUEMENT. Pilote natif Avalonia 12 partage entre Android et Windows, sans WebView. Les fonctions sensibles ouvrent la console Cloudflare Access dans le navigateur systeme afin de respecter la MFA. APK Android : paquet ${ANDROID_PREVIEW_PACKAGE} signe par un certificat de test ; il ne recoit PAS les mises a jour officielles. EXE Windows : non signe Authenticode sauf certificat configure. Canal JP-Services independant des versions SCOLIA des etablissements."
+            --notes "PREVERSION DE TEST UNIQUEMENT. Console native Avalonia 12 partagee entre Android et Windows, sans WebView. Administration des etablissements, licences, serveurs, relais, stockage R2 et site Netlify dans l'application. Authentification par jeton de service Cloudflare Access et jeton proprietaire ; secrets chiffres sur l'appareil. TURN en lecture seule et transport Netlify experimental desactive. APK Android : paquet ${ANDROID_PREVIEW_PACKAGE} signe par un certificat de test ; il ne recoit PAS les mises a jour officielles. EXE Windows : non signe Authenticode sauf certificat configure. Canal JP-Services independant des versions SCOLIA des etablissements."
 
   release:
     name: Publier la version officielle SCOLIA Console (Android + Windows signes)

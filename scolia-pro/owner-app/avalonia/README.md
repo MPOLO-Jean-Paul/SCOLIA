@@ -19,17 +19,18 @@ et une seule palette `Core/OwnerPalette.cs` pour Windows et Android.
 - **Écritures** : toute action modifiant une licence, une sauvegarde ou un relais demande une confirmation en deux temps.
 - **Réglages natifs** : configuration R2 vérifiée avant enregistrement, retrait des identifiants, proposition de sauvegarde à toutes les écoles, découverte TURN et configuration/test/retrait du site Netlify. Les protocoles et accords des écoles restent respectés : la découverte TURN ne remplace pas un relais WSS et le pilote Netlify reste désactivé.
 - Mises à jour : canal propriétaire indépendant `scolia-owner-v...`, filtre la liste des Releases GitHub. Les APK Preview ne sont pas des releases signées permanentes.
-- Tests : `Tests/` (37 tests : client, coffre, libellés, navigation concurrente, refus sans perte de saisie, rendu de chaque page en sept formats/thèmes ; renouvellement, relais, stockage R2 et Netlify contre le vrai Worker sur SQLite en mémoire ;
-  `SCOLIA_CONSOLE_CAPTURES=<dossier>` enregistre les captures).
+- Tests : `Tests/` contient 37 tests : client, coffre, libellés, navigation concurrente, refus sans perte de saisie, rendu de chaque page en sept formats/thèmes ; renouvellement, relais, stockage R2 et Netlify contre le vrai Worker sur SQLite en mémoire.
+  `SCOLIA_CONSOLE_CAPTURES=<dossier>` enregistre les captures.
 
-Ne pas publier la version Android officielle sans les quatre secrets de signature Admin.
+La publication officielle exige la clé Android Admin permanente, son empreinte et un certificat Windows Authenticode.
 
 ## Publication
 
 - Préversion (certificat de test) : lancer « SCOLIA Console natif Avalonia - Android et Windows » avec
   `publish_release` = false et `publish_preview` = true. Un push compile sans publier.
 - Version officielle : depuis `main`, « JP-Services Admin - publication Android et Windows » appelle ce workflow
-  épinglé à une révision testée avec `publish_release` = true. Elle exige les quatre secrets `OWNER_ADMIN_*`
+  épinglé à une révision testée avec `publish_release` = true. Elle vérifie les paramètres de signature avant compilation,
+  exige les quatre secrets `OWNER_ADMIN_*`, `OWNER_ADMIN_CERT_SHA256` et la signature Windows Authenticode,
   et publie le tag immuable `scolia-owner-vX.Y.Z` (APK signé + installateur Windows + empreintes `.sha256`).
 - État complet, secrets à créer et procédure pas à pas : `scolia-pro/docs/CONSOLE_ADMIN_ETAT_PUBLICATION.md`.
 
