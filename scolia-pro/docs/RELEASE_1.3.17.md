@@ -9,3 +9,4 @@
 - Les anciennes copies de consultation sont retirées sur l'appareil qui applique le changement. Les opérations en attente de synchronisation restent conservées.
 - Le promoteur et l'enseignant conservent leurs espaces et leurs droits habituels. Aucun dossier ni paiement existant n'est déplacé ou supprimé.
 - Les commandes, menus et fenêtres utilisent des pictogrammes Fluent vectoriels à taille optique adaptée : variantes natives de 16 et 20 points, proportions conservées et repères de navigation bleus et verts. Les petites flèches et les icônes des formulaires partagent le même rendu sur téléphone et ordinateur.
+- Mise à jour Android : progression visible dans SCOLIA dès le téléchargement, motifs d'attente ou d'échec, relance et ouverture du lien officiel dans le navigateur. Une tentative bloquée ne masque plus la possibilité de réessayer ; les tentatives utilisent des fichiers distincts.

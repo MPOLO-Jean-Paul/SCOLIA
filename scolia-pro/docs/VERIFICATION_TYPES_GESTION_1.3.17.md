@@ -36,3 +36,13 @@ La comparaison a révélé que l'alias automatique « Outline » pouvait réutil
 - Migration et modèle de données : aucune modification de modèle en attente après génération de la migration.
 
 La chaîne d'intégration rejoue les suites complètes et les captures des rôles avant la publication. Les vérifications utilisent des bases temporaires et des données fictives.
+
+## Téléchargement des mises à jour Android
+
+Le signalement « Télécharger ne fait rien apparaître » a conduit à retenir la publication avant sa signature. Le lien public de l'APK répond correctement, y compris avec le User-Agent de l'application, une requête fraîche et les redirections GitHub (réponse HTTP 206 pour la lecture partielle).
+
+Le téléchargement affiche désormais une fenêtre dans SCOLIA dès son démarrage, avec les octets reçus, le pourcentage et le motif d'attente. Les notifications Android ne sont plus le seul retour visible. La recherche manuelle retrouve un transfert actif ; un transfert disparu, échoué ou périmé peut être proposé à nouveau. Un fichier terminé reste disponible pour la vérification et l'installation.
+
+Chaque tentative utilise une destination distincte pour éviter les collisions avec un ancien transfert. Les liens HTTPS restent limités au dépôt officiel. La méthode Navigateur ouvre ce même fichier officiel ; Android conserve le contrôle du certificat lors de l'installation. Le parcours interne conserve la vérification SHA-256 et du numéro de version. Les erreurs de stockage, les échecs de téléchargement et les fichiers manquants ou refusés sont présentés dans une fenêtre persistante.
+
+Les 80 tests mobiles réussissent, dont 23 nouveaux cas sur la progression, les attentes Wi-Fi/réseau, les erreurs de stockage et la reprise des transferts. Le typage du code de l'interface a aussi été vérifié avec les références Android et AndroidX utilisées par l'application. Le build APK complet et les autres contrôles sont rejoués avant la publication officielle.

@@ -98,7 +98,7 @@ jobs:
       - name: Compiler le client Avalonia partage Windows et Android
         run: dotnet build src/Scolia.Bureau/Scolia.Bureau.csproj -c Release
       - name: Tester les mises a jour Android (fin de telechargement, arriere-plan, erreurs)
-        run: dotnet test tests/Scolia.Mobile.Tests/Scolia.Mobile.Tests.csproj -c Release --filter "FullyQualifiedName~UpdateCompletionPolicyTests|FullyQualifiedName~AndroidPrivacyManifestTests" --logger "trx;LogFileName=android-updates.trx"
+        run: dotnet test tests/Scolia.Mobile.Tests/Scolia.Mobile.Tests.csproj -c Release --filter "FullyQualifiedName~UpdateCompletionPolicyTests|FullyQualifiedName~UpdateDownloadProgressTests|FullyQualifiedName~AndroidPrivacyManifestTests" --logger "trx;LogFileName=android-updates.trx"
       - name: Verifier les resultats du menu, les recherches contextuelles et la securite
         run: dotnet test tests/Scolia.Bureau.Tests/Scolia.Bureau.Tests.csproj -c Release --logger "trx;LogFileName=natif.trx"
       # La publication native dépend également de la géométrie réelle des champs d'accès.
